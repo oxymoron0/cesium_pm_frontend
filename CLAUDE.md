@@ -17,7 +17,7 @@
 - `@component/service@13.3.3`: React 18.2 고정 버전, 13개 의존성, 순환 참조 구조
 - `@component/ui@12.2.0`: Antd 래퍼로 제한적 활용도
 - `@packages/utils@16.1.1`: 역할이 불분명한 유틸리티 모음
-- **결론**: 의존성 관리 부재, 모듈 설계 원칙 위반
+- **결론**: 의존성 관리 부재, 모듈 설계 원칙 위반 -> 사용하지 않음
 
 ### 기술 스택 선정
 - **상태 관리**: MobX 6.13.7 + mobx-react-lite 4.1.0
@@ -65,53 +65,117 @@ class AppStore {
 }
 ```
 
-## 남은 작업
+## Qiankun 마이그레이션 진행 상황
 
-### Qiankun 자식 앱 구성
-1. `src/pages/` 디렉터리 구조 생성
-2. 마이크로앱 lifecycle 함수 구현 (bootstrap, mount, unmount)
-3. Vite UMD 빌드 설정
-4. 컨테이너 ID 패턴 정의 (`#microapp-pm-frontend`)
+### ✅ 완료된 작업
+1. **Lifecycle 함수 구현**: `bootstrap`, `mount`, `unmount` 함수 구현 완료
+2. **Vite UMD 빌드 설정**: Webpack과 동일한 UMD 라이브러리 방식 구성
+3. **CORS 및 네트워크 문제 해결**: 모든 origin 허용, 동적 경로 설정
+4. **React 의존성 문제 해결**: External 제거하여 React/ReactDOM 번들에 포함
+5. **테스트 HTML 구성**: `/leorca-test/test.html` 경로로 부모 앱 연동
 
-### 통합 검증
-1. 부모 앱에서 자식 컴포넌트 렌더링 검증
-2. 자식 앱에서 부모 Cesium Viewer 조작 검증  
-3. MobX 스토어 격리 및 메모리 누수 방지 확인
+### 🔄 현재 진행 중인 작업
+**Qiankun Lifecycle 함수 인식 문제**
+- **현상**: `[qiankun]: You need to export lifecycle functions in pmFrontend entry`
+- **원인 분석**: Qiankun의 `Ce()` 함수가 lifecycle 함수를 제대로 인식하지 못함
+- **시도된 해결책**:
+  - ES Module → Plain Object 변환
+  - 전역 함수 직접 등록
+  - UMD vs IIFE 빌드 방식 변경
+  - `exports: 'named'` 설정
 
-### Vite 빌드 설정
-```typescript
-export default defineConfig({
-  build: {
-    lib: {
-      entry: './src/main.tsx',
-      formats: ['umd'],
-      name: 'pmFrontend',
-      fileName: 'index'
-    },
-    rollupOptions: {
-      external: ['react', 'react-dom'],
-      output: {
-        globals: {
-          react: 'React',
-          'react-dom': 'ReactDOM'
-        }
-      }
+### 🔍 기술적 분석 결과
+
+#### Qiankun Lifecycle 검색 로직 (역공학 분석)
+```javascript
+function an(e, t, n, r) {
+    if (Ce(e)) return e;           // 1. 직접 전달된 함수
+    if (r) {                       // 2. r이 있으면 n[r] 체크
+        var i = n[r];
+        if (Ce(i)) return i
     }
+    var o = n[t];                  // 3. n[t] 체크 (window[appName])
+    if (Ce(o)) return o;
+    throw new B("You need to export lifecycle functions in ".concat(t, " entry"))
+}
+```
+
+- `t` = `"pmFrontend"` (앱 이름)
+- `n` = `window` (전역 객체)
+- `Ce(x)` = lifecycle 함수 검증 함수 (미확인)
+
+#### 현재 Vite UMD 빌드 구조
+```javascript
+(function(bl,ya){
+  typeof exports=="object"&&typeof module<"u"?ya(exports):
+  typeof define=="function"&&define.amd?define(["exports"],ya):
+  (bl=typeof globalThis<"u"?globalThis:bl||self,ya(bl.pmFrontend={}))
+})(this,(function(bl){"use strict";
+  // ... lifecycle 함수들이 bl 객체에 할당됨
+}));
+```
+
+### 🔧 현재 설정
+
+#### Vite Config
+```typescript
+build: {
+  lib: {
+    entry: './src/main.tsx',
+    formats: ['umd'],
+    name: 'pmFrontend',
+    fileName: 'pmFrontend'
   },
-  server: {
-    port: 5173,
-    cors: true,
-    headers: {
-      'Access-Control-Allow-Origin': '*'
+  rollupOptions: {
+    output: {
+      exports: 'named'
     }
   }
-});
+}
 ```
+
+#### Lifecycle 함수 등록 (main.tsx)
+```typescript
+// 직접 전역에 함수들 등록
+(window as any).bootstrap = bootstrap;
+(window as any).mount = mount;
+(window as any).unmount = unmount;
+
+// pmFrontend 객체도 등록
+(window as any).pmFrontend = {
+  bootstrap: bootstrap,
+  mount: mount,
+  unmount: unmount
+};
+```
+
+### 🚧 미해결 문제
+1. **Ce() 함수 정확한 검증 로직 불명**: Qiankun의 lifecycle 함수 유효성 검사 조건 미파악
+2. **Webpack vs Vite UMD 차이점**: 동일한 구조임에도 인식되지 않는 근본 원인
+3. **부모 앱의 Qiankun 설정**: 정확한 등록 방식 및 설정 불명
+
+### 📋 남은 작업
+1. **Ce() 함수 분석**: Qiankun 소스코드 또는 디버깅을 통한 정확한 검증 로직 파악
+2. **기존 Webpack 빌드와 비교**: 실제 작동하는 webpack 결과물과 구조적 차이점 분석  
+3. **대안적 접근**: 부모 앱 측 설정 변경 또는 다른 lifecycle 등록 방식 검토
+
+### 🔄 다음 시도 방향
+1. **Webpack 프로젝트 정확한 모방**: 기존 `Aerial_Photography_Inquiry` 구조 완전 복제
+2. **부모 앱 Qiankun 설정 확인**: 등록 방식 및 expected format 파악
+3. **런타임 디버깅**: 브라우저에서 Ce() 함수 동작 직접 분석
 
 ## 개발 컨텍스트
 - **기존 프로젝트**: Babel + Webpack + Redux + 내부 라이브러리 지옥
 - **신규 프로젝트**: TypeScript + Vite + MobX + 공식 라이브러리
 - **마이그레이션 목표**: 기술 부채 제거, 개발 생산성 향상, 유지보수성 개선
+
+### UMD
+- webpack은 이 export된 함수들을 Building_Information_Inquiry.bootstrap, Building_Information_Inquiry.mount 등으로 전역에서 접근 가능하게 만듭니다.
+
+#### Vite의 문제점:
+- Vite는 기본적으로 ES 모듈 중심이라 UMD 빌드 시 이런 named export들이 자동으로 전역에 노출되지 않습니다. 
+- 특히 Qiankun이 필요로 하는 lifecycle 함수들이 번들 내부에만 있고 외부에서 접근할 수 없게 됩니다.
+- webpack은 library 옵션으로 이를 자동 처리하지만, Vite는 추가 설정이 필요합니다.
 
 ## Claude 협업 가이드라인
 

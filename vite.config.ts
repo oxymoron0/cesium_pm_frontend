@@ -2,7 +2,26 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import cesium from 'vite-plugin-cesium'
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), cesium()]
+  plugins: [react(), cesium()],
+  server: {
+    host: '0.0.0.0',
+    port: 3333,
+    cors: true
+  },
+  build: {
+    lib: {
+      entry: './src/main.tsx',
+      formats: ['umd'],
+      name: 'pmFrontend',
+      fileName: 'pmFrontend'
+    },
+    rollupOptions: {
+      output: {
+        exports: 'named'
+      }
+    },
+    assetsInlineLimit: 4096
+  },
+  base: './'
 })
