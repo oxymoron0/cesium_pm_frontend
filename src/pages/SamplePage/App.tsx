@@ -3,7 +3,7 @@ import MobXTest from '../../components/MobXTest'
 
 function App() {
   return (
-    <div className="fixed top-4 left-4 w-60 h-[720px] bg-slate-800 bg-opacity-50 rounded-lg border border-gray-400 border-opacity-30 relative z-[2000]">
+    <div className="fixed top-4 left-4 w-60 h-[720px] bg-slate-800 bg-opacity-50 rounded-lg border border-gray-400 border-opacity-30 z-[2000]">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-500 to-blue-600 bg-blue-500/80 text-white p-4 rounded-t-lg">
         <h2 className="text-lg font-semibold">PM Control Panel</h2>
