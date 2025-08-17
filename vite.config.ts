@@ -37,7 +37,11 @@ export default defineConfig({
       output: {
         globals: {}
       }
-    }
+    },
+    cssCodeSplit: false
+  },
+  css: {
+    postcss: './postcss.config.js'
   },
   base: './'
 })
