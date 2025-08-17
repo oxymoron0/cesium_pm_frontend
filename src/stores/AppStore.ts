@@ -1,28 +1,29 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable } from 'mobx'
 
 class AppStore {
-  count = 0;
-  name = 'PM Frontend';
+  count = 0
+  name = 'PM Frontend'
 
   constructor() {
-    makeAutoObservable(this);
+    makeAutoObservable(this)
   }
 
   increment = () => {
-    this.count++;
-  };
+    this.count++
+  }
 
   decrement = () => {
-    this.count--;
-  };
+    this.count--
+  }
 
-  setName = (newName: string) => {
-    this.name = newName;
-  };
+  setName = (name: string) => {
+    this.name = name
+  }
 
   get displayText() {
-    return `${this.name}: ${this.count}`;
+    return `${this.name}: ${this.count}`
   }
 }
 
-export const appStore = new AppStore();
+export const appStore = new AppStore()
+export default AppStore
