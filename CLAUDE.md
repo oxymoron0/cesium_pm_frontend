@@ -235,9 +235,25 @@ dist/
 
 ### ✅ 5단계: Tailwind CSS 4.x UMD 빌드 호환성 확보 (8월 17일)
 
-#### 해결된 문제
+### ✅ 6단계: 독립 개발 환경 구축 완성 (8월 17일)
 
-**Tailwind CSS 4.x UMD 라이브러리 빌드에서 클래스 누락**
+#### 핵심 성과
+- **독립 개발 환경**: 부모 앱 없이 `pnpm dev`로 즉시 테스트 가능
+- **환경별 자동 분기**: Qiankun/독립 모드 자동 감지 및 전환
+- **전체 화면 Cesium**: 메인 화면 + 오버레이 제어패널 구조
+- **아키텍처 분리**: CesiumViewer(생성) + cesiumControls(제어) + UI(상태관리)
+
+#### 구현 결과
+```typescript
+// 환경 자동 감지
+const isQiankun = (window as any).__POWERED_BY_QIANKUN__
+// 독립: 자체 Viewer 생성 + window.cviewer 설정
+// Qiankun: 부모 window.cviewer 사용
+```
+
+- **개발 모드**: 전체 화면 독립 Cesium + 제어패널
+- **프로덕션**: 부모 Viewer 제어 + 제어패널만 표시
+- **제어 함수**: `window.cviewer` 인자로 받아 양쪽 환경 동일 API
 - **문제**: UMD 라이브러리 모드에서 Tailwind 4.x의 자동 소스 감지가 제대로 작동하지 않음
 - **근본 원인**: Tailwind 4.x의 새로운 JIT 엔진이 Vite 라이브러리 빌드 환경에서 content 스캔 실패
 - **해결**: `@source` 지시어를 통한 명시적 소스 파일 지정
