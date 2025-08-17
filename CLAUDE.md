@@ -233,7 +233,43 @@ dist/
 
 ### ✅ 4단계: 다중 페이지 마이크로 프론트엔드 시스템 완성 (8월 17일)
 
-#### 해결된 문제들
+### ✅ 5단계: Tailwind CSS 4.x UMD 빌드 호환성 확보 (8월 17일)
+
+#### 해결된 문제
+
+**Tailwind CSS 4.x UMD 라이브러리 빌드에서 클래스 누락**
+- **문제**: UMD 라이브러리 모드에서 Tailwind 4.x의 자동 소스 감지가 제대로 작동하지 않음
+- **근본 원인**: Tailwind 4.x의 새로운 JIT 엔진이 Vite 라이브러리 빌드 환경에서 content 스캔 실패
+- **해결**: `@source` 지시어를 통한 명시적 소스 파일 지정
+
+#### 해결 과정
+
+**1. 기존 설정 (작동 안 함)**:
+```css
+@tailwind base;
+@tailwind components; 
+@tailwind utilities;
+```
+
+**2. Tailwind 4.x 올바른 설정**:
+```css
+@import "tailwindcss";
+@source "./src/**/*.{js,ts,jsx,tsx}";
+```
+
+#### 기술적 분석
+
+**Tailwind CSS 4.x 변경사항**:
+- v3의 `content` 배열 설정 → v4의 자동 소스 감지
+- `@tailwind` 지시어 → `@import "tailwindcss"` 
+- UMD 빌드에서 소스 스캔 범위 제한으로 인한 클래스 누락
+
+**해결 검증**:
+- CSS 파일 크기: 27KB → 36KB 증가
+- 누락 클래스 생성 확인: `w-60`, `bg-slate-800`, `border-gray-400` 등
+- UI 컴포넌트 정상 렌더링 (240px × 720px 반투명 패널)
+
+#### 해결된 문제들 (4단계)
 
 **1. Vite 다중 엔트리 UMD 빌드 제한**
 - **문제**: Vite는 UMD 포맷에서 다중 엔트리를 지원하지 않음
