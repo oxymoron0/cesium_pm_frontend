@@ -4,110 +4,98 @@ import 'cesium/Build/Cesium/Widgets/widgets.css';
 
 const CesiumViewer = () => {
   const cesiumContainer = useRef<HTMLDivElement>(null);
-  const [parentViewer, setParentViewer] = useState<any>(null);
   const [isUsingParentViewer, setIsUsingParentViewer] = useState(false);
 
   useEffect(() => {
+    console.log('[PM Frontend] CesiumViewer 초기화 시작');
+    console.log('[PM Frontend] Qiankun 환경:', (window as any).__POWERED_BY_QIANKUN__);
+    console.log('[PM Frontend] 부모 cviewer:', (window as any).cviewer);
+
     // Cesium Ion 토큰 설정
     Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI2Yzk3OTAxYi1hYzc5LTRjN2QtYmY4ZC0wYmM4NTVjMDgzNDQiLCJpZCI6MTIzMjE4LCJpYXQiOjE3NTIzNTcxNjh9.oZ_Z-44nxEx1he-wa4Dq9EQoz24MrQVQkJE8lynkeJk';
+    console.log('[PM Frontend] Cesium Ion 토큰 설정 완료');
 
     // Qiankun 환경에서 부모 Viewer 감지
     if ((window as any).__POWERED_BY_QIANKUN__ && (window as any).cviewer) {
-      console.log('[PM Frontend] 부모 Cesium Viewer 감지됨:', (window as any).cviewer);
-      setParentViewer((window as any).cviewer);
+      console.log('[PM Frontend] 부모 Cesium Viewer 감지됨, DOM 컨테이너 렌더링 안함');
       setIsUsingParentViewer(true);
-      
-      // 부모 Viewer에 테스트 엔티티 추가
-      testParentViewerControl((window as any).cviewer);
-      
       return;
     }
 
-    // 독립 모드: 자체 Viewer 생성
-    if (cesiumContainer.current) {
-      console.log('[PM Frontend] 독립 Cesium Viewer 생성');
-      const viewer = new Viewer(cesiumContainer.current, {
-        baseLayerPicker: false,
-        homeButton: false,
-        sceneModePicker: false,
-        navigationHelpButton: false,
-        animation: false,
-        timeline: false
-      });
+    // 독립 환경에서만 Viewer 생성
+    const initCesiumViewer = () => {
+      if (!cesiumContainer.current) {
+        console.warn('[PM Frontend] 컨테이너가 아직 준비되지 않음, 재시도...');
+        setTimeout(initCesiumViewer, 100);
+        return;
+      }
 
-      return () => {
-        viewer.destroy();
-      };
+      console.log('[PM Frontend] 독립 Cesium Viewer 생성 시작');
+      
+      try {
+        const viewer = new Viewer(cesiumContainer.current, {
+          baseLayerPicker: false,
+          homeButton: false,
+          sceneModePicker: false,
+          navigationHelpButton: false,
+          animation: false,
+          timeline: false,
+          infoBox: false,
+          selectionIndicator: false
+        });
+
+        console.log('[PM Frontend] Cesium Viewer 생성 성공:', viewer);
+
+        // 전역에 Cesium 라이브러리 노출 (개발 환경용)
+        (window as any).Cesium = { Viewer, Ion, Color, Cartesian3, Cartesian2, HeightReference, LabelStyle, VerticalOrigin };
+        (window as any).cviewer = viewer;
+        console.log('[PM Frontend] window.cviewer 설정 완료');
+
+      } catch (error) {
+        console.error('[PM Frontend] Cesium Viewer 생성 실패:', error);
+      }
+    };
+
+    // DOM 준비 상태 확인 후 실행
+    if (cesiumContainer.current) {
+      initCesiumViewer();
+    } else {
+      setTimeout(initCesiumViewer, 100);
     }
+
+    // 정리 함수
+    return () => {
+      console.log('[PM Frontend] CesiumViewer cleanup');
+      if ((window as any).cviewer && !isUsingParentViewer) {
+        console.log('[PM Frontend] Cesium Viewer 정리 시작');
+        const viewer = (window as any).cviewer;
+        try {
+          viewer.destroy();
+          delete (window as any).cviewer;
+          console.log('[PM Frontend] Cesium Viewer 정리 완료');
+        } catch (error) {
+          console.error('[PM Frontend] Viewer 정리 중 오류:', error);
+        }
+      }
+    };
   }, []);
 
-  // 부모 Viewer 제어 테스트 함수
-  const testParentViewerControl = (viewer: any) => {
-    try {
-      console.log('[PM Frontend] 부모 Viewer 제어 테스트 시작');
-      
-      // 부모 Viewer에 테스트 마커 추가
-      const entity = viewer.entities.add({
-        name: 'PM Frontend Test Marker',
-        position: Cartesian3.fromDegrees(129.0756, 35.1796, 0), // 부산 좌표
-        point: {
-          pixelSize: 10,
-          color: Color.YELLOW,
-          outlineColor: Color.BLACK,
-          outlineWidth: 2,
-          heightReference: HeightReference.CLAMP_TO_GROUND
-        },
-        label: {
-          text: 'PM Frontend Connected!',
-          font: '12pt sans-serif',
-          fillColor: Color.WHITE,
-          outlineColor: Color.BLACK,
-          outlineWidth: 1,
-          style: LabelStyle.FILL_AND_OUTLINE,
-          verticalOrigin: VerticalOrigin.BOTTOM,
-          pixelOffset: new Cartesian2(0, -10)
-        }
-      });
-
-      console.log('[PM Frontend] 테스트 마커 추가 성공:', entity);
-
-      // 부모 Viewer를 해당 위치로 이동
-      viewer.camera.flyTo({
-        destination: Cartesian3.fromDegrees(129.0756, 35.1796, 1000)
-      });
-
-    } catch (error) {
-      console.error('[PM Frontend] 부모 Viewer 제어 실패:', error);
-    }
-  };
+  // Qiankun 환경에서는 부모 Viewer를 사용하므로 DOM 컨테이너 렌더링 안함
+  if (isUsingParentViewer) {
+    return null;
+  }
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h3>PM Frontend - Cesium Integration</h3>
-      
-      {isUsingParentViewer ? (
-        <div>
-          <p style={{ color: 'green' }}>✅ 부모 Cesium Viewer 연결됨</p>
-          <p>부모 Viewer에 테스트 마커가 추가되었습니다.</p>
-          <button onClick={() => testParentViewerControl(parentViewer)}>
-            부모 Viewer 테스트 재실행
-          </button>
-        </div>
-      ) : (
-        <div>
-          <p style={{ color: 'blue' }}>🔧 독립 모드 - 자체 Cesium Viewer</p>
-          <div 
-            ref={cesiumContainer}
-            style={{ 
-              width: '100%', 
-              height: '500px',
-              border: '1px solid #ccc',
-              marginTop: '10px'
-            }}
-          />
-        </div>
-      )}
-    </div>
+    <div 
+      ref={cesiumContainer}
+      style={{ 
+        width: '100%', 
+        height: '100%',
+        position: 'absolute',
+        top: 0,
+        left: 0
+      }}
+    />
   );
 };
 
