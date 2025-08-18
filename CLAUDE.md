@@ -38,9 +38,35 @@ const isQiankun = (window as any).__POWERED_BY_QIANKUN__
 - 프로덕션: 부모 Viewer 제어 + 제어패널만 표시  
 - 제어 함수: `window.cviewer` 인자로 받아 양쪽 환경 동일 API
 
+### ✅ 7단계: CSS 완전 격리 시스템 (8월 18일)
+
+#### 핵심 성과
+- **PostCSS Prefix Selector**: 자식→부모 CSS 침범 완전 차단
+- **HTML 태그 대체**: div + className으로 부모→자식 상속 차단
+- **명시적 스타일링**: `inherit` 대신 구체적 색상값 사용
+
+#### 해결된 문제
+- **CSS 간섭 문제**: 부모-자식 앱 간 스타일 충돌 완전 해결
+- **Font 상속 문제**: h2, h3, p, button 등 브라우저 기본 스타일 상속 차단
+- **Input 색상 문제**: contentEditable div로 대체하여 색상 일관성 확보
+
+#### 구현 결과
+```typescript
+// postcss.config.js - CSS 클래스 스코핑
+'postcss-prefix-selector': {
+  prefix: '.pm-frontend-scope',
+  exclude: [/^html/, /^body/, /^\*/, /^:root/]
+}
+
+// HTML 태그 → div 변경으로 상속 차단
+<h2> → <div className="text-lg font-semibold">
+<button> → <div onClick={handler} className="cursor-pointer">
+<input> → <div contentEditable onInput={handler}>
+```
+
 ## 🎯 다음 단계 (8월 18일 예정)
 
-### 7단계: Token 관리 및 부모-자식 Props 통신 시스템
+### 8단계: Token 관리 및 부모-자식 Props 통신 시스템
 
 #### 해결해야 할 문제
 - **Cesium Ion Token 하드코딩**: 현재 CesiumViewer.tsx에 토큰 하드코딩됨
@@ -56,6 +82,7 @@ const isQiankun = (window as any).__POWERED_BY_QIANKUN__
 - **타입 안전성**: 100% TypeScript 지원
 - **기술 부채**: 레거시 Webpack/Babel 설정 완전 제거
 - **개발 환경**: 부모 앱 의존성 제거로 독립 개발 가능
+- **CSS 격리**: 부모-자식 앱 간 스타일 충돌 완전 해결
 
 ## 현재 아키텍처
 
