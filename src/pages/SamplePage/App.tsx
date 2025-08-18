@@ -80,30 +80,32 @@ function App() {
   }
 
   return (
-    <>
+    <div
+      className="pm-frontend-scope"
+    >
       {/* 전체 화면 Cesium Viewer */}
       <div className="w-full h-screen">
         <CesiumViewer />
       </div>
-      
+
       {/* 오버레이 제어 패널 */}
       <div className="fixed top-4 left-4 w-60 h-[720px] bg-slate-800 bg-opacity-50 rounded-lg border border-gray-400 border-opacity-30 z-[2000]">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 bg-blue-500/80 text-white p-4 rounded-t-lg">
+        <div className="p-4 text-white rounded-t-lg bg-gradient-to-r from-blue-500 to-blue-600 bg-blue-500/80">
           <h2 className="text-lg font-semibold">PM Control Panel</h2>
-          <p className="text-blue-100 text-sm">Microfrontend Controls</p>
+          <p className="text-sm text-blue-100">Microfrontend Controls</p>
         </div>
         
         {/* Content */}
         <div className="p-4 space-y-4 overflow-y-auto h-[632px]">
-          <div className="border-b border-gray-300/30 pb-4">
-            <h3 className="text-sm font-medium text-white mb-2">State Management</h3>
+          <div className="pb-4 border-b border-gray-300/30">
+            <h3 className="mb-2 text-sm font-medium text-white">State Management</h3>
             <MobXTest />
           </div>
           
-          <div className="border-b border-gray-300/30 pb-4">
-            <h3 className="text-sm font-medium text-white mb-2">Cesium Status</h3>
-            <div className="text-white text-xs space-y-1">
+          <div className="pb-4 border-b border-gray-300/30">
+            <h3 className="mb-2 text-sm font-medium text-white">Cesium Status</h3>
+            <div className="space-y-1 text-xs text-white">
               <p>
                 Status: <span className={cesiumStatus === 'ready' ? 'text-green-400' : cesiumStatus === 'error' ? 'text-red-400' : 'text-yellow-400'}>
                   {cesiumStatus === 'ready' ? '✅ Ready' : cesiumStatus === 'error' ? '❌ Error' : '⏳ Loading'}
@@ -114,33 +116,33 @@ function App() {
           </div>
           
           <div>
-            <h3 className="text-sm font-medium text-white mb-2">Cesium Controls</h3>
+            <h3 className="mb-2 text-sm font-medium text-white">Cesium Controls</h3>
             <div className="space-y-2">
               <button 
                 onClick={handleAddTestMarker}
                 disabled={cesiumStatus !== 'ready'}
-                className="w-full px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:bg-gray-600"
+                className="w-full px-3 py-1 text-xs text-white bg-blue-600 rounded hover:bg-blue-700 disabled:bg-gray-600"
               >
                 Add Test Marker
               </button>
               <button 
                 onClick={handleFlyToBusan}
                 disabled={cesiumStatus !== 'ready'}
-                className="w-full px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:bg-gray-600"
+                className="w-full px-3 py-1 text-xs text-white bg-green-600 rounded hover:bg-green-700 disabled:bg-gray-600"
               >
                 Fly to Busan
               </button>
               <button 
                 onClick={handleAddCustomMarker}
                 disabled={cesiumStatus !== 'ready'}
-                className="w-full px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:bg-gray-600"
+                className="w-full px-3 py-1 text-xs text-white bg-purple-600 rounded hover:bg-purple-700 disabled:bg-gray-600"
               >
                 Add Custom Marker
               </button>
               <button 
                 onClick={handleClearAll}
                 disabled={cesiumStatus !== 'ready'}
-                className="w-full px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 disabled:bg-gray-600"
+                className="w-full px-3 py-1 text-xs text-white bg-red-600 rounded hover:bg-red-700 disabled:bg-gray-600"
               >
                 Clear All
               </button>
@@ -148,7 +150,7 @@ function App() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   )
 }
 
