@@ -47,6 +47,7 @@ function App() {
 
   // Cesium 제어 함수들
   const handleAddTestMarker = () => {
+    if (cesiumStatus !== 'ready') return
     const viewer = (window as any).cviewer
     if (viewer) {
       addTestMarker(viewer)
@@ -54,6 +55,7 @@ function App() {
   }
 
   const handleFlyToBusan = () => {
+    if (cesiumStatus !== 'ready') return
     const viewer = (window as any).cviewer
     if (viewer) {
       flyToLocation(viewer, 129.0756, 35.1796, 1000)
@@ -61,6 +63,7 @@ function App() {
   }
 
   const handleAddCustomMarker = () => {
+    if (cesiumStatus !== 'ready') return
     const viewer = (window as any).cviewer
     if (viewer) {
       addMarker(viewer, {
@@ -73,6 +76,7 @@ function App() {
   }
 
   const handleClearAll = () => {
+    if (cesiumStatus !== 'ready') return
     const viewer = (window as any).cviewer
     if (viewer) {
       clearAllEntities(viewer)
@@ -92,60 +96,72 @@ function App() {
       <div className="fixed top-4 left-4 w-60 h-[720px] bg-slate-800 bg-opacity-50 rounded-lg border border-gray-400 border-opacity-30 z-[2000]">
         {/* Header */}
         <div className="p-4 text-white rounded-t-lg bg-gradient-to-r from-blue-500 to-blue-600 bg-blue-500/80">
-          <h2 className="text-lg font-semibold">PM Control Panel</h2>
-          <p className="text-sm text-blue-100">Microfrontend Controls</p>
+          <div className="text-lg font-semibold text-white">PM Control Panel</div>
+          <div className="text-sm text-blue-100">Microfrontend Controls</div>
         </div>
         
         {/* Content */}
         <div className="p-4 space-y-4 overflow-y-auto h-[632px]">
           <div className="pb-4 border-b border-gray-300/30">
-            <h3 className="mb-2 text-sm font-medium text-white">State Management</h3>
+            <div className="mb-2 text-sm font-medium text-white">State Management</div>
             <MobXTest />
           </div>
           
           <div className="pb-4 border-b border-gray-300/30">
-            <h3 className="mb-2 text-sm font-medium text-white">Cesium Status</h3>
+            <div className="mb-2 text-sm font-medium text-white">Cesium Status</div>
             <div className="space-y-1 text-xs text-white">
-              <p>
-                Status: <span className={cesiumStatus === 'ready' ? 'text-green-400' : cesiumStatus === 'error' ? 'text-red-400' : 'text-yellow-400'}>
+              <div>
+                Status: <div className={`inline ${cesiumStatus === 'ready' ? 'text-green-400' : cesiumStatus === 'error' ? 'text-red-400' : 'text-yellow-400'}`}>
                   {cesiumStatus === 'ready' ? '✅ Ready' : cesiumStatus === 'error' ? '❌ Error' : '⏳ Loading'}
-                </span>
-              </p>
-              <p>Mode: {isUsingParentViewer ? '🔗 Parent Viewer' : '🔧 Independent'}</p>
+                </div>
+              </div>
+              <div>Mode: {isUsingParentViewer ? '🔗 Parent Viewer' : '🔧 Independent'}</div>
             </div>
           </div>
           
           <div>
-            <h3 className="mb-2 text-sm font-medium text-white">Cesium Controls</h3>
+            <div className="mb-2 text-sm font-medium text-white">Cesium Controls</div>
             <div className="space-y-2">
-              <button 
+              <div 
                 onClick={handleAddTestMarker}
-                disabled={cesiumStatus !== 'ready'}
-                className="w-full px-3 py-1 text-xs text-white bg-blue-600 rounded hover:bg-blue-700 disabled:bg-gray-600"
+                className={`w-full px-3 py-1 text-xs text-white rounded cursor-pointer text-center ${
+                  cesiumStatus === 'ready' 
+                    ? 'bg-blue-600 hover:bg-blue-700' 
+                    : 'bg-gray-600 cursor-not-allowed'
+                }`}
               >
                 Add Test Marker
-              </button>
-              <button 
+              </div>
+              <div 
                 onClick={handleFlyToBusan}
-                disabled={cesiumStatus !== 'ready'}
-                className="w-full px-3 py-1 text-xs text-white bg-green-600 rounded hover:bg-green-700 disabled:bg-gray-600"
+                className={`w-full px-3 py-1 text-xs text-white rounded cursor-pointer text-center ${
+                  cesiumStatus === 'ready' 
+                    ? 'bg-green-600 hover:bg-green-700' 
+                    : 'bg-gray-600 cursor-not-allowed'
+                }`}
               >
                 Fly to Busan
-              </button>
-              <button 
+              </div>
+              <div 
                 onClick={handleAddCustomMarker}
-                disabled={cesiumStatus !== 'ready'}
-                className="w-full px-3 py-1 text-xs text-white bg-purple-600 rounded hover:bg-purple-700 disabled:bg-gray-600"
+                className={`w-full px-3 py-1 text-xs text-white rounded cursor-pointer text-center ${
+                  cesiumStatus === 'ready' 
+                    ? 'bg-purple-600 hover:bg-purple-700' 
+                    : 'bg-gray-600 cursor-not-allowed'
+                }`}
               >
                 Add Custom Marker
-              </button>
-              <button 
+              </div>
+              <div 
                 onClick={handleClearAll}
-                disabled={cesiumStatus !== 'ready'}
-                className="w-full px-3 py-1 text-xs text-white bg-red-600 rounded hover:bg-red-700 disabled:bg-gray-600"
+                className={`w-full px-3 py-1 text-xs text-white rounded cursor-pointer text-center ${
+                  cesiumStatus === 'ready' 
+                    ? 'bg-red-600 hover:bg-red-700' 
+                    : 'bg-gray-600 cursor-not-allowed'
+                }`}
               >
                 Clear All
-              </button>
+              </div>
             </div>
           </div>
         </div>
