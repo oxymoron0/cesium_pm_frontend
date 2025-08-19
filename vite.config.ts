@@ -31,7 +31,8 @@ export default defineConfig(({ command }) => {
             { from: /\/SamplePage\.html/, to: '/index.html' },
             { from: /\/\w+Page\.html/, to: '/index.html' }
           ]
-        }
+        },
+        allowedHosts: ['services.leorca.org']
       },
       css: {
         postcss: './postcss.config.js'

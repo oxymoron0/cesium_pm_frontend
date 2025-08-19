@@ -4,19 +4,19 @@ import { appStore } from '../stores/AppStore'
 const MobXTest = observer(() => {
   return (
     <div className="relative z-[2000] bg-white border border-gray-200 rounded-lg p-4">
-      <div className="text-lg font-medium text-gray-800 mb-3">MobX 테스트</div>
-      <div className="text-gray-700 mb-4 text-xl font-semibold">{appStore.displayText}</div>
+      <div className="mb-3 text-lg font-medium text-gray-800">MobX 테스트</div>
+      <div className="mb-4 text-xl font-semibold text-gray-700">{appStore.displayText}</div>
 
       <div className="flex gap-3 mb-4">
         <div 
           onClick={appStore.increment}
-          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors font-medium cursor-pointer text-center"
+          className="px-4 py-2 font-medium text-center text-white transition-colors bg-blue-500 rounded-md cursor-pointer hover:bg-blue-600"
         >
           +
         </div>
         <div 
           onClick={appStore.decrement}
-          className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors font-medium cursor-pointer text-center"
+          className="px-4 py-2 font-medium text-center text-white transition-colors bg-red-500 rounded-md cursor-pointer hover:bg-red-600"
         >
           -
         </div>

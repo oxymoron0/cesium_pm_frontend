@@ -3,7 +3,9 @@ import CesiumViewer from '../../components/CesiumViewer'
 import MobXTest from '../../components/MobXTest'
 import { addTestMarker, flyToLocation, addMarker, clearAllEntities, initializePMFrontend } from '../../utils/cesiumControls'
 
-function App() {
+function App(props: any) {
+  // const { onCloseMicroApp, dispatch } = props
+  console.log(props)
   const [cesiumStatus, setCesiumStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [isUsingParentViewer, setIsUsingParentViewer] = useState(false)
 
@@ -99,7 +101,7 @@ function App() {
           <div className="text-lg font-semibold text-white">PM Control Panel</div>
           <div className="text-sm text-blue-100">Microfrontend Controls</div>
         </div>
-        
+
         {/* Content */}
         <div className="p-4 space-y-4 overflow-y-auto h-[632px]">
           <div className="pb-4 border-b border-gray-300/30">

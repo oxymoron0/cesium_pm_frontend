@@ -10,18 +10,18 @@ export async function bootstrap() {
 }
 
 export async function mount(props: any) {
+  const { container, onCloseMicroApp, dispatch } = props
   console.log('[qiankun] SamplePage mount', props);
-  
-  const { container } = props;
-  const domElement = container 
-    ? container.querySelector('#microapp-SamplePage') 
+
+  const domElement = container
+    ? container.querySelector('#microapp-SamplePage')
     : document.getElementById('microapp-SamplePage');
-  
+
   if (domElement) {
     root = createRoot(domElement);
     root.render(
       <StrictMode>
-        <App />
+        <App onCloseMicroApp={onCloseMicroApp} dispatch={dispatch} />
       </StrictMode>
     );
   }
@@ -47,10 +47,3 @@ if (!(window as any).__POWERED_BY_QIANKUN__) {
     );
   }
 }
-
-// Qiankun lifecycle 함수 노출
-(window as any).SamplePage = {
-  bootstrap,
-  mount,
-  unmount
-};
