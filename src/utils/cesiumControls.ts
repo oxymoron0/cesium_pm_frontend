@@ -127,16 +127,25 @@ export const clearAllEntities = (viewer: any) => {
   }
 };
 
+// 중복 초기화 방지 플래그
+let isInitialized = false;
+
 /**
  * PM Frontend 초기화 - 부모/자식 환경 감지 및 테스트 마커 추가
  * @param delay - 초기화 지연 시간 (ms)
  */
 export const initializePMFrontend = (delay: number = 1000) => {
+  if (isInitialized) {
+    console.log('[PM Frontend] 이미 초기화됨, 중복 실행 방지');
+    return;
+  }
+
   setTimeout(() => {
     const viewer = (window as any).cviewer;
     if (viewer) {
       console.log('[PM Frontend] Cesium Viewer 감지됨, 초기화 시작');
       addTestMarker(viewer);
+      isInitialized = true;
     } else {
       console.warn('[PM Frontend] window.cviewer가 아직 준비되지 않음');
     }

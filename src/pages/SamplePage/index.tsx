@@ -1,4 +1,3 @@
-import { StrictMode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import App from './App'
 import '../../index.css'
@@ -20,9 +19,7 @@ export async function mount(props: any) {
   if (domElement) {
     root = createRoot(domElement);
     root.render(
-      <StrictMode>
-        <App onCloseMicroApp={onCloseMicroApp} dispatch={dispatch} />
-      </StrictMode>
+      <App onCloseMicroApp={onCloseMicroApp} dispatch={dispatch} />
     );
   }
 }
@@ -41,9 +38,7 @@ if (!(window as any).__POWERED_BY_QIANKUN__) {
   if (container) {
     root = createRoot(container);
     root.render(
-      <StrictMode>
-        <App />
-      </StrictMode>
+      <App />
     );
   }
 }
