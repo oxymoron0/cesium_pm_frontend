@@ -6,6 +6,9 @@ import path from 'path'
 // 빌드할 페이지 (환경변수로 지정)
 const pageName = process.env.VITE_PAGE
 
+// Base path 설정 (환경변수로 지정)
+const basePath = process.env.VITE_BASE_PATH || './'
+
 export default defineConfig(({ command }) => {
   const isDev = command === 'serve'
 
@@ -37,7 +40,7 @@ export default defineConfig(({ command }) => {
       css: {
         postcss: './postcss.config.js'
       },
-      base: './'
+      base: basePath
     }
   }
 
