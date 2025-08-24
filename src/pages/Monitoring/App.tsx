@@ -43,10 +43,10 @@ function App(props: any) {
 
       {/* 오버레이 제어 패널 */}
       <Panel>
-        <div className="text-[25px]  font-suit font-thin">패딩 테스트</div>
-        <div className="text-[25px]  font-suit font-normal">폰트 테스트1</div>
-        <div className="text-[25px]  font-suit font-medium">폰트 테스트2</div>
-        <div className="text-[25px]  font-suit font-black">폰트 테스트3</div>
+        <div className="text-xl">기본 폰트 테스트</div>
+        <div className="font-suit text-xl">SUIT 폰트 테스트</div>
+        <div className="font-suit text-xl font-bold">SUIT Bold 테스트</div>
+        <div className="font-suit text-2xl font-black">SUIT Heavy 테스트</div>
       </Panel>
     </div>
   )
