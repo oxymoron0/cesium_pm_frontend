@@ -1,3 +1,14 @@
 @import "tailwindcss";
 @import "/woff2/Pretendard.css";
+
+@layer utilities {
+  .font-pretendard-title {
+    font-family: 'Pretendard', sans-serif;
+    color: var(--White, #fff);
+    font-variant-numeric: lining-nums tabular-nums;
+    font-style: normal;
+    line-height: normal;
+  }
+}
+
 @source "./src/**/*.{js,ts,jsx,tsx}";

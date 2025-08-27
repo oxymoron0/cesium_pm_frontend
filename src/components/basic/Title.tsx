@@ -4,16 +4,7 @@ interface TitleProps {
 
 export default function Title({ children }: TitleProps) {
   return (
-    <div 
-      className="text-2xl"
-      style={{
-        fontFamily: 'Pretendard, sans-serif',
-        color: 'var(--White, #FFF)',
-        fontVariantNumeric: 'lining-nums tabular-nums',
-        fontStyle: 'normal',
-        lineHeight: 'normal'
-      }}
-    >
+    <div className="text-2xl font-pretendard-title">
       {children}
     </div>
   );
