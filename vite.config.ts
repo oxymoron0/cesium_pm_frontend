@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import cesium from 'vite-plugin-cesium'
 import path from 'path'
@@ -6,19 +6,18 @@ import path from 'path'
 // 빌드할 페이지 (환경변수로 지정)
 const pageName = process.env.VITE_PAGE
 
-// Base path 설정 (환경변수로 지정)
-const basePath = process.env.VITE_BASE_PATH || './'
-
-export default defineConfig(({ command }) => {
+export default defineConfig(({ command, mode }) => {
   const isDev = command === 'serve'
 
   // 개발 환경: SPA 방식 (src/main.tsx 진입점)
   if (isDev) {
+    // 개발환경에서만 BASE_PATH 적용
+    const env = loadEnv(mode, process.cwd(), '')
+    const basePath = env.VITE_BASE_PATH || './'
     return {
       plugins: [react(), cesium()],
       define: {
         'process.env.NODE_ENV': JSON.stringify('development'),
-        'import.meta.env.VITE_ION_TOKEN': JSON.stringify(process.env.VITE_ION_TOKEN || ''),
         'import.meta.env.VITE_APP_ENV': JSON.stringify('development')
       },
       server: {
@@ -52,10 +51,8 @@ export default defineConfig(({ command }) => {
   return {
     plugins: [react(), cesium()],
     define: {
-      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
-      'process.env': JSON.stringify(process.env),
-      'import.meta.env.VITE_ION_TOKEN': JSON.stringify(process.env.VITE_ION_TOKEN || ''),
-      'import.meta.env.VITE_APP_ENV': JSON.stringify(process.env.VITE_APP_ENV || 'production')
+      'process.env.NODE_ENV': JSON.stringify('production'),
+      'import.meta.env.VITE_APP_ENV': JSON.stringify('production')
     },
     server: {
       host: '0.0.0.0',
