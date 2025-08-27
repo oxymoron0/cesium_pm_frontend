@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        'suit': ['SUIT', 'sans-serif'],
+        'pretendard': ['Pretendard', 'sans-serif'],
       }
     }
   },
