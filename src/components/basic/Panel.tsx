@@ -14,7 +14,7 @@ function Panel({
       className={`
         fixed z-[1002] flex flex-col justify-start items-start
         overflow-hidden rounded-[10px] border-t-[1.25px] border-t-yellow-400
-        p-0 pb-1.5 px-5 pt-10 text-white text-sm
+        p-0 pb-1.5 px-5 pt-5 text-white text-sm
         ${className}
       `}
       style={{
