@@ -9,22 +9,15 @@ const pageModules = import.meta.glob('./pages/*/App.tsx', { eager: false })
 
 // 페이지 정보 추출 함수
 const getPageInfo = () => {
-  const pages: Record<string, { path: string; displayName: string }> = {}
+  const pages: Record<string, { path: string;}> = {}
 
   Object.keys(pageModules).forEach(path => {
     // './pages/SamplePage/App.tsx' -> 'SamplePage'
     const match = path.match(/\.\/pages\/(.+)\/App\.tsx$/)
     if (match) {
       const pageName = match[1]
-      const displayName = pageName === 'SamplePage'
-        ? 'PM 제어패널 샘플 페이지'
-        : pageName === 'monitoring'
-        ? '모니터링 페이지'
-        : `${pageName} 페이지`
-
       pages[pageName] = {
         path,
-        displayName
       }
     }
   })
@@ -41,6 +34,7 @@ const createPageComponent = (modulePath: string) => {
 const DevRouter = () => {
   const currentPath = window.location.pathname
   const pages = getPageInfo()
+  const basePath = import.meta.env.DEV ? (import.meta.env.VITE_BASE_PATH || '/') : '/'
 
   // 현재 경로에서 페이지명 추출
   const getPageNameFromPath = (path: string) => {
@@ -79,12 +73,11 @@ const DevRouter = () => {
 
       <h2>사용 가능한 페이지:</h2>
       <ul>
-        {Object.entries(pages).map(([pageName, info]) => (
+        {Object.entries(pages).map(([pageName]) => (
           <li key={pageName} style={{ marginBottom: '8px' }}>
-            <a href={`/${pageName}.html`} style={{ color: '#0066cc', textDecoration: 'none' }}>
+            <a href={`${basePath}${pageName}.html`} style={{ color: '#0066cc', textDecoration: 'none' }}>
               {pageName}.html
             </a>
-            {' - '}{info.displayName}
           </li>
         ))}
       </ul>
