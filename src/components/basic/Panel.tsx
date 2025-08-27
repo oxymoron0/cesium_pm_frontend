@@ -14,14 +14,14 @@ function Panel({
       className={`
         fixed z-[1002] flex flex-col justify-start items-start
         overflow-hidden rounded-[10px] border-t-[1.25px] border-t-yellow-400
-        p-0 pb-1.5 px-5 pt-5 text-white text-sm
+        pb-[32px] px-[20px] pt-[32px] text-white text-sm
         ${className}
       `}
       style={{
-        width: '580px',
+        width: '598px',
         height: '480px',
-        top: '40px',
-        left: '40px',
+        top: '32px',
+        left: '20px',
         backgroundColor: 'rgba(0, 0, 0, 0.65)'
       }}
     >
