@@ -2,11 +2,23 @@
 @import "/woff2/Pretendard.css";
 
 @layer utilities {
-  .font-pretendard-title {
+  .font-pretendard-h1 {
     font-family: 'Pretendard', sans-serif;
-    color: var(--White, #fff);
+    color: #fff;
     font-variant-numeric: lining-nums tabular-nums;
     font-style: normal;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: normal;
+  }
+
+  .font-pretendard-h2 {
+    font-family: 'Pretendard', sans-serif;
+    color: #fff;
+    font-variant-numeric: lining-nums tabular-nums;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 18px;
     line-height: normal;
   }
 }
