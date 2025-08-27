@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import CesiumViewer from '../../components/CesiumViewer'
 import Panel from '../../components/basic/Panel'
+import Title from '../../components/basic/Title'
 
 function App(props: any) {
   // const { onCloseMicroApp, dispatch } = props
@@ -43,10 +44,7 @@ function App(props: any) {
 
       {/* 오버레이 제어 패널 */}
       <Panel>
-        <div className="text-xl">기본 폰트 테스트</div>
-        <div className="font-suit text-xl">SUIT 폰트 테스트</div>
-        <div className="font-suit text-xl font-bold">SUIT Bold 테스트</div>
-        <div className="font-suit text-2xl font-black">SUIT Heavy 테스트</div>
+        <Title>제목</Title>
       </Panel>
     </div>
   )
