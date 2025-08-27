@@ -74,10 +74,10 @@ const DevRouter = () => {
   // 기본 페이지 (페이지 목록) - 동적으로 생성
   return (
     <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif' }}>
-      <h1>🚀 PM Frontend - 개발 환경</h1>
+      <h1>PM Frontend - 개발 환경</h1>
       <p>마이크로 프론트엔드 자식 애플리케이션 개발 환경입니다.</p>
 
-      <h2>📄 사용 가능한 페이지:</h2>
+      <h2>사용 가능한 페이지:</h2>
       <ul>
         {Object.entries(pages).map(([pageName, info]) => (
           <li key={pageName} style={{ marginBottom: '8px' }}>
@@ -89,7 +89,7 @@ const DevRouter = () => {
         ))}
       </ul>
 
-      <h2>🔧 개발 정보:</h2>
+      <h2>개발 정보:</h2>
       <ul>
         <li><strong>환경</strong>: 독립 개발 모드</li>
         <li><strong>Cesium</strong>: 자체 Viewer 생성 + window.cviewer 설정</li>
@@ -98,11 +98,11 @@ const DevRouter = () => {
       </ul>
 
       <p style={{ marginTop: '30px', color: '#666' }}>
-        💡 각 페이지는 독립적으로 실행되며, 부모 애플리케이션에 배포 시 자동으로 통합 모드로 전환됩니다.
+        부모 애플리케이션에 배포 시 자동으로 통합 모드로 전환됩니다.
       </p>
 
       <p style={{ marginTop: '20px', padding: '15px', backgroundColor: '#e8f5e8', border: '1px solid #4caf50', borderRadius: '5px' }}>
-        ✅ <strong>자동 페이지 감지 활성화!</strong><br/>
+        <strong>자동 페이지 감지 활성화</strong><br/>
         <code>node create-page.js &lt;PageName&gt;</code>으로 생성한 페이지가 자동으로 등록됩니다.
       </p>
     </div>
