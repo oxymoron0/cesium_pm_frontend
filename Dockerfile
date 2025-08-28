@@ -25,7 +25,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Configure nginx for simple static file serving
 RUN echo 'server { \
     listen 8080; \
-    server_name localhost; \
+    server_name _; \
     root /usr/share/nginx/html; \
 }' > /etc/nginx/conf.d/default.conf
 
