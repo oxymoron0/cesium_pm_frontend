@@ -13,7 +13,7 @@ export default function Station({
   isBookmarked = false,
   onBookmarkToggle
 }: StationProps) {
-  const basePath = import.meta.env.DEV ? (import.meta.env.VITE_BASE_PATH || '/') : '/';
+  const basePath = import.meta.env.VITE_BASE_PATH || '/';
 
   return (
     <Item>

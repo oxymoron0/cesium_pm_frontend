@@ -14,7 +14,7 @@ export default function SearchBar({
   onClear
 }: SearchBarProps) {
   const [inputValue, setInputValue] = useState(value);
-  const basePath = import.meta.env.DEV ? (import.meta.env.VITE_BASE_PATH || '/') : '/';
+  const basePath = import.meta.env.VITE_BASE_PATH || '/';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;

@@ -48,6 +48,9 @@ export default defineConfig(({ command, mode }) => {
     throw new Error('VITE_PAGE environment variable is required for production builds')
   }
 
+  const env = loadEnv(mode, process.cwd(), '')
+  const basePath = env.VITE_BASE_PATH || './'
+
   return {
     plugins: [react(), cesium()],
     define: {
@@ -80,6 +83,6 @@ export default defineConfig(({ command, mode }) => {
     css: {
       postcss: './postcss.config.js'
     },
-    base: './'
+    base: basePath
   }
 })
