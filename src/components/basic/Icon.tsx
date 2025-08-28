@@ -5,13 +5,10 @@ interface IconProps {
 
 export default function Icon({ name, className = "" }: IconProps) {
   const basePath = import.meta.env.VITE_BASE_PATH || '/';
-  const iconPath = `${basePath}icon/${name}.svg`;
-  
-  console.log('Icon loading path:', iconPath);
   
   return (
     <img 
-      src={iconPath}
+      src={`${basePath}icon/${name}.svg`}
       alt={name}
       className={`w-4 h-4 ${className}`}
     />
