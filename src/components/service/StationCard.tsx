@@ -1,18 +1,18 @@
 import Item from '../basic/Item';
 
-interface StationProps {
+interface StationCardProps {
   name: string;
   description: string;
   isBookmarked?: boolean;
   onBookmarkToggle?: () => void;
 }
 
-export default function Station({
+export default function StationCard({
   name,
   description,
   isBookmarked = false,
   onBookmarkToggle
-}: StationProps) {
+}: StationCardProps) {
   const basePath = import.meta.env.VITE_BASE_PATH || '/';
 
   return (
