@@ -4,8 +4,10 @@ import Panel from '../../components/basic/Panel'
 import Title from '../../components/basic/Title'
 import SubTitle from '../../components/basic/SubTitle'
 import Item from '../../components/basic/Item'
-import Station from '../../components/service/Station'
+import StationCard from '../../components/service/StationCard'
 import SearchBar from '../../components/service/SearchBar'
+import TabNavigation from '../../components/basic/TabNavigation'
+import Spacer from '../../components/basic/Spacer'
 
 function App(props: any) {
   // const { onCloseMicroApp, dispatch } = props
@@ -49,11 +51,13 @@ function App(props: any) {
       {/* 오버레이 제어 패널 */}
       <Panel>
         <Title>모니터링</Title>
-        <SearchBar></SearchBar>
+        <TabNavigation tabs={['탭1', '탭2']} activeTab={0} onTabChange={() => {}} />
+        <Spacer height={8} />
+        <SearchBar />
         <SubTitle> 저장한 버스 </SubTitle>
-        <Item>Test</Item>
-        <Station name="서면역" description="05710 서면역 서면지하상가방면" isBookmarked={true}></Station>
-        <Station name="서면역" description="05710 서면역 서면지하상가방면" isBookmarked={false}></Station>
+        <Item>Test바로바로바뀌니까좋네</Item>
+        <StationCard name="서면역" description="05710 서면역 서면지하상가방면" isBookmarked={true}></StationCard>
+        <StationCard name="서면역" description="05710 서면역 서면지하상가방면" isBookmarked={false}></StationCard>
       </Panel>
     </div>
   )
