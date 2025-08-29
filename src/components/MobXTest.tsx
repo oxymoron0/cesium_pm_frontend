@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite'
-import { appStore } from '../stores/AppStore'
+import { appStore } from '@/stores/AppStore'
 
 const MobXTest = observer(() => {
   return (

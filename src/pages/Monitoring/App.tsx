@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
-import CesiumViewer from '../../components/CesiumViewer'
-import Panel from '../../components/basic/Panel'
-import Title from '../../components/basic/Title'
-import SubTitle from '../../components/basic/SubTitle'
-import Item from '../../components/basic/Item'
-import StationCard from '../../components/service/StationCard'
-import SearchBar from '../../components/service/SearchBar'
-import TabNavigation from '../../components/basic/TabNavigation'
-import Spacer from '../../components/basic/Spacer'
+import CesiumViewer from '@/components/CesiumViewer'
+import Panel from '@/components/basic/Panel'
+import Title from '@/components/basic/Title'
+import SubTitle from '@/components/basic/SubTitle'
+import Item from '@/components/basic/Item'
+import StationCard from '@/components/service/StationCard'
+import SearchBar from '@/components/service/SearchBar'
+import TabNavigation from '@/components/basic/TabNavigation'
+import Spacer from '@/components/basic/Spacer'
 
 function App(props: any) {
   // const { onCloseMicroApp, dispatch } = props

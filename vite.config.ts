@@ -16,6 +16,11 @@ export default defineConfig(({ command, mode }) => {
     const basePath = env.VITE_BASE_PATH || './'
     return {
       plugins: [react(), cesium()],
+      resolve: {
+        alias: {
+          '@': path.resolve(__dirname, './src')
+        }
+      },
       define: {
         'process.env.NODE_ENV': JSON.stringify('development'),
         'import.meta.env.VITE_APP_ENV': JSON.stringify('development')
@@ -53,6 +58,11 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     plugins: [react(), cesium()],
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src')
+      }
+    },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
       'import.meta.env.VITE_APP_ENV': JSON.stringify('production')

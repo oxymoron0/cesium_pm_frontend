@@ -1,6 +1,6 @@
 import { createRoot, type Root } from 'react-dom/client'
 import App from './App'
-import '../../index.css'
+import '@/index.css'
 
 let root: Root | null = null;
 

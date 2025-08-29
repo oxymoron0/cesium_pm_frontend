@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import CesiumViewer from '../../components/CesiumViewer'
-import MobXTest from '../../components/MobXTest'
-import { addTestMarker, flyToLocation, addMarker, clearAllEntities, initializePMFrontend } from '../../utils/cesiumControls'
+import CesiumViewer from '@/components/CesiumViewer'
+import MobXTest from '@/components/MobXTest'
+import { addTestMarker, flyToLocation, addMarker, clearAllEntities, initializePMFrontend } from '@/utils/cesiumControls'
 
 function App(props: any) {
   // const { onCloseMicroApp, dispatch } = props

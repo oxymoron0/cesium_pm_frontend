@@ -1,4 +1,4 @@
-import Item from '../basic/Item';
+import Item from '@/components/basic/Item';
 
 interface StationCardProps {
   name: string;
