@@ -2,12 +2,8 @@ import { useEffect, useState } from 'react'
 import CesiumViewer from '@/components/CesiumViewer'
 import Panel from '@/components/basic/Panel'
 import Title from '@/components/basic/Title'
-import SubTitle from '@/components/basic/SubTitle'
-import Item from '@/components/basic/Item'
-import StationCard from '@/components/service/StationCard'
-import SearchBar from '@/components/service/SearchBar'
 import TabNavigation from '@/components/basic/TabNavigation'
-import Spacer from '@/components/basic/Spacer'
+import Monitoring from './components/Monitoring'
 
 function App(props: any) {
   // const { onCloseMicroApp, dispatch } = props
@@ -41,23 +37,16 @@ function App(props: any) {
 
   return (
     <div
-      className="pm-frontend-scope"
+      className="relative w-full h-screen overflow-hidden pm-frontend-scope"
     >
       {/* 전체 화면 Cesium Viewer */}
-      <div className="w-full h-screen">
-        <CesiumViewer />
-      </div>
+      <CesiumViewer />
 
       {/* 오버레이 제어 패널 */}
       <Panel>
         <Title>모니터링</Title>
-        <TabNavigation tabs={['탭1', '탭2']} activeTab={0} onTabChange={() => {}} />
-        <Spacer height={8} />
-        <SearchBar />
-        <SubTitle> 저장한 버스 </SubTitle>
-        <Item>Test바로바로바뀌니까좋네</Item>
-        <StationCard name="서면역" description="05710 서면역 서면지하상가방면" isBookmarked={true}></StationCard>
-        <StationCard name="서면역" description="05710 서면역 서면지하상가방면" isBookmarked={false}></StationCard>
+        <TabNavigation tabs={['버스번호', '정류장']} activeTab={0} onTabChange={() => {}} />
+        <Monitoring />
       </Panel>
     </div>
   )
