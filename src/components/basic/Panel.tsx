@@ -19,7 +19,6 @@ function Panel({
       `}
       style={{
         width: '598px',
-        height: '480px',
         top: '32px',
         left: '20px',
         backgroundColor: 'rgba(0, 0, 0, 0.65)'
