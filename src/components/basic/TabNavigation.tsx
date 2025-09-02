@@ -7,7 +7,7 @@ interface TabProps {
 export default function TabNavigation({ tabs, activeTab, onTabChange }: TabProps) {
   return (
     <div 
-      className="flex flex-col items-center gap-4 flex-1 w-full"
+      className="flex flex-col items-center w-full"
       style={{ 
         paddingTop: '16px'
       }}
