@@ -87,12 +87,10 @@ function App(props: any) {
 
   return (
     <div
-      className="pm-frontend-scope"
+      className="pm-frontend-scope relative w-full h-screen overflow-hidden"
     >
       {/* 전체 화면 Cesium Viewer */}
-      <div className="w-full h-screen">
-        <CesiumViewer />
-      </div>
+      <CesiumViewer />
 
       {/* 오버레이 제어 패널 */}
       <div className="fixed top-4 left-4 w-60 h-[720px] bg-slate-800 bg-opacity-50 rounded-lg border border-gray-400 border-opacity-30 z-[2000]">
