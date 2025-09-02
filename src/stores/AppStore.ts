@@ -27,3 +27,6 @@ class AppStore {
 
 export const appStore = new AppStore()
 export default AppStore
+
+// 사용자 북마크 한 Bus 노선 목록
+// 사용자가 북마크한 정류장 목록
