@@ -1,22 +1,37 @@
+import { observer } from 'mobx-react-lite';
 import Item from '@/components/basic/Item';
+import { stationStore } from '@/stores/StationStore';
 
 interface StationCardProps {
   name: string;
   description: string;
   isBookmarked?: boolean;
   onBookmarkToggle?: () => void;
+  onSelect?: (stationName: string) => void;
 }
 
-export default function StationCard({
+export default observer(function StationCard({
   name,
   description,
   isBookmarked = false,
-  onBookmarkToggle
+  onBookmarkToggle,
+  onSelect
 }: StationCardProps) {
   const basePath = import.meta.env.VITE_BASE_PATH || '/';
+  const isSelected = stationStore.isSelected(name);
+
+  const handleCardClick = () => {
+    stationStore.setSelectedStation(name);
+    onSelect?.(name);
+  };
 
   return (
-    <Item>
+    <Item 
+      className={`cursor-pointer transition-all ${
+        isSelected ? 'ring-2 ring-[#FFD040] bg-[#2A2A2A]' : 'hover:bg-[#1A1A1A]'
+      }`}
+      onClick={handleCardClick}
+    >
       <div className="flex flex-col flex-1 gap-2">
         <div
           style={{
@@ -45,7 +60,10 @@ export default function StationCard({
       </div>
       <div
         className="flex items-center cursor-pointer"
-        onClick={onBookmarkToggle}
+        onClick={(e) => {
+          e.stopPropagation();
+          onBookmarkToggle?.();
+        }}
       >
         <img
           src={`${basePath}icon/bookmark_${isBookmarked ? 'on' : 'off'}.svg`}
@@ -55,4 +73,4 @@ export default function StationCard({
       </div>
     </Item>
   );
-}
+});
