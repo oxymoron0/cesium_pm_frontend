@@ -1,5 +1,5 @@
 interface IconProps {
-  name: 'info' | 'minimize' | 'close';
+  name: string;
   className?: string;
 }
 
