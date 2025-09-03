@@ -3,15 +3,15 @@ import Divider from "@/components/basic/Divider";
 import Spacer from "@/components/basic/Spacer";
 import SubTitle from "@/components/basic/SubTitle";
 import RouteCard from "@/components/service/RouteCard";
-import StationCard from "@/components/service/StationCard";
 
 interface MonitoringProps {
-  tabs: string[];
-  activeTab: number;
-  onTabChange: (index: number) => void;
+  tabs?: string[];
+  activeTab?: number;
+  onTabChange?: (index: number) => void;
 }
 
 function Monitoring(props: MonitoringProps) {
+  console.log(props)
 
   return (
       <>
