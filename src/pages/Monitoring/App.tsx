@@ -4,6 +4,7 @@ import Panel from '@/components/basic/Panel'
 import Title from '@/components/basic/Title'
 import TabNavigation from '@/components/basic/TabNavigation'
 import Monitoring from './components/Monitoring'
+import { flyToLocation } from '@/utils/cesiumControls'
 
 function App(props: any) {
   // const { onCloseMicroApp, dispatch } = props
@@ -17,15 +18,23 @@ function App(props: any) {
       const parentViewer = (window as any).cviewer
 
       if (isQiankun && parentViewer) {
-        console.log('[SamplePage] 부모 Cesium Viewer 감지됨')
+        console.log('[Monitoring] 부모 Cesium Viewer 감지됨')
         setCesiumStatus('ready')
+        // 부모 Viewer 사용 시 초기 위치로 이동
+        setTimeout(() => {
+          flyToLocation(parentViewer, 129.053233, 35.162913, 1000)
+        }, 500)
       } else if (!isQiankun) {
         // 독립 모드에서는 CesiumViewer 컴포넌트가 window.cviewer를 설정할 때까지 대기
         const waitForViewer = setInterval(() => {
           if ((window as any).cviewer) {
-            console.log('[SamplePage] 독립 Cesium Viewer 준비됨')
+            console.log('[Monitoring] 독립 Cesium Viewer 준비됨')
             setCesiumStatus('ready')
             clearInterval(waitForViewer)
+            // 독립 모드에서 초기 위치로 이동
+            setTimeout(() => {
+              flyToLocation((window as any).cviewer, 129.053233, 35.162913, 1000)
+            }, 500)
           }
         }, 100)
       }
