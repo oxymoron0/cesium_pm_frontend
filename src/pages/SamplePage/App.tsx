@@ -2,12 +2,28 @@ import { useEffect, useState } from 'react'
 import CesiumViewer from '@/components/CesiumViewer'
 import MobXTest from '@/components/MobXTest'
 import { addTestMarker, flyToLocation, addMarker, clearAllEntities, initializePMFrontend } from '@/utils/cesiumControls'
+import { get, API_PATHS } from '@/utils/api'
+
+interface Station {
+  id: number;
+  name: string;
+  location: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
+  ars_id: string;
+  station_id: string;
+}
 
 function App(props: any) {
   // const { onCloseMicroApp, dispatch } = props
   console.log(props)
   const [cesiumStatus, setCesiumStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [isUsingParentViewer, setIsUsingParentViewer] = useState(false)
+  const [stations, setStations] = useState<Station[]>([])
+  const [selectedStation, setSelectedStation] = useState<Station | null>(null)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     // Cesium 초기화 및 상태 감지
@@ -85,6 +101,49 @@ function App(props: any) {
     }
   }
 
+  // API 호출 함수들
+  const fetchStations = async () => {
+    if (loading) return
+    setLoading(true)
+    try {
+      const response = await get<{
+        stations: Station[];
+        total: number;
+        page: number;
+        per_page: number;
+        total_pages: number;
+      }>(API_PATHS.STATIONS + '?page=1&per_page=10')
+      
+      if (response.ok) {
+        setStations(response.data.stations)
+        console.log('[API] 정거장 데이터:', response.data)
+      } else {
+        console.error('[API] 정거장 조회 실패:', response.status)
+      }
+    } catch (error) {
+      console.error('[API] 정거장 조회 에러:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const addStationToMap = (station: Station) => {
+    if (cesiumStatus !== 'ready') return
+    const viewer = (window as any).cviewer
+    if (viewer && station.location) {
+      addMarker(viewer, {
+        name: station.name,
+        longitude: station.location.longitude,
+        latitude: station.location.latitude,
+        text: `${station.name}\n(${station.ars_id})`
+      })
+      setSelectedStation(station)
+      
+      // 해당 위치로 이동
+      flyToLocation(viewer, station.location.longitude, station.location.latitude, 500)
+    }
+  }
+
   return (
     <div
       className="pm-frontend-scope relative w-full h-screen overflow-hidden"
@@ -118,6 +177,49 @@ function App(props: any) {
               <div>Mode: {isUsingParentViewer ? '🔗 Parent Viewer' : '🔧 Independent'}</div>
             </div>
           </div>
+          
+          <div className="pb-4 border-b border-gray-300/30">
+            <div className="mb-2 text-sm font-medium text-white">Station API</div>
+            <div className="space-y-2">
+              <div 
+                onClick={fetchStations}
+                className={`w-full px-3 py-1 text-xs text-white rounded cursor-pointer text-center ${
+                  loading 
+                    ? 'bg-gray-600 cursor-not-allowed' 
+                    : 'bg-orange-600 hover:bg-orange-700'
+                }`}
+              >
+                {loading ? 'Loading...' : 'Fetch Stations'}
+              </div>
+              {stations.length > 0 && (
+                <div className="text-xs text-gray-300">
+                  Found {stations.length} stations
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {stations.length > 0 && (
+            <div className="pb-4 border-b border-gray-300/30">
+              <div className="mb-2 text-sm font-medium text-white">Stations</div>
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {stations.map((station) => (
+                  <div 
+                    key={station.id}
+                    onClick={() => addStationToMap(station)}
+                    className={`p-2 text-xs rounded cursor-pointer ${
+                      selectedStation?.id === station.id
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                    }`}
+                  >
+                    <div className="font-medium">{station.name}</div>
+                    <div className="text-gray-400">{station.ars_id}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           
           <div>
             <div className="mb-2 text-sm font-medium text-white">Cesium Controls</div>
