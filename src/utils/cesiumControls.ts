@@ -85,7 +85,7 @@ export const addMarker = (viewer: any, options: {
   try {
     const entity = viewer.entities.add({
       name: options.name,
-      position: Cartesian3.fromDegrees(options.longitude, options.latitude, options.height || 0),
+      position: Cartesian3.fromDegrees(options.longitude, options.latitude, (options.height || 0) + 20),
       point: {
         pixelSize: 10,
         color: options.color || Color.YELLOW,
