@@ -1,20 +1,9 @@
 import { useEffect, useState } from 'react'
 import CesiumViewer from '@/components/CesiumViewer'
 import MobXTest from '@/components/MobXTest'
-import { addTestMarker, flyToLocation, addMarker, clearAllEntities, initializePMFrontend } from '@/utils/cesiumControls'
+import { addTestMarker, flyToLocation, clearAllEntities, initializePMFrontend } from '@/utils/cesiumControls'
 import { get, API_PATHS } from '@/utils/api'
-
-interface Station {
-  id: number;
-  name: string;
-  location: {
-    latitude: number;
-    longitude: number;
-    address: string;
-  };
-  ars_id: string;
-  station_id: string;
-}
+import { renderStation, type Station } from '@/utils/cesium'
 
 function App(props: any) {
   // const { onCloseMicroApp, dispatch } = props
