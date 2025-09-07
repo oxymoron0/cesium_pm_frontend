@@ -18,71 +18,47 @@
 - **Tailwind CSS 4.x**: UMD 빌드에서 `@source` 지시어로 클래스 누락 해결
 
 ### ✅ 6단계: 독립 개발 환경 및 아키텍처 분리 (8월 17일)
-
-#### 핵심 성과
 - **독립 개발 환경**: 부모 앱 없이 `pnpm dev`로 즉시 테스트 가능
 - **환경별 자동 분기**: Qiankun/독립 모드 자동 감지 및 전환
 - **전체 화면 Cesium**: 메인 화면 + 오버레이 제어패널 구조  
 - **아키텍처 분리**: CesiumViewer(생성) + cesiumControls(제어) + UI(상태관리)
 
-#### 구현 결과
-```typescript
-// 환경 자동 감지 및 분기
-const isQiankun = (window as any).__POWERED_BY_QIANKUN__
-// 독립: 자체 Viewer 생성 + window.cviewer 설정
-// Qiankun: 부모 window.cviewer 사용
-```
-
-**개발자 경험 개선**:
-- 개발 모드: 전체 화면 독립 Cesium + 제어패널
-- 프로덕션: 부모 Viewer 제어 + 제어패널만 표시  
-- 제어 함수: `window.cviewer` 인자로 받아 양쪽 환경 동일 API
-
 ### ✅ 7단계: CSS 완전 격리 시스템 (8월 18일)
-
-#### 핵심 성과
 - **PostCSS Prefix Selector**: 자식→부모 CSS 침범 완전 차단
 - **HTML 태그 대체**: div + className으로 부모→자식 상속 차단
 - **명시적 스타일링**: `inherit` 대신 구체적 색상값 사용
 
-#### 해결된 문제
-- **CSS 간섭 문제**: 부모-자식 앱 간 스타일 충돌 완전 해결
-- **Font 상속 문제**: h2, h3, p, button 등 브라우저 기본 스타일 상속 차단
-- **Input 색상 문제**: contentEditable div로 대체하여 색상 일관성 확보
+### ✅ 8단계: API 통합 및 백엔드 연동 시스템 (9월)
+- **HTTP 클라이언트 구축**: `src/utils/api/request.ts` - 타입 안전 HTTP 요청 시스템
+- **Station API 통합**: 부산 정거장 데이터 조회/검색 기능 (61.98.41.151:8088)
+- **API 응답 타입 정의**: Station 인터페이스 및 페이지네이션 지원
+- **오류 처리 시스템**: 타임아웃, 네트워크 오류, HTTP 상태 코드 처리
 
-#### 구현 결과
-```typescript
-// postcss.config.js - CSS 클래스 스코핑
-'postcss-prefix-selector': {
-  prefix: '.pm-frontend-scope',
-  exclude: [/^html/, /^body/, /^\*/, /^:root/]
-}
+### ✅ 9단계: Cesium DataSource 관리 시스템 (9월)
+- **DataSource 유틸리티**: `src/utils/cesium/datasources.ts` - CRUD 완전 지원
+- **Station 렌더링 시스템**: `src/utils/cesium/stationRenderer.ts` - 3가지 렌더링 모드
+- **실시간 상태 관리**: DataSource 생성/삭제/가시성 토글 기능
+- **타입 안전성**: CustomDataSource 기반 완전 타입 정의
 
-// HTML 태그 → div 변경으로 상속 차단
-<h2> → <div className="text-lg font-semibold">
-<button> → <div onClick={handler} className="cursor-pointer">
-<input> → <div contentEditable onInput={handler}>
-```
+### ✅ 10단계: 종합 테스팅 인터페이스 구축 (9월)
+- **Panel 기반 UI**: `src/components/basic/Panel.tsx` 활용한 전문 테스트 패널
+- **Station DataSource 테스트**: Create/Delete/Clear/Toggle 완전 검증 가능
+- **API 통합 테스트**: 정거장 조회/검색 실시간 테스트
+- **클릭-투-렌더**: 정거장 목록에서 클릭 시 즉시 3D 렌더링
 
-## 🎯 다음 단계 (8월 18일 예정)
+### ✅ 11단계: 배포 자동화 시스템 (9월)
+- **Docker 통합**: 컨테이너 기반 배포 자동화 스크립트
+- **다중 페이지 빌드**: SamplePage, Monitoring 페이지별 독립 번들
+- **빌드 최적화**: 임시 폴더 전략으로 결과물 안정성 확보
 
-### 8단계: Token 관리 및 부모-자식 Props 통신 시스템
 
-#### 해결해야 할 문제
-- **Cesium Ion Token 하드코딩**: 현재 CesiumViewer.tsx에 토큰 하드코딩됨
-- **부모 앱 Props 통신 부재**: 부모 앱에서 자식 앱으로 데이터 전달 방법 없음
-
-#### 구현 목표
-- Token을 환경변수 또는 부모 props로 동적 주입
-- Qiankun mount props를 통한 양방향 통신 시스템 구축
-- Props 타입 안전성 확보 및 독립 개발 환경에서 mock 처리
-
-## 📊 성과 지표
+## 성과 지표
 - **빌드 시간**: 460초 → 5초 (99% 개선)
-- **타입 안전성**: 100% TypeScript 지원
-- **기술 부채**: 레거시 Webpack/Babel 설정 완전 제거
-- **개발 환경**: 부모 앱 의존성 제거로 독립 개발 가능
-- **CSS 격리**: 부모-자식 앱 간 스타일 충돌 완전 해결
+- **기술 부채**: 레거시 Webpack/Babel 설정 제거
+- **개발 환경**: 부모 앱 의존성 제거
+- **CSS 격리**: 스타일 충돌 해결
+- **API 통합**: Station 데이터 조회/렌더링 시스템
+- **DataSource 관리**: Cesium 객체 CRUD 지원
 
 ## 현재 아키텍처
 
@@ -91,13 +67,54 @@ const isQiankun = (window as any).__POWERED_BY_QIANKUN__
 src/pages/
 ├── SamplePage/
 │   ├── index.tsx        # Qiankun lifecycle + 엔트리
-│   ├── App.tsx          # React 컴포넌트
+│   ├── App.tsx          # Station DataSource 테스팅 인터페이스
 │   └── index.html       # HTML 템플릿
 
 dist/
 ├── SamplePage.umd.js    # 독립 UMD 번들 (253KB)
 ├── SamplePage.html      # 부모 앱 로딩용
 └── cesium/              # 공유 리소스
+```
+
+### Cesium DataSource 관리 시스템
+```typescript
+// src/utils/cesium/datasources.ts
+export function createDataSource(name: string): CustomDataSource
+export function findDataSource(name: string): CustomDataSource | undefined
+export function removeDataSource(name: string): boolean
+export function clearDataSource(name: string): void
+export function toggleDataSource(name: string): void
+export function listDataSources(): string[]
+```
+
+### Station API 통합 아키텍처
+```typescript
+// src/utils/api/request.ts
+interface ApiRequest<T = any> {
+  url: string
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
+  data?: any
+  params?: Record<string, any>
+}
+
+// API 엔드포인트: http://61.98.41.151:8088
+// 경로: /api/station/all (전체 역사 목록)
+```
+
+### Station 렌더링 시스템
+```typescript
+// src/utils/cesium/stationRenderer.ts
+interface Station {
+  id: number
+  name: string
+  latitude: number
+  longitude: number
+  altitude?: number
+}
+
+export function renderStation(viewer: Cesium.Viewer, station: Station): void
+export function renderStations(viewer: Cesium.Viewer, stations: Station[]): void
+export function clearAllStations(viewer: Cesium.Viewer): void
 ```
 
 ### 빌드 시스템
