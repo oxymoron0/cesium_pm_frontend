@@ -57,7 +57,7 @@ function App(props: any) {
   }, [cesiumStatus])
 
   // Station DataSource helper functions
-  const [dsUpdateTrigger, setDsUpdateTrigger] = useState(0)
+  const [, setDsUpdateTrigger] = useState(0)
   
   const getStationDataSource = () => {
     return findDataSource('station')
