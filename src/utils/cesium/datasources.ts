@@ -41,7 +41,6 @@ export function findDataSource(name: string): CustomDataSource | undefined {
   const viewer = (window as any).cviewer;
   
   if (!viewer) {
-    console.warn('[findDataSource] window.cviewer가 준비되지 않았습니다.');
     return undefined;
   }
 
@@ -83,9 +82,6 @@ export function clearDataSource(name: string): void {
   
   if (dataSource) {
     dataSource.entities.removeAll();
-    console.log(`[clearDataSource] DataSource entities 정리: ${name}`);
-  } else {
-    console.warn(`[clearDataSource] DataSource를 찾을 수 없습니다: ${name}`);
   }
 }
 
@@ -111,25 +107,30 @@ export function toggleDataSource(name: string, show: boolean): void {
  * @returns GeoJsonDataSource 인스턴스
  * @throws 이미 존재하는 name이면 에러 발생
  */
-export function createGeoJsonDataSource(name: string): GeoJsonDataSource {
+export async function createGeoJsonDataSource(name: string): Promise<GeoJsonDataSource> {
   const viewer = (window as any).cviewer;
 
   if (!viewer) {
     throw new Error('[createGeoJsonDataSource] window.cviewer가 준비되지 않았습니다.');
   }
 
-  // 기존 DataSource 검색
+  // 기존 DataSource 검색 - 있으면 재사용
   const existingDataSources = viewer.dataSources.getByName(name);
 
   if (existingDataSources.length > 0) {
-    throw new Error(`[createGeoJsonDataSource] 이미 존재하는 DataSource name: ${name}`);
+    return existingDataSources[0];
   }
 
   // 새 GeoJsonDataSource 생성
   const dataSource = new GeoJsonDataSource(name);
-  viewer.dataSources.add(dataSource);
   
-  console.log(`[createGeoJsonDataSource] 새 GeoJsonDataSource 생성: ${name}`);
+  try {
+    await viewer.dataSources.add(dataSource);
+  } catch (error) {
+    console.error(`[createGeoJsonDataSource] Add failed:`, error);
+    throw error;
+  }
+  
   return dataSource;
 }
 

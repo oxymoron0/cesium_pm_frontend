@@ -5,12 +5,10 @@ import '@/index.css'
 let root: Root | null = null;
 
 export async function bootstrap() {
-  console.log('[qiankun] Monitoring bootstrap');
 }
 
 export async function mount(props: any) {
   const { container, onCloseMicroApp, dispatch } = props
-  console.log('[qiankun] Monitoring mount', props);
 
   const domElement = container
     ? container.querySelector('#microapp-Monitoring')
@@ -25,7 +23,6 @@ export async function mount(props: any) {
 }
 
 export async function unmount() {
-  console.log('[qiankun] Monitoring unmount');
   if (root) {
     root.unmount();
     root = null;

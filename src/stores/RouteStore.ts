@@ -178,9 +178,7 @@ class RouteStore {
         await this.loadAllRouteGeometries();
       }
       
-      console.log('[RouteStore] 초기 데이터 로딩 완료');
     } catch (error) {
-      console.error('[RouteStore] 초기 데이터 로딩 실패:', error);
     }
   }
 
@@ -192,21 +190,16 @@ class RouteStore {
     
     try {
       const response = await getRouteInfo();
-      console.log('[RouteStore] API 응답 전체:', response);
-      console.log('[RouteStore] API 응답 데이터:', response.data);
       
       // 실제 API 응답 구조에 맞게 수정
       if (response && response.routes && Array.isArray(response.routes)) {
         this.setRouteInfoList(response.routes);
-        console.log(`[RouteStore] route_info 로딩 완료: ${response.routes.length}개 노선 (총 ${response.total}개)`);
       } else {
-        console.error('[RouteStore] API 응답 구조가 예상과 다름:', response);
         this.setRouteInfoError('API 응답 구조 오류');
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'route_info 로딩 실패';
       this.setRouteInfoError(errorMessage);
-      console.error('[RouteStore] route_info 로딩 실패:', error);
     } finally {
       this.setRouteInfoLoading(false);
     }
@@ -230,25 +223,20 @@ class RouteStore {
           this.setRouteGeom(routeName, response);
           
           results.success++;
-          console.log(`[RouteStore] route_geom 로딩 완료: ${routeName}`);
         } catch (error) {
           results.failed++;
-          console.error(`[RouteStore] route_geom 로딩 실패: ${routeName}`, error);
         }
       }
       
-      console.log(`[RouteStore] route_geom 전체 로딩 완료: 성공 ${results.success}개, 실패 ${results.failed}개`);
       
       if (results.failed > 0 && results.success === 0) {
         this.setRouteGeomError('모든 노선 geometry 로딩 실패');
       } else if (results.failed > 0) {
-        console.warn(`[RouteStore] ${results.failed}개 노선 geometry 로딩 실패`);
       }
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'route_geom 로딩 실패';
       this.setRouteGeomError(errorMessage);
-      console.error('[RouteStore] route_geom 로딩 실패:', error);
     } finally {
       this.setRouteGeomLoading(false);
     }
@@ -262,10 +250,8 @@ class RouteStore {
       const response = await getRouteGeometry(routeName);
       // response 자체가 RouteGeom 구조 (data wrapper 없음)
       this.setRouteGeom(routeName, response);
-      console.log(`[RouteStore] route_geom 개별 로딩 완료: ${routeName}`);
       return true;
     } catch (error) {
-      console.error(`[RouteStore] route_geom 개별 로딩 실패: ${routeName}`, error);
       return false;
     }
   }

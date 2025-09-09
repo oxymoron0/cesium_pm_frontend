@@ -9,7 +9,6 @@ import { routeStore } from '@/stores/RouteStore'
 
 function App(props: any) {
   // const { onCloseMicroApp, dispatch, user } = props // user.userid
-  console.log(props)
   const [cesiumStatus, setCesiumStatus] = useState<'loading' | 'ready' | 'error'>('loading')
 
   useEffect(() => {
@@ -19,7 +18,6 @@ function App(props: any) {
       const parentViewer = (window as any).cviewer
 
       if (isQiankun && parentViewer) {
-        console.log('[Monitoring] 부모 Cesium Viewer 감지됨')
         setCesiumStatus('ready')
         // 부모 Viewer 사용 시 초기 위치로 이동
         setTimeout(() => {
@@ -29,7 +27,6 @@ function App(props: any) {
         // 독립 모드에서는 CesiumViewer 컴포넌트가 window.cviewer를 설정할 때까지 대기
         const waitForViewer = setInterval(() => {
           if ((window as any).cviewer) {
-            console.log('[Monitoring] 독립 Cesium Viewer 준비됨')
             setCesiumStatus('ready')
             clearInterval(waitForViewer)
             // 독립 모드에서 초기 위치로 이동
@@ -51,7 +48,6 @@ function App(props: any) {
       if (isInitialized) return;
       isInitialized = true;
       
-      console.log('[Monitoring] RouteStore 초기화 시작');
       await routeStore.initializeRouteData();
     };
 
