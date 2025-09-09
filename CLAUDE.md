@@ -65,7 +65,7 @@ interface ApiRequest<T = any> {
   params?: Record<string, any>
 }
 
-// 엔드포인트: http://61.98.41.151:8088 (pm-backend)
+// 엔드포인트: http://services.leorca.org:8088 (pm-backend)
 ```
 
 ### Route API (실제 서비스)
