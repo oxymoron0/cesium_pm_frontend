@@ -7,10 +7,10 @@ import { findDataSource } from './datasources';
 
 const ROUTE_DATASOURCE_NAME = 'routes';
 
-// Color definitions
+// Color definitions  
 const DEFAULT_COLOR = Color.WHITE.withAlpha(0.7);
-const SELECTED_INBOUND_COLOR = Color.fromCssColorString('#00AAFF').withAlpha(0.7);
-const SELECTED_OUTBOUND_COLOR = Color.fromCssColorString('#FF6B00').withAlpha(0.7);
+const SELECTED_INBOUND_COLOR = Color.fromCssColorString('#00AAFF');
+const SELECTED_OUTBOUND_COLOR = Color.fromCssColorString('#FF6B00');
 
 /**
  * Update colors for specific route
@@ -26,24 +26,20 @@ export function updateRouteColors(routeName: string, isSelected: boolean): void 
   const outboundEntity = dataSource.entities.getById(outboundId);
 
   if (isSelected) {
-    // Apply selected colors
-    if (inboundEntity?.polygon) {
-      inboundEntity.polygon.material = new ColorMaterialProperty(SELECTED_INBOUND_COLOR);
-      inboundEntity.polygon.outlineColor = SELECTED_INBOUND_COLOR;
+    // Apply selected colors to polylines
+    if (inboundEntity?.polyline) {
+      inboundEntity.polyline.material = new ColorMaterialProperty(SELECTED_INBOUND_COLOR);
     }
-    if (outboundEntity?.polygon) {
-      outboundEntity.polygon.material = new ColorMaterialProperty(SELECTED_OUTBOUND_COLOR);
-      outboundEntity.polygon.outlineColor = SELECTED_OUTBOUND_COLOR;
+    if (outboundEntity?.polyline) {
+      outboundEntity.polyline.material = new ColorMaterialProperty(SELECTED_OUTBOUND_COLOR);
     }
   } else {
     // Reset to default colors
-    if (inboundEntity?.polygon) {
-      inboundEntity.polygon.material = new ColorMaterialProperty(DEFAULT_COLOR);
-      inboundEntity.polygon.outlineColor = Color.WHITE;
+    if (inboundEntity?.polyline) {
+      inboundEntity.polyline.material = new ColorMaterialProperty(DEFAULT_COLOR);
     }
-    if (outboundEntity?.polygon) {
-      outboundEntity.polygon.material = new ColorMaterialProperty(DEFAULT_COLOR);
-      outboundEntity.polygon.outlineColor = Color.WHITE;
+    if (outboundEntity?.polyline) {
+      outboundEntity.polyline.material = new ColorMaterialProperty(DEFAULT_COLOR);
     }
   }
 }
@@ -56,9 +52,8 @@ export function resetAllRouteColors(): void {
   if (!dataSource) return;
 
   dataSource.entities.values.forEach(entity => {
-    if (entity.polygon) {
-      entity.polygon.material = new ColorMaterialProperty(DEFAULT_COLOR);
-      entity.polygon.outlineColor = Color.WHITE;
+    if (entity.polyline) {
+      entity.polyline.material = new ColorMaterialProperty(DEFAULT_COLOR);
     }
   });
 }
