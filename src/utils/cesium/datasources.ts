@@ -1,4 +1,4 @@
-import { CustomDataSource } from 'cesium';
+import { CustomDataSource, Entity } from 'cesium';
 
 /**
  * DataSource 관리 유틸리티 함수들
