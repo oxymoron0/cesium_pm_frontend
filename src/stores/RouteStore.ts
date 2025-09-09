@@ -1,6 +1,7 @@
 import { makeAutoObservable } from 'mobx';
 import type { RouteInfo, RouteGeom } from '../utils/api/types';
 import { getRouteInfo, getRouteGeometry } from '../utils/api/routeApi';
+import { updateRouteColors, resetAllRouteColors } from '../utils/cesium/routeColors';
 
 type RouteDirection = 'inbound' | 'outbound';
 
@@ -63,12 +64,21 @@ class RouteStore {
   }
 
   toggleSelectedRoute(routeName: string) {
+    const previousRoute = this.selectedRouteName;
+    
     if (this.selectedRouteName === routeName) {
       // 이미 선택된 노선을 클릭하면 선택 해제
       this.clearSelection();
+      updateRouteColors(routeName, false);
     } else {
-      // 다른 노선을 클릭하면 선택
+      // 이전 선택 노선이 있으면 색상 리셋
+      if (previousRoute) {
+        updateRouteColors(previousRoute, false);
+      }
+      
+      // 새로운 노선 선택 및 색상 강조
       this.setSelectedRoute(routeName);
+      updateRouteColors(routeName, true);
     }
   }
 
@@ -218,6 +228,7 @@ class RouteStore {
           const response = await getRouteGeometry(routeName);
           // response 자체가 RouteGeom 구조 (data wrapper 없음)
           this.setRouteGeom(routeName, response);
+          
           results.success++;
           console.log(`[RouteStore] route_geom 로딩 완료: ${routeName}`);
         } catch (error) {
