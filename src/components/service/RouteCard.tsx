@@ -1,12 +1,12 @@
 import { observer } from 'mobx-react-lite';
 import Item from '@/components/basic/Item';
-import { routeStore } from '@/stores/RouteStore';
 
 interface RouteCardProps {
   routeNumber: string;
   description: string;
   isExpress?: boolean;
   isBookmarked?: boolean;
+  isSelected?: boolean;
   onBookmarkToggle?: () => void;
   onSelect?: (routeNumber: string) => void;
 }
@@ -16,14 +16,13 @@ export default observer(function RouteCard({
   description,
   isExpress = false,
   isBookmarked = false,
+  isSelected = false,
   onBookmarkToggle,
   onSelect
 }: RouteCardProps) {
   const basePath = import.meta.env.VITE_BASE_PATH || '/';
-  const isSelected = routeStore.isRouteSelected(routeNumber);
 
   const handleCardClick = () => {
-    routeStore.toggleSelectedRoute(routeNumber);
     onSelect?.(routeNumber);
   };
 
