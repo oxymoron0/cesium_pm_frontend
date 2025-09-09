@@ -1,78 +1,68 @@
-import { Color, Entity, Cartesian3 } from 'cesium';
 import { routeStore } from '../../stores/RouteStore';
-import { createDataSource, findDataSource, clearDataSource } from './datasources';
+import { createGeoJsonDataSource, findDataSource, clearDataSource } from './datasources';
 import type { RouteGeom } from '../api/types';
+import type { GeoJsonDataSource } from 'cesium';
+import { Color, ColorMaterialProperty, Cartesian3 } from 'cesium';
 
 /**
  * Route rendering utility functions
  */
 
 const ROUTE_DATASOURCE_NAME = 'routes';
+const DEFAULT_COLOR = Color.WHITE.withAlpha(0.7);
+
 
 /**
- * Convert GeoJSON Polygon to Cesium Cartesian3 coordinates
- * @param geoJsonPolygon - GeoJSON Polygon object
- * @returns Array of Cartesian3 coordinates
- */
-function parseGeoJSONPolygon(geoJsonPolygon: any): Cartesian3[] {
-  if (!geoJsonPolygon || geoJsonPolygon.type !== 'Polygon') {
-    throw new Error(`Invalid GeoJSON Polygon format`);
-  }
-  
-  // Use the first linear ring (exterior ring)
-  const coordinates = geoJsonPolygon.coordinates[0];
-  
-  return coordinates.map((coord: [number, number]) => {
-    const [lng, lat] = coord;
-    return Cartesian3.fromDegrees(lng, lat);
-  });
-}
-
-/**
- * Render a single Route geometry
+ * Render a single Route geometry using GeoJsonDataSource
  * @param routeGeom - Route geometry data
  */
 export function renderRoute(routeGeom: RouteGeom): void {
   try {
-    // Check/create DataSource
-    let dataSource = findDataSource(ROUTE_DATASOURCE_NAME);
+    // Check/create GeoJsonDataSource
+    let dataSource = findDataSource(ROUTE_DATASOURCE_NAME) as GeoJsonDataSource;
     if (!dataSource) {
-      dataSource = createDataSource(ROUTE_DATASOURCE_NAME);
+      dataSource = createGeoJsonDataSource(ROUTE_DATASOURCE_NAME);
     }
 
     const routeName = routeGeom.route_name;
 
-    // Create inbound Entity
-    const inboundCoords = parseGeoJSONPolygon(routeGeom.inbound);
-    const inboundEntity = new Entity({
-      id: `${routeName}-inbound`,
-      name: 'route',
-      polygon: {
-        hierarchy: inboundCoords,
-        material: Color.WHITE.withAlpha(0.7), // 30% transparency (alpha = 0.7)
-        outline: true,
-        outlineColor: Color.WHITE
-      }
-    });
+    // Create GeoJSON FeatureCollection for this route
+    const geoJsonData = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          id: `${routeName}-inbound`,
+          properties: {
+            name: `Route ${routeName} Inbound`,
+            stroke: '#ffffff',
+            'stroke-width': 2,
+            'stroke-opacity': 1,
+            fill: '#ffffff',
+            'fill-opacity': 0.7
+          },
+          geometry: routeGeom.inbound
+        },
+        {
+          type: 'Feature',
+          id: `${routeName}-outbound`,
+          properties: {
+            name: `Route ${routeName} Outbound`,
+            stroke: '#ffffff',
+            'stroke-width': 2,
+            'stroke-opacity': 1,
+            fill: '#ffffff',
+            'fill-opacity': 0.7
+          },
+          geometry: routeGeom.outbound
+        }
+      ]
+    };
 
-    // Create outbound Entity
-    const outboundCoords = parseGeoJSONPolygon(routeGeom.outbound);
-    const outboundEntity = new Entity({
-      id: `${routeName}-outbound`,
-      name: 'route',
-      polygon: {
-        hierarchy: outboundCoords,
-        material: Color.WHITE.withAlpha(0.7), // 30% transparency (alpha = 0.7)
-        outline: true,
-        outlineColor: Color.WHITE
-      }
-    });
+    // Load GeoJSON data
+    dataSource.load(geoJsonData);
 
-    // Add entities to DataSource
-    dataSource.entities.add(inboundEntity);
-    dataSource.entities.add(outboundEntity);
-
-    console.log(`[renderRoute] Route ${routeName} rendered successfully`);
+    console.log(`[renderRoute] Route ${routeName} rendered successfully with GeoJsonDataSource`);
   } catch (error) {
     console.error(`[renderRoute] Failed to render route ${routeGeom.route_name}:`, error);
   }
@@ -86,17 +76,62 @@ export function renderAllRoutes(): void {
     // Clear existing Route entities
     clearDataSource(ROUTE_DATASOURCE_NAME);
 
-    // Get all RouteGeom data from MobX store and render
+    // Get all RouteGeom data from MobX store
     const routeGeomMap = routeStore.routeGeomMap;
-    
+
     if (routeGeomMap.size === 0) {
       console.warn('[renderAllRoutes] No RouteGeom data available');
       return;
     }
 
+    // Check/create GeoJsonDataSource
+    let dataSource = findDataSource(ROUTE_DATASOURCE_NAME) as GeoJsonDataSource;
+    if (!dataSource) {
+      dataSource = createGeoJsonDataSource(ROUTE_DATASOURCE_NAME);
+    }
+
+    // Combine all routes into single FeatureCollection
+    const allFeatures: any[] = [];
+    
     routeGeomMap.forEach((routeGeom) => {
-      renderRoute(routeGeom);
+      const routeName = routeGeom.route_name;
+      
+      allFeatures.push({
+        type: 'Feature',
+        id: `${routeName}-inbound`,
+        properties: {
+          name: `Route ${routeName} Inbound`,
+          stroke: '#ffffff',
+          'stroke-width': 2,
+          'stroke-opacity': 1,
+          fill: '#ffffff',
+          'fill-opacity': 0.7
+        },
+        geometry: routeGeom.inbound
+      });
+
+      allFeatures.push({
+        type: 'Feature',
+        id: `${routeName}-outbound`,
+        properties: {
+          name: `Route ${routeName} Outbound`,
+          stroke: '#ffffff',
+          'stroke-width': 2,
+          'stroke-opacity': 1,
+          fill: '#ffffff',
+          'fill-opacity': 0.7
+        },
+        geometry: routeGeom.outbound
+      });
     });
+
+    const geoJsonData = {
+      type: 'FeatureCollection',
+      features: allFeatures
+    };
+
+    // Load all routes at once
+    dataSource.load(geoJsonData);
 
     console.log(`[renderAllRoutes] Successfully rendered ${routeGeomMap.size} routes`);
   } catch (error) {
