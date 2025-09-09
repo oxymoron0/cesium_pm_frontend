@@ -18,7 +18,7 @@ function Panel({
         ${className}
       `}
       style={{
-        width: '598px',
+        width: '400px',
         top: '32px',
         left: '20px',
         backgroundColor: 'rgba(0, 0, 0, 0.65)'

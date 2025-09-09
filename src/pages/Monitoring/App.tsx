@@ -5,9 +5,10 @@ import Title from '@/components/basic/Title'
 import TabNavigation from '@/components/basic/TabNavigation'
 import Monitoring from './components/Monitoring'
 import { flyToLocation } from '@/utils/cesiumControls'
+import { routeStore } from '@/stores/RouteStore'
 
 function App(props: any) {
-  // const { onCloseMicroApp, dispatch } = props
+  // const { onCloseMicroApp, dispatch, user } = props // user.userid
   console.log(props)
   const [cesiumStatus, setCesiumStatus] = useState<'loading' | 'ready' | 'error'>('loading')
 
@@ -40,6 +41,24 @@ function App(props: any) {
       }
     }
     checkCesiumStatus()
+  }, [cesiumStatus])
+
+  // RouteStore 초기화 (앱 시작시 한 번만 실행)
+  useEffect(() => {
+    let isInitialized = false;
+    
+    const initializeData = async () => {
+      if (isInitialized) return;
+      isInitialized = true;
+      
+      console.log('[Monitoring] RouteStore 초기화 시작');
+      await routeStore.initializeRouteData();
+    };
+
+    // Cesium이 준비된 후에 데이터 로딩 시작
+    if (cesiumStatus === 'ready') {
+      initializeData();
+    }
   }, [cesiumStatus])
 
 

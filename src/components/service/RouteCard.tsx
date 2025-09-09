@@ -20,10 +20,10 @@ export default observer(function RouteCard({
   onSelect
 }: RouteCardProps) {
   const basePath = import.meta.env.VITE_BASE_PATH || '/';
-  const isSelected = routeStore.isSelected(routeNumber);
+  const isSelected = routeStore.isRouteSelected(routeNumber);
 
   const handleCardClick = () => {
-    routeStore.setSelectedRoute(routeNumber);
+    routeStore.toggleSelectedRoute(routeNumber);
     onSelect?.(routeNumber);
   };
 
