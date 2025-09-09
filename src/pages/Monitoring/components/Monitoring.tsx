@@ -16,14 +16,19 @@ interface MonitoringProps {
 }
 
 const Monitoring = observer(function Monitoring(props: MonitoringProps) {
-  console.log(props)
-
   // Auto-render all routes when data loading is complete
   useEffect(() => {
     if (!routeStore.isLoading && routeStore.routeGeomMap.size > 0) {
-      renderAllRoutes();
-      // Initialize all routes with default colors
-      resetAllRouteColors();
+      const renderRoutes = async () => {
+        try {
+          await renderAllRoutes();
+          // Initialize all routes with default colors
+          resetAllRouteColors();
+        } catch (error) {
+          console.error('[Monitoring] Failed to render routes:', error);
+        }
+      };
+      renderRoutes();
     }
   }, [routeStore.isLoading, routeStore.routeGeomMap.size]);
 
@@ -78,7 +83,6 @@ const Monitoring = observer(function Monitoring(props: MonitoringProps) {
                     isSelected={routeStore.isRouteSelected(routeInfo.route_name)}
                     onBookmarkToggle={() => {
                       // TODO: 북마크 기능 구현 예정
-                      console.log(`북마크 토글: ${routeInfo.route_name}`);
                     }}
                     onSelect={(routeNumber) => {
                       routeStore.toggleSelectedRoute(routeNumber);
