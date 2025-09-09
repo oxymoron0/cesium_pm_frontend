@@ -31,6 +31,10 @@ export const API_PATHS = {
   STATIONS_SEARCH: getApiPath('api/v1/stations/search'),
   STATIONS_SUMMARY: getApiPath('api/v1/stations/summary'),
   STATIONS_BY_ID: (id: number) => getApiPath(`api/v1/stations/${id}`),
+  
+  // 노선 관련 API (PM Backend) - 새로 추가
+  ROUTE_INFO: getApiPath('api/v1/route/getInfo'),
+  ROUTE_GEOM: (routeName: string) => getApiPath(`api/v1/route/geom/${routeName}`),
 } as const;
 
 /**

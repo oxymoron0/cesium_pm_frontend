@@ -5,6 +5,8 @@
 
 export * from './request';
 export * from './config';
+export * from './types';
+export * from './routeApi';
 
 // 사용 예시:
-// import { get, post, getApiPath, API_PATHS } from '@/utils/api';
+// import { get, post, getApiPath, API_PATHS, getRouteInfo, getRouteGeometry } from '@/utils/api';
