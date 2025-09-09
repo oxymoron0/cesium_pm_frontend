@@ -1,4 +1,4 @@
-import { CustomDataSource, Entity } from 'cesium';
+import { CustomDataSource, Entity, GeoJsonDataSource } from 'cesium';
 
 /**
  * DataSource 관리 유틸리티 함수들
@@ -103,6 +103,34 @@ export function toggleDataSource(name: string, show: boolean): void {
   } else {
     console.warn(`[toggleDataSource] DataSource를 찾을 수 없습니다: ${name}`);
   }
+}
+
+/**
+ * 새로운 GeoJsonDataSource를 생성하는 함수 (중복 name 체크 포함)
+ * @param name - DataSource 이름
+ * @returns GeoJsonDataSource 인스턴스
+ * @throws 이미 존재하는 name이면 에러 발생
+ */
+export function createGeoJsonDataSource(name: string): GeoJsonDataSource {
+  const viewer = (window as any).cviewer;
+
+  if (!viewer) {
+    throw new Error('[createGeoJsonDataSource] window.cviewer가 준비되지 않았습니다.');
+  }
+
+  // 기존 DataSource 검색
+  const existingDataSources = viewer.dataSources.getByName(name);
+
+  if (existingDataSources.length > 0) {
+    throw new Error(`[createGeoJsonDataSource] 이미 존재하는 DataSource name: ${name}`);
+  }
+
+  // 새 GeoJsonDataSource 생성
+  const dataSource = new GeoJsonDataSource(name);
+  viewer.dataSources.add(dataSource);
+  
+  console.log(`[createGeoJsonDataSource] 새 GeoJsonDataSource 생성: ${name}`);
+  return dataSource;
 }
 
 /**
