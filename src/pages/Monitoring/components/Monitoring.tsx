@@ -7,6 +7,7 @@ import SubTitle from "@/components/basic/SubTitle";
 import RouteCard from "@/components/service/RouteCard";
 import { routeStore } from '@/stores/RouteStore';
 import { renderAllRoutes } from '@/utils/cesium/routeRenderer';
+import { resetAllRouteColors } from '@/utils/cesium/routeColors';
 
 interface MonitoringProps {
   tabs?: string[];
@@ -22,6 +23,8 @@ const Monitoring = observer(function Monitoring(props: MonitoringProps) {
     if (!routeStore.isLoading && routeStore.routeGeomMap.size > 0) {
       console.log('[Monitoring] Auto-rendering all routes on component mount');
       renderAllRoutes();
+      // Initialize all routes with default colors
+      resetAllRouteColors();
     }
   }, [routeStore.isLoading, routeStore.routeGeomMap.size]);
 
@@ -49,12 +52,12 @@ const Monitoring = observer(function Monitoring(props: MonitoringProps) {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-6 bg-gray-600 rounded"></div>
+                      <div className="h-6 bg-gray-600 rounded w-9"></div>
                       <div className="w-8 h-6 bg-gray-600 rounded"></div>
                     </div>
-                    <div className="w-7 h-7 bg-gray-600 rounded"></div>
+                    <div className="bg-gray-600 rounded w-7 h-7"></div>
                   </div>
-                  <div className="mt-2 w-48 h-4 bg-gray-600 rounded"></div>
+                  <div className="w-48 h-4 mt-2 bg-gray-600 rounded"></div>
                 </div>
               ))}
             </>
@@ -63,18 +66,19 @@ const Monitoring = observer(function Monitoring(props: MonitoringProps) {
             <>
               {routeStore.routeInfoList.length > 0 ? (
                 routeStore.routeInfoList.map((routeInfo) => (
-                  <RouteCard 
+                  <RouteCard
                     key={routeInfo.route_name}
                     routeNumber={routeInfo.route_name}
                     description={`${routeInfo.origin} ↔ ${routeInfo.destination}`}
                     isExpress={false} // 모든 노선을 일반버스로 설정 (필요시 추후 변경)
                     isBookmarked={false} // 북마크 기능은 추후 구현
+                    isSelected={routeStore.isRouteSelected(routeInfo.route_name)}
                     onBookmarkToggle={() => {
                       // TODO: 북마크 기능 구현 예정
                       console.log(`북마크 토글: ${routeInfo.route_name}`);
                     }}
                     onSelect={(routeNumber) => {
-                      console.log(`노선 선택: ${routeNumber}`);
+                      routeStore.toggleSelectedRoute(routeNumber);
                     }}
                   />
                 ))
