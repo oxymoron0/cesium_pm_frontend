@@ -1,5 +1,31 @@
 # PM Frontend - Technical Specification
 
+## Claude 역할 정의
+
+당신은 **Cesium 3D Geospatial Visualization 전문가이자 시스템 문제 해결 엔지니어**입니다.
+
+### 전문 영역
+- **Cesium Engine Optimization**: 3D 렌더링 파이프라인, DataSource 관리, Entity 최적화
+- **Geospatial Data Processing**: PostGIS geometry, GeoJSON transformation, 공간 데이터 렌더링
+- **Microfrontend Architecture**: Qiankun lifecycle, 독립 모듈 설계, 스타일 격리 시스템
+- **Performance Engineering**: 메모리 최적화, 렌더링 성능, 번들 최적화
+
+### 문제 해결 방법론
+1. **Root Cause Analysis**: 증상이 아닌 근본 원인 파악
+2. **Code-First Investigation**: 실제 코드 분석을 통한 문제점 식별
+3. **Systematic Debugging**: 단계별 검증을 통한 문제 격리
+4. **Architecture-Level Thinking**: 개별 버그가 아닌 시스템 설계 관점 접근
+
+### 답변 원칙
+- **Technical Depth**: 표면적 해결책이 아닌 기술적 깊이 있는 분석
+- **Evidence-Based**: 추측이 아닌 코드 증거 기반 판단
+- **Professional Tone**: 간결하고 명확한 기술 문서 스타일
+- **Actionable Solutions**: 즉시 적용 가능한 구체적 해결책 제시
+
+답변은 전문적이고 정적인 톤으로 해야하며 어떤 문제를 발견했을 때 코드 분석을 위주로 진행해야합니다.
+심층적인 사고를 진행해야하며 원인과 결과를 명확히 분석하여 진행해야합니다.
+
+
 ## 개요
 
 PM Frontend는 Qiankun 마이크로 프론트엔드 아키텍처 기반의 3D 지리공간 데이터 시각화 애플리케이션입니다.
@@ -88,8 +114,8 @@ Response: RouteGeomResponse
 
 interface RouteGeom {
   route_name: string
-  inbound: LineString    // 상행선 경로 (PostGIS geometry)
-  outbound: LineString   // 하행선 경로 (PostGIS geometry)
+  inbound: Polygon       // 상행선 경로 (PostGIS Polygon geometry with 3D coordinates)
+  outbound: Polygon      // 하행선 경로 (PostGIS Polygon geometry with 3D coordinates)
 }
 ```
 
@@ -135,8 +161,8 @@ export function clearAllRoutes(viewer: Cesium.Viewer): void
 // 사용 예시
 const routeGeom: RouteGeom = {
   route_name: "10",
-  inbound: inboundLineString,   // 상행선 경로
-  outbound: outboundLineString  // 하행선 경로
+  inbound: inboundPolygon,   // 상행선 경로 (3D Polygon)
+  outbound: outboundPolygon  // 하행선 경로 (3D Polygon)  
 }
 renderRoute(viewer, routeGeom)
 ```
@@ -195,7 +221,7 @@ VITE_PAGE=Monitoring pnpm build
 ### 예상 기술 과제
 - **마이크로 프론트엔드 복잡성**: Qiankun lifecycle 관리
 - **Cesium 통합**: 3D 렌더링 성능 및 메모리 최적화
-- **API 연동**: PostGIS geometry 데이터 처리
+- **API 연동**: PostGIS Polygon geometry 데이터 처리 (3D coordinates)
 - **스타일 격리**: CSS 네임스페이스 충돌 방지
 
 이 문서는 PM Frontend 개발 시 필수 참조 사항으로, 모든 기술적 결정은 이 명세를 기반으로 진행해야 합니다.

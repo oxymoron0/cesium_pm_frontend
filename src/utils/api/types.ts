@@ -26,11 +26,11 @@ export interface RouteInfoResponse {
 }
 
 /**
- * GeoJSON Polygon geometry type
+ * GeoJSON Polygon geometry type (supports 3D coordinates)
  */
 export interface GeoJSONPolygon {
   type: 'Polygon';
-  coordinates: [number, number][][];  // Array of linear rings [longitude, latitude]
+  coordinates: number[][][];  // Array of linear rings [longitude, latitude, height?]
 }
 
 /**

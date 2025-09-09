@@ -21,7 +21,6 @@ const Monitoring = observer(function Monitoring(props: MonitoringProps) {
   // Auto-render all routes when data loading is complete
   useEffect(() => {
     if (!routeStore.isLoading && routeStore.routeGeomMap.size > 0) {
-      console.log('[Monitoring] Auto-rendering all routes on component mount');
       renderAllRoutes();
       // Initialize all routes with default colors
       resetAllRouteColors();
@@ -43,10 +42,14 @@ const Monitoring = observer(function Monitoring(props: MonitoringProps) {
         <Spacer height={16} />
         <div className="flex flex-col items-start self-stretch gap-2">
           {routeStore.isLoading ? (
-            // 로딩 중: 스켈레톤 UI만 표시
+            // 로딩 중: 스켈레톤 UI 및 상태 표시
             <>
+              <div className="w-full mb-2 text-sm text-center text-gray-400">
+                {routeStore.loadingState.routeInfoLoading && "노선 정보 로딩 중..."}
+                {routeStore.loadingState.routeGeomLoading && "노선 경로 로딩 중..."}
+              </div>
               {[1, 2, 3, 4].map((index) => (
-                <div 
+                <div
                   key={`skeleton-${index}`}
                   className="bg-[#1A1A1A] rounded-lg p-4 animate-pulse w-full"
                 >
