@@ -1,7 +1,7 @@
 import { makeAutoObservable } from 'mobx';
 import type { RouteInfo, RouteGeom } from '../utils/api/types';
 import { getRouteInfo, getRouteGeometry } from '../utils/api/routeApi';
-import { updateRouteColors, resetAllRouteColors } from '../utils/cesium/routeColors';
+import { createFocusedRoute, removeFocusedRoute } from '../utils/cesium/routeColors';
 
 type RouteDirection = 'inbound' | 'outbound';
 
@@ -64,21 +64,21 @@ class RouteStore {
   }
 
   toggleSelectedRoute(routeName: string) {
-    const previousRoute = this.selectedRouteName;
-    
     if (this.selectedRouteName === routeName) {
-      // 이미 선택된 노선을 클릭하면 선택 해제
+      // 이미 선택된 노선을 클릭하면 선택 해제 및 focused route 제거
       this.clearSelection();
-      updateRouteColors(routeName, false);
+      removeFocusedRoute();
     } else {
-      // 이전 선택 노선이 있으면 색상 리셋
-      if (previousRoute) {
-        updateRouteColors(previousRoute, false);
-      }
-      
-      // 새로운 노선 선택 및 색상 강조
+      // 새로운 노선 선택
       this.setSelectedRoute(routeName);
-      updateRouteColors(routeName, true);
+      
+      // 선택된 노선의 geometry를 가져와서 focused route 생성
+      const routeGeom = this.getRouteGeom(routeName);
+      if (routeGeom) {
+        createFocusedRoute(routeGeom);
+      } else {
+        console.warn(`[toggleSelectedRoute] RouteGeom not found for ${routeName}`);
+      }
     }
   }
 
@@ -89,6 +89,8 @@ class RouteStore {
   clearSelection() {
     this.selectedRouteName = null;
     this.selectedDirection = null;
+    // focused route도 함께 제거
+    removeFocusedRoute();
   }
 
   clearDirectionSelection() {
