@@ -1,59 +1,134 @@
-import { Color, ColorMaterialProperty } from 'cesium';
+import { Color, ColorMaterialProperty, Entity, PolylineGraphics, Cartesian3 } from 'cesium';
 import { findDataSource } from './datasources';
+import type { RouteGeom } from '../api/types';
 
 /**
- * Route color management utilities
+ * Route focus overlay management utilities
  */
 
 const ROUTE_DATASOURCE_NAME = 'routes';
 
 // Color definitions  
-const DEFAULT_COLOR = Color.WHITE.withAlpha(0.7);
-const SELECTED_INBOUND_COLOR = Color.fromCssColorString('#00AAFF');
-const SELECTED_OUTBOUND_COLOR = Color.fromCssColorString('#FF6B00');
+const FOCUSED_INBOUND_COLOR = Color.fromCssColorString('#00AAFF');
+const FOCUSED_OUTBOUND_COLOR = Color.fromCssColorString('#FF6B00');
+
+// Focused route entity IDs
+const FOCUSED_INBOUND_ID = 'focused_inbound';
+const FOCUSED_OUTBOUND_ID = 'focused_outbound';
 
 /**
- * Update colors for specific route
+ * Remove Z coordinates from geometry to enable terrain clamping
  */
-export function updateRouteColors(routeName: string, isSelected: boolean): void {
+function removeZCoordinates(geometry: any): any {
+  if (!geometry || !geometry.coordinates) {
+    return geometry;
+  }
+
+  const processCoordinates = (coords: any[]): any[] => {
+    if (typeof coords[0] === 'number') {
+      return [coords[0], coords[1]];
+    }
+    return coords.map(coord => processCoordinates(coord));
+  };
+
+  return {
+    ...geometry,
+    coordinates: processCoordinates(geometry.coordinates)
+  };
+}
+
+/**
+ * Create focused route overlay entities for selected route
+ */
+export function createFocusedRoute(routeGeom: RouteGeom): void {
   const dataSource = findDataSource(ROUTE_DATASOURCE_NAME);
   if (!dataSource) return;
 
-  const inboundId = `${routeName}-inbound`;
-  const outboundId = `${routeName}-outbound`;
+  // Remove existing focused routes first
+  removeFocusedRoute();
 
-  const inboundEntity = dataSource.entities.getById(inboundId);
-  const outboundEntity = dataSource.entities.getById(outboundId);
+  const routeName = routeGeom.route_name;
 
-  if (isSelected) {
-    // Apply selected colors to polylines
-    if (inboundEntity?.polyline) {
-      inboundEntity.polyline.material = new ColorMaterialProperty(SELECTED_INBOUND_COLOR);
-    }
-    if (outboundEntity?.polyline) {
-      outboundEntity.polyline.material = new ColorMaterialProperty(SELECTED_OUTBOUND_COLOR);
-    }
-  } else {
-    // Reset to default colors
-    if (inboundEntity?.polyline) {
-      inboundEntity.polyline.material = new ColorMaterialProperty(DEFAULT_COLOR);
-    }
-    if (outboundEntity?.polyline) {
-      outboundEntity.polyline.material = new ColorMaterialProperty(DEFAULT_COLOR);
-    }
+  try {
+    // Create focused inbound polyline entity
+    const inboundCoords = removeZCoordinates(routeGeom.inbound).coordinates;
+    const focusedInboundEntity = new Entity({
+      id: FOCUSED_INBOUND_ID,
+      name: `Focused Route ${routeName} Inbound`,
+      polyline: new PolylineGraphics({
+        positions: Cartesian3.fromDegreesArray(inboundCoords.flat()),
+        width: 5.0, // Thicker for emphasis
+        material: new ColorMaterialProperty(FOCUSED_INBOUND_COLOR),
+        clampToGround: true
+      })
+    });
+
+    // Create focused outbound polyline entity
+    const outboundCoords = removeZCoordinates(routeGeom.outbound).coordinates;
+    const focusedOutboundEntity = new Entity({
+      id: FOCUSED_OUTBOUND_ID,
+      name: `Focused Route ${routeName} Outbound`,
+      polyline: new PolylineGraphics({
+        positions: Cartesian3.fromDegreesArray(outboundCoords.flat()),
+        width: 5.0, // Thicker for emphasis
+        material: new ColorMaterialProperty(FOCUSED_OUTBOUND_COLOR),
+        clampToGround: true
+      })
+    });
+
+    // Add focused entities (will render on top as they are added last)
+    dataSource.entities.add(focusedInboundEntity);
+    dataSource.entities.add(focusedOutboundEntity);
+
+    console.log(`[createFocusedRoute] Created focused overlay for route ${routeName}`);
+  } catch (error) {
+    console.error(`[createFocusedRoute] Failed to create focused route for ${routeName}:`, error);
   }
 }
 
 /**
- * Reset all routes to default colors
+ * Remove focused route overlay entities
  */
-export function resetAllRouteColors(): void {
+export function removeFocusedRoute(): void {
   const dataSource = findDataSource(ROUTE_DATASOURCE_NAME);
   if (!dataSource) return;
 
-  dataSource.entities.values.forEach(entity => {
-    if (entity.polyline) {
-      entity.polyline.material = new ColorMaterialProperty(DEFAULT_COLOR);
-    }
-  });
+  const focusedInbound = dataSource.entities.getById(FOCUSED_INBOUND_ID);
+  const focusedOutbound = dataSource.entities.getById(FOCUSED_OUTBOUND_ID);
+
+  if (focusedInbound) {
+    dataSource.entities.remove(focusedInbound);
+  }
+  if (focusedOutbound) {
+    dataSource.entities.remove(focusedOutbound);
+  }
+
+  console.log('[removeFocusedRoute] Removed focused route overlays');
+}
+
+/**
+ * Check if focused route overlay exists
+ */
+export function hasFocusedRoute(): boolean {
+  const dataSource = findDataSource(ROUTE_DATASOURCE_NAME);
+  if (!dataSource) return false;
+
+  return !!(dataSource.entities.getById(FOCUSED_INBOUND_ID) && 
+            dataSource.entities.getById(FOCUSED_OUTBOUND_ID));
+}
+
+/**
+ * Legacy function - kept for compatibility (now deprecated)
+ */
+export function updateRouteColors(_routeName: string, _isSelected: boolean): void {
+  // This function is now deprecated in favor of focused route overlay system
+  console.warn('[updateRouteColors] Deprecated function - use createFocusedRoute/removeFocusedRoute instead');
+}
+
+/**
+ * Legacy function - kept for compatibility (now deprecated)
+ */
+export function resetAllRouteColors(): void {
+  // This function is now deprecated in favor of focused route overlay system
+  console.warn('[resetAllRouteColors] Deprecated function - use removeFocusedRoute instead');
 }
