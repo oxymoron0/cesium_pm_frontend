@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import CesiumViewer from '@/components/CesiumViewer'
 import Panel from '@/components/basic/Panel'
+import VulnerabilityManager from '@/components/service/VulnerabilityManager'
 import { initializePMFrontend } from '@/utils/cesiumControls'
 import { get } from '@/utils/api/request'
 import { renderStation, renderStations, type Station } from '@/utils/cesium/stationRenderer'
@@ -320,6 +321,14 @@ function App(props: any) {
                 </div>
               </div>
             )}
+
+            {/* Vulnerability System */}
+            <div className="mt-8 pt-6 border-t border-gray-600">
+              <div className="pb-2 mb-4 text-lg font-semibold border-b border-yellow-400">
+                취약시설 시각화 시스템
+              </div>
+              <VulnerabilityManager autoLoadOnMount={true} />
+            </div>
           </div>
         </div>
       </Panel>
