@@ -8,7 +8,8 @@ export async function bootstrap() {
 }
 
 export async function mount(props: any) {
-  const { container, onCloseMicroApp, dispatch } = props
+  const { container } = props
+  // const { container, onCloseMicroApp, dispatch } = props
 
   const domElement = container
     ? container.querySelector('#microapp-Monitoring')
@@ -17,7 +18,7 @@ export async function mount(props: any) {
   if (domElement) {
     root = createRoot(domElement);
     root.render(
-      <App onCloseMicroApp={onCloseMicroApp} dispatch={dispatch} />
+      <App />
     );
   }
 }

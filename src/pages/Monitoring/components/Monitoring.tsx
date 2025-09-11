@@ -9,13 +9,8 @@ import { routeStore } from '@/stores/RouteStore';
 import { renderAllRoutes } from '@/utils/cesium/routeRenderer';
 import { resetAllRouteColors } from '@/utils/cesium/routeColors';
 
-interface MonitoringProps {
-  tabs?: string[];
-  activeTab?: number;
-  onTabChange?: (index: number) => void;
-}
 
-const Monitoring = observer(function Monitoring(props: MonitoringProps) {
+const Monitoring = observer(function Monitoring() {
   // Auto-render all routes when data loading is complete
   useEffect(() => {
     if (!routeStore.isLoading && routeStore.routeGeomMap.size > 0) {

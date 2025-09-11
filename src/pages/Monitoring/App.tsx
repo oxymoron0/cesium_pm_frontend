@@ -7,7 +7,7 @@ import Monitoring from './components/Monitoring'
 import { flyToLocation } from '@/utils/cesiumControls'
 import { routeStore } from '@/stores/RouteStore'
 
-function App(props: any) {
+function App() {
   // const { onCloseMicroApp, dispatch, user } = props // user.userid
   const [cesiumStatus, setCesiumStatus] = useState<'loading' | 'ready' | 'error'>('loading')
 
