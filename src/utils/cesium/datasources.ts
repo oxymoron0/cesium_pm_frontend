@@ -1,4 +1,4 @@
-import { CustomDataSource, Entity, GeoJsonDataSource } from 'cesium';
+import { CustomDataSource, GeoJsonDataSource } from 'cesium';
 
 /**
  * DataSource 관리 유틸리티 함수들

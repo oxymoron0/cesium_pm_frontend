@@ -2,14 +2,13 @@ import { routeStore } from '../../stores/RouteStore';
 import { createGeoJsonDataSource, findDataSource, clearDataSource } from './datasources';
 import type { RouteGeom } from '../api/types';
 import type { GeoJsonDataSource } from 'cesium';
-import { Color, ColorMaterialProperty, Cartesian3, HeightReference, NearFarScalar, Entity, PolylineGraphics } from 'cesium';
+import { Color, ColorMaterialProperty, Cartesian3, Entity, PolylineGraphics } from 'cesium';
 
 /**
  * Route rendering utility functions
  */
 
 const ROUTE_DATASOURCE_NAME = 'routes';
-const DEFAULT_COLOR = Color.WHITE.withAlpha(0.7);
 
 /**
  * Remove Z coordinates from geometry to enable terrain clamping
@@ -112,7 +111,7 @@ export async function renderAllRoutes(): Promise<void> {
     }
     
     // Render each route individually using renderRoute
-    for (const [routeName, routeGeom] of routeGeomMap.entries()) {
+    for (const [, routeGeom] of routeGeomMap.entries()) {
       await renderRoute(routeGeom);
     }
   } catch (error) {
