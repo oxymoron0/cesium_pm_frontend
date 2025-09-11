@@ -6,6 +6,8 @@ import { initializePMFrontend } from '@/utils/cesiumControls'
 import { get } from '@/utils/api/request'
 import { renderStation, renderStations, type Station } from '@/utils/cesium/stationRenderer'
 import { createDataSource, findDataSource, removeDataSource, clearDataSource, toggleDataSource } from '@/utils/cesium/datasources'
+import { routeStore } from '@/stores/RouteStore'
+import { renderAllRoutes } from '@/utils/cesium/routeRenderer'
 
 interface StationApiResponse {
   stations: Station[];
@@ -55,6 +57,28 @@ function App(props: any) {
     }
 
     checkCesiumStatus()
+  }, [cesiumStatus])
+
+  // RouteStore 초기화 및 렌더링 (앱 시작시 한 번만 실행)
+  useEffect(() => {
+    let isInitialized = false;
+    
+    const initializeData = async () => {
+      if (isInitialized) return;
+      isInitialized = true;
+      
+      await routeStore.initializeRouteData();
+      
+      // 데이터 로딩 완료 후 자동으로 모든 노선 렌더링
+      if (routeStore.routeGeomMap.size > 0) {
+        await renderAllRoutes();
+      }
+    };
+
+    // Cesium이 준비된 후에 데이터 로딩 시작
+    if (cesiumStatus === 'ready') {
+      initializeData();
+    }
   }, [cesiumStatus])
 
   // Station DataSource helper functions
