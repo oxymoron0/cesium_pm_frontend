@@ -61,7 +61,7 @@ export async function getAllRouteGeometries(routeNames: string[] = ['10', '31', 
     const geometryPromises = routeNames.map(async (routeName) => {
       try {
         const geometry = await getRouteGeometry(routeName);
-        return { routeName, geometry: geometry.data, success: true };
+        return { routeName, geometry: geometry, success: true };
       } catch (error) {
         console.error(`[getAllRouteGeometries] 노선 ${routeName} geometry 조회 실패:`, error);
         return { routeName, geometry: null, success: false, error };
