@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import Item from '@/components/basic/Item';
-import { stationStore } from '@/stores/StationStore';
+import { testStore } from '@/stores/TestStore';
 
 interface StationCardProps {
   name: string;
@@ -18,10 +18,10 @@ export default observer(function StationCard({
   onSelect
 }: StationCardProps) {
   const basePath = import.meta.env.VITE_BASE_PATH || '/';
-  const isSelected = stationStore.isSelected(name);
+  const isSelected = testStore.isSelected(name);
 
   const handleCardClick = () => {
-    stationStore.setSelectedStation(name);
+    testStore.setSelectedStation(name);
     onSelect?.(name);
   };
 
