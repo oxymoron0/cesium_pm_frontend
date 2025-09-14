@@ -2,6 +2,7 @@ import { makeAutoObservable } from 'mobx';
 import type { RouteInfo, RouteGeom } from '../utils/api/types';
 import { getRouteInfo, getRouteGeometry } from '../utils/api/routeApi';
 import { createFocusedRoute, removeFocusedRoute } from '../utils/cesium/routeColors';
+import { showOnlyStationsForRoute, hideAllStations } from '../utils/cesium/stationRenderer';
 
 type RouteDirection = 'inbound' | 'outbound';
 
@@ -65,13 +66,15 @@ class RouteStore {
 
   toggleSelectedRoute(routeName: string) {
     if (this.selectedRouteName === routeName) {
-      // 이미 선택된 노선을 클릭하면 선택 해제 및 focused route 제거
+      // 이미 선택된 노선을 클릭하면 선택 해제
       this.clearSelection();
       removeFocusedRoute();
+      // 모든 정류장 숨김
+      hideAllStations();
     } else {
       // 새로운 노선 선택
       this.setSelectedRoute(routeName);
-      
+
       // 선택된 노선의 geometry를 가져와서 focused route 생성
       const routeGeom = this.getRouteGeom(routeName);
       if (routeGeom) {
@@ -79,6 +82,9 @@ class RouteStore {
       } else {
         console.warn(`[toggleSelectedRoute] RouteGeom not found for ${routeName}`);
       }
+
+      // 선택된 노선의 정류장만 표시
+      showOnlyStationsForRoute(routeName);
     }
   }
 
@@ -91,6 +97,8 @@ class RouteStore {
     this.selectedDirection = null;
     // focused route도 함께 제거
     removeFocusedRoute();
+    // 모든 정류장 숨김
+    hideAllStations();
   }
 
   clearDirectionSelection() {
