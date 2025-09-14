@@ -5,7 +5,7 @@
 
 import { get } from './request';
 import { API_PATHS } from './config';
-import type { RouteInfoResponse, RouteGeomResponse } from './types';
+import type { RouteInfoResponse, RouteGeomResponse, RouteStationsResponse } from './types';
 
 /**
  * 모든 노선 기본 정보 조회
@@ -46,6 +46,29 @@ export async function getRouteGeometry(routeName: string): Promise<RouteGeomResp
     return response.data;
   } catch (error) {
     console.error(`[getRouteGeometry] API 호출 실패 (노선: ${routeName}):`, error);
+    throw error;
+  }
+}
+
+/**
+ * 특정 노선의 방향별 정류장 데이터 조회
+ * GET /api/v1/route/stations/{route_name}?direction={direction}
+ * 
+ * @param routeName - 노선 번호 (10, 31, 44, 167)
+ * @param direction - 방향 (inbound, outbound)
+ * @returns 노선별 정류장 목록 및 메타데이터
+ */
+export async function getRouteStations(routeName: string, direction: 'inbound' | 'outbound'): Promise<RouteStationsResponse> {
+  try {
+    const response = await get<RouteStationsResponse>(API_PATHS.ROUTE_STATIONS(routeName, direction));
+    
+    if (!response.ok) {
+      throw new Error(`Route stations API failed with status ${response.status}`);
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error(`[getRouteStations] API 호출 실패 (노선: ${routeName}, 방향: ${direction}):`, error);
     throw error;
   }
 }

@@ -49,11 +49,76 @@ export interface RouteGeom {
 export interface RouteGeomResponse extends RouteGeom {}
 
 // =============================================================================
-// Station API Types (테스트용 예제)
+// Station API Types (Route Stations)
 // =============================================================================
 
 /**
- * Station 기본 인터페이스
+ * GeoJSON Point geometry
+ */
+export interface GeoJSONPoint {
+  type: 'Point';
+  coordinates: [number, number]; // [longitude, latitude]
+}
+
+/**
+ * Route Station Properties (GeoJSON Feature properties)
+ * API 응답의 각 Feature.properties 구조
+ */
+export interface RouteStationProperties {
+  route_name: string;
+  station_id: string;
+  station_order: number;
+  station_name: string;
+  station_name_eng?: string;
+  city: string;
+  county_district?: string;
+  dong?: string;
+  ars_id: string;
+}
+
+/**
+ * Route Station GeoJSON Feature
+ * API 응답의 각 Feature 항목
+ */
+export interface RouteStationFeature {
+  type: 'Feature';
+  geometry: GeoJSONPoint;
+  properties: RouteStationProperties;
+}
+
+/**
+ * Route Stations API 응답 (GeoJSON FeatureCollection)
+ * GET /api/v1/route/stations/{route_name}?direction={direction}
+ */
+export interface RouteStationsResponse {
+  type: 'FeatureCollection';
+  route_name: string;
+  direction: 'inbound' | 'outbound';
+  direction_name: string;
+  total: number;
+  features: RouteStationFeature[];
+}
+
+/**
+ * 기존 RouteStation 인터페이스 (하위 호환성 유지)
+ * @deprecated 새로운 GeoJSON Feature 구조 사용 권장
+ */
+export interface RouteStation {
+  route_name: string;
+  station_id: string;
+  station_order: number;
+  station_name: string;
+  station_name_eng?: string;
+  city: string;
+  county_district?: string;
+  dong?: string;
+  ars_id: string;
+  longitude: number;
+  latitude: number;
+}
+
+/**
+ * Station 기본 인터페이스 (기존 테스트용 예제)
  */
 export interface Station {
   id: number;
