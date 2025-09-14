@@ -172,7 +172,7 @@ await renderAllRoutes(); // RouteStore 데이터 기반 자동 렌더링
 
 #### Station 렌더링 (테스트용)
 ```typescript
-// src/utils/cesium/stationRenderer.ts
+// src/utils/cesium/testRenderer.ts
 export function renderStation(viewer: Cesium.Viewer, station: Station): void
 export function renderStations(viewer: Cesium.Viewer, stations: Station[]): void
 export function clearAllStations(viewer: Cesium.Viewer): void

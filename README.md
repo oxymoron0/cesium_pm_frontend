@@ -76,7 +76,7 @@ src/
 │   ├── api/request.ts       # HTTP 클라이언트
 │   └── cesium/
 │       ├── datasources.ts   # DataSource CRUD
-│       └── stationRenderer.ts # Station 렌더링
+│       └── testRenderer.ts # Station 렌더링
 └── components/basic/Panel.tsx
 ```
 
