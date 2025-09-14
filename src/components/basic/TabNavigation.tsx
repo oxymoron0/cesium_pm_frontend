@@ -8,22 +8,18 @@ export default function TabNavigation({ tabs, activeTab, onTabChange }: TabProps
   return (
     <div 
       className="flex flex-col items-center w-full"
-      style={{ 
-        paddingTop: '16px'
-      }}
     >
       <div 
-        className="flex w-full items-start self-stretch"
+        className="flex items-start self-stretch w-full"
         style={{ 
           backgroundColor: 'transparent',
-          height: '54px',
-          borderTop: '1px solid #FFD040'
+          height: '54px'
         }}
       >
         {tabs.map((tab, index) => (
           <div
             key={index}
-            className="flex-1 flex items-center justify-center cursor-pointer relative h-full"
+            className="relative flex items-center justify-center flex-1 h-full cursor-pointer"
             onClick={() => onTabChange(index)}
             style={{
               color: activeTab === index ? '#FFD040' : '#696A6A',

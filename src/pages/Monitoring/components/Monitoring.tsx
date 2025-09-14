@@ -6,26 +6,42 @@ import Spacer from "@/components/basic/Spacer";
 import SubTitle from "@/components/basic/SubTitle";
 import RouteCard from "@/components/service/RouteCard";
 import { routeStore } from '@/stores/RouteStore';
+import { stationStore } from '@/stores/StationStore';
 import { renderAllRoutes } from '@/utils/cesium/routeRenderer';
 import { resetAllRouteColors } from '@/utils/cesium/routeColors';
+import { renderAllStations } from '@/utils/cesium/stationRenderer';
 
 
 const Monitoring = observer(function Monitoring() {
-  // Auto-render all routes when data loading is complete
+  // Auto-render all routes and stations when data loading is complete
   useEffect(() => {
     if (!routeStore.isLoading && routeStore.routeGeomMap.size > 0) {
-      const renderRoutes = async () => {
+      const renderAll = async () => {
         try {
+          console.log('[Monitoring] Starting route and station rendering');
+
+          // 1. 먼저 노선 렌더링
           await renderAllRoutes();
-          // Initialize all routes with default colors
           resetAllRouteColors();
+          console.log('[Monitoring] Route rendering completed');
+
+          // 2. StationStore에 데이터가 있으면 정류장도 렌더링
+          const hasStationData = stationStore.stationDataMap.size > 0;
+          if (hasStationData) {
+            console.log(`[Monitoring] StationStore has ${stationStore.stationDataMap.size} datasets, rendering stations`);
+            await renderAllStations();
+            console.log('[Monitoring] Station rendering completed');
+          } else {
+            console.log('[Monitoring] No station data available yet');
+          }
+
         } catch (error) {
-          console.error('[Monitoring] Failed to render routes:', error);
+          console.error('[Monitoring] Failed to render routes and stations:', error);
         }
       };
-      renderRoutes();
+      renderAll();
     }
-  }, [routeStore.isLoading, routeStore.routeGeomMap.size]);
+  }, [routeStore.isLoading, routeStore.routeGeomMap.size, stationStore.stationDataMap.size]);
 
   return (
       <>
@@ -42,12 +58,8 @@ const Monitoring = observer(function Monitoring() {
         <Spacer height={16} />
         <div className="flex flex-col items-start self-stretch gap-2">
           {routeStore.isLoading ? (
-            // 로딩 중: 스켈레톤 UI 및 상태 표시
+            // 로딩 중: 스켈레톤 UI만 표시 (텍스트 제거)
             <>
-              <div className="w-full mb-2 text-sm text-center text-gray-400">
-                {routeStore.loadingState.routeInfoLoading && "노선 정보 로딩 중..."}
-                {routeStore.loadingState.routeGeomLoading && "노선 경로 로딩 중..."}
-              </div>
               {[1, 2, 3, 4].map((index) => (
                 <div
                   key={`skeleton-${index}`}

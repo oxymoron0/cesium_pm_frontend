@@ -3,12 +3,20 @@ import { type ReactNode } from 'react'
 interface PanelProps {
   children: ReactNode
   className?: string
+  position?: 'left' | 'right'
+  offset?: number
 }
 
 function Panel({
   children,
-  className = ""
+  className = "",
+  position = 'left',
+  offset = 20
 }: PanelProps) {
+  const positionStyle = position === 'left' 
+    ? { left: `${offset}px` }
+    : { right: `${offset}px` }
+
   return (
     <div
       className={`
@@ -20,8 +28,8 @@ function Panel({
       style={{
         width: '400px',
         top: '32px',
-        left: '20px',
-        backgroundColor: 'rgba(0, 0, 0, 0.65)'
+        backgroundColor: 'rgba(0, 0, 0, 0.65)',
+        ...positionStyle
       }}
     >
       {children}
