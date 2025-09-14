@@ -4,9 +4,10 @@ import Panel from '@/components/basic/Panel'
 import VulnerabilityManager from '@/components/service/VulnerabilityManager'
 import { initializePMFrontend } from '@/utils/cesiumControls'
 import { get } from '@/utils/api/request'
-import { renderStation, renderStations, type Station } from '@/utils/cesium/stationRenderer'
+import { renderStation, renderStations, type Station } from '@/utils/cesium/testRenderer'
 import { createDataSource, findDataSource, removeDataSource, clearDataSource, toggleDataSource } from '@/utils/cesium/datasources'
 import { routeStore } from '@/stores/RouteStore'
+import { stationStore } from '@/stores/StationStore'
 import { renderAllRoutes } from '@/utils/cesium/routeRenderer'
 
 interface StationApiResponse {
@@ -73,6 +74,10 @@ function App(props: any) {
       if (routeStore.routeGeomMap.size > 0) {
         await renderAllRoutes();
       }
+
+      // 초기 방향을 inbound로 설정
+      stationStore.setSelectedDirection('inbound');
+      console.log('[SamplePage] Initial direction set to inbound');
     };
 
     // Cesium이 준비된 후에 데이터 로딩 시작
