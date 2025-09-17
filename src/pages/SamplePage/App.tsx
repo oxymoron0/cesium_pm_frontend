@@ -9,6 +9,8 @@ import { createDataSource, findDataSource, removeDataSource, clearDataSource, to
 import { routeStore } from '@/stores/RouteStore'
 import { stationStore } from '@/stores/StationStore'
 import { renderAllRoutes } from '@/utils/cesium/routeRenderer'
+import { renderBusModels, clearBusModels, toggleBusModels, getBusModelCount, flyToBusModel } from '@/utils/cesium/glbRenderer'
+import { getBusTrajectoryInitial, type BusTrajectoryData } from '@/utils/api/busApi'
 
 interface StationApiResponse {
   stations: Station[];
@@ -25,6 +27,8 @@ function App(props: any) {
   const [selectedStation, setSelectedStation] = useState<Station | null>(null)
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [busData, setBusData] = useState<BusTrajectoryData[]>([])
+  const [busLoading, setBusLoading] = useState(false)
 
   useEffect(() => {
     // Cesium 초기화 및 상태 감지
@@ -88,6 +92,16 @@ function App(props: any) {
 
   // Station DataSource helper functions
   const [, setDsUpdateTrigger] = useState(0)
+
+  // Bus GLB Model helper functions
+  const getBusModelDataSource = () => {
+    return findDataSource('bus_models')
+  }
+
+  const isBusModelVisible = () => {
+    const ds = getBusModelDataSource()
+    return ds ? ds.show !== false : false
+  }
   
   const getStationDataSource = () => {
     return findDataSource('station')
@@ -186,6 +200,46 @@ function App(props: any) {
     setSelectedStation(station)
   }
 
+  // Bus GLB Model functions
+  const fetchBusTrajectory = async () => {
+    if (busLoading) return
+    setBusLoading(true)
+    try {
+      const response = await getBusTrajectoryInitial()
+      setBusData(response.data)
+      console.log('Fetched bus trajectory data:', response.data.length, 'buses')
+    } catch (error) {
+      console.error('Error fetching bus trajectory:', error)
+    } finally {
+      setBusLoading(false)
+    }
+  }
+
+  const handleRenderBusModels = async () => {
+    if (busData.length === 0) {
+      console.warn('No bus data available. Fetch bus trajectory first.')
+      return
+    }
+    await renderBusModels(busData)
+    setDsUpdateTrigger(prev => prev + 1)
+  }
+
+  const handleClearBusModels = () => {
+    clearBusModels()
+    setDsUpdateTrigger(prev => prev + 1)
+  }
+
+  const handleToggleBusModels = () => {
+    const isVisible = isBusModelVisible()
+    toggleBusModels(!isVisible)
+    setDsUpdateTrigger(prev => prev + 1)
+  }
+
+  const handleFlyToBus = (vehicleNumber: string) => {
+    flyToBusModel(vehicleNumber)
+  }
+
+
   return (
     <div className="relative w-full h-screen overflow-hidden pm-frontend-scope">
       {/* 전체 화면 Cesium Viewer */}
@@ -193,14 +247,17 @@ function App(props: any) {
       
       {/* UI Container Panel */}
       <Panel>
-        <div className="w-full">
-          <div className="pb-2 mb-4 text-lg font-semibold border-b border-yellow-400">
-            Station DataSource Testing
+        <div className="w-full max-h-[936px] overflow-y-auto" style={{
+          scrollbarWidth: 'thin',
+          scrollbarColor: '#FFD040 transparent'
+        }}>
+          <div className="sticky top-0 z-10 pb-2 mb-4 text-lg font-semibold bg-gray-800 border-b border-yellow-400">
+            Bus GLB Models & Station Testing
           </div>
-          
-          <div className="space-y-6">
+
+          <div className="pb-4 space-y-6">
             {/* Status Section */}
-            <div className="space-y-2">
+            <div className="p-3 space-y-2 rounded-lg bg-gray-900/50">
               <div className="flex items-center space-x-2">
                 <span className="text-gray-300">Cesium:</span>
                 <span className={cesiumStatus === 'ready' ? 'text-green-400' : cesiumStatus === 'error' ? 'text-red-400' : 'text-yellow-400'}>
@@ -227,51 +284,142 @@ function App(props: any) {
                 <span className="text-gray-300">Loaded Stations:</span>
                 <span className="text-blue-300">{stations.length}</span>
               </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-300">Bus Models:</span>
+                <span className={getBusModelDataSource() ? 'text-green-400' : 'text-red-400'}>
+                  {getBusModelDataSource() ? 'Loaded' : 'Not Loaded'}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-300">Model Count:</span>
+                <span className="text-blue-300">{getBusModelCount()}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-300">Model Visibility:</span>
+                <span className={isBusModelVisible() ? 'text-green-400' : 'text-red-400'}>
+                  {isBusModelVisible() ? 'Visible' : 'Hidden'}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-300">Bus Data:</span>
+                <span className="text-blue-300">{busData.length} buses loaded</span>
+              </div>
             </div>
 
             {/* Station DataSource Test Controls */}
-            <div className="space-y-3">
-              <div className="text-sm font-semibold text-yellow-400">Station DataSource Tests</div>
+            <div className="p-3 space-y-3 rounded-lg bg-gray-900/30">
+              <div className="pb-1 text-sm font-semibold text-yellow-400 border-b border-yellow-400/20">Station DataSource Tests</div>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={handleCreateStationDataSource}
                   disabled={cesiumStatus !== 'ready'}
-                  className="px-3 py-2 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                  className="px-3 py-2 text-xs text-white bg-blue-600 rounded hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
                 >
                   Create DS
                 </button>
                 <button
                   onClick={handleDeleteStationDataSource}
                   disabled={cesiumStatus !== 'ready'}
-                  className="px-3 py-2 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                  className="px-3 py-2 text-xs text-white bg-red-600 rounded hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
                 >
                   Delete DS
                 </button>
                 <button
                   onClick={handleClearStationDataSource}
                   disabled={cesiumStatus !== 'ready'}
-                  className="px-3 py-2 text-xs bg-orange-600 text-white rounded hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                  className="px-3 py-2 text-xs text-white bg-orange-600 rounded hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
                 >
                   Clear DS
                 </button>
                 <button
                   onClick={handleToggleStationDataSource}
                   disabled={cesiumStatus !== 'ready'}
-                  className="px-3 py-2 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                  className="px-3 py-2 text-xs text-white bg-purple-600 rounded hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
                 >
                   Toggle Visibility
                 </button>
               </div>
             </div>
 
+            {/* Bus GLB Model Controls */}
+            <div className="p-3 space-y-3 rounded-lg bg-gray-900/30">
+              <div className="pb-1 text-sm font-semibold text-yellow-400 border-b border-yellow-400/20">Bus GLB Models</div>
+              <div className="space-y-2">
+                <button
+                  onClick={fetchBusTrajectory}
+                  disabled={busLoading || cesiumStatus !== 'ready'}
+                  className="w-full px-3 py-2 text-xs text-white bg-blue-600 rounded hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                >
+                  {busLoading ? 'Loading...' : 'Fetch Bus Trajectory Data'}
+                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={handleRenderBusModels}
+                    disabled={cesiumStatus !== 'ready' || busData.length === 0}
+                    className="px-3 py-2 text-xs text-white bg-green-600 rounded hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                  >
+                    Render Models
+                  </button>
+                  <button
+                    onClick={handleClearBusModels}
+                    disabled={cesiumStatus !== 'ready'}
+                    className="px-3 py-2 text-xs text-white bg-red-600 rounded hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                  >
+                    Clear Models
+                  </button>
+                </div>
+                <button
+                  onClick={handleToggleBusModels}
+                  disabled={cesiumStatus !== 'ready' || getBusModelCount() === 0}
+                  className="w-full px-3 py-2 text-xs text-white bg-purple-600 rounded hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                >
+                  Toggle Visibility
+                </button>
+              </div>
+            </div>
+
+            {/* Bus Model List */}
+            {busData.length > 0 && (
+              <div className="p-3 space-y-3 rounded-lg bg-gray-900/30">
+                <div className="pb-1 text-sm font-semibold text-yellow-400 border-b border-yellow-400/20">Bus Models (Click to Fly To)</div>
+                <div className="space-y-1 overflow-y-auto max-h-40" style={{
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: '#FFD040 transparent'
+                }}>
+                  {busData.map((bus) => (
+                    <div
+                      key={bus.vehicle_number}
+                      onClick={() => handleFlyToBus(bus.vehicle_number)}
+                      className="p-2 text-xs text-gray-200 transition-colors bg-gray-700 rounded cursor-pointer hover:bg-gray-600"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium">Bus {bus.vehicle_number}</span>
+                          <span className="ml-2 text-gray-400">Route {bus.route_name}</span>
+                        </div>
+                        <div className="text-gray-500">
+                          {bus.positions.length} positions
+                        </div>
+                      </div>
+                      {bus.positions.length > 0 && (
+                        <div className="mt-1 text-xs text-gray-500">
+                          {bus.positions[0].position.latitude.toFixed(4)}, {bus.positions[0].position.longitude.toFixed(4)}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Station API */}
-            <div className="space-y-3">
-              <div className="text-sm font-semibold text-yellow-400">Station API</div>
+            <div className="p-3 space-y-3 rounded-lg bg-gray-900/30">
+              <div className="pb-1 text-sm font-semibold text-yellow-400 border-b border-yellow-400/20">Station API</div>
               <div className="space-y-2">
                 <button
                   onClick={fetchStations}
                   disabled={loading}
-                  className="w-full px-3 py-2 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 text-xs text-white bg-green-600 rounded hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Loading...' : 'Fetch Stations (20 items)'}
                 </button>
@@ -281,13 +429,13 @@ function App(props: any) {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search stations..."
-                    className="flex-1 px-2 py-1 text-xs bg-gray-700 text-white border border-gray-600 rounded focus:border-yellow-400 focus:outline-none"
+                    className="flex-1 px-2 py-1 text-xs text-white bg-gray-700 border border-gray-600 rounded focus:border-yellow-400 focus:outline-none"
                     onKeyDown={(e) => e.key === 'Enter' && searchStations()}
                   />
                   <button
                     onClick={searchStations}
                     disabled={loading || !searchQuery.trim()}
-                    className="px-2 py-1 text-xs bg-cyan-600 text-white rounded hover:bg-cyan-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                    className="px-2 py-1 text-xs text-white rounded bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
                   >
                     Search
                   </button>
@@ -297,12 +445,12 @@ function App(props: any) {
 
             {/* Station Rendering */}
             {stations.length > 0 && (
-              <div className="space-y-3">
-                <div className="text-sm font-semibold text-yellow-400">Station Rendering</div>
+              <div className="p-3 space-y-3 rounded-lg bg-gray-900/30">
+                <div className="pb-1 text-sm font-semibold text-yellow-400 border-b border-yellow-400/20">Station Rendering</div>
                 <button
                   onClick={handleRenderAllStations}
                   disabled={cesiumStatus !== 'ready'}
-                  className="w-full px-3 py-2 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 text-xs text-white bg-indigo-600 rounded hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
                 >
                   Render All Stations
                 </button>
@@ -311,9 +459,12 @@ function App(props: any) {
 
             {/* Station List */}
             {stations.length > 0 && (
-              <div className="space-y-3">
-                <div className="text-sm font-semibold text-yellow-400">Station List (Click to Render)</div>
-                <div className="space-y-1 max-h-40 overflow-y-auto">
+              <div className="p-3 space-y-3 rounded-lg bg-gray-900/30">
+                <div className="pb-1 text-sm font-semibold text-yellow-400 border-b border-yellow-400/20">Station List (Click to Render)</div>
+                <div className="space-y-1 overflow-y-auto max-h-48" style={{
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: '#FFD040 transparent'
+                }}>
                   {stations.map((station) => (
                     <div
                       key={station.id}
@@ -326,7 +477,7 @@ function App(props: any) {
                     >
                       <div className="font-medium">{station.name}</div>
                       <div className="text-gray-400">{station.ars_id || station.station_id}</div>
-                      <div className="text-gray-500 text-xs">
+                      <div className="text-xs text-gray-500">
                         {station.location.latitude.toFixed(4)}, {station.location.longitude.toFixed(4)}
                       </div>
                     </div>
@@ -337,13 +488,13 @@ function App(props: any) {
 
             {/* Selected Station Info */}
             {selectedStation && (
-              <div className="space-y-2">
-                <div className="text-sm font-semibold text-yellow-400">Selected Station</div>
-                <div className="p-3 bg-gray-700 rounded text-xs text-white">
-                  <div className="font-semibold mb-1">{selectedStation.name}</div>
+              <div className="p-3 space-y-2 rounded-lg bg-gray-900/30">
+                <div className="pb-1 text-sm font-semibold text-yellow-400 border-b border-yellow-400/20">Selected Station</div>
+                <div className="p-3 text-xs text-white bg-gray-700 rounded">
+                  <div className="mb-1 font-semibold">{selectedStation.name}</div>
                   <div className="text-gray-300">ID: {selectedStation.ars_id || selectedStation.station_id}</div>
                   <div className="text-gray-300">Address: {selectedStation.location.address}</div>
-                  <div className="text-gray-400 mt-1">
+                  <div className="mt-1 text-gray-400">
                     Lat: {selectedStation.location.latitude.toFixed(6)}<br/>
                     Lng: {selectedStation.location.longitude.toFixed(6)}
                   </div>
@@ -352,7 +503,7 @@ function App(props: any) {
             )}
 
             {/* Vulnerability System */}
-            <div className="mt-8 pt-6 border-t border-gray-600">
+            <div className="p-3 pt-6 mt-8 border-t border-gray-600 rounded-lg bg-gray-900/30">
               <div className="pb-2 mb-4 text-lg font-semibold border-b border-yellow-400">
                 취약시설 시각화 시스템
               </div>
