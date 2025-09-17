@@ -40,7 +40,7 @@ function removeZCoordinates(geometry: any): any {
 /**
  * Create focused route overlay entities for selected route
  */
-export function createFocusedRoute(routeGeom: RouteGeom): void {
+export function createFocusedRoute(routeGeom: RouteGeom, selectedDirection?: 'inbound' | 'outbound'): void {
   const dataSource = findDataSource(ROUTE_DATASOURCE_NAME);
   if (!dataSource) return;
 
@@ -57,8 +57,10 @@ export function createFocusedRoute(routeGeom: RouteGeom): void {
       name: `Focused Route ${routeName} Inbound`,
       polyline: new PolylineGraphics({
         positions: Cartesian3.fromDegreesArray(inboundCoords.flat()),
-        width: 5.0, // Thicker for emphasis
-        material: new ColorMaterialProperty(FOCUSED_INBOUND_COLOR),
+        width: selectedDirection === 'inbound' ? 6.0 : 5.0, // Thicker if selected direction
+        material: new ColorMaterialProperty(
+          selectedDirection === 'inbound' ? FOCUSED_INBOUND_COLOR.withAlpha(1.0) : FOCUSED_INBOUND_COLOR.withAlpha(0.5)
+        ),
         clampToGround: true
       })
     });
@@ -70,8 +72,10 @@ export function createFocusedRoute(routeGeom: RouteGeom): void {
       name: `Focused Route ${routeName} Outbound`,
       polyline: new PolylineGraphics({
         positions: Cartesian3.fromDegreesArray(outboundCoords.flat()),
-        width: 5.0, // Thicker for emphasis
-        material: new ColorMaterialProperty(FOCUSED_OUTBOUND_COLOR),
+        width: selectedDirection === 'outbound' ? 6.0 : 5.0, // Thicker if selected direction
+        material: new ColorMaterialProperty(
+          selectedDirection === 'outbound' ? FOCUSED_OUTBOUND_COLOR.withAlpha(1.0) : FOCUSED_OUTBOUND_COLOR.withAlpha(0.5)
+        ),
         clampToGround: true
       })
     });
@@ -80,7 +84,7 @@ export function createFocusedRoute(routeGeom: RouteGeom): void {
     dataSource.entities.add(focusedInboundEntity);
     dataSource.entities.add(focusedOutboundEntity);
 
-    console.log(`[createFocusedRoute] Created focused overlay for route ${routeName}`);
+    console.log(`[createFocusedRoute] Created focused overlay for route ${routeName}, direction: ${selectedDirection || 'none'}`);
   } catch (error) {
     console.error(`[createFocusedRoute] Failed to create focused route for ${routeName}:`, error);
   }
@@ -107,13 +111,51 @@ export function removeFocusedRoute(): void {
 }
 
 /**
+ * Update focused route direction emphasis
+ */
+export function updateFocusedRouteDirection(selectedDirection: 'inbound' | 'outbound' | null): void {
+  const dataSource = findDataSource(ROUTE_DATASOURCE_NAME);
+  if (!dataSource) return;
+
+  const focusedInbound = dataSource.entities.getById(FOCUSED_INBOUND_ID);
+  const focusedOutbound = dataSource.entities.getById(FOCUSED_OUTBOUND_ID);
+
+  if (!focusedInbound || !focusedOutbound) {
+    console.warn('[updateFocusedRouteDirection] No focused route entities found');
+    return;
+  }
+
+  try {
+    // Update inbound entity
+    if (focusedInbound.polyline) {
+      focusedInbound.polyline.width = selectedDirection === 'inbound' ? 6.0 : 5.0;
+      focusedInbound.polyline.material = new ColorMaterialProperty(
+        selectedDirection === 'inbound' ? FOCUSED_INBOUND_COLOR.withAlpha(1.0) : FOCUSED_INBOUND_COLOR.withAlpha(0.5)
+      );
+    }
+
+    // Update outbound entity
+    if (focusedOutbound.polyline) {
+      focusedOutbound.polyline.width = selectedDirection === 'outbound' ? 6.0 : 5.0;
+      focusedOutbound.polyline.material = new ColorMaterialProperty(
+        selectedDirection === 'outbound' ? FOCUSED_OUTBOUND_COLOR.withAlpha(1.0) : FOCUSED_OUTBOUND_COLOR.withAlpha(0.5)
+      );
+    }
+
+    console.log(`[updateFocusedRouteDirection] Updated direction emphasis: ${selectedDirection || 'none'}`);
+  } catch (error) {
+    console.error('[updateFocusedRouteDirection] Failed to update direction emphasis:', error);
+  }
+}
+
+/**
  * Check if focused route overlay exists
  */
 export function hasFocusedRoute(): boolean {
   const dataSource = findDataSource(ROUTE_DATASOURCE_NAME);
   if (!dataSource) return false;
 
-  return !!(dataSource.entities.getById(FOCUSED_INBOUND_ID) && 
+  return !!(dataSource.entities.getById(FOCUSED_INBOUND_ID) &&
             dataSource.entities.getById(FOCUSED_OUTBOUND_ID));
 }
 
