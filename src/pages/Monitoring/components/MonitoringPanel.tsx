@@ -63,7 +63,9 @@ const MonitoringPanel = observer(function MonitoringPanel() {
             const { createFocusedRoute } = await import('@/utils/cesium/routeColors');
             const { showOnlyStationsForRoute } = await import('@/utils/cesium/stationRenderer');
 
-            await createFocusedRoute(routeGeom);
+            // 현재 선택된 방향 정보를 함께 전달
+            const selectedDirection = stationStore.selectedDirection;
+            await createFocusedRoute(routeGeom, selectedDirection || undefined);
             await showOnlyStationsForRoute(routeNumber);
           }
         } catch (error) {
