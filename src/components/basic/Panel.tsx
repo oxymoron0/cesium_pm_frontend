@@ -5,13 +5,17 @@ interface PanelProps {
   className?: string
   position?: 'left' | 'right'
   offset?: number
+  width?: string
+  maxHeight?: string
 }
 
 function Panel({
   children,
   className = "",
   position = 'left',
-  offset = 20
+  offset = 20,
+  width = '400px',
+  maxHeight
 }: PanelProps) {
   const positionStyle = position === 'left' 
     ? { left: `${offset}px` }
@@ -26,7 +30,8 @@ function Panel({
         ${className}
       `}
       style={{
-        width: '400px',
+        width,
+        maxHeight,
         top: '32px',
         backgroundColor: 'rgba(0, 0, 0, 0.65)',
         ...positionStyle
