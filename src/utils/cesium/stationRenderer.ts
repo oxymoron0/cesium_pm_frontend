@@ -40,7 +40,7 @@ function createStationEntity(feature: RouteStationFeature, direction: 'inbound' 
         const isRouteSelected = stationStore.selectedRouteName === feature.properties.route_name;
         const isDirectionSelected = stationStore.selectedDirection === direction;
 
-        if (isSelected) return 12; // 선택된 정류장
+        if (isSelected) return 15; // 선택된 정류장 - 더 크게
         if (isRouteSelected && isDirectionSelected) return 10; // 선택된 노선+방향의 정류장
         if (isRouteSelected && !isDirectionSelected) return 8; // 선택된 노선의 다른 방향 정류장
         return 6; // 일반 정류장
@@ -53,7 +53,7 @@ function createStationEntity(feature: RouteStationFeature, direction: 'inbound' 
         const isDirectionSelected = stationStore.selectedDirection === direction;
 
         if (isSelected) {
-          return Color.fromCssColorString('#FF6B00'); // 선택된 정류장 - 주황색
+          return Color.fromCssColorString('#FFD040'); // 선택된 정류장 - 노란색으로 강조
         }
         if (isRouteSelected && isDirectionSelected) {
           return Color.fromCssColorString('#00AAFF'); // 선택된 노선+방향 - 파란색 (활성)
