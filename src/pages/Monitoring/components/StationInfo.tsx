@@ -28,8 +28,16 @@ const StationInfo = observer(function StationInfo({ onBackClick }: StationInfoPr
   // StationStore.selectedRouteName은 이제 RouteStore.selectedRouteName을 참조
 
   // 방향 선택 핸들러
-  const handleDirectionSelect = (direction: 'inbound' | 'outbound') => {
+  const handleDirectionSelect = async (direction: 'inbound' | 'outbound') => {
     stationStore.setSelectedDirection(direction);
+
+    // 노선 방향 강조 업데이트
+    try {
+      const { updateFocusedRouteDirection } = await import('@/utils/cesium/routeColors');
+      updateFocusedRouteDirection(direction);
+    } catch (error) {
+      console.error('[handleDirectionSelect] Failed to update route direction emphasis:', error);
+    }
   };
 
   // TabNavigation용 핸들러
