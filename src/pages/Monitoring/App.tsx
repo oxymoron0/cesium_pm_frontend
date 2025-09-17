@@ -1,14 +1,10 @@
 import { useEffect, useState } from 'react'
 import { observer } from 'mobx-react-lite'
 import CesiumViewer from '@/components/CesiumViewer'
-import Panel from '@/components/basic/Panel'
-import Title from '@/components/basic/Title'
-import TabNavigation from '@/components/basic/TabNavigation'
-import Monitoring from './components/Monitoring'
+import MonitoringPanel from './components/MonitoringPanel'
 import { flyToLocation } from '@/utils/cesiumControls'
 import { routeStore } from '@/stores/RouteStore'
 import { stationStore } from '@/stores/StationStore'
-import StationInfo from '@/pages/Monitoring/components/StationInfo'
 
 const App = observer(function App() {
   // const { onCloseMicroApp, dispatch, user } = props // user.userid
@@ -100,21 +96,8 @@ const App = observer(function App() {
       {/* 전체 화면 Cesium Viewer */}
       <CesiumViewer />
 
-      {/* 기본 모니터링 패널 */}
-      <Panel>
-        <Title info="• 버스 노선별 실시간 공기질을 디지털 트윈 상에서 확인할 수 있습니다.
-
-• 본 사업에서 제공하는 정보와 환경부(에어코리아)정보는 일부 차이가 있을 수 있습니다.
-
-• 본 사업에서는 전문가 자문을 받아 일반 시민의 호흡선높이(버스 바닥에서 약 1.5m 높이)에 센서를 설치하여 도로변의 공기질을 측정하며, 환경부(에어코리아)는 대기질 관리을 목적로 빌딩 옥상에 센서를 설치하고 있습니다.">모니터링</Title>
-        <TabNavigation tabs={['버스번호', '정류장']} activeTab={0} onTabChange={() => {}} />
-        <Monitoring />
-      </Panel>
-
-      {/* 정류장 정보 패널 - 노선 선택 시에만 표시 */}
-      {routeStore.hasSelectedRoute && (
-        <StationInfo />
-      )}
+      {/* 통합 모니터링 패널 */}
+      <MonitoringPanel />
     </div>
   )
 });
