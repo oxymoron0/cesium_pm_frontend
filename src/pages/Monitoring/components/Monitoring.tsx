@@ -1,50 +1,27 @@
-import { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
+import Title from "@/components/basic/Title";
+import TabNavigation from "@/components/basic/TabNavigation";
 import Button from "@/components/basic/Button";
 import Divider from "@/components/basic/Divider";
 import Spacer from "@/components/basic/Spacer";
 import SubTitle from "@/components/basic/SubTitle";
 import RouteCard from "@/components/service/RouteCard";
 import { routeStore } from '@/stores/RouteStore';
-import { stationStore } from '@/stores/StationStore';
-import { renderAllRoutes } from '@/utils/cesium/routeRenderer';
-import { resetAllRouteColors } from '@/utils/cesium/routeColors';
-import { renderAllStations } from '@/utils/cesium/stationRenderer';
 
+interface MonitoringProps {
+  onRouteSelect: (routeNumber: string) => void;
+}
 
-const Monitoring = observer(function Monitoring() {
-  // Auto-render all routes and stations when data loading is complete
-  useEffect(() => {
-    if (!routeStore.isLoading && routeStore.routeGeomMap.size > 0) {
-      const renderAll = async () => {
-        try {
-          console.log('[Monitoring] Starting route and station rendering');
-
-          // 1. 먼저 노선 렌더링
-          await renderAllRoutes();
-          resetAllRouteColors();
-          console.log('[Monitoring] Route rendering completed');
-
-          // 2. StationStore에 데이터가 있으면 정류장도 렌더링
-          const hasStationData = stationStore.stationDataMap.size > 0;
-          if (hasStationData) {
-            console.log(`[Monitoring] StationStore has ${stationStore.stationDataMap.size} datasets, rendering stations`);
-            await renderAllStations();
-            console.log('[Monitoring] Station rendering completed');
-          } else {
-            console.log('[Monitoring] No station data available yet');
-          }
-
-        } catch (error) {
-          console.error('[Monitoring] Failed to render routes and stations:', error);
-        }
-      };
-      renderAll();
-    }
-  }, [routeStore.isLoading, routeStore.routeGeomMap.size, stationStore.stationDataMap.size]);
+const Monitoring = observer(function Monitoring({ onRouteSelect }: MonitoringProps) {
 
   return (
       <>
+        <Title info="• 버스 노선별 실시간 공기질을 디지털 트윈 상에서 확인할 수 있습니다.
+
+• 본 사업에서 제공하는 정보와 환경부(에어코리아)정보는 일부 차이가 있을 수 있습니다.
+
+• 본 사업에서는 전문가 자문을 받아 일반 시민의 호흡선높이(버스 바닥에서 약 1.5m 높이)에 센서를 설치하여 도로변의 공기질을 측정하며, 환경부(에어코리아)는 대기질 관리을 목적로 빌딩 옥상에 센서를 설치하고 있습니다.">모니터링</Title>
+        <TabNavigation tabs={['버스번호', '정류장']} activeTab={0} onTabChange={() => {}} />
         <Spacer height={16} />
         <SubTitle> 저장한 버스 </SubTitle>
         <Divider></Divider>
@@ -91,9 +68,7 @@ const Monitoring = observer(function Monitoring() {
                     onBookmarkToggle={() => {
                       // TODO: 북마크 기능 구현 예정
                     }}
-                    onSelect={(routeNumber) => {
-                      routeStore.toggleSelectedRoute(routeNumber);
-                    }}
+                    onSelect={onRouteSelect}
                   />
                 ))
               ) : (
