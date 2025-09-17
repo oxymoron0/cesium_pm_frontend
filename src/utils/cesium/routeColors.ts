@@ -8,9 +8,10 @@ import type { RouteGeom } from '../api/types';
 
 const ROUTE_DATASOURCE_NAME = 'routes';
 
-// Color definitions  
+// Color definitions - unified blue color for both directions
 const FOCUSED_INBOUND_COLOR = Color.fromCssColorString('#00AAFF');
-const FOCUSED_OUTBOUND_COLOR = Color.fromCssColorString('#FF6B00');
+const FOCUSED_OUTBOUND_COLOR = Color.fromCssColorString('#00AAFF');
+const UNFOCUSED_COLOR = Color.fromCssColorString('#66CCFF'); // 더 연한 파란색
 
 // Focused route entity IDs
 const FOCUSED_INBOUND_ID = 'focused_inbound';
@@ -59,7 +60,7 @@ export function createFocusedRoute(routeGeom: RouteGeom, selectedDirection?: 'in
         positions: Cartesian3.fromDegreesArray(inboundCoords.flat()),
         width: selectedDirection === 'inbound' ? 6.0 : 5.0, // Thicker if selected direction
         material: new ColorMaterialProperty(
-          selectedDirection === 'inbound' ? FOCUSED_INBOUND_COLOR.withAlpha(1.0) : FOCUSED_INBOUND_COLOR.withAlpha(0.5)
+          selectedDirection === 'inbound' ? FOCUSED_INBOUND_COLOR.withAlpha(1.0) : UNFOCUSED_COLOR.withAlpha(0.4)
         ),
         clampToGround: true
       })
@@ -74,7 +75,7 @@ export function createFocusedRoute(routeGeom: RouteGeom, selectedDirection?: 'in
         positions: Cartesian3.fromDegreesArray(outboundCoords.flat()),
         width: selectedDirection === 'outbound' ? 6.0 : 5.0, // Thicker if selected direction
         material: new ColorMaterialProperty(
-          selectedDirection === 'outbound' ? FOCUSED_OUTBOUND_COLOR.withAlpha(1.0) : FOCUSED_OUTBOUND_COLOR.withAlpha(0.5)
+          selectedDirection === 'outbound' ? FOCUSED_OUTBOUND_COLOR.withAlpha(1.0) : UNFOCUSED_COLOR.withAlpha(0.4)
         ),
         clampToGround: true
       })
@@ -128,17 +129,17 @@ export function updateFocusedRouteDirection(selectedDirection: 'inbound' | 'outb
   try {
     // Update inbound entity
     if (focusedInbound.polyline) {
-      focusedInbound.polyline.width = selectedDirection === 'inbound' ? 6.0 : 5.0;
+      (focusedInbound.polyline.width as any) = selectedDirection === 'inbound' ? 6.0 : 5.0;
       focusedInbound.polyline.material = new ColorMaterialProperty(
-        selectedDirection === 'inbound' ? FOCUSED_INBOUND_COLOR.withAlpha(1.0) : FOCUSED_INBOUND_COLOR.withAlpha(0.5)
+        selectedDirection === 'inbound' ? FOCUSED_INBOUND_COLOR.withAlpha(1.0) : UNFOCUSED_COLOR.withAlpha(0.4)
       );
     }
 
     // Update outbound entity
     if (focusedOutbound.polyline) {
-      focusedOutbound.polyline.width = selectedDirection === 'outbound' ? 6.0 : 5.0;
+      (focusedOutbound.polyline.width as any) = selectedDirection === 'outbound' ? 6.0 : 5.0;
       focusedOutbound.polyline.material = new ColorMaterialProperty(
-        selectedDirection === 'outbound' ? FOCUSED_OUTBOUND_COLOR.withAlpha(1.0) : FOCUSED_OUTBOUND_COLOR.withAlpha(0.5)
+        selectedDirection === 'outbound' ? FOCUSED_OUTBOUND_COLOR.withAlpha(1.0) : UNFOCUSED_COLOR.withAlpha(0.4)
       );
     }
 
