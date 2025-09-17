@@ -1,6 +1,4 @@
-import { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
-import Panel from '@/components/basic/Panel';
 import Title from '@/components/basic/Title';
 import Divider from '@/components/basic/Divider';
 import Spacer from '@/components/basic/Spacer';
@@ -10,12 +8,16 @@ import TabNavigation from '@/components/basic/TabNavigation';
 import { routeStore } from '@/stores/RouteStore';
 import { stationStore } from '@/stores/StationStore';
 
+interface StationInfoProps {
+  onBackClick: () => void;
+}
+
 /**
  * StationInfo Component
  * 선택된 노선의 정류장 정보를 표시하는 컴포넌트
  * RouteStore와 StationStore를 연동하여 방향별 정류장 목록을 제공
  */
-const StationInfo = observer(function StationInfo() {
+const StationInfo = observer(function StationInfo({ onBackClick }: StationInfoProps) {
   const basePath = import.meta.env.VITE_BASE_PATH || '/';
 
   // RouteStore에서 선택된 노선 정보
@@ -68,8 +70,23 @@ const StationInfo = observer(function StationInfo() {
   const isLoading = stationStore.isLoading;
 
   return (
-    <Panel position="right" offset={96}>
-      <Title>버스 전체 노선</Title>
+    <>
+      {/* 제목과 뒤로가기 버튼 */}
+      <Title>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onBackClick}
+            className="flex items-center justify-center w-6 h-6 transition-opacity hover:opacity-80"
+          >
+            <img
+              src={`${basePath}icon/back.svg`}
+              alt="뒤로가기"
+              className="w-3 h-4"
+            />
+          </button>
+          <span>버스 전체 노선</span>
+        </div>
+      </Title>
       <Spacer height={16} />
       <div className="flex flex-col gap-2 mb-4">
         <div className="flex items-center gap-2">
@@ -115,8 +132,10 @@ const StationInfo = observer(function StationInfo() {
 
       {/* 정류장 목록 */}
       <div
-        className="flex flex-col w-full gap-2 overflow-y-auto max-h-96 px-1"
+        className="flex flex-col w-full gap-2 px-1 overflow-y-auto"
         style={{
+          maxHeight: 'calc(936px - 320px)', // Panel maxHeight - 고정 요소들 높이 = 616px
+          minHeight: '300px', // 최소 높이 보장
           scrollbarWidth: 'thin',
           scrollbarColor: '#FFD040 transparent'
         }}
@@ -141,11 +160,7 @@ const StationInfo = observer(function StationInfo() {
         ) : currentStations.length > 0 ? (
           // 정류장 목록 표시
           <>
-            {currentStationData && (
-              <div className="mb-2 text-sm text-gray-300">
-                {currentStationData.direction_name} ({currentStations.length}개 정류장)
-              </div>
-            )}
+            <Spacer height={8} />
             {currentStations.map((station) => (
               <Item
                 key={station.station_id}
@@ -234,7 +249,7 @@ const StationInfo = observer(function StationInfo() {
           모든 정류장의 실시간 공기질 보기
         </span>
       </div>
-    </Panel>
+    </>
   );
 });
 
