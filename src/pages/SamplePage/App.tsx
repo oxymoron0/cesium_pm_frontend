@@ -11,6 +11,8 @@ import { stationStore } from '@/stores/StationStore'
 import { renderAllRoutes } from '@/utils/cesium/routeRenderer'
 import { renderBusModels, clearBusModels, toggleBusModels, getBusModelCount, flyToBusModel } from '@/utils/cesium/glbRenderer'
 import { getBusTrajectoryInitial, type BusTrajectoryData } from '@/utils/api/busApi'
+import { busStore } from '@/stores/BusStore'
+import { observer } from 'mobx-react-lite'
 
 interface StationApiResponse {
   stations: Station[];
@@ -20,7 +22,7 @@ interface StationApiResponse {
   total_pages: number;
 }
 
-function App(props: any) {
+const App = observer(function App(props: any) {
   console.log(props)
   const [cesiumStatus, setCesiumStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [stations, setStations] = useState<Station[]>([])
@@ -82,6 +84,7 @@ function App(props: any) {
       // 초기 방향을 inbound로 설정
       stationStore.setSelectedDirection('inbound');
       console.log('[SamplePage] Initial direction set to inbound');
+
     };
 
     // Cesium이 준비된 후에 데이터 로딩 시작
@@ -89,6 +92,14 @@ function App(props: any) {
       initializeData();
     }
   }, [cesiumStatus])
+
+  // 컴포넌트 정리 시 버스 시스템 정리
+  useEffect(() => {
+    return () => {
+      busStore.cleanup();
+    };
+  }, []);
+
 
   // Station DataSource helper functions
   const [, setDsUpdateTrigger] = useState(0)
@@ -304,6 +315,22 @@ function App(props: any) {
                 <span className="text-gray-300">Bus Data:</span>
                 <span className="text-blue-300">{busData.length} buses loaded</span>
               </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-300">🚌 System:</span>
+                <span className={busStore.isSystemReady ? 'text-green-400' : 'text-yellow-400'}>
+                  {busStore.isSystemReady ? 'Ready' : busStore.isLoading ? 'Loading...' : 'Standby'}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-300">Active Buses:</span>
+                <span className="text-blue-300">{busStore.activeBuses}/{busStore.totalBuses}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-300">📹 Tracking:</span>
+                <span className="text-green-300">
+                  {busStore.trackedBusId || 'None'}
+                </span>
+              </div>
             </div>
 
             {/* Station DataSource Test Controls */}
@@ -375,13 +402,62 @@ function App(props: any) {
                 >
                   Toggle Visibility
                 </button>
+                <div className="pt-2 border-t border-gray-600">
+                  <div className="pb-1 text-xs font-medium text-gray-400">🎬 Individual Bus Tests</div>
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => {
+                        // Test: Move first bus to Frontend Connected position
+                        if (busData.length > 0) {
+                          busStore.animateBusToPosition(
+                            busData[0].vehicle_number,
+                            129.075986, // Frontend Connected longitude
+                            35.179554,  // Frontend Connected latitude
+                            5
+                          )
+                        }
+                      }}
+                      disabled={!busStore.isSystemReady || busData.length === 0}
+                      className="w-full px-2 py-1 text-xs text-white bg-purple-600 rounded hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                    >
+                      Move First Bus (5s)
+                    </button>
+                  </div>
+                  <div className="pt-2 border-t border-gray-500">
+                    <div className="pb-1 text-xs font-medium text-gray-400">📹 Camera Tracking</div>
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => {
+                          // Track first bus
+                          if (busData.length > 0) {
+                            busStore.trackBus(busData[0].vehicle_number)
+                          }
+                        }}
+                        disabled={!busStore.isSystemReady || busData.length === 0}
+                        className="w-full px-2 py-1 text-xs text-white bg-green-600 rounded hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                      >
+                        Track First Bus
+                      </button>
+                      <button
+                        onClick={() => busStore.stopCameraTracking()}
+                        disabled={!busStore.isSystemReady}
+                        className="w-full px-2 py-1 text-xs text-white bg-orange-600 rounded hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                      >
+                        Stop Tracking
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
+
 
             {/* Bus Model List */}
             {busData.length > 0 && (
               <div className="p-3 space-y-3 rounded-lg bg-gray-900/30">
-                <div className="pb-1 text-sm font-semibold text-yellow-400 border-b border-yellow-400/20">Bus Models (Click to Fly To)</div>
+                <div className="pb-1 text-sm font-semibold text-yellow-400 border-b border-yellow-400/20">
+                  Bus Models (Left: Fly To, Right: Move, Middle: Track)
+                </div>
                 <div className="space-y-1 overflow-y-auto max-h-40" style={{
                   scrollbarWidth: 'thin',
                   scrollbarColor: '#FFD040 transparent'
@@ -390,7 +466,24 @@ function App(props: any) {
                     <div
                       key={bus.vehicle_number}
                       onClick={() => handleFlyToBus(bus.vehicle_number)}
-                      className="p-2 text-xs text-gray-200 transition-colors bg-gray-700 rounded cursor-pointer hover:bg-gray-600"
+                      onContextMenu={(e) => {
+                        e.preventDefault()
+                        // Right click: Move bus to a random nearby position
+                        const randomLat = 35.179554 + (Math.random() - 0.5) * 0.01
+                        const randomLng = 129.075986 + (Math.random() - 0.5) * 0.01
+                        busStore.animateBusToPosition(bus.vehicle_number, randomLng, randomLat, 3)
+                      }}
+                      onMouseDown={(e) => {
+                        if (e.button === 1) { // Middle click
+                          e.preventDefault()
+                          busStore.trackBus(bus.vehicle_number)
+                        }
+                      }}
+                      className={`p-2 text-xs transition-colors rounded cursor-pointer hover:bg-gray-600 ${
+                        busStore.trackedBusId === bus.vehicle_number
+                          ? 'bg-green-600 text-white border border-green-400'
+                          : 'bg-gray-700 text-gray-200'
+                      }`}
                     >
                       <div className="flex items-center justify-between">
                         <div>
@@ -514,6 +607,6 @@ function App(props: any) {
       </Panel>
     </div>
   )
-}
+})
 
 export default App
