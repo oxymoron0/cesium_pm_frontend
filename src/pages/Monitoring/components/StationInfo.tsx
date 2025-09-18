@@ -73,7 +73,6 @@ const StationInfo = observer(function StationInfo({ onBackClick }: StationInfoPr
   }
 
   // 현재 선택된 방향의 정류장 데이터
-  const currentStationData = stationStore.currentStationData;
   const currentStations = stationStore.currentStations;
   const isLoading = stationStore.isLoading;
 
