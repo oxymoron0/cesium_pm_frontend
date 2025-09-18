@@ -1,87 +1,26 @@
-import { Entity, ModelGraphics, Cartesian3, Color, ColorBlendMode, HeightReference, HeadingPitchRange } from 'cesium'
+import { Entity, ModelGraphics, Cartesian3, Color, ColorBlendMode, HeightReference, HeadingPitchRange, ConstantPositionProperty } from 'cesium'
 import { createDataSource, findDataSource, removeDataSource } from './datasources'
+import { type BusTrajectoryData } from '@/utils/api/busApi'
 
-export interface BusPosition {
-  work_id: string
-  sensor_id: string
-  vehicle_number: string
-  route_name: string
-  recorded_at: string
-  position: {
-    longitude: number
-    latitude: number
-  }
-  sensor_data: {
-    humidity: number
-    temperature: number
-    voc: number
-    co2: number
-    pm: number
-    fpm: number
-  }
-}
+const basePath = import.meta.env.VITE_BASE_PATH || '/';
 
-export interface BusTrajectoryData {
-  vehicle_number: string
-  route_name: string
-  positions: BusPosition[]
-}
 
-const GLB_MODEL_URL = '/bump-svc3d-front-pm/CesiumMilkTruck.glb'
+const GLB_MODEL_URL = `${basePath}CesiumMilkTruck.glb`
 const DATASOURCE_NAME = 'bus_models'
 
-// 노선별 색상 상수 (성능 최적화)
-const ROUTE_COLORS: { [key: string]: Color } = {
-  '10': Color.fromCssColorString('#FF0000'),   // 빨간색
-  '31': Color.fromCssColorString('#00FF00'),   // 초록색
-  '44': Color.fromCssColorString('#0000FF'),   // 파란색
-  '167': Color.fromCssColorString('#FFFF00'),  // 노란색
-}
-
-const DEFAULT_COLOR = Color.WHITE
+// 노선별 색상
+const ROUTE_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA726'] // 빨강, 청록, 파랑, 주황
 
 /**
- * 한국 시간대로 날짜를 포맷하는 함수
+ * Cesium viewer 가용성 체크
  */
-function formatKoreanDateTime(dateString: string): string {
-  const date = new Date(dateString)
-  return date.toLocaleString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    timeZone: 'Asia/Seoul'
-  })
-}
-
-/**
- * 버스 설명 HTML 생성 (재사용 가능한 유틸리티)
- */
-function createBusDescription(
-  vehicleNumber: string,
-  routeName: string,
-  position: BusPosition,
-  longitude: number,
-  latitude: number
-): string {
-  return `
-    <div>
-      <strong>버스 번호:</strong> ${vehicleNumber}<br/>
-      <strong>노선:</strong> ${routeName}<br/>
-      <strong>센서 ID:</strong> ${position.sensor_id}<br/>
-      <strong>기록 시간:</strong> ${formatKoreanDateTime(position.recorded_at)}<br/>
-      <strong>위치:</strong> ${latitude.toFixed(6)}, ${longitude.toFixed(6)}<br/>
-      <hr/>
-      <strong>센서 데이터:</strong><br/>
-      • 온도: ${position.sensor_data.temperature}°C<br/>
-      • 습도: ${position.sensor_data.humidity}%<br/>
-      • CO2: ${position.sensor_data.co2}ppm<br/>
-      • PM: ${position.sensor_data.pm}μg/m³<br/>
-      • VOC: ${position.sensor_data.voc}ppb
-    </div>
-  `
+function getViewer() {
+  const viewer = (window as any).cviewer
+  if (!viewer) {
+    console.error('[glbRenderer] Cesium viewer not available')
+    return null
+  }
+  return viewer
 }
 
 /**
@@ -89,13 +28,8 @@ function createBusDescription(
  * @param busData - Bus trajectory API에서 받은 데이터
  */
 export async function renderBusModels(busData: BusTrajectoryData[]): Promise<void> {
-  const viewer = (window as any).cviewer
-  if (!viewer) {
-    console.error('[renderBusModels] Cesium viewer not available')
-    return
-  }
-
-  console.log(`[renderBusModels] Rendering ${busData.length} bus models`)
+  const viewer = getViewer()
+  if (!viewer) return
 
   // 기존 DataSource 제거 후 새로 생성
   removeDataSource(DATASOURCE_NAME)
@@ -107,51 +41,181 @@ export async function renderBusModels(busData: BusTrajectoryData[]): Promise<voi
 
     const firstPosition = bus.positions[0]
     const { longitude, latitude } = firstPosition.position
-
-    // 노선별 색상 결정
-    const color = ROUTE_COLORS[bus.route_name] || DEFAULT_COLOR
+    const colorIndex = parseInt(bus.route_name) % ROUTE_COLORS.length
+    const color = Color.fromCssColorString(ROUTE_COLORS[colorIndex])
 
     const entity = new Entity({
       id: `bus_model_${bus.vehicle_number}`,
       name: `Bus ${bus.vehicle_number} (Route ${bus.route_name})`,
-      position: Cartesian3.fromDegrees(longitude, latitude, 0),
+      position: new ConstantPositionProperty(Cartesian3.fromDegrees(longitude, latitude, 0)),
       model: new ModelGraphics({
         uri: GLB_MODEL_URL,
         scale: 1,
         minimumPixelSize: 32,
         maximumScale: 64,
-        color: color, // 정적 색상 (CallbackProperty 제거)
+        color: color,
         colorBlendMode: ColorBlendMode.HIGHLIGHT,
         heightReference: HeightReference.CLAMP_TO_GROUND,
       }),
-      description: createBusDescription(bus.vehicle_number, bus.route_name, firstPosition, longitude, latitude)
     })
 
     dataSource.entities.add(entity)
   })
 
-  console.log(`[renderBusModels] Successfully rendered ${dataSource.entities.values.length} bus models`)
 }
 
 /**
  * 모든 버스 모델을 제거하는 함수
  */
 export function clearBusModels(): void {
-  const success = removeDataSource(DATASOURCE_NAME)
-  console.log(success ? '[clearBusModels] Bus models cleared' : '[clearBusModels] Bus models DataSource not found')
+  removeDataSource(DATASOURCE_NAME)
+}
+
+
+/**
+ * 특정 버스 Entity 검색
+ */
+export function getBusEntity(vehicleNumber: string): Entity | undefined {
+  const dataSource = findDataSource(DATASOURCE_NAME)
+  if (!dataSource) return undefined
+
+  return dataSource.entities.getById(`bus_model_${vehicleNumber}`)
+}
+
+
+// 애니메이션 상태 관리
+interface BusAnimation {
+  startPosition: Cartesian3
+  targetPosition: Cartesian3
+  startTime: number
+  duration: number
+  interval?: NodeJS.Timeout
+}
+
+const busAnimations = new Map<string, BusAnimation>()
+
+/**
+ * 개별 버스를 특정 위치로 애니메이션 이동
+ */
+export function animateSingleBus(
+  vehicleNumber: string,
+  targetLongitude: number,
+  targetLatitude: number,
+  durationSeconds: number = 3
+): boolean {
+  const viewer = getViewer()
+  if (!viewer) return false
+
+  const entity = getBusEntity(vehicleNumber)
+  if (!entity) {
+    console.error(`[animateSingleBus] Bus ${vehicleNumber} not found`)
+    return false
+  }
+
+  // 기존 애니메이션 중지
+  stopSingleBusAnimation(vehicleNumber)
+
+  // 현재 위치 가져오기
+  const currentPos = entity.position?.getValue(viewer.clock.currentTime)
+  if (!currentPos) {
+    console.error(`[animateSingleBus] Cannot get current position for bus ${vehicleNumber}`)
+    return false
+  }
+
+  const targetPosition = Cartesian3.fromDegrees(targetLongitude, targetLatitude, 0)
+
+  // 간단한 setInterval 기반 애니메이션
+  const animation: BusAnimation = {
+    startPosition: currentPos,
+    targetPosition,
+    startTime: Date.now(),
+    duration: durationSeconds * 1000
+  }
+
+  busAnimations.set(vehicleNumber, animation)
+
+  // 60fps 애니메이션
+  animation.interval = setInterval(() => {
+    const elapsed = Date.now() - animation.startTime
+    const progress = Math.min(elapsed / animation.duration, 1.0)
+
+    if (progress >= 1.0) {
+      // 애니메이션 완료
+      entity.position = new ConstantPositionProperty(targetPosition)
+      stopSingleBusAnimation(vehicleNumber)
+      return
+    }
+
+    // Ease-out cubic
+    const easedProgress = 1 - Math.pow(1 - progress, 3)
+    const currentPosition = Cartesian3.lerp(
+      animation.startPosition,
+      animation.targetPosition,
+      easedProgress,
+      new Cartesian3()
+    )
+
+    entity.position = new ConstantPositionProperty(currentPosition)
+  }, 16) // ~60fps
+
+  return true
 }
 
 /**
- * 버스 모델 DataSource 가시성 토글
+ * 특정 버스의 애니메이션 중지
  */
-export function toggleBusModels(visible?: boolean): void {
-  const dataSource = findDataSource(DATASOURCE_NAME)
-  if (dataSource) {
-    dataSource.show = visible !== undefined ? visible : !dataSource.show
-    console.log(`[toggleBusModels] Bus models ${dataSource.show ? 'shown' : 'hidden'}`)
-  } else {
-    console.warn('[toggleBusModels] Bus models DataSource not found')
+export function stopSingleBusAnimation(vehicleNumber: string): void {
+  const animation = busAnimations.get(vehicleNumber)
+  if (!animation) return
+
+  // interval 정리
+  if (animation.interval) {
+    clearInterval(animation.interval)
   }
+
+  busAnimations.delete(vehicleNumber)
+}
+
+/**
+ * 특정 버스에 카메라 추적 시작
+ */
+export function trackBusEntity(vehicleNumber: string): boolean {
+  const viewer = getViewer()
+  if (!viewer) return false
+
+  const entity = getBusEntity(vehicleNumber)
+  if (!entity) {
+    console.error(`[trackBusEntity] Bus ${vehicleNumber} not found`)
+    return false
+  }
+
+  viewer.trackedEntity = entity
+  return true
+}
+
+/**
+ * 카메라 추적 중지
+ */
+export function stopTracking(): void {
+  const viewer = getViewer()
+  if (!viewer) return
+
+  viewer.trackedEntity = undefined
+}
+
+/**
+ * 현재 추적 중인 버스 정보 반환
+ */
+export function getCurrentTrackedBus(): string | null {
+  const viewer = getViewer()
+  if (!viewer || !viewer.trackedEntity) return null
+
+  const entityId = viewer.trackedEntity.id
+  if (entityId.startsWith('bus_model_')) {
+    return entityId.replace('bus_model_', '')
+  }
+
+  return null
 }
 
 /**
@@ -162,18 +226,24 @@ export function getBusModelCount(): number {
   return dataSource ? dataSource.entities.values.length : 0
 }
 
+/**
+ * 버스 모델 DataSource 가시성 토글
+ */
+export function toggleBusModels(visible?: boolean): void {
+  const dataSource = findDataSource(DATASOURCE_NAME)
+  if (dataSource) {
+    dataSource.show = visible !== undefined ? visible : !dataSource.show
+  }
+}
 
 /**
  * 특정 버스 모델에 시선 이동
  */
 export function flyToBusModel(vehicleNumber: string): void {
-  const viewer = (window as any).cviewer
+  const viewer = getViewer()
   if (!viewer) return
 
-  const dataSource = findDataSource(DATASOURCE_NAME)
-  if (!dataSource) return
-
-  const entity = dataSource.entities.getById(`bus_model_${vehicleNumber}`)
+  const entity = getBusEntity(vehicleNumber)
   if (entity) {
     viewer.flyTo(entity, {
       offset: new HeadingPitchRange(0, -0.5, 200)
