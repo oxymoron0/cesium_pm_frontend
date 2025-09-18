@@ -37,7 +37,7 @@ const App = observer(function App(props: any) {
     const checkCesiumStatus = () => {
       const isQiankun = (window as any).__POWERED_BY_QIANKUN__
       const parentViewer = (window as any).cviewer
-      
+
       if (isQiankun && parentViewer) {
         console.log('[SamplePage] 부모 Cesium Viewer 감지됨')
         setCesiumStatus('ready')
@@ -52,7 +52,7 @@ const App = observer(function App(props: any) {
             initializePMFrontend()
           }
         }, 100)
-        
+
         // 10초 후 타임아웃
         setTimeout(() => {
           clearInterval(waitForViewer)
@@ -66,25 +66,38 @@ const App = observer(function App(props: any) {
     checkCesiumStatus()
   }, [cesiumStatus])
 
-  // RouteStore 초기화 및 렌더링 (앱 시작시 한 번만 실행)
+  // RouteStore 및 BusStore 초기화 (앱 시작시 한 번만 실행)
   useEffect(() => {
     let isInitialized = false;
-    
+
     const initializeData = async () => {
       if (isInitialized) return;
       isInitialized = true;
-      
-      await routeStore.initializeRouteData();
-      
-      // 데이터 로딩 완료 후 자동으로 모든 노선 렌더링
-      if (routeStore.routeGeomMap.size > 0) {
-        await renderAllRoutes();
+
+      try {
+        // Route 시스템 초기화
+        await routeStore.initializeRouteData();
+        if (routeStore.routeGeomMap.size > 0) {
+          await renderAllRoutes();
+        }
+        stationStore.setSelectedDirection('inbound');
+        console.log('[SamplePage] Route system initialized');
+
+        // Bus 시스템 자동 초기화 (데이터 + 렌더링 + 실시간 폴링)
+        setBusLoading(true);
+        await busStore.initializeBusSystem();
+        setBusData(busStore.busData);
+        console.log('[SamplePage] Bus system auto-initialized:', busStore.busData.length, 'buses');
+
+        // Timeline 시뮬레이션 자동 시작
+        await busStore.startTimelineSimulation();
+        console.log('[SamplePage] Timeline simulation auto-started');
+
+      } catch (error) {
+        console.error('[SamplePage] Auto-initialization failed:', error);
+      } finally {
+        setBusLoading(false);
       }
-
-      // 초기 방향을 inbound로 설정
-      stationStore.setSelectedDirection('inbound');
-      console.log('[SamplePage] Initial direction set to inbound');
-
     };
 
     // Cesium이 준비된 후에 데이터 로딩 시작
@@ -100,7 +113,6 @@ const App = observer(function App(props: any) {
     };
   }, []);
 
-
   // Station DataSource helper functions
   const [, setDsUpdateTrigger] = useState(0)
 
@@ -113,7 +125,7 @@ const App = observer(function App(props: any) {
     const ds = getBusModelDataSource()
     return ds ? ds.show !== false : false
   }
-  
+
   const getStationDataSource = () => {
     return findDataSource('station')
   }
@@ -216,9 +228,13 @@ const App = observer(function App(props: any) {
     if (busLoading) return
     setBusLoading(true)
     try {
-      const response = await getBusTrajectoryInitial()
-      setBusData(response.data)
-      console.log('Fetched bus trajectory data:', response.data.length, 'buses')
+      // BusStore 초기화 (API 호출 포함)
+      await busStore.initializeBusSystem()
+
+      // 로컬 state도 동기화
+      setBusData(busStore.busData)
+
+      console.log('Fetched bus trajectory data:', busStore.busData.length, 'buses')
     } catch (error) {
       console.error('Error fetching bus trajectory:', error)
     } finally {
@@ -250,12 +266,11 @@ const App = observer(function App(props: any) {
     flyToBusModel(vehicleNumber)
   }
 
-
   return (
     <div className="relative w-full h-screen overflow-hidden pm-frontend-scope">
       {/* 전체 화면 Cesium Viewer */}
       <CesiumViewer />
-      
+
       {/* UI Container Panel */}
       <Panel>
         <div className="w-full max-h-[936px] overflow-y-auto" style={{
@@ -331,6 +346,24 @@ const App = observer(function App(props: any) {
                   {busStore.trackedBusId || 'None'}
                 </span>
               </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-300">🔄 Real-time:</span>
+                <span className={busStore.isPolling ? (busStore.pollFailureCount > 0 ? 'text-yellow-400' : 'text-green-400') : 'text-gray-400'}>
+                  {busStore.isPolling ?
+                    (busStore.pollFailureCount > 0 ? `Polling (${busStore.pollFailureCount} fails)` : 'Polling') :
+                    'Stopped'
+                  }
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-300">📅 Last Poll:</span>
+                <span className="text-blue-300">
+                  {busStore.lastSuccessfulPoll ?
+                    new Date(busStore.lastSuccessfulPoll).toLocaleTimeString() :
+                    'Never'
+                  }
+                </span>
+              </div>
             </div>
 
             {/* Station DataSource Test Controls */}
@@ -402,55 +435,190 @@ const App = observer(function App(props: any) {
                 >
                   Toggle Visibility
                 </button>
-                <div className="pt-2 border-t border-gray-600">
-                  <div className="pb-1 text-xs font-medium text-gray-400">🎬 Individual Bus Tests</div>
+              </div>
+            </div>
+
+            {/* Real-time Polling Controls */}
+            <div className="p-3 space-y-3 rounded-lg bg-gray-900/30">
+              <div className="pb-1 text-sm font-semibold border-b text-green-400 border-green-400/20">Real-time Bus Tracking</div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-300">Polling Status:</span>
+                  <span className={busStore.isPolling ? 'text-green-400' : 'text-red-400'}>
+                    {busStore.isPolling ? '🟢 Active' : '🔴 Stopped'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-300">Update Interval:</span>
+                  <span className="text-blue-300">{busStore.pollIntervalSeconds}s</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-300">Latest Positions:</span>
+                  <span className="text-blue-300">{busStore.latestPositions.size} buses</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => busStore.startRealTimePolling()}
+                  disabled={cesiumStatus !== 'ready' || busStore.isPolling || busStore.totalBuses === 0}
+                  className="px-3 py-2 text-xs text-white bg-green-600 rounded hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                >
+                  🔄 Start Polling
+                </button>
+                <button
+                  onClick={() => busStore.stopRealTimePolling()}
+                  disabled={!busStore.isPolling}
+                  className="px-3 py-2 text-xs text-white bg-red-600 rounded hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                >
+                  ⏹ Stop Polling
+                </button>
+              </div>
+
+              <div className="p-2 text-xs bg-gray-800 rounded">
+                <div className="font-medium text-green-400">Real-time Features:</div>
+                <div className="text-gray-300">• 10-second position updates</div>
+                <div className="text-gray-300">• Smooth 3-second animations</div>
+                <div className="text-gray-300">• Automatic movement detection</div>
+                <div className="text-gray-300">• Background continuous tracking</div>
+              </div>
+            </div>
+
+            {/* Timeline Simulation Controls */}
+            <div className="p-3 space-y-3 rounded-lg bg-gray-900/30">
+              <div className="pb-1 text-sm font-semibold border-b text-cyan-400 border-cyan-400/20">Timeline Simulation</div>
+
+              {/* Progress Bar */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-gray-400">
+                  <span>Progress</span>
+                  <span>{busStore.simulationProgress.toFixed(1)}%</span>
+                </div>
+                <div className="w-full h-2 bg-gray-700 rounded-full">
+                  <div
+                    className="h-2 transition-all duration-300 rounded-full bg-cyan-600"
+                    style={{ width: `${busStore.simulationProgress}%` }}
+                  ></div>
+                </div>
+                <div className="flex justify-between text-xs text-gray-400">
+                  <span>Step: {busStore.simulation.currentStep}/{busStore.simulationEventCount}</span>
+                  <span>Speed: {busStore.simulation.playbackSpeed}x</span>
+                </div>
+              </div>
+
+              {/* Control Buttons */}
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={async () => await busStore.startTimelineSimulation()}
+                  disabled={cesiumStatus !== 'ready' || busStore.totalBuses === 0 || busStore.isSimulationPlaying}
+                  className="px-3 py-2 text-xs text-white bg-green-600 rounded hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                >
+                  ▶ Start
+                </button>
+                <button
+                  onClick={() => busStore.pauseTimelineSimulation()}
+                  disabled={!busStore.isSimulationPlaying}
+                  className="px-3 py-2 text-xs text-white bg-yellow-600 rounded hover:bg-yellow-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                >
+                  ⏸ Pause
+                </button>
+                <button
+                  onClick={() => busStore.stopTimelineSimulation()}
+                  disabled={!busStore.isSimulationPlaying && busStore.simulation.currentStep === 0}
+                  className="px-3 py-2 text-xs text-white bg-red-600 rounded hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                >
+                  ⏹ Stop
+                </button>
+              </div>
+
+              {/* Resume Button */}
+              {!busStore.isSimulationPlaying && busStore.simulation.currentStep > 0 && busStore.simulation.currentStep < busStore.simulationEventCount && (
+                <button
+                  onClick={() => busStore.resumeTimelineSimulation()}
+                  className="w-full px-3 py-2 text-xs text-white bg-blue-600 rounded hover:bg-blue-700"
+                >
+                  ⏯ Resume
+                </button>
+              )}
+
+              {/* Speed Controls */}
+              <div className="space-y-2">
+                <div className="text-xs text-gray-400">Playback Speed</div>
+                <div className="grid grid-cols-4 gap-1">
+                  {[0.5, 1.0, 2.0, 5.0].map(speed => (
+                    <button
+                      key={speed}
+                      onClick={() => busStore.setPlaybackSpeed(speed)}
+                      className={`px-2 py-1 text-xs rounded ${
+                        busStore.simulation.playbackSpeed === speed
+                          ? 'bg-cyan-600 text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      {speed}x
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Current Simulation Info */}
+              {busStore.currentSimulationEvent && (
+                <div className="p-2 text-xs bg-gray-800 rounded">
+                  <div className="font-medium text-cyan-400">Simulation Status:</div>
+                  <div className="text-gray-300">Step: {busStore.currentSimulationEvent.step}/{busStore.currentSimulationEvent.maxSteps}</div>
+                  <div className="text-gray-300">Active Buses: {busStore.currentSimulationEvent.activeBuses}</div>
+                  <div className="text-gray-300">Speed: {busStore.simulation.playbackSpeed}x</div>
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-gray-600">
+                <div className="pb-1 text-xs font-medium text-gray-400">🎬 Individual Bus Tests</div>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => {
+                      // Test: Move first bus to Frontend Connected position
+                      if (busData.length > 0) {
+                        busStore.animateBusToPosition(
+                          busData[0].vehicle_number,
+                          129.075986, // Frontend Connected longitude
+                          35.179554,  // Frontend Connected latitude
+                          5
+                        )
+                      }
+                    }}
+                    disabled={!busStore.isSystemReady || busData.length === 0}
+                    className="w-full px-2 py-1 text-xs text-white bg-purple-600 rounded hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                  >
+                    Move First Bus (5s)
+                  </button>
+                </div>
+                <div className="pt-2 border-t border-gray-500">
+                  <div className="pb-1 text-xs font-medium text-gray-400">📹 Camera Tracking</div>
                   <div className="space-y-1">
                     <button
                       onClick={() => {
-                        // Test: Move first bus to Frontend Connected position
+                        // Track first bus
                         if (busData.length > 0) {
-                          busStore.animateBusToPosition(
-                            busData[0].vehicle_number,
-                            129.075986, // Frontend Connected longitude
-                            35.179554,  // Frontend Connected latitude
-                            5
-                          )
+                          busStore.trackBus(busData[0].vehicle_number)
                         }
                       }}
                       disabled={!busStore.isSystemReady || busData.length === 0}
-                      className="w-full px-2 py-1 text-xs text-white bg-purple-600 rounded hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                      className="w-full px-2 py-1 text-xs text-white bg-green-600 rounded hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
                     >
-                      Move First Bus (5s)
+                      Track First Bus
                     </button>
-                  </div>
-                  <div className="pt-2 border-t border-gray-500">
-                    <div className="pb-1 text-xs font-medium text-gray-400">📹 Camera Tracking</div>
-                    <div className="space-y-1">
-                      <button
-                        onClick={() => {
-                          // Track first bus
-                          if (busData.length > 0) {
-                            busStore.trackBus(busData[0].vehicle_number)
-                          }
-                        }}
-                        disabled={!busStore.isSystemReady || busData.length === 0}
-                        className="w-full px-2 py-1 text-xs text-white bg-green-600 rounded hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
-                      >
-                        Track First Bus
-                      </button>
-                      <button
-                        onClick={() => busStore.stopCameraTracking()}
-                        disabled={!busStore.isSystemReady}
-                        className="w-full px-2 py-1 text-xs text-white bg-orange-600 rounded hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
-                      >
-                        Stop Tracking
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => busStore.stopCameraTracking()}
+                      disabled={!busStore.isSystemReady}
+                      className="w-full px-2 py-1 text-xs text-white bg-orange-600 rounded hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                    >
+                      Stop Tracking
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
-
 
             {/* Bus Model List */}
             {busData.length > 0 && (
