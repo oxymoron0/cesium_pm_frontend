@@ -5,6 +5,7 @@ import MonitoringPanel from './components/MonitoringPanel'
 import { flyToLocation } from '@/utils/cesiumControls'
 import { routeStore } from '@/stores/RouteStore'
 import { stationStore } from '@/stores/StationStore'
+import { busStore } from '@/stores/BusStore'
 
 const App = observer(function App() {
   // const { onCloseMicroApp, dispatch, user } = props // user.userid
@@ -78,6 +79,17 @@ const App = observer(function App() {
           console.error('[App] Station data loading failed:', error);
         }
       }
+
+      // 버스 시스템 초기화 및 시뮬레이션 자동 시작
+      try {
+        console.log('[App] Starting bus system initialization');
+        await busStore.initializeBusSystem();
+        console.log('[App] Bus system initialized, starting timeline simulation');
+        await busStore.startTimelineSimulation();
+        console.log('[App] Bus timeline simulation started');
+      } catch (error) {
+        console.error('[App] Bus system initialization failed:', error);
+      }
     };
 
     // Cesium이 준비된 후에 데이터 로딩 시작
@@ -85,6 +97,14 @@ const App = observer(function App() {
       initializeData();
     }
   }, [cesiumStatus])
+
+  // Cleanup 함수 (컴포넌트 언마운트 시)
+  useEffect(() => {
+    return () => {
+      console.log('[App] Component unmounting, cleaning up bus system');
+      busStore.cleanup();
+    };
+  }, [])
 
 
 
