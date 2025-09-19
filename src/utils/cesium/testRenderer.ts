@@ -1,4 +1,4 @@
-import { Color, Cartesian3, HeightReference, LabelStyle, VerticalOrigin, Cartesian2 } from 'cesium';
+import { Color, Cartesian3, HeightReference, LabelStyle, VerticalOrigin, Cartesian2, Entity } from 'cesium';
 import { flyToLocation } from '../cesiumControls';
 import { findDataSource, createDataSource, clearDataSource } from './datasources';
 
@@ -21,7 +21,7 @@ export interface Station {
  * 렌더링 옵션 인터페이스
  */
 export interface RenderStationOptions {
-  color?: any;
+  color?: Color;
   pixelSize?: number;
   heightOffset?: number;
   showLabel?: boolean;
@@ -30,7 +30,7 @@ export interface RenderStationOptions {
 }
 
 export interface RenderStationsOptions {
-  color?: any;
+  color?: Color;
   pixelSize?: number;
   heightOffset?: number;
   showLabels?: boolean;
@@ -103,7 +103,7 @@ export function renderStation(station: Station, options?: RenderStationOptions) 
 
     // 카메라 이동
     if (config.flyToStation) {
-      const viewer = (window as any).cviewer;
+      const viewer = window.cviewer;
       if (viewer) {
         flyToLocation(
           viewer, 
@@ -142,7 +142,7 @@ export function renderStations(stations: Station[], options?: RenderStationsOpti
     groupColors: options?.groupColors || false,
   };
 
-  const entities: any[] = [];
+  const entities: Entity[] = [];
   const colors = [Color.YELLOW, Color.CYAN, Color.LIME, Color.ORANGE, Color.PINK];
 
   try {
