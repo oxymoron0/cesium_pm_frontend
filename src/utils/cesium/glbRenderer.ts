@@ -15,7 +15,7 @@ const ROUTE_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA726'] // 빨강, 청
  * Cesium viewer 가용성 체크
  */
 function getViewer() {
-  const viewer = (window as any).cviewer
+  const viewer = window.cviewer
   if (!viewer) {
     console.error('[glbRenderer] Cesium viewer not available')
     return null
