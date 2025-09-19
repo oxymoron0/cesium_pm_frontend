@@ -10,7 +10,7 @@ interface StationCardProps {
   onSelect?: (stationName: string) => void;
 }
 
-export default observer(function StationCard({
+function StationCard({
   name,
   description,
   isBookmarked = false,
@@ -73,4 +73,7 @@ export default observer(function StationCard({
       </div>
     </Item>
   );
-});
+}
+
+const ObservedStationCard = observer(StationCard);
+export default ObservedStationCard;
