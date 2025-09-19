@@ -5,7 +5,7 @@
 
 import { get } from './request';
 import { API_PATHS } from './config';
-import type { RouteInfoResponse, RouteGeomResponse, RouteStationsResponse } from './types';
+import type { RouteInfoResponse, RouteGeom, RouteStationsResponse } from './types';
 
 /**
  * 모든 노선 기본 정보 조회
@@ -35,9 +35,9 @@ export async function getRouteInfo(): Promise<RouteInfoResponse> {
  * @param routeName - 노선 번호 (10, 31, 44, 167)
  * @returns 상행/하행 LineString geometry
  */
-export async function getRouteGeometry(routeName: string): Promise<RouteGeomResponse> {
+export async function getRouteGeometry(routeName: string): Promise<RouteGeom> {
   try {
-    const response = await get<RouteGeomResponse>(API_PATHS.ROUTE_GEOM(routeName));
+    const response = await get<RouteGeom>(API_PATHS.ROUTE_GEOM(routeName));
     
     if (!response.ok) {
       throw new Error(`Route geometry API failed with status ${response.status}`);
