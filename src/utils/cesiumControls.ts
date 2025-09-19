@@ -1,4 +1,4 @@
-import { Color, Cartesian3, Cartesian2, HeightReference, LabelStyle, VerticalOrigin } from 'cesium';
+import { Color, Cartesian3, Cartesian2, HeightReference, LabelStyle, VerticalOrigin, Viewer } from 'cesium';
 
 /**
  * Cesium Viewer 제어 함수들
@@ -9,7 +9,7 @@ import { Color, Cartesian3, Cartesian2, HeightReference, LabelStyle, VerticalOri
  * 테스트 마커 추가 및 카메라 이동
  * @param viewer - Cesium Viewer 인스턴스 (window.cviewer)
  */
-export const addTestMarker = (viewer: any) => {
+export const addTestMarker = (viewer: Viewer) => {
   try {
     console.log('[PM Frontend] 테스트 마커 추가 시작');
 
@@ -57,7 +57,7 @@ export const addTestMarker = (viewer: any) => {
  * @param latitude - 위도
  * @param height - 고도
  */
-export const flyToLocation = (viewer: any, longitude: number, latitude: number, height: number = 1000) => {
+export const flyToLocation = (viewer: Viewer, longitude: number, latitude: number, height: number = 1000) => {
   try {
     viewer.camera.flyTo({
       destination: Cartesian3.fromDegrees(longitude, latitude, height)
@@ -74,12 +74,12 @@ export const flyToLocation = (viewer: any, longitude: number, latitude: number, 
  * @param viewer - Cesium Viewer 인스턴스
  * @param options - 마커 옵션
  */
-export const addMarker = (viewer: any, options: {
+export const addMarker = (viewer: Viewer, options: {
   name: string;
   longitude: number;
   latitude: number;
   height?: number;
-  color?: any;
+  color?: Color;
   text?: string;
 }) => {
   try {
@@ -117,7 +117,7 @@ export const addMarker = (viewer: any, options: {
  * 모든 엔티티 제거
  * @param viewer - Cesium Viewer 인스턴스
  */
-export const clearAllEntities = (viewer: any) => {
+export const clearAllEntities = (viewer: Viewer) => {
   try {
     viewer.entities.removeAll();
     console.log('[PM Frontend] 모든 엔티티 제거 완료');
@@ -141,7 +141,7 @@ export const initializePMFrontend = (delay: number = 1000) => {
   }
 
   setTimeout(() => {
-    const viewer = (window as any).cviewer;
+    const viewer = window.cviewer;
     if (viewer) {
       console.log('[PM Frontend] Cesium Viewer 감지됨, 초기화 시작');
       addTestMarker(viewer);
