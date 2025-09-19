@@ -4,10 +4,14 @@ import '@/index.css'
 
 let root: Root | null = null;
 
+interface MountProps {
+  container?: Element;
+}
+
 export async function bootstrap() {
 }
 
-export async function mount(props: any) {
+export async function mount(props: MountProps) {
   const { container } = props
   // const { container, onCloseMicroApp, dispatch } = props
 
@@ -31,7 +35,7 @@ export async function unmount() {
 }
 
 // 독립 실행 모드
-if (!(window as any).__POWERED_BY_QIANKUN__) {
+if (!window.__POWERED_BY_QIANKUN__) {
   const container = document.getElementById('microapp-Monitoring') || document.getElementById('root');
   if (container) {
     root = createRoot(container);
