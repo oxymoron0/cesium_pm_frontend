@@ -1,6 +1,6 @@
 import { routeStore } from '../../stores/RouteStore';
 import { createGeoJsonDataSource, findDataSource, clearDataSource } from './datasources';
-import type { RouteGeom } from '../api/types';
+import type { RouteGeom, GeoJSONLineString } from '../api/types';
 import type { GeoJsonDataSource } from 'cesium';
 import { Color, ColorMaterialProperty, Cartesian3, Entity, PolylineGraphics } from 'cesium';
 
@@ -15,18 +15,13 @@ const ROUTE_DATASOURCE_NAME = 'routes';
  * @param geometry - GeoJSON geometry object
  * @returns Geometry with 2D coordinates only
  */
-function removeZCoordinates(geometry: any): any {
+function removeZCoordinates(geometry: GeoJSONLineString): { type: 'LineString'; coordinates: [number, number][] } {
   if (!geometry || !geometry.coordinates) {
     return geometry;
   }
 
-  const processCoordinates = (coords: any[]): any[] => {
-    if (typeof coords[0] === 'number') {
-      // Single coordinate pair - keep only x,y (remove z)
-      return [coords[0], coords[1]];
-    }
-    // Nested array - recursively process
-    return coords.map(coord => processCoordinates(coord));
+  const processCoordinates = (coords: [number, number, number][]): [number, number][] => {
+    return coords.map(([lng, lat]) => [lng, lat]);
   };
 
   return {
