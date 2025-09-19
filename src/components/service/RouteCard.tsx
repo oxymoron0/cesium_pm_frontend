@@ -11,7 +11,7 @@ interface RouteCardProps {
   onSelect?: (routeNumber: string) => void;
 }
 
-export default observer(function RouteCard({
+function RouteCard({
   routeNumber,
   description,
   isExpress = false,
@@ -80,4 +80,7 @@ export default observer(function RouteCard({
       </div>
     </Item>
   );
-});
+}
+
+const ObservedRouteCard = observer(RouteCard);
+export default ObservedRouteCard;
