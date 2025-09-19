@@ -1,84 +1,70 @@
 # PM Frontend - Technical Implementation Guide
 
-## Claude Engineering Mandate
+## Development Guidelines
 
-**Role**: Senior Frontend Systems Architect specializing in Cesium 3D Geospatial Applications
+React-based microfrontend application for geospatial bus route visualization using Cesium 3D rendering. Implements clean architecture patterns with MobX state management.
 
-You are a **Senior Frontend Engineer** with deep expertise in production-grade microfrontend architectures and 3D geospatial systems. Your analysis and recommendations must reflect the technical depth expected at Staff+ engineering levels in enterprise environments.
+### Technical Requirements
+- **Cesium Integration**: DataSource lifecycle management, Entity optimization, WebGL rendering
+- **Geospatial Processing**: PostGIS geometry handling, coordinate transformations, GeoJSON compliance
+- **Microfrontend Architecture**: Qiankun integration, CSS isolation, UMD module federation
+- **State Management**: MobX reactive patterns, single source of truth principles
 
-### Required Engineering Depth
-- **Cesium WebGL Pipeline**: Deep understanding of DataSource lifecycle, Entity memory management, CallbackProperty performance implications, and WebGL rendering constraints
-- **Geospatial Data Systems**: PostGIS geometry processing, coordinate system transformations, GeoJSON specification compliance, and spatial indexing considerations
-- **Microfrontend Architecture**: Qiankun integration patterns, CSS namespace isolation strategies, UMD module federation, and cross-application state management
-- **Production State Management**: MobX reactive patterns, dependency inversion principles, memory leak prevention, and performance optimization strategies
-
-### Engineering Methodology
-- **Evidence-Based Analysis**: Base all technical decisions on actual code inspection and system behavior, not assumptions
-- **Architecture-First Thinking**: Consider system-wide implications of changes, not isolated component modifications
-- **Production Readiness**: Prioritize maintainability, debuggability, and operational concerns over quick implementations
-- **Technical Precision**: Avoid speculation; provide concrete, implementable solutions with clear trade-offs
-- **Performance Consciousness**: Understand memory usage patterns, rendering bottlenecks, and bundle size implications
-
-### Communication Standards
-- **Technical Accuracy**: No exaggeration or theoretical claims without basis in the actual codebase
-- **Concise Precision**: Direct, unambiguous technical communication without unnecessary elaboration
-- **Problem-Solution Focus**: Identify root causes and provide actionable solutions with implementation details
-- **Senior-Level Perspective**: Address concerns at architectural level, not surface-level symptom fixing
+### Implementation Approach
+- Code analysis before modifications
+- Architecture-level considerations for system changes
+- Maintainable, debuggable implementations
+- Performance-conscious development
+- Concrete solutions with clear trade-offs
 
 ---
 
-## Project Architecture
+## Architecture Overview
 
-PM Frontend is a **Microfrontend UMD Module** with **Cesium 3D Rendering** for geospatial bus route visualization. Built with React 19, TypeScript, Vite, and MobX for the PM Projects ecosystem.
+Microfrontend UMD module for geospatial bus route visualization with Cesium 3D rendering.
 
-### Current Implementation Status
-- **Route System**: Complete (API integration, rendering, selection)
-- **Station System**: Complete (direction-aware rendering, 4-stage color system)
-- **UI Components**: Complete (Panel, TabNavigation, conditional rendering)
-- **Build System**: Optimized (460s → 5s build time improvement)
+**Technology Stack:**
+- React 19, TypeScript, Vite, MobX
+- Cesium 1.115 for 3D geospatial rendering
+- Tailwind CSS with PostCSS prefixing
+- PNPM package management
 
----
+**System Status:**
+- Route visualization with PostGIS geometry support
+- Station rendering with direction-aware color coding
+- Panel-based UI with tab navigation
+- Optimized build pipeline (5s build time)
 
 ## Microfrontend Implementation
 
 ### Build Configuration
+
+**Development Mode**: SPA with Vite dev server (port 5173)
+**Production Mode**: UMD module per page
+
 ```typescript
-// vite.config.ts
-const pageName = process.env.VITE_PAGE
-
-// Development: SPA mode
-if (isDev) {
-  return {
-    plugins: [react(), cesium()],
-    server: { port: 5173 }
-  }
-}
-
-// Production: UMD module per page
-return {
-  build: {
-    lib: {
-      entry: `./src/pages/${pageName}/index.tsx`,
-      formats: ['umd'],
-      name: pageName,
-      fileName: () => `${pageName}.umd.js`
-    }
+// vite.config.ts - Production build
+build: {
+  lib: {
+    entry: `./src/pages/${pageName}/index.tsx`,
+    formats: ['umd'],
+    name: pageName,
+    fileName: () => `${pageName}.umd.js`
   }
 }
 ```
 
-### CSS Isolation
+**CSS Isolation**: `.pm-frontend-scope` prefix with Cesium exclusions
 ```javascript
-// postcss.config.js
 'postcss-prefix-selector': {
   prefix: '.pm-frontend-scope',
   exclude: [/^html/, /^body/, /^\*/, /^:root/, /^\.cesium-viewer-fullscreenContainer/]
 }
 ```
 
-**Critical**: Cesium viewer containers must bypass CSS prefixing to prevent rendering issues.
-
 ### Page Structure
+
+**Qiankun Integration**: Environment detection and viewer initialization
 ```typescript
 const App = observer(function App() {
   const [cesiumStatus, setCesiumStatus] = useState<'loading' | 'ready' | 'error'>('loading')
@@ -90,7 +76,7 @@ const App = observer(function App() {
     if (isQiankun && parentViewer) {
       setCesiumStatus('ready')
     } else if (!isQiankun) {
-      // Independent mode: wait for CesiumViewer component
+      // Wait for CesiumViewer component initialization
       const waitForViewer = setInterval(() => {
         if ((window as any).cviewer) {
           setCesiumStatus('ready')
@@ -99,56 +85,39 @@ const App = observer(function App() {
       }, 100)
     }
   }, [])
-
-  useEffect(() => {
-    if (cesiumStatus === 'ready') {
-      initializeData()
-    }
-  }, [cesiumStatus])
 })
 ```
 
----
-
 ## Cesium DataSource Management
 
-### Naming Conventions
+### DataSource Naming
 ```typescript
 const DATASOURCE_NAMES = {
-  routes: 'routes',                           // All route polygons
-  stations: `stations_${routeName}_${direction}`, // Per route-direction
-  focused: `focused_${type}`,                 // Temporary highlights
-  vulnerability: `vulnerability_${category}`  // Future extension
+  routes: 'routes',
+  stations: `stations_${routeName}_${direction}`,
+  focused: `focused_${type}`,
+  vulnerability: `vulnerability_${category}`
 }
 ```
 
 ### DataSource Utilities
+**Duplicate Prevention**: Check existing DataSources before creation
 ```typescript
-// src/utils/cesium/datasources.ts
 export async function createGeoJsonDataSource(name: string): Promise<GeoJsonDataSource> {
   const viewer = (window as any).cviewer
-
-  // Reuse existing DataSource to prevent duplicates
   const existing = viewer.dataSources.getByName(name)
   if (existing.length > 0) {
     return existing[0]
   }
-
   const dataSource = new GeoJsonDataSource(name)
   await viewer.dataSources.add(dataSource)
   return dataSource
 }
-
-export function findDataSource(name: string): CustomDataSource | undefined {
-  const viewer = (window as any).cviewer
-  if (!viewer) return undefined
-
-  const sources = viewer.dataSources.getByName(name)
-  return sources.length > 0 ? sources[0] : undefined
-}
 ```
 
-### Entity Creation Pattern
+### Entity Creation
+
+**Station Entities**: Dynamic styling based on selection state
 ```typescript
 function createStationEntity(feature: RouteStationFeature, direction: 'inbound' | 'outbound'): Entity {
   return new Entity({
@@ -167,7 +136,6 @@ function createStationEntity(feature: RouteStationFeature, direction: 'inbound' 
       }, false),
 
       color: new CallbackProperty(() => {
-        // 4-stage color system implementation
         if (isSelected) return Color.fromCssColorString('#FF6B00')
         if (isRouteSelected && isDirectionSelected) return Color.fromCssColorString('#00AAFF')
         if (isRouteSelected) return Color.fromCssColorString('#888888')
@@ -178,18 +146,16 @@ function createStationEntity(feature: RouteStationFeature, direction: 'inbound' 
 }
 ```
 
----
-
 ## State Management
 
-### Single Source of Truth Pattern
+### Store Architecture
+
+**RouteStore**: Primary state authority for route data and selection
 ```typescript
-// RouteStore: Primary state authority
 class RouteStore {
   routeInfoList: RouteInfo[] = []
   routeGeomMap: Map<string, RouteGeom> = new Map()
   selectedRouteName: string | null = null
-  selectedDirection: 'inbound' | 'outbound' | null = null
 
   toggleSelectedRoute(routeName: string) {
     if (this.selectedRouteName === routeName) {
@@ -203,11 +169,13 @@ class RouteStore {
     }
   }
 }
+```
 
-// StationStore: Dependency inversion to RouteStore
+**StationStore**: Dependency inversion pattern
+```typescript
 class StationStore {
   get selectedRouteName(): string | null {
-    return routeStore.selectedRouteName // No duplicate state
+    return routeStore.selectedRouteName // Single source of truth
   }
 
   selectedDirection: 'inbound' | 'outbound' | null = null
@@ -222,14 +190,12 @@ class StationStore {
 ```
 
 ### Component Integration
+
+**Observer Pattern**: MobX reactive components
 ```typescript
 const StationInfo = observer(function StationInfo() {
   const selectedRouteName = routeStore.selectedRouteName
   const selectedRouteInfo = routeStore.selectedRouteInfo
-
-  const handleDirectionSelect = (direction: 'inbound' | 'outbound') => {
-    stationStore.setSelectedDirection(direction)
-  }
 
   if (!selectedRouteName || !selectedRouteInfo) {
     return <EmptyState message="노선을 먼저 선택해주세요." />
@@ -238,12 +204,9 @@ const StationInfo = observer(function StationInfo() {
   return (
     <Panel position="right" offset={96}>
       <TabNavigation
-        tabs={[
-          `${selectedRouteInfo.destination} 방면`,
-          `${selectedRouteInfo.origin} 방면`
-        ]}
+        tabs={[`${selectedRouteInfo.destination} 방면`, `${selectedRouteInfo.origin} 방면`]}
         activeTab={stationStore.selectedDirection === 'inbound' ? 0 : 1}
-        onTabChange={(index) => handleDirectionSelect(index === 0 ? 'inbound' : 'outbound')}
+        onTabChange={(index) => stationStore.setSelectedDirection(index === 0 ? 'inbound' : 'outbound')}
       />
       {stationStore.currentStations.map(station => (
         <StationItem key={station.station_id} station={station} />
@@ -253,11 +216,11 @@ const StationInfo = observer(function StationInfo() {
 })
 ```
 
----
-
 ## API Integration
 
 ### Type Definitions
+
+**GeoJSON FeatureCollection**: Station data structure
 ```typescript
 export interface RouteStationsResponse {
   type: 'FeatureCollection'
@@ -275,33 +238,32 @@ export interface RouteStationFeature {
 }
 ```
 
-### Data Loading Strategy
+### Data Loading
+
+**Sequential Initialization**: Route info → Route geometry → Station data
 ```typescript
 async initializeRouteData(): Promise<void> {
   await this.loadRouteInfo()
-
   if (this.routeInfoList.length > 0) {
     await this.loadAllRouteGeometries()
   }
 }
 
-// Parallel station loading
+// Parallel station loading for all routes and directions
 const stationLoadPromises = routeNames.flatMap(routeName => [
   stationStore.loadStations(routeName, 'inbound'),
   stationStore.loadStations(routeName, 'outbound')
 ])
 
 await Promise.all(stationLoadPromises)
-stationStore.setSelectedDirection('inbound') // Default direction
+stationStore.setSelectedDirection('inbound')
 ```
 
----
-
-## Performance Patterns
+## Performance Optimization
 
 ### Entity Reuse
+**Duplicate Prevention**: Check existing entities before creation
 ```typescript
-// Prevent duplicate rendering
 const existingStations = stationData.features.filter(feature => {
   const entityId = `station_${feature.properties.station_id}`
   return dataSource.entities.getById(entityId) !== undefined
@@ -313,6 +275,7 @@ if (existingStations.length > 0) {
 ```
 
 ### Memory Management
+**DataSource Cleanup**: Remove unused DataSources by name pattern
 ```typescript
 export function clearAllStations(): void {
   const viewer = (window as any).cviewer
@@ -333,6 +296,7 @@ export function clearAllStations(): void {
 ```
 
 ### Reactive Rendering
+**Conditional Rendering**: Based on store state changes
 ```typescript
 const Monitoring = observer(function Monitoring() {
   useEffect(() => {
@@ -340,7 +304,6 @@ const Monitoring = observer(function Monitoring() {
       const renderAll = async () => {
         await renderAllRoutes()
         resetAllRouteColors()
-
         if (stationStore.stationDataMap.size > 0) {
           await renderAllStations()
         }
@@ -351,25 +314,23 @@ const Monitoring = observer(function Monitoring() {
 })
 ```
 
----
+## Implementation Requirements
 
-## Critical Implementation Notes
+### Runtime Dependencies
+- **Cesium Viewer**: `(window as any).cviewer` availability required
+- **Environment Detection**: `(window as any).__POWERED_BY_QIANKUN__` for Qiankun mode
 
-### Window Object Dependencies
-- **Cesium Viewer**: `(window as any).cviewer` must be available before any rendering
-- **Qiankun Detection**: `(window as any).__POWERED_BY_QIANKUN__` for environment detection
+### DataSource Management
+- **Naming Convention**: Prefixed names (`stations_`, `routes_`, `focused_`)
+- **Duplicate Prevention**: Check existing DataSource before creation
+- **Cleanup Strategy**: Remove DataSources when context changes
 
-### DataSource Collision Prevention
-- **Systematic Naming**: Use prefixed names (`stations_`, `routes_`, `focused_`)
-- **Existence Check**: Always check for existing DataSource before creation
-- **Cleanup Required**: Remove DataSources when switching contexts
+### CSS Isolation
+- **Scope Prefix**: `.pm-frontend-scope` for all styles
+- **Cesium Exclusions**: Exclude viewer containers from prefixing
+- **Class-based Selectors**: Avoid element selectors for parent app compatibility
 
-### CSS Namespace Requirements
-- **Scope All Styles**: Use `.pm-frontend-scope` prefix
-- **Cesium Exceptions**: Exclude Cesium viewer containers from prefixing
-- **Explicit Classes**: Avoid element selectors that may conflict with parent app
-
-### Error Handling Patterns
+### Error Handling
 ```typescript
 try {
   await routeStore.initializeRouteData()
@@ -379,37 +340,89 @@ try {
 }
 ```
 
----
-
 ## Development Commands
 
 ```bash
-# Development mode
+# Development server
 pnpm dev
 
-# Build specific page
+# Build UMD modules
 VITE_PAGE=SamplePage pnpm build
 VITE_PAGE=Monitoring pnpm build
 
 # Type checking
 npx tsc --noEmit
+
+# Code quality checks
+pnpm lint
 ```
 
----
+## Code Quality Guidelines
 
-## Current System Status
+### ESLint Error Resolution Process
 
-**Fully Implemented:**
+When implementing new features or making changes, **always run `pnpm lint` to identify and fix syntax errors and code quality issues**:
+
+1. **Run Linting**: Execute `pnpm lint` after code changes
+2. **Analyze Errors**: Review ESLint output for:
+   - Unused variables/imports
+   - TypeScript type issues
+   - React hook dependency warnings
+   - Code style violations
+3. **Fix Issues**: Address each error systematically:
+   - Remove unused variables and imports
+   - Add proper TypeScript types (avoid `any`)
+   - Fix React hook dependencies
+   - Follow naming conventions
+4. **Verify**: Re-run `pnpm lint` until all errors are resolved
+5. **Type Check**: Run `npx tsc --noEmit` to ensure TypeScript compilation
+
+### Common ESLint Fixes
+
+**Unused Variables**: Remove or prefix with underscore
+```typescript
+// Before: const unusedVar = getValue()
+// After: Remove entirely or const _unusedVar = getValue()
+```
+
+**TypeScript Any Types**: Use proper typing
+```typescript
+// Before: const viewer = (window as any).cviewer
+// After: const viewer = (window as unknown as { cviewer: Viewer }).cviewer
+```
+
+**React Hook Dependencies**: Add missing dependencies
+```typescript
+// Before: useEffect(() => { ... }, [])
+// After: useEffect(() => { ... }, [dependency])
+```
+
+**Component Naming**: Add display names for anonymous components
+```typescript
+// Before: export default () => <div>...</div>
+// After: const ComponentName = () => <div>...</div>; export default ComponentName
+```
+
+## System Status
+
+**Implemented Features:**
 - Route visualization with PostGIS geometry rendering
-- Station system with direction-aware 4-stage color coding
-- Single Source of Truth state management (RouteStore → StationStore)
-- Microfrontend CSS isolation and UMD module builds
-- API integration with comprehensive TypeScript types
+- Station system with direction-aware color coding
+- State management with RouteStore → StationStore dependency
+- Microfrontend CSS isolation and UMD builds
+- TypeScript API integration
 
-**Architecture Patterns Applied:**
-- MobX observer pattern for reactive UI updates
+**Architecture Patterns:**
+- MobX observer pattern for reactive updates
 - CallbackProperty for dynamic Cesium entity properties
-- DataSource reuse and systematic cleanup
-- Conditional component rendering based on selection state
+- DataSource reuse and cleanup
+- Conditional rendering based on selection state
 
-This implementation guide reflects the current working system and provides the technical context needed for continued development.
+**Key Files:**
+- `src/stores/RouteStore.ts` - Route data and selection state
+- `src/stores/StationStore.ts` - Station data with dependency inversion
+- `src/utils/cesium/routeRenderer.ts` - Route geometry rendering
+- `src/utils/cesium/stationRenderer.ts` - Station point rendering
+- `src/utils/api/types.ts` - API type definitions
+- `vite.config.ts` - Build configuration
+- `postcss.config.js` - CSS isolation setup
