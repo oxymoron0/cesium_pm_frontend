@@ -233,11 +233,11 @@ export function clearStationsByRoute(routeName: string): void {
  */
 export function clearAllStations(): void {
   try {
-    const viewer = (window as any).cviewer;
+    const viewer = window.cviewer;
     if (!viewer) return;
 
     // 모든 stations_ 패턴의 DataSource 제거
-    const dataSourcesToRemove: any[] = [];
+    const dataSourcesToRemove: GeoJsonDataSource[] = [];
 
     for (let i = 0; i < viewer.dataSources.length; i++) {
       const dataSource = viewer.dataSources.get(i);
@@ -287,7 +287,7 @@ export function toggleStationVisibility(routeName: string, show: boolean): void 
  */
 export function hideAllStations(): void {
   try {
-    const viewer = (window as any).cviewer;
+    const viewer = window.cviewer;
     if (!viewer) return;
 
     // 모든 stations_ 패턴의 DataSource 숨김
