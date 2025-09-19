@@ -17,7 +17,7 @@ const CesiumViewer = () => {
     // console.log('[PM Frontend] Cesium Ion 토큰 설정 완료');
 
     // Qiankun 환경에서 부모 Viewer 감지
-    if ((window as any).__POWERED_BY_QIANKUN__ && (window as any).cviewer) {
+    if (window.__POWERED_BY_QIANKUN__ && window.cviewer) {
       console.log('[PM Frontend] 부모 Cesium Viewer 감지됨, DOM 컨테이너 렌더링 안함');
       setIsUsingParentViewer(true);
       return;
@@ -126,8 +126,8 @@ const CesiumViewer = () => {
         console.log('[PM Frontend] vWorld 레이어 추가 완료');
 
         // 전역에 Cesium 라이브러리 노출 (개발 환경용)
-        (window as any).Cesium = { Viewer, Ion, Color, Cartesian3, Cartesian2, HeightReference, LabelStyle, VerticalOrigin };
-        (window as any).cviewer = viewer;
+        window.Cesium = { Viewer, Ion, Color, Cartesian3, Cartesian2, HeightReference, LabelStyle, VerticalOrigin };
+        window.cviewer = viewer;
         console.log('[PM Frontend] window.cviewer 설정 완료');
 
       } catch (error) {
@@ -145,19 +145,19 @@ const CesiumViewer = () => {
     // 정리 함수
     return () => {
       console.log('[PM Frontend] CesiumViewer cleanup');
-      if ((window as any).cviewer && !isUsingParentViewer) {
+      if (window.cviewer && !isUsingParentViewer) {
         console.log('[PM Frontend] Cesium Viewer 정리 시작');
-        const viewer = (window as any).cviewer;
+        const viewer = window.cviewer;
         try {
           viewer.destroy();
-          delete (window as any).cviewer;
+          delete window.cviewer;
           console.log('[PM Frontend] Cesium Viewer 정리 완료');
         } catch (error) {
           console.error('[PM Frontend] Viewer 정리 중 오류:', error);
         }
       }
     };
-  }, []);
+  }, [isUsingParentViewer]);
 
   // Qiankun 환경에서는 부모 Viewer를 사용하므로 DOM 컨테이너 렌더링 안함
   if (isUsingParentViewer) {
