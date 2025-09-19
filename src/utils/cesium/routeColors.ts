@@ -1,6 +1,6 @@
-import { Color, ColorMaterialProperty, Entity, PolylineGraphics, Cartesian3 } from 'cesium';
+import { Color, ColorMaterialProperty, Entity, PolylineGraphics, Cartesian3, ConstantProperty } from 'cesium';
 import { findDataSource } from './datasources';
-import type { RouteGeom } from '../api/types';
+import type { RouteGeom, GeoJSONLineString } from '../api/types';
 
 /**
  * Route focus overlay management utilities
@@ -20,16 +20,13 @@ const FOCUSED_OUTBOUND_ID = 'focused_outbound';
 /**
  * Remove Z coordinates from geometry to enable terrain clamping
  */
-function removeZCoordinates(geometry: any): any {
+function removeZCoordinates(geometry: GeoJSONLineString): { type: 'LineString'; coordinates: [number, number][] } {
   if (!geometry || !geometry.coordinates) {
     return geometry;
   }
 
-  const processCoordinates = (coords: any[]): any[] => {
-    if (typeof coords[0] === 'number') {
-      return [coords[0], coords[1]];
-    }
-    return coords.map(coord => processCoordinates(coord));
+  const processCoordinates = (coords: [number, number, number][]): [number, number][] => {
+    return coords.map(([lng, lat]) => [lng, lat]);
   };
 
   return {
@@ -129,7 +126,7 @@ export function updateFocusedRouteDirection(selectedDirection: 'inbound' | 'outb
   try {
     // Update inbound entity
     if (focusedInbound.polyline) {
-      (focusedInbound.polyline.width as any) = selectedDirection === 'inbound' ? 6.0 : 5.0;
+      focusedInbound.polyline.width = new ConstantProperty(selectedDirection === 'inbound' ? 6.0 : 5.0);
       focusedInbound.polyline.material = new ColorMaterialProperty(
         selectedDirection === 'inbound' ? FOCUSED_INBOUND_COLOR.withAlpha(1.0) : UNFOCUSED_COLOR.withAlpha(0.4)
       );
@@ -137,7 +134,7 @@ export function updateFocusedRouteDirection(selectedDirection: 'inbound' | 'outb
 
     // Update outbound entity
     if (focusedOutbound.polyline) {
-      (focusedOutbound.polyline.width as any) = selectedDirection === 'outbound' ? 6.0 : 5.0;
+      focusedOutbound.polyline.width = new ConstantProperty(selectedDirection === 'outbound' ? 6.0 : 5.0);
       focusedOutbound.polyline.material = new ColorMaterialProperty(
         selectedDirection === 'outbound' ? FOCUSED_OUTBOUND_COLOR.withAlpha(1.0) : UNFOCUSED_COLOR.withAlpha(0.4)
       );
@@ -160,13 +157,6 @@ export function hasFocusedRoute(): boolean {
             dataSource.entities.getById(FOCUSED_OUTBOUND_ID));
 }
 
-/**
- * Legacy function - kept for compatibility (now deprecated)
- */
-export function updateRouteColors(_routeName: string, _isSelected: boolean): void {
-  // This function is now deprecated in favor of focused route overlay system
-  console.warn('[updateRouteColors] Deprecated function - use createFocusedRoute/removeFocusedRoute instead');
-}
 
 /**
  * Legacy function - kept for compatibility (now deprecated)
