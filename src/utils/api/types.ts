@@ -26,7 +26,15 @@ export interface RouteInfoResponse {
 }
 
 /**
- * GeoJSON Polygon geometry type (supports 3D coordinates)
+ * GeoJSON LineString geometry type (actual API response)
+ */
+export interface GeoJSONLineString {
+  type: 'LineString';
+  coordinates: [number, number, number][];  // [longitude, latitude, 0]
+}
+
+/**
+ * GeoJSON Polygon geometry type (for future use)
  */
 export interface GeoJSONPolygon {
   type: 'Polygon';
@@ -39,14 +47,10 @@ export interface GeoJSONPolygon {
  */
 export interface RouteGeom {
   route_name: string;
-  inbound: GeoJSONPolygon;    // Inbound route path (GeoJSON Polygon)
-  outbound: GeoJSONPolygon;   // Outbound route path (GeoJSON Polygon)
+  inbound: GeoJSONLineString;    // ✅ Correct: LineString not Polygon
+  outbound: GeoJSONLineString;   // ✅ Correct: LineString not Polygon
 }
 
-/**
- * 노선 경로 응답 (실제 API 구조 - data wrapper 없음)
- */
-export interface RouteGeomResponse extends RouteGeom {}
 
 // =============================================================================
 // Station API Types (Route Stations)
@@ -171,7 +175,44 @@ export interface ApiError {
 /**
  * API 성공 응답 공통 구조
  */
-export interface ApiSuccess<T = any> {
+export interface ApiSuccess<T = unknown> {
   data: T;
   message?: string;
+}
+
+// =============================================================================
+// Air Quality Sensor Types
+// =============================================================================
+
+/**
+ * 공기질 상태 등급
+ */
+export type AirQualityLevel = 'good' | 'normal' | 'bad' | 'very_bad';
+
+/**
+ * 공기질 상태 색상 (CSS 색상값)
+ */
+export type AirQualityColor = '#18A274' | '#FFD040' | '#F70' | '#D32F2D' | '#C8C8C8';
+
+/**
+ * 센서 타입
+ */
+export type SensorType = 'pm10' | 'pm25' | 'vocs';
+
+/**
+ * 공기질 센서 데이터
+ */
+export interface AirQualitySensorData {
+  type: SensorType;
+  value: number;
+  level: AirQualityLevel;
+  levelText: string; // '좋음', '보통', '나쁨', '매우 나쁨'
+}
+
+/**
+ * 공기질 센서 컴포넌트 Props
+ */
+export interface AirQualitySensorProps {
+  data: AirQualitySensorData;
+  title: string; // '미세먼지', '초미세먼지', 'VOCs'
 }
