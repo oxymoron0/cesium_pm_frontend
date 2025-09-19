@@ -4,11 +4,17 @@ import '@/index.css'
 
 let root: Root | null = null;
 
+interface MountProps {
+  container?: Element;
+  onCloseMicroApp?: () => void;
+  dispatch?: (action: unknown) => void;
+}
+
 export async function bootstrap() {
   console.log('[qiankun] SamplePage bootstrap');
 }
 
-export async function mount(props: any) {
+export async function mount(props: MountProps) {
   const { container, onCloseMicroApp, dispatch } = props
   console.log('[qiankun] SamplePage mount', props);
 
@@ -33,7 +39,7 @@ export async function unmount() {
 }
 
 // 독립 실행 모드
-if (!(window as any).__POWERED_BY_QIANKUN__) {
+if (!window.__POWERED_BY_QIANKUN__) {
   const container = document.getElementById('microapp-SamplePage') || document.getElementById('root');
   if (container) {
     root = createRoot(container);
