@@ -189,6 +189,7 @@ class RouteStore {
       }
       
     } catch (error) {
+      console.error('[RouteStore] Route data initialization failed:', error);
     }
   }
 
@@ -234,6 +235,7 @@ class RouteStore {
           
           results.success++;
         } catch (error) {
+          console.error(`[RouteStore] Failed to load geometry for route ${routeName}:`, error);
           results.failed++;
         }
       }
@@ -242,6 +244,7 @@ class RouteStore {
       if (results.failed > 0 && results.success === 0) {
         this.setRouteGeomError('모든 노선 geometry 로딩 실패');
       } else if (results.failed > 0) {
+        console.warn(`[RouteStore] Partial failure: ${results.failed} out of ${routeNames.length} routes failed to load`);
       }
       
     } catch (error) {
@@ -252,19 +255,6 @@ class RouteStore {
     }
   }
 
-  /**
-   * 특정 노선의 route_geom만 개별 로딩 (필요시 사용)
-   */
-  async loadSingleRouteGeometry(routeName: string): Promise<boolean> {
-    try {
-      const response = await getRouteGeometry(routeName);
-      // response 자체가 RouteGeom 구조 (data wrapper 없음)
-      this.setRouteGeom(routeName, response);
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
 }
 
 export const routeStore = new RouteStore();
