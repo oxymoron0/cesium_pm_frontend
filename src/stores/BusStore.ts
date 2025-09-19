@@ -2,21 +2,23 @@ import { makeAutoObservable, runInAction } from 'mobx'
 import { getBusTrajectoryInitial, getBusTrajectoryLatest, type BusTrajectoryData, type BusPosition } from '@/utils/api/busApi'
 import { renderBusModels, animateSingleBus, trackBusEntity, stopTracking, getCurrentTrackedBus } from '@/utils/cesium/glbRenderer'
 
-// Timeline 시뮬레이션을 위한 인터페이스
-interface BusSimulationTrack {
+// 개별 버스 애니메이션을 위한 인터페이스
+interface BusAnimationState {
   vehicleNumber: string
-  positions: BusPosition[]
-  currentIndex: number
-  isCompleted: boolean
+  positionQueue: BusPosition[]  // 대기 중인 위치들
+  isAnimating: boolean
+  currentAnimation?: {
+    from: BusPosition
+    to: BusPosition
+    startTime: number
+    duration: number
+    timer?: NodeJS.Timeout
+  }
 }
 
-interface SimulationState {
-  isPlaying: boolean
-  currentStep: number
-  maxSteps: number
-  busTracks: Map<string, BusSimulationTrack>
+interface AnimationSystemState {
   playbackSpeed: number
-  simulationTimer?: NodeJS.Timeout
+  isEnabled: boolean
 }
 
 class BusStore {
@@ -32,14 +34,11 @@ class BusStore {
   pollFailureCount = 0
   maxPollFailures = 3
 
-  // Timeline 시뮬레이션 상태
-  simulation: SimulationState = {
-    isPlaying: false,
-    currentStep: 0,
-    maxSteps: 0,
-    busTracks: new Map(),
+  // 개별 버스 애니메이션 시스템
+  busAnimations: Map<string, BusAnimationState> = new Map()
+  animationSystem: AnimationSystemState = {
     playbackSpeed: 1.0,
-    simulationTimer: undefined
+    isEnabled: true
   }
 
   constructor() {
@@ -69,6 +68,9 @@ class BusStore {
       await renderBusModels(this.busData)
       await this.updateLatestPositions()
 
+      // 버스 애니메이션 상태 초기화
+      this.initializeBusAnimations()
+
       // 초기화 완료 후 실시간 폴링 자동 시작
       console.log('[BusStore] Initialization complete, starting real-time polling')
       this.startRealTimePolling()
@@ -85,6 +87,7 @@ class BusStore {
 
   cleanup() {
     this.stopRealTimePolling()
+    this.cleanupAllAnimations()
     this.busData = []
     this.latestPositions.clear()
   }
@@ -193,15 +196,10 @@ class BusStore {
         this.pollFailureCount = 0
       })
 
-      // 새 데이터가 있고 시뮬레이션이 완료된 상태라면 자동 재시작
-      if (hasNewData && !this.simulation.isPlaying && this.simulation.currentStep >= this.simulation.maxSteps) {
-        console.log('[BusStore] New data received, restarting simulation automatically')
-        await this.startTimelineSimulation()
-      }
-
-      // 업데이트된 데이터로 시뮬레이션 트랙 갱신 (진행 중인 시뮬레이션이 있다면)
-      if (this.simulation.busTracks.size > 0) {
-        this.updateSimulationTracks()
+      // 새 데이터가 있으면 개별 버스 애니메이션 시작
+      if (hasNewData && this.animationSystem.isEnabled) {
+        console.log('[BusStore] New data received, starting individual bus animations')
+        this.processNewPositionData()
       }
 
     } catch (error) {
@@ -241,28 +239,142 @@ class BusStore {
   }
 
   /**
-   * 시뮬레이션 트랙을 새 데이터로 업데이트
+   * 버스 애니메이션 상태 초기화
    */
-  private updateSimulationTracks(): void {
+  private initializeBusAnimations(): void {
+    console.log('[BusStore] Initializing bus animation states...')
+
     this.busData.forEach(bus => {
-      const track = this.simulation.busTracks.get(bus.vehicle_number)
-      if (track) {
-        // 시간순 정렬된 위치로 트랙 업데이트
-        const sortedPositions = [...bus.positions].sort((a, b) =>
-          new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()
+      if (!this.busAnimations.has(bus.vehicle_number)) {
+        this.busAnimations.set(bus.vehicle_number, {
+          vehicleNumber: bus.vehicle_number,
+          positionQueue: [],
+          isAnimating: false
+        })
+      }
+    })
+
+    console.log(`[BusStore] Animation states initialized for ${this.busAnimations.size} buses`)
+  }
+
+  /**
+   * 새 위치 데이터 처리 및 애니메이션 시작
+   */
+  private processNewPositionData(): void {
+    this.busData.forEach(bus => {
+      const animationState = this.busAnimations.get(bus.vehicle_number)
+      if (!animationState) return
+
+      // 최신 2개 위치를 시간순으로 정렬
+      const sortedPositions = [...bus.positions].sort((a, b) =>
+        new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()
+      )
+
+      if (sortedPositions.length >= 2) {
+        // 큐에 최신 위치 추가 (중복 체크)
+        const latestPosition = sortedPositions[sortedPositions.length - 1]
+        const isDuplicate = animationState.positionQueue.some(pos =>
+          pos.work_id === latestPosition.work_id && pos.recorded_at === latestPosition.recorded_at
         )
 
-        track.positions = sortedPositions
+        if (!isDuplicate) {
+          animationState.positionQueue.push(latestPosition)
+          console.log(`[BusStore] Added position to queue for bus ${bus.vehicle_number}`)
+        }
 
-        // maxSteps 재계산
-        const newMaxSteps = Math.max(...Array.from(this.simulation.busTracks.values()).map(t => t.positions.length))
-        this.simulation.maxSteps = newMaxSteps
-
-        console.log(`[BusStore] Updated simulation track for bus ${bus.vehicle_number}: ${sortedPositions.length} positions`)
+        // 애니메이션 중이 아니면 시작
+        if (!animationState.isAnimating) {
+          this.startNextAnimation(bus.vehicle_number)
+        }
       }
     })
   }
 
+
+  /**
+   * 개별 버스의 다음 애니메이션 시작
+   */
+  private startNextAnimation(vehicleNumber: string): void {
+    const animationState = this.busAnimations.get(vehicleNumber)
+    if (!animationState || animationState.isAnimating || animationState.positionQueue.length === 0) {
+      return
+    }
+
+    // 큐에서 다음 위치 가져오기
+    const nextPosition = animationState.positionQueue.shift()!
+
+    // 현재 위치 찾기 (busData에서 가장 최근 위치)
+    const busData = this.busData.find(bus => bus.vehicle_number === vehicleNumber)
+    if (!busData || busData.positions.length === 0) {
+      console.warn(`[BusStore] No current position found for bus ${vehicleNumber}`)
+      return
+    }
+
+    const sortedPositions = [...busData.positions].sort((a, b) =>
+      new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()
+    )
+    const currentPosition = sortedPositions[sortedPositions.length - 2] || sortedPositions[0] // 이전 위치 또는 현재 위치
+
+    // 시간 차이 계산
+    const timeDiff = BusStore.getTimeDifferenceInSeconds(currentPosition, nextPosition)
+    const duration = timeDiff ? Math.min(timeDiff, 60) / this.animationSystem.playbackSpeed : 2.0
+
+    console.log(`[BusStore] Starting animation for bus ${vehicleNumber}: ${currentPosition.recorded_at} → ${nextPosition.recorded_at} (${duration.toFixed(1)}s)`)
+
+    // 애니메이션 상태 업데이트
+    runInAction(() => {
+      animationState.isAnimating = true
+      animationState.currentAnimation = {
+        from: currentPosition,
+        to: nextPosition,
+        startTime: Date.now(),
+        duration: duration * 1000
+      }
+    })
+
+    // Cesium 애니메이션 시작
+    const { longitude, latitude } = nextPosition.position
+    animateSingleBus(vehicleNumber, longitude, latitude, duration)
+
+    // 애니메이션 완료 타이머 설정
+    if (animationState.currentAnimation) {
+      animationState.currentAnimation.timer = setTimeout(() => {
+        this.onAnimationComplete(vehicleNumber)
+      }, duration * 1000)
+    }
+  }
+
+  /**
+   * 애니메이션 완료 처리
+   */
+  private onAnimationComplete(vehicleNumber: string): void {
+    const animationState = this.busAnimations.get(vehicleNumber)
+    if (!animationState) return
+
+    console.log(`[BusStore] Animation completed for bus ${vehicleNumber}`)
+
+    runInAction(() => {
+      animationState.isAnimating = false
+      animationState.currentAnimation = undefined
+    })
+
+    // 큐에 더 있으면 다음 애니메이션 시작
+    if (animationState.positionQueue.length > 0) {
+      this.startNextAnimation(vehicleNumber)
+    }
+  }
+
+  /**
+   * 모든 애니메이션 정리
+   */
+  private cleanupAllAnimations(): void {
+    this.busAnimations.forEach((animationState) => {
+      if (animationState.currentAnimation?.timer) {
+        clearTimeout(animationState.currentAnimation.timer)
+      }
+    })
+    this.busAnimations.clear()
+  }
 
   // 개별 버스 제어 함수
 
@@ -329,265 +441,65 @@ class BusStore {
     }
   }
 
-  // Timeline 시뮬레이션 시스템
+  // 애니메이션 시스템 제어
 
   /**
-   * 각 버스별 시뮬레이션 트랙 생성 (최신 2건만 사용)
+   * 애니메이션 시스템 시작 (초기화 후 자동 호출)
    */
-  private createBusTracks(): void {
-    console.log('[BusStore] Creating bus tracks from latest 2 positions per bus...')
-
-    const busTracks = new Map<string, BusSimulationTrack>()
-    let maxSteps = 0
-
-    // 각 버스별로 트랙 생성
-    this.busData.forEach(bus => {
-      // 시간순으로 정렬 (가장 오래된 것부터)
-      const sortedPositions = [...bus.positions].sort((a, b) =>
-        new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()
-      )
-
-      // 최신 2건만 사용 (가장 최근 + 그 전 시점)
-      // sortedPositions는 오래된 것부터 → 최신 순이므로 마지막 2개가 최신 2건
-      const latestTwoPositions = sortedPositions.slice(-2) // [두번째최신, 가장최신]
-
-      if (latestTwoPositions.length >= 2) {
-        busTracks.set(bus.vehicle_number, {
-          vehicleNumber: bus.vehicle_number,
-          positions: latestTwoPositions,
-          currentIndex: 0,
-          isCompleted: false
-        })
-
-        // 최대 스텝 수 계산 (항상 2가 될 것)
-        maxSteps = Math.max(maxSteps, latestTwoPositions.length)
-
-        console.log(`[BusStore] Bus ${bus.vehicle_number}: Using positions from ${latestTwoPositions[0].recorded_at} to ${latestTwoPositions[1].recorded_at}`)
-      } else {
-        console.warn(`[BusStore] Bus ${bus.vehicle_number} has insufficient data (${latestTwoPositions.length} positions)`)
-      }
-    })
-
-    runInAction(() => {
-      this.simulation.busTracks = busTracks
-      this.simulation.maxSteps = maxSteps
-      this.simulation.currentStep = 0
-    })
-
-    console.log(`[BusStore] Bus tracks created: ${busTracks.size} buses, max ${maxSteps} steps (latest 2 positions only)`)
-  }
-
-  /**
-   * 시뮬레이션 시작 위치로 모든 버스 초기화 (최신 2건 중 이전 시점)
-   */
-  private async renderInitialPositions(): Promise<void> {
-    console.log('[BusStore] Rendering initial simulation positions...')
-
-    // 각 버스의 시뮬레이션 시작 위치 (최신 2건 중 첫 번째) 추출
-    const initialData: BusTrajectoryData[] = this.busData.map(bus => {
-      // 시간순 정렬 후 최신 2건 가져오기
-      const sortedPositions = [...bus.positions].sort((a, b) =>
-        new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()
-      )
-      const latestTwo = sortedPositions.slice(-2)
-
-      return {
-        ...bus,
-        positions: latestTwo.length >= 2 ? [latestTwo[0]] : latestTwo // 첫 번째 위치 또는 가능한 위치
-      }
-    }).filter(bus => bus.positions.length > 0) // 위치 데이터가 있는 버스만
-
-    await renderBusModels(initialData)
-    console.log('[BusStore] Initial simulation positions rendered')
-  }
-
-  /**
-   * Timeline 시뮬레이션 시작
-   */
-  async startTimelineSimulation(): Promise<void> {
-    if (this.simulation.busTracks.size === 0) {
-      this.createBusTracks()
-    }
-
-    if (this.simulation.busTracks.size === 0) {
-      console.error('[BusStore] No bus track data available')
-      return
-    }
-
-    // 초기 위치 렌더링
-    await this.renderInitialPositions()
-
-    runInAction(() => {
-      this.simulation.isPlaying = true
-      this.simulation.currentStep = 0
-    })
-
-    console.log(`[BusStore] Timeline simulation started with ${this.simulation.busTracks.size} buses, ${this.simulation.maxSteps} steps`)
-    this.processNextStep()
-  }
-
-  /**
-   * 다음 시뮬레이션 스텝 처리 (모든 버스 동시 이동)
-   */
-  private processNextStep(): void {
-    if (!this.simulation.isPlaying || this.simulation.currentStep >= this.simulation.maxSteps) {
-      this.stopTimelineSimulation()
-      this.cleanupOldDataAfterSimulation()
-      return
-    }
-
-    let totalDuration = 0
-    let movingBusCount = 0
-
-    // 모든 버스를 동시에 다음 위치로 이동
-    this.simulation.busTracks.forEach((track, vehicleNumber) => {
-      if (track.isCompleted || track.currentIndex >= track.positions.length) {
-        return
-      }
-
-      const currentPosition = track.positions[track.currentIndex]
-      const { longitude, latitude } = currentPosition.position
-
-      // 이전 위치와의 시간 차이 계산
-      let duration = 2.0 // 기본 2초
-      if (track.currentIndex > 0) {
-        const prevPosition = track.positions[track.currentIndex - 1]
-        const timeDiff = BusStore.getTimeDifferenceInSeconds(prevPosition, currentPosition)
-        duration = timeDiff ? Math.min(timeDiff, 60) : 2.0 // 최대 60초로 제한
-      }
-
-      // 재생 속도 적용
-      const animationDuration = duration / this.simulation.playbackSpeed
-
-      console.log(`[BusStore] Step ${this.simulation.currentStep + 1}/${this.simulation.maxSteps}: Moving bus ${vehicleNumber} to ${latitude}, ${longitude} (duration: ${animationDuration.toFixed(1)}s)`)
-
-      animateSingleBus(vehicleNumber, longitude, latitude, animationDuration)
-
-      // 다음 인덱스로 이동
-      track.currentIndex++
-      if (track.currentIndex >= track.positions.length) {
-        track.isCompleted = true
-      }
-
-      totalDuration = Math.max(totalDuration, animationDuration)
-      movingBusCount++
-    })
-
-    runInAction(() => {
-      this.simulation.currentStep++
-    })
-
-    if (movingBusCount === 0) {
-      // 더 이상 움직일 버스가 없으면 종료
-      this.stopTimelineSimulation()
-      return
-    }
-
-    // 다음 스텝 스케줄링 (가장 긴 애니메이션 시간 기준)
-    const nextStepDelay = (totalDuration * 1000)
-    this.simulation.simulationTimer = setTimeout(() => {
-      this.processNextStep()
-    }, nextStepDelay)
-  }
-
-  /**
-   * Timeline 시뮬레이션 일시정지
-   */
-  pauseTimelineSimulation(): void {
-    runInAction(() => {
-      this.simulation.isPlaying = false
-    })
-
-    if (this.simulation.simulationTimer) {
-      clearTimeout(this.simulation.simulationTimer)
-      this.simulation.simulationTimer = undefined
-    }
-
-    console.log('[BusStore] Timeline simulation paused')
-  }
-
-  /**
-   * Timeline 시뮬레이션 재개
-   */
-  resumeTimelineSimulation(): void {
-    if (this.simulation.currentStep >= this.simulation.maxSteps) {
-      console.log('[BusStore] Simulation already completed')
-      return
-    }
-
-    runInAction(() => {
-      this.simulation.isPlaying = true
-    })
-
-    console.log('[BusStore] Timeline simulation resumed')
-    this.processNextStep()
-  }
-
-  /**
-   * Timeline 시뮬레이션 정지 및 초기화
-   */
-  stopTimelineSimulation(): void {
-    runInAction(() => {
-      this.simulation.isPlaying = false
-      this.simulation.currentStep = 0
-      // 모든 트랙 초기화
-      this.simulation.busTracks.forEach(track => {
-        track.currentIndex = 0
-        track.isCompleted = false
+  async startAnimationSystem(): Promise<void> {
+    if (!this.animationSystem.isEnabled) {
+      runInAction(() => {
+        this.animationSystem.isEnabled = true
       })
-    })
-
-    if (this.simulation.simulationTimer) {
-      clearTimeout(this.simulation.simulationTimer)
-      this.simulation.simulationTimer = undefined
     }
 
-    console.log('[BusStore] Timeline simulation stopped')
+    console.log('[BusStore] Animation system started')
+
+    // 기존 데이터로 초기 애니메이션 시작
+    this.processNewPositionData()
   }
 
   /**
-   * 시뮬레이션 완료 시 오래된 데이터 정리
+   * 애니메이션 시스템 중지
    */
-  private cleanupOldDataAfterSimulation(): void {
-    // 최신 2건만 유지하는 구조에서는 정리할 필요 없음
-    console.log('[BusStore] Simulation completed - data already maintained at 2 positions per bus')
+  stopAnimationSystem(): void {
+    runInAction(() => {
+      this.animationSystem.isEnabled = false
+    })
+
+    this.cleanupAllAnimations()
+    console.log('[BusStore] Animation system stopped')
   }
 
   /**
-   * 시뮬레이션 재생 속도 설정
+   * 애니메이션 재생 속도 설정
    */
   setPlaybackSpeed(speed: number): void {
     runInAction(() => {
-      this.simulation.playbackSpeed = Math.max(0.1, Math.min(10, speed)) // 0.1x ~ 10x
+      this.animationSystem.playbackSpeed = Math.max(0.1, Math.min(10, speed)) // 0.1x ~ 10x
     })
 
-    console.log(`[BusStore] Playback speed set to ${this.simulation.playbackSpeed}x`)
+    console.log(`[BusStore] Playback speed set to ${this.animationSystem.playbackSpeed}x`)
   }
 
-  // Getters for simulation state
-  get isSimulationPlaying(): boolean {
-    return this.simulation.isPlaying
+  // Getters for animation state
+  get isAnimationSystemEnabled(): boolean {
+    return this.animationSystem.isEnabled
   }
 
-  get simulationProgress(): number {
-    if (this.simulation.maxSteps === 0) return 0
-    return (this.simulation.currentStep / this.simulation.maxSteps) * 100
+  get activeAnimations(): number {
+    return Array.from(this.busAnimations.values()).filter(state => state.isAnimating).length
   }
 
-  get simulationEventCount(): number {
-    return this.simulation.maxSteps
+  get totalQueuedAnimations(): number {
+    return Array.from(this.busAnimations.values()).reduce((total, state) => total + state.positionQueue.length, 0)
   }
 
-  get currentSimulationEvent(): { step: number, maxSteps: number, activeBuses: number } | null {
-    if (this.simulation.maxSteps === 0) return null
-
-    const activeBuses = Array.from(this.simulation.busTracks.values())
-      .filter(track => !track.isCompleted).length
-
+  get animationSystemStatus(): { enabled: boolean, activeAnimations: number, queuedAnimations: number } {
     return {
-      step: this.simulation.currentStep,
-      maxSteps: this.simulation.maxSteps,
-      activeBuses
+      enabled: this.animationSystem.isEnabled,
+      activeAnimations: this.activeAnimations,
+      queuedAnimations: this.totalQueuedAnimations
     }
   }
 }
