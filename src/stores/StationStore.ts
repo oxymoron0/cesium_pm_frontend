@@ -274,23 +274,6 @@ class StationStore {
     }
   }
   
-  /**
-   * 캐시된 데이터 초기화
-   */
-  clearCache = action(() => {
-    this.stationDataMap.clear();
-  });
-  
-  /**
-   * 특정 노선의 캐시 데이터 제거
-   */
-  clearRouteCache = action((routeName: string) => {
-    const directions: RouteDirection[] = ['inbound', 'outbound'];
-    directions.forEach(direction => {
-      const key = this.createStationKey(routeName, direction);
-      this.stationDataMap.delete(key);
-    });
-  });
 }
 
 export const stationStore = new StationStore();
