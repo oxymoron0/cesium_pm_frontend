@@ -11,7 +11,7 @@ import { CustomDataSource, GeoJsonDataSource } from 'cesium';
  * @throws 이미 존재하는 name이면 에러 발생
  */
 export function createDataSource(name: string): CustomDataSource {
-  const viewer = (window as any).cviewer;
+  const viewer = window.cviewer;
   
   if (!viewer) {
     throw new Error('[createDataSource] window.cviewer가 준비되지 않았습니다.');
@@ -38,7 +38,7 @@ export function createDataSource(name: string): CustomDataSource {
  * @returns CustomDataSource 또는 undefined
  */
 export function findDataSource(name: string): CustomDataSource | undefined {
-  const viewer = (window as any).cviewer;
+  const viewer = window.cviewer;
   
   if (!viewer) {
     return undefined;
@@ -54,7 +54,7 @@ export function findDataSource(name: string): CustomDataSource | undefined {
  * @returns 제거 성공 여부
  */
 export function removeDataSource(name: string): boolean {
-  const viewer = (window as any).cviewer;
+  const viewer = window.cviewer;
   
   if (!viewer) {
     console.warn('[removeDataSource] window.cviewer가 준비되지 않았습니다.');
@@ -108,7 +108,7 @@ export function toggleDataSource(name: string, show: boolean): void {
  * @throws 이미 존재하는 name이면 에러 발생
  */
 export async function createGeoJsonDataSource(name: string): Promise<GeoJsonDataSource> {
-  const viewer = (window as any).cviewer;
+  const viewer = window.cviewer;
 
   if (!viewer) {
     throw new Error('[createGeoJsonDataSource] window.cviewer가 준비되지 않았습니다.');
@@ -139,7 +139,7 @@ export async function createGeoJsonDataSource(name: string): Promise<GeoJsonData
  * @returns DataSource 이름 배열
  */
 export function listDataSources(): string[] {
-  const viewer = (window as any).cviewer;
+  const viewer = window.cviewer;
   
   if (!viewer) {
     console.warn('[listDataSources] window.cviewer가 준비되지 않았습니다.');
