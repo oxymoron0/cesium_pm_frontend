@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import CesiumViewer from '@/components/CesiumViewer'
 import Panel from '@/components/basic/Panel'
 import VulnerabilityManager from '@/components/service/VulnerabilityManager'
+import AirQualityDisplay from '@/components/service/sensor/AirQualityDisplay'
 import { initializePMFrontend } from '@/utils/cesiumControls'
 import { get } from '@/utils/api/request'
 import { renderStation, renderStations, type Station } from '@/utils/cesium/testRenderer'
@@ -10,7 +11,7 @@ import { routeStore } from '@/stores/RouteStore'
 import { stationStore } from '@/stores/StationStore'
 import { renderAllRoutes } from '@/utils/cesium/routeRenderer'
 import { renderBusModels, clearBusModels, toggleBusModels, getBusModelCount, flyToBusModel } from '@/utils/cesium/glbRenderer'
-import { getBusTrajectoryInitial, type BusTrajectoryData } from '@/utils/api/busApi'
+import { type BusTrajectoryData } from '@/utils/api/busApi'
 import { busStore } from '@/stores/BusStore'
 import { observer } from 'mobx-react-lite'
 
@@ -22,7 +23,11 @@ interface StationApiResponse {
   total_pages: number;
 }
 
-const App = observer(function App(props: any) {
+interface AppProps {
+  [key: string]: unknown;
+}
+
+const App = observer(function App(props: AppProps) {
   console.log(props)
   const [cesiumStatus, setCesiumStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [stations, setStations] = useState<Station[]>([])
@@ -35,8 +40,8 @@ const App = observer(function App(props: any) {
   useEffect(() => {
     // Cesium 초기화 및 상태 감지
     const checkCesiumStatus = () => {
-      const isQiankun = (window as any).__POWERED_BY_QIANKUN__
-      const parentViewer = (window as any).cviewer
+      const isQiankun = window.__POWERED_BY_QIANKUN__
+      const parentViewer = window.cviewer
 
       if (isQiankun && parentViewer) {
         console.log('[SamplePage] 부모 Cesium Viewer 감지됨')
@@ -44,7 +49,7 @@ const App = observer(function App(props: any) {
       } else if (!isQiankun) {
         // 독립 모드에서는 CesiumViewer 컴포넌트가 window.cviewer를 설정할 때까지 대기
         const waitForViewer = setInterval(() => {
-          if ((window as any).cviewer) {
+          if (window.cviewer) {
             console.log('[SamplePage] 독립 Cesium Viewer 준비됨')
             setCesiumStatus('ready')
             clearInterval(waitForViewer)
@@ -89,9 +94,9 @@ const App = observer(function App(props: any) {
         setBusData(busStore.busData);
         console.log('[SamplePage] Bus system auto-initialized:', busStore.busData.length, 'buses');
 
-        // Timeline 시뮬레이션 자동 시작
-        await busStore.startTimelineSimulation();
-        console.log('[SamplePage] Timeline simulation auto-started');
+        // 애니메이션 시스템 자동 시작
+        await busStore.startAnimationSystem();
+        console.log('[SamplePage] Animation system auto-started');
 
       } catch (error) {
         console.error('[SamplePage] Auto-initialization failed:', error);
@@ -271,6 +276,15 @@ const App = observer(function App(props: any) {
       {/* 전체 화면 Cesium Viewer */}
       <CesiumViewer />
 
+      {/* 화면 중앙 공기질 센서 */}
+      <div className="absolute z-10 transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
+        <AirQualityDisplay
+          pm10Value={45}
+          pm25Value={25}
+          vocsValue={120}
+        />
+      </div>
+
       {/* UI Container Panel */}
       <Panel>
         <div className="w-full max-h-[936px] overflow-y-auto" style={{
@@ -440,7 +454,7 @@ const App = observer(function App(props: any) {
 
             {/* Real-time Polling Controls */}
             <div className="p-3 space-y-3 rounded-lg bg-gray-900/30">
-              <div className="pb-1 text-sm font-semibold border-b text-green-400 border-green-400/20">Real-time Bus Tracking</div>
+              <div className="pb-1 text-sm font-semibold text-green-400 border-b border-green-400/20">Real-time Bus Tracking</div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
@@ -485,62 +499,49 @@ const App = observer(function App(props: any) {
               </div>
             </div>
 
-            {/* Timeline Simulation Controls */}
+            {/* Animation System Controls */}
             <div className="p-3 space-y-3 rounded-lg bg-gray-900/30">
-              <div className="pb-1 text-sm font-semibold border-b text-cyan-400 border-cyan-400/20">Timeline Simulation</div>
+              <div className="pb-1 text-sm font-semibold border-b text-cyan-400 border-cyan-400/20">Animation System</div>
 
-              {/* Progress Bar */}
+              {/* Animation Status */}
               <div className="space-y-1">
                 <div className="flex justify-between text-xs text-gray-400">
-                  <span>Progress</span>
-                  <span>{busStore.simulationProgress.toFixed(1)}%</span>
-                </div>
-                <div className="w-full h-2 bg-gray-700 rounded-full">
-                  <div
-                    className="h-2 transition-all duration-300 rounded-full bg-cyan-600"
-                    style={{ width: `${busStore.simulationProgress}%` }}
-                  ></div>
+                  <span>System Status</span>
+                  <span className={busStore.isAnimationSystemEnabled ? 'text-green-400' : 'text-red-400'}>
+                    {busStore.isAnimationSystemEnabled ? 'Enabled' : 'Disabled'}
+                  </span>
                 </div>
                 <div className="flex justify-between text-xs text-gray-400">
-                  <span>Step: {busStore.simulation.currentStep}/{busStore.simulationEventCount}</span>
-                  <span>Speed: {busStore.simulation.playbackSpeed}x</span>
+                  <span>Active Animations</span>
+                  <span className="text-cyan-400">{busStore.activeAnimations}</span>
+                </div>
+                <div className="flex justify-between text-xs text-gray-400">
+                  <span>Queued Animations</span>
+                  <span className="text-yellow-400">{busStore.totalQueuedAnimations}</span>
+                </div>
+                <div className="flex justify-between text-xs text-gray-400">
+                  <span>Speed</span>
+                  <span>{busStore.animationSystem.playbackSpeed}x</span>
                 </div>
               </div>
 
               {/* Control Buttons */}
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <button
-                  onClick={async () => await busStore.startTimelineSimulation()}
-                  disabled={cesiumStatus !== 'ready' || busStore.totalBuses === 0 || busStore.isSimulationPlaying}
+                  onClick={async () => await busStore.startAnimationSystem()}
+                  disabled={cesiumStatus !== 'ready' || busStore.totalBuses === 0 || busStore.isAnimationSystemEnabled}
                   className="px-3 py-2 text-xs text-white bg-green-600 rounded hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
                 >
-                  ▶ Start
+                  ▶ Start System
                 </button>
                 <button
-                  onClick={() => busStore.pauseTimelineSimulation()}
-                  disabled={!busStore.isSimulationPlaying}
-                  className="px-3 py-2 text-xs text-white bg-yellow-600 rounded hover:bg-yellow-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
-                >
-                  ⏸ Pause
-                </button>
-                <button
-                  onClick={() => busStore.stopTimelineSimulation()}
-                  disabled={!busStore.isSimulationPlaying && busStore.simulation.currentStep === 0}
+                  onClick={() => busStore.stopAnimationSystem()}
+                  disabled={!busStore.isAnimationSystemEnabled}
                   className="px-3 py-2 text-xs text-white bg-red-600 rounded hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
                 >
-                  ⏹ Stop
+                  ⏹ Stop System
                 </button>
               </div>
-
-              {/* Resume Button */}
-              {!busStore.isSimulationPlaying && busStore.simulation.currentStep > 0 && busStore.simulation.currentStep < busStore.simulationEventCount && (
-                <button
-                  onClick={() => busStore.resumeTimelineSimulation()}
-                  className="w-full px-3 py-2 text-xs text-white bg-blue-600 rounded hover:bg-blue-700"
-                >
-                  ⏯ Resume
-                </button>
-              )}
 
               {/* Speed Controls */}
               <div className="space-y-2">
@@ -551,7 +552,7 @@ const App = observer(function App(props: any) {
                       key={speed}
                       onClick={() => busStore.setPlaybackSpeed(speed)}
                       className={`px-2 py-1 text-xs rounded ${
-                        busStore.simulation.playbackSpeed === speed
+                        busStore.animationSystem.playbackSpeed === speed
                           ? 'bg-cyan-600 text-white'
                           : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                       }`}
@@ -562,15 +563,14 @@ const App = observer(function App(props: any) {
                 </div>
               </div>
 
-              {/* Current Simulation Info */}
-              {busStore.currentSimulationEvent && (
-                <div className="p-2 text-xs bg-gray-800 rounded">
-                  <div className="font-medium text-cyan-400">Simulation Status:</div>
-                  <div className="text-gray-300">Step: {busStore.currentSimulationEvent.step}/{busStore.currentSimulationEvent.maxSteps}</div>
-                  <div className="text-gray-300">Active Buses: {busStore.currentSimulationEvent.activeBuses}</div>
-                  <div className="text-gray-300">Speed: {busStore.simulation.playbackSpeed}x</div>
-                </div>
-              )}
+              {/* Current Animation Info */}
+              <div className="p-2 text-xs bg-gray-800 rounded">
+                <div className="font-medium text-cyan-400">Animation Status:</div>
+                <div className="text-gray-300">System: {busStore.animationSystemStatus.enabled ? 'Enabled' : 'Disabled'}</div>
+                <div className="text-gray-300">Active: {busStore.animationSystemStatus.activeAnimations}</div>
+                <div className="text-gray-300">Queued: {busStore.animationSystemStatus.queuedAnimations}</div>
+                <div className="text-gray-300">Speed: {busStore.animationSystem.playbackSpeed}x</div>
+              </div>
 
               <div className="pt-2 border-t border-gray-600">
                 <div className="pb-1 text-xs font-medium text-gray-400">🎬 Individual Bus Tests</div>
