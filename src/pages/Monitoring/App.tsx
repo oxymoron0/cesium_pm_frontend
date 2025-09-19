@@ -14,8 +14,8 @@ const App = observer(function App() {
   useEffect(() => {
     // Cesium 초기화 및 상태 감지
     const checkCesiumStatus = () => {
-      const isQiankun = (window as any).__POWERED_BY_QIANKUN__
-      const parentViewer = (window as any).cviewer
+      const isQiankun = window.__POWERED_BY_QIANKUN__
+      const parentViewer = window.cviewer
 
       if (isQiankun && parentViewer) {
         setCesiumStatus('ready')
@@ -26,12 +26,12 @@ const App = observer(function App() {
       } else if (!isQiankun) {
         // 독립 모드에서는 CesiumViewer 컴포넌트가 window.cviewer를 설정할 때까지 대기
         const waitForViewer = setInterval(() => {
-          if ((window as any).cviewer) {
+          if (window.cviewer) {
             setCesiumStatus('ready')
             clearInterval(waitForViewer)
             // 독립 모드에서 초기 위치로 이동
             setTimeout(() => {
-              flyToLocation((window as any).cviewer, 129.053233, 35.162913, 1000)
+              flyToLocation(window.cviewer!, 129.053233, 35.162913, 1000)
             }, 500)
           }
         }, 100)
@@ -80,13 +80,13 @@ const App = observer(function App() {
         }
       }
 
-      // 버스 시스템 초기화 및 시뮬레이션 자동 시작
+      // 버스 시스템 초기화 및 애니메이션 자동 시작
       try {
         console.log('[App] Starting bus system initialization');
         await busStore.initializeBusSystem();
-        console.log('[App] Bus system initialized, starting timeline simulation');
-        await busStore.startTimelineSimulation();
-        console.log('[App] Bus timeline simulation started');
+        console.log('[App] Bus system initialized, starting animation system');
+        await busStore.startAnimationSystem();
+        console.log('[App] Bus animation system started');
       } catch (error) {
         console.error('[App] Bus system initialization failed:', error);
       }
