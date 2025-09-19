@@ -8,8 +8,13 @@ const basePath = import.meta.env.VITE_BASE_PATH || '/';
 const GLB_MODEL_URL = `${basePath}CesiumMilkTruck.glb`
 const DATASOURCE_NAME = 'bus_models'
 
-// 노선별 색상
-const ROUTE_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA726'] // 빨강, 청록, 파랑, 주황
+// 노선별 색상 매핑
+const ROUTE_COLOR_MAP: Record<string, string> = {
+  '10': '#FF6B6B',  // 빨강
+  '31': '#4ECDC4',  // 청록
+  '44': '#45B7D1',  // 파랑
+  '167': '#FFA726' // 주황
+}
 
 /**
  * Cesium viewer 가용성 체크
@@ -41,8 +46,8 @@ export async function renderBusModels(busData: BusTrajectoryData[]): Promise<voi
 
     const firstPosition = bus.positions[0]
     const { longitude, latitude } = firstPosition.position
-    const colorIndex = parseInt(bus.route_name) % ROUTE_COLORS.length
-    const color = Color.fromCssColorString(ROUTE_COLORS[colorIndex])
+    const colorHex = ROUTE_COLOR_MAP[bus.route_name] || '#888888' // 기본 회색
+    const color = Color.fromCssColorString(colorHex)
 
     const entity = new Entity({
       id: `bus_model_${bus.vehicle_number}`,
