@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react'
+import React, { Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 // Cesium CSS 명시적 로딩
@@ -27,11 +27,11 @@ const getPageInfo = () => {
 
 // 페이지 컴포넌트를 동적으로 로드하는 함수
 const createPageComponent = (modulePath: string) => {
-  return lazy(() => pageModules[modulePath]().then((module: any) => ({ default: module.default })))
+  return lazy(() => pageModules[modulePath]().then((module: { default: React.ComponentType }) => ({ default: module.default })))
 }
 
 // 개발 환경에서 페이지 선택을 위한 자동 라우터
-const DevRouter = () => {
+function DevRouter() {
   const currentPath = window.location.pathname
   const pages = getPageInfo()
   const basePath = import.meta.env.DEV ? (import.meta.env.VITE_BASE_PATH || '/') : '/'
@@ -101,6 +101,8 @@ const DevRouter = () => {
     </div>
   )
 }
+
+export default DevRouter
 
 createRoot(document.getElementById('root')!).render(
   <DevRouter />
