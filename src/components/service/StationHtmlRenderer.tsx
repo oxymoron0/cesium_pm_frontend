@@ -68,7 +68,8 @@ const StationHtmlRenderer = observer(() => {
     lastUpdateTime.current = now;
 
     try {
-      const viewer = (window as any).cviewer;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const viewer = (window as unknown as { cviewer: { scene: any; clock: any; dataSources: any } }).cviewer;
       if (!viewer || !viewer.scene || !viewer.clock || !containerRef.current) return;
 
       const currentEntityIds = new Set<string>();
@@ -113,7 +114,7 @@ const StationHtmlRenderer = observer(() => {
                   }
                 }
               }
-            } catch (entityError) {
+            } catch {
               // 개별 Entity 처리 오류는 무시
             }
           });
@@ -137,7 +138,8 @@ const StationHtmlRenderer = observer(() => {
     let postRenderCallback: (() => void) | null = null;
 
     // postRender 이벤트 등록
-    const viewer = (window as any).cviewer;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const viewer = (window as unknown as { cviewer: { scene: { postRender: any } } }).cviewer;
     if (viewer && viewer.scene && viewer.scene.postRender) {
       postRenderCallback = updateStationPositions;
       try {
@@ -150,7 +152,8 @@ const StationHtmlRenderer = observer(() => {
 
     // 컴포넌트 언마운트 시 정리
     return () => {
-      const currentViewer = (window as any).cviewer;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const currentViewer = (window as unknown as { cviewer: { scene: { postRender: any } } }).cviewer;
       if (currentViewer && currentViewer.scene && currentViewer.scene.postRender && postRenderCallback) {
         try {
           currentViewer.scene.postRender.removeEventListener(postRenderCallback);
