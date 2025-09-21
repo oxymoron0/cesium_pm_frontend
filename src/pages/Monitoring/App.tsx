@@ -3,10 +3,12 @@ import { observer } from 'mobx-react-lite'
 import CesiumViewer from '@/components/CesiumViewer'
 import MonitoringPanel from './components/MonitoringPanel'
 import StationHtmlRenderer from '@/components/service/StationHtmlRenderer'
+import StationSensorRenderer from '@/components/service/StationSensorRenderer'
 import { flyToLocation } from '@/utils/cesiumControls'
 import { routeStore } from '@/stores/RouteStore'
 import { stationStore } from '@/stores/StationStore'
 import { busStore } from '@/stores/BusStore'
+import { stationSensorStore } from '@/stores/StationSensorStore'
 
 const App = observer(function App() {
   // const { onCloseMicroApp, dispatch, user } = props // user.userid
@@ -73,6 +75,10 @@ const App = observer(function App() {
           await Promise.all(stationLoadPromises);
           console.log('[App] Station data loading completed');
 
+          // StationStore 데이터가 로드된 후 센서 모의 데이터 업데이트
+          stationSensorStore.updateMockDataFromStationStore();
+          console.log('[App] Sensor mock data updated');
+
           // 초기 방향을 inbound로 설정
           stationStore.setSelectedDirection('inbound');
           console.log('[App] Initial direction set to inbound');
@@ -120,6 +126,9 @@ const App = observer(function App() {
 
       {/* 정류장 HTML 오버레이 */}
       {cesiumStatus === 'ready' && <StationHtmlRenderer />}
+
+      {/* 정류장 센서 오버레이 */}
+      {cesiumStatus === 'ready' && <StationSensorRenderer />}
 
       {/* 통합 모니터링 패널 */}
       <MonitoringPanel />

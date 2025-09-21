@@ -5,6 +5,7 @@ import Monitoring from './Monitoring';
 import StationInfo from './StationInfo';
 import { routeStore } from '@/stores/RouteStore';
 import { stationStore } from '@/stores/StationStore';
+import { stationSensorStore } from '@/stores/StationSensorStore';
 import { renderAllRoutes } from '@/utils/cesium/routeRenderer';
 import { resetAllRouteColors } from '@/utils/cesium/routeColors';
 import { renderAllStations } from '@/utils/cesium/stationRenderer';
@@ -67,6 +68,11 @@ const MonitoringPanel = observer(function MonitoringPanel() {
             const selectedDirection = stationStore.selectedDirection;
             await createFocusedRoute(routeGeom, selectedDirection || undefined);
             await showOnlyStationsForRoute(routeNumber);
+
+            // 센서가 표시 중이면 새로운 노선의 센서로 업데이트
+            if (stationSensorStore.visibleCount > 0) {
+              stationSensorStore.showSelectedRoute();
+            }
           }
         } catch (error) {
           console.error('[handleRouteSelect] Cesium rendering failed:', error);
@@ -84,6 +90,8 @@ const MonitoringPanel = observer(function MonitoringPanel() {
     setCurrentView('routes');
     // 노선 선택 해제
     routeStore.clearSelection();
+    // 센서만 정리 (사용자 설정은 유지)
+    stationSensorStore.clearVisibleStations();
   };
 
   // 노선 목록 뷰 렌더링

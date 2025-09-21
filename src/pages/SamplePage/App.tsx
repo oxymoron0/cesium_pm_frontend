@@ -3,6 +3,7 @@ import CesiumViewer from '@/components/CesiumViewer'
 import Panel from '@/components/basic/Panel'
 import VulnerabilityManager from '@/components/service/VulnerabilityManager'
 import AirQualityDisplay from '@/components/service/sensor/AirQualityDisplay'
+import StationSensorContainer from '@/components/basic/StationSensorContainer'
 import { initializePMFrontend } from '@/utils/cesiumControls'
 import { get } from '@/utils/api/request'
 import { getApiPath } from '@/utils/api/config'
@@ -276,6 +277,15 @@ const App = observer(function App(props: AppProps) {
     <div className="relative w-full h-screen overflow-hidden pm-frontend-scope">
       {/* 전체 화면 Cesium Viewer */}
       <CesiumViewer />
+
+      {/* 화면 중앙 StationSensorContainer 테스트 */}
+      <div className="absolute z-10 transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
+        <StationSensorContainer
+          pm10Value={45}
+          pm25Value={15}
+          vocsValue={120}
+        />
+      </div>
 
       {/* 화면 하단 공기질 센서 */}
       <div className="absolute z-10 transform -translate-x-1/2 bottom-10 left-1/2">

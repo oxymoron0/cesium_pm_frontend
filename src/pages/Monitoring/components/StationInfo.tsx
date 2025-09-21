@@ -1,4 +1,5 @@
 import { observer } from 'mobx-react-lite';
+import { useEffect } from 'react';
 import Title from '@/components/basic/Title';
 import Divider from '@/components/basic/Divider';
 import Spacer from '@/components/basic/Spacer';
@@ -7,6 +8,7 @@ import Item from '@/components/basic/Item';
 import TabNavigation from '@/components/basic/TabNavigation';
 import { routeStore } from '@/stores/RouteStore';
 import { stationStore } from '@/stores/StationStore';
+import { stationSensorStore } from '@/stores/StationSensorStore';
 
 interface StationInfoProps {
   onBackClick: () => void;
@@ -30,6 +32,11 @@ const StationInfo = observer(function StationInfo({ onBackClick }: StationInfoPr
   // 방향 선택 핸들러
   const handleDirectionSelect = async (direction: 'inbound' | 'outbound') => {
     stationStore.setSelectedDirection(direction);
+
+    // 센서가 표시 중이면 새로운 방향의 센서로 업데이트
+    if (isAirQualityVisible) {
+      stationSensorStore.showSelectedRoute();
+    }
 
     // 노선 방향 강조 업데이트
     try {
@@ -56,6 +63,30 @@ const StationInfo = observer(function StationInfo({ onBackClick }: StationInfoPr
   const handleStationSelect = (stationId: string) => {
     stationStore.setSelectedStation(stationId);
   };
+
+  // 공기질 센서 표시 토글 핸들러
+  const handleAirQualityToggle = (checked: boolean) => {
+    if (checked) {
+      // 현재 정류장들의 ID 확인
+      console.log('[StationInfo] Current stations:', currentStations.map(s => s.station_id));
+      // 체크 시: 현재 선택된 노선의 모든 정류장 센서 표시
+      stationSensorStore.showSelectedRoute();
+      console.log('[StationInfo] Visible station IDs:', Array.from(stationSensorStore.visibleStationIds));
+    } else {
+      // 체크 해제 시: 모든 센서 숨김
+      stationSensorStore.clearAll();
+    }
+  };
+
+  // 현재 공기질 센서가 표시되고 있는지 확인 (기본값: true)
+  const isAirQualityVisible = stationSensorStore.visibleCount > 0;
+
+  // 노선과 방향이 선택되었을 때 자동으로 센서 표시 (사용자가 원할 때만)
+  useEffect(() => {
+    if (selectedRouteName && stationStore.selectedDirection && stationSensorStore.userWantsSensorDisplay && !isAirQualityVisible) {
+      stationSensorStore.showSelectedRoute();
+    }
+  }, [selectedRouteName, isAirQualityVisible]); // MobX store 값들은 observer가 자동 추적
 
   // 선택된 노선이 없으면 빈 상태 표시
   if (!selectedRouteName || !selectedRouteInfo) {
@@ -222,26 +253,18 @@ const StationInfo = observer(function StationInfo({ onBackClick }: StationInfoPr
       <div className="flex items-center gap-2" style={{ justifyContent: 'flex-end' }}>
         <input
           type="checkbox"
+          checked={isAirQualityVisible}
+          onChange={(e) => handleAirQualityToggle(e.target.checked)}
           style={{
             width: '16px',
             height: '16px',
             appearance: 'none',
             WebkitAppearance: 'none',
-            backgroundColor: 'transparent',
-            border: '1px solid #A6A6A6',
+            backgroundColor: isAirQualityVisible ? '#FFD040' : 'transparent',
+            border: `1px solid ${isAirQualityVisible ? '#FFD040' : '#A6A6A6'}`,
             borderRadius: '4px',
             cursor: 'pointer',
             position: 'relative'
-          }}
-          onInput={(e) => {
-            const target = e.target as HTMLInputElement;
-            if (target.checked) {
-              target.style.backgroundColor = '#FFD040';
-              target.style.borderColor = '#FFD040';
-            } else {
-              target.style.backgroundColor = 'transparent';
-              target.style.borderColor = '#A6A6A6';
-            }
           }}
         />
         <span
