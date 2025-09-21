@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @import "/woff2/Pretendard.css";
 
+/* Prevent global scroll caused by HTML overlays */
+html, body {
+  overflow: hidden !important;
+}
+
 @layer utilities {
   .font-pretendard-h1 {
     font-family: 'Pretendard', sans-serif;
