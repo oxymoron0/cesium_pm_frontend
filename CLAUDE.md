@@ -347,8 +347,7 @@ try {
 pnpm dev
 
 # Build UMD modules
-VITE_PAGE=SamplePage pnpm build
-VITE_PAGE=Monitoring pnpm build
+pnpm build
 
 # Type checking
 npx tsc --noEmit

@@ -25,11 +25,8 @@ pnpm dev
 ### 프로덕션 빌드
 
 ```bash
-# 모든 페이지 빌드 (권장)
+# 모든 페이지 빌드
 pnpm build
-
-# 특정 페이지만 빌드
-VITE_PAGE=SamplePage pnpm build-pages
 ```
 
 빌드 결과물:

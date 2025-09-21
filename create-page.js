@@ -50,7 +50,7 @@ try {
   
   console.log(`새 프로젝트 '${pageName}' 생성 완료!`);
   console.log(`위치: ${targetPath}`);
-  console.log(`빌드: VITE_PAGE=${pageName} pnpm build-pages`);
+  console.log(`빌드: pnpm build-pages`);
   
 } catch (error) {
   console.error('❌ 페이지 생성 중 오류:', error.message);
