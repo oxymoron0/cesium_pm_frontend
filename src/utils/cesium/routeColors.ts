@@ -22,7 +22,7 @@ const FOCUSED_OUTBOUND_ID = 'focused_outbound';
  */
 function removeZCoordinates(geometry: GeoJSONLineString): { type: 'LineString'; coordinates: [number, number][] } {
   if (!geometry || !geometry.coordinates) {
-    return geometry;
+    return { type: 'LineString', coordinates: [] };
   }
 
   const processCoordinates = (coords: [number, number, number][]): [number, number][] => {

@@ -118,12 +118,12 @@ export async function createGeoJsonDataSource(name: string): Promise<GeoJsonData
   const existingDataSources = viewer.dataSources.getByName(name);
 
   if (existingDataSources.length > 0) {
-    return existingDataSources[0];
+    return existingDataSources[0] as GeoJsonDataSource;
   }
 
   // 새 GeoJsonDataSource 생성
   const dataSource = new GeoJsonDataSource(name);
-  
+
   try {
     await viewer.dataSources.add(dataSource);
   } catch (error) {

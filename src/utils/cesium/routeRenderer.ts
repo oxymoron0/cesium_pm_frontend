@@ -17,7 +17,7 @@ const ROUTE_DATASOURCE_NAME = 'routes';
  */
 function removeZCoordinates(geometry: GeoJSONLineString): { type: 'LineString'; coordinates: [number, number][] } {
   if (!geometry || !geometry.coordinates) {
-    return geometry;
+    return { type: 'LineString', coordinates: [] };
   }
 
   const processCoordinates = (coords: [number, number, number][]): [number, number][] => {
