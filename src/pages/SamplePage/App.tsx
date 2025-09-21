@@ -3,6 +3,7 @@ import CesiumViewer from '@/components/CesiumViewer'
 import Panel from '@/components/basic/Panel'
 import VulnerabilityManager from '@/components/service/VulnerabilityManager'
 import AirQualityDisplay from '@/components/service/sensor/AirQualityDisplay'
+import StationTag from '@/components/basic/StationTag'
 import { initializePMFrontend } from '@/utils/cesiumControls'
 import { get } from '@/utils/api/request'
 import { renderStation, renderStations, type Station } from '@/utils/cesium/testRenderer'
@@ -276,13 +277,20 @@ const App = observer(function App(props: AppProps) {
       {/* 전체 화면 Cesium Viewer */}
       <CesiumViewer />
 
-      {/* 화면 중앙 공기질 센서 */}
-      <div className="absolute z-10 transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
+      {/* 화면 하단 공기질 센서 */}
+      <div className="absolute z-10 transform -translate-x-1/2 bottom-10 left-1/2">
         <AirQualityDisplay
           pm10Value={45}
           pm25Value={25}
           vocsValue={120}
         />
+      </div>
+
+      {/* StationTag 테스트 */}
+      <div className="absolute z-10 space-y-4 top-10 left-1/2 transform -translate-x-1/2">
+        <StationTag title="Frontend Connected" />
+        <StationTag title="Busan Station" />
+        <StationTag title="City Hall" />
       </div>
 
       {/* UI Container Panel */}
