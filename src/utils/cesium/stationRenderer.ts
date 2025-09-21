@@ -19,7 +19,8 @@ const terrainHeightCache = new Map<string, number>();
  */
 export async function sampleTerrainForRoute(routeName: string, direction: 'inbound' | 'outbound'): Promise<void> {
   try {
-    const viewer = (window as any).cviewer;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const viewer = (window as unknown as { cviewer: { terrainProvider: any; dataSources: any } }).cviewer;
     if (!viewer || !viewer.terrainProvider) {
       console.warn('[sampleTerrainForRoute] Viewer or terrain provider not available');
       return;
@@ -75,8 +76,6 @@ async function updateStationEntityPositions(routeName: string, direction: 'inbou
     const stationData = stationStore.getStationData(routeName, direction);
     if (!stationData?.features) return;
 
-    let updatedCount = 0;
-
     // 각 정류장 Entity의 위치를 terrain 높이로 업데이트
     stationData.features.forEach(feature => {
       const entityId = `station_${feature.properties.station_id}`;
@@ -88,9 +87,9 @@ async function updateStationEntityPositions(routeName: string, direction: 'inbou
         const cachedHeight = terrainHeightCache.get(key);
 
         if (cachedHeight !== undefined) {
-          // 새로운 terrain 높이로 위치 업데이트
-          entity.position = new ConstantProperty(Cartesian3.fromDegrees(lng, lat, cachedHeight));
-          updatedCount++;
+          // ConstantProperty는 정적 위치를 위한 적절한 wrapper
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          entity.position = new ConstantProperty(Cartesian3.fromDegrees(lng, lat, cachedHeight)) as any;
         }
       }
     });
@@ -341,7 +340,7 @@ export function clearAllStations(): void {
     const dataSourcesToRemove: GeoJsonDataSource[] = [];
 
     for (let i = 0; i < viewer.dataSources.length; i++) {
-      const dataSource = viewer.dataSources.get(i);
+      const dataSource = viewer.dataSources.get(i) as GeoJsonDataSource;
       if (dataSource.name.startsWith('stations_')) {
         dataSourcesToRemove.push(dataSource);
       }
