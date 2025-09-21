@@ -27,7 +27,12 @@ const getPageInfo = () => {
 
 // 페이지 컴포넌트를 동적으로 로드하는 함수
 const createPageComponent = (modulePath: string) => {
-  return lazy(() => pageModules[modulePath]().then((module: { default: React.ComponentType }) => ({ default: module.default })))
+  return lazy(() =>
+    pageModules[modulePath]().then((module: unknown) => ({
+       default: (module as { default: React.ComponentType }).default
+      })
+    )
+  )
 }
 
 // 개발 환경에서 페이지 선택을 위한 자동 라우터
