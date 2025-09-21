@@ -1,4 +1,5 @@
 import { get } from './request'
+import { getApiPath } from './config'
 
 export interface BusPosition {
   work_id: string
@@ -54,7 +55,7 @@ export interface BusLatestResponse {
  */
 export async function getBusTrajectoryInitial(): Promise<BusTrajectoryResponse> {
   try {
-    const response = await get<BusTrajectoryResponse>('http://localhost:8088/api/v1/buses/trajectory/initial')
+    const response = await get<BusTrajectoryResponse>(getApiPath('api/v1/buses/trajectory/initial'))
 
     if (!response.ok) {
       throw new Error(`Bus trajectory API failed with status ${response.status}`)
@@ -79,7 +80,7 @@ export async function getBusTrajectoryInitial(): Promise<BusTrajectoryResponse> 
  */
 export async function getBusTrajectoryLatest(): Promise<BusLatestResponse> {
   try {
-    const response = await get<BusLatestResponse>('http://localhost:8088/api/v1/buses/trajectory/latest')
+    const response = await get<BusLatestResponse>(getApiPath('api/v1/buses/trajectory/latest'))
 
     if (!response.ok) {
       throw new Error(`Bus latest positions API failed with status ${response.status}`)

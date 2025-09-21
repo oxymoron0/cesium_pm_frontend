@@ -3,9 +3,9 @@ import CesiumViewer from '@/components/CesiumViewer'
 import Panel from '@/components/basic/Panel'
 import VulnerabilityManager from '@/components/service/VulnerabilityManager'
 import AirQualityDisplay from '@/components/service/sensor/AirQualityDisplay'
-import StationTag from '@/components/basic/StationTag'
 import { initializePMFrontend } from '@/utils/cesiumControls'
 import { get } from '@/utils/api/request'
+import { getApiPath } from '@/utils/api/config'
 import { renderStation, renderStations, type Station } from '@/utils/cesium/testRenderer'
 import { createDataSource, findDataSource, removeDataSource, clearDataSource, toggleDataSource } from '@/utils/cesium/datasources'
 import { routeStore } from '@/stores/RouteStore'
@@ -185,7 +185,7 @@ const App = observer(function App(props: AppProps) {
     if (loading) return
     setLoading(true)
     try {
-      const response = await get<StationApiResponse>('http://61.98.41.151:8088/api/v1/stations?page=1&per_page=20')
+      const response = await get<StationApiResponse>(getApiPath('api/v1/stations?page=1&per_page=20'))
       if (response.ok) {
         setStations(response.data.stations)
         console.log('Fetched stations:', response.data)
@@ -203,7 +203,7 @@ const App = observer(function App(props: AppProps) {
     if (!searchQuery.trim() || loading) return
     setLoading(true)
     try {
-      const response = await get<StationApiResponse>(`http://61.98.41.151:8088/api/v1/stations/search?q=${encodeURIComponent(searchQuery.trim())}&limit=20`)
+      const response = await get<StationApiResponse>(getApiPath(`api/v1/stations/search?q=${encodeURIComponent(searchQuery.trim())}&limit=20`))
       if (response.ok) {
         setStations(response.data.stations)
         console.log('Search results:', response.data)
@@ -286,12 +286,6 @@ const App = observer(function App(props: AppProps) {
         />
       </div>
 
-      {/* StationTag 테스트 */}
-      <div className="absolute z-10 space-y-4 top-10 left-1/2 transform -translate-x-1/2">
-        <StationTag title="Frontend Connected" />
-        <StationTag title="Busan Station" />
-        <StationTag title="City Hall" />
-      </div>
 
       {/* UI Container Panel */}
       <Panel>
