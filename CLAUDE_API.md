@@ -29,9 +29,9 @@ You are a **Senior Frontend Engineer** with deep expertise in production-grade R
 
 ## Quick Start
 
-**Base URL**: `http://localhost:8088/api/v1`
+**Base URL**: `/api/v1`
 **Server Status**: Operational (Real-time data)
-**Swagger UI**: http://localhost:8088/swagger/index.html
+**Swagger UI**: /swagger/index.html
 
 ---
 
@@ -772,11 +772,11 @@ const RouteSelector = observer(() => {
 
 ```bash
 # Basic connectivity test
-curl http://localhost:8088/health
+curl /health
 
 # API test
-curl http://localhost:8088/api/v1/buses/trajectory/latest
-curl "http://localhost:8088/api/v1/sensor-data/stations/21050611005/hourly?hours=6"
+curl /api/v1/buses/trajectory/latest
+curl "/api/v1/sensor-data/stations/21050611005/hourly?hours=6"
 ```
 
 ---
