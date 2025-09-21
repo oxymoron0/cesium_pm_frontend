@@ -12,13 +12,16 @@ export const API_BASE_PATH = import.meta.env.VITE_API_BASE_PATH || '/api';
  * @returns 완전한 API 경로
  */
 export function getApiPath(endpoint: string): string {
+  // API_BASE_PATH의 끝 슬래시 정규화
+  const basePath = API_BASE_PATH.endsWith('/') ? API_BASE_PATH.slice(0, -1) : API_BASE_PATH;
+
   // endpoint가 이미 /로 시작하는 경우
   if (endpoint.startsWith('/')) {
-    return `${API_BASE_PATH}${endpoint}`;
+    return `${basePath}${endpoint}`;
   }
 
   // endpoint가 /로 시작하지 않는 경우
-  return `${API_BASE_PATH}/${endpoint}`;
+  return `${basePath}/${endpoint}`;
 }
 
 /**
