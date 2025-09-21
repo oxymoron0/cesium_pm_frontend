@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { observer } from 'mobx-react-lite'
 import CesiumViewer from '@/components/CesiumViewer'
 import MonitoringPanel from './components/MonitoringPanel'
+import StationHtmlRenderer from '@/components/service/StationHtmlRenderer'
 import { flyToLocation } from '@/utils/cesiumControls'
 import { routeStore } from '@/stores/RouteStore'
 import { stationStore } from '@/stores/StationStore'
@@ -112,9 +113,13 @@ const App = observer(function App() {
   return (
     <div
       className="relative w-full h-screen overflow-hidden pm-frontend-scope"
+      style={{ overflow: 'hidden' }}
     >
       {/* 전체 화면 Cesium Viewer */}
       <CesiumViewer />
+
+      {/* 정류장 HTML 오버레이 */}
+      {cesiumStatus === 'ready' && <StationHtmlRenderer />}
 
       {/* 통합 모니터링 패널 */}
       <MonitoringPanel />
