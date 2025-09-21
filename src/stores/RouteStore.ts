@@ -2,7 +2,7 @@ import { makeAutoObservable } from 'mobx';
 import type { RouteInfo, RouteGeom } from '../utils/api/types';
 import { getRouteInfo, getRouteGeometry } from '../utils/api/routeApi';
 import { createFocusedRoute, removeFocusedRoute } from '../utils/cesium/routeColors';
-import { showOnlyStationsForRoute, hideAllStations } from '../utils/cesium/stationRenderer';
+import { showOnlyStationsForRoute, hideAllStations, sampleTerrainForRoute } from '../utils/cesium/stationRenderer';
 
 type RouteDirection = 'inbound' | 'outbound';
 
@@ -62,6 +62,18 @@ class RouteStore {
     this.selectedRouteName = routeName;
     // 노선 변경 시 방향 선택 초기화
     this.selectedDirection = null;
+
+    // 선택된 노선의 geometry를 가져와서 focused route 생성
+    const routeGeom = this.getRouteGeom(routeName);
+    if (routeGeom) {
+      createFocusedRoute(routeGeom);
+    }
+
+    // 선택된 노선의 정류장만 표시
+    showOnlyStationsForRoute(routeName);
+
+    // 선택된 노선의 정류장들에 대해 terrain 높이 샘플링 실행
+    this.sampleTerrainForSelectedRoute(routeName);
   }
 
   toggleSelectedRoute(routeName: string) {
@@ -85,6 +97,9 @@ class RouteStore {
 
       // 선택된 노선의 정류장만 표시
       showOnlyStationsForRoute(routeName);
+
+      // 선택된 노선의 정류장들에 대해 terrain 높이 샘플링 실행
+      this.sampleTerrainForSelectedRoute(routeName);
     }
   }
 
@@ -103,6 +118,25 @@ class RouteStore {
 
   clearDirectionSelection() {
     this.selectedDirection = null;
+  }
+
+  /**
+   * 선택된 노선의 양방향 정류장에 대해 terrain 높이 샘플링
+   * @param routeName - 노선 번호
+   */
+  private async sampleTerrainForSelectedRoute(routeName: string): Promise<void> {
+    try {
+      // 양방향 병렬 처리로 terrain 샘플링
+      const samplingPromises = [
+        sampleTerrainForRoute(routeName, 'inbound'),
+        sampleTerrainForRoute(routeName, 'outbound')
+      ];
+
+      await Promise.all(samplingPromises);
+
+    } catch (error) {
+      console.error(`[sampleTerrainForSelectedRoute] Terrain sampling failed for route ${routeName}:`, error);
+    }
   }
 
   // ============================================================================
