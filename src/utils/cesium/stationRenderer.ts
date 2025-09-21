@@ -2,12 +2,115 @@ import { stationStore } from '../../stores/StationStore';
 import { createGeoJsonDataSource, findDataSource, clearDataSource } from './datasources';
 import type { RouteStationFeature } from '../api/types';
 import type { GeoJsonDataSource } from 'cesium';
-import { Color, Cartesian3, Entity, PointGraphics, CallbackProperty, ConstantProperty, HeightReference } from 'cesium';
+import { Cartesian3, Entity, BillboardGraphics, CallbackProperty, ConstantProperty, HeightReference, Cartographic, sampleTerrainMostDetailed } from 'cesium';
 
 /**
  * Station rendering utility functions
  * RouteRenderer 패턴을 따라 GeoJsonDataSource + 직접 Entity 생성 방식
  */
+
+// Terrain 높이 캐시 (성능 최적화)
+const terrainHeightCache = new Map<string, number>();
+
+/**
+ * 특정 노선의 모든 정류장에 대해 terrain 높이를 비동기적으로 샘플링
+ * @param routeName - 노선 번호
+ * @param direction - 방향
+ */
+export async function sampleTerrainForRoute(routeName: string, direction: 'inbound' | 'outbound'): Promise<void> {
+  try {
+    const viewer = (window as any).cviewer;
+    if (!viewer || !viewer.terrainProvider) {
+      console.warn('[sampleTerrainForRoute] Viewer or terrain provider not available');
+      return;
+    }
+
+    const stationData = stationStore.getStationData(routeName, direction);
+    if (!stationData?.features || stationData.features.length === 0) {
+      console.warn(`[sampleTerrainForRoute] No station data for ${routeName}-${direction}`);
+      return;
+    }
+
+    // 모든 정류장 위치를 Cartographic 배열로 변환
+    const positions = stationData.features.map(feature => {
+      const [lng, lat] = feature.geometry.coordinates;
+      return Cartographic.fromDegrees(lng, lat);
+    });
+
+    // sampleTerrainMostDetailed로 정확한 terrain 높이 획득
+    const sampledPositions = await sampleTerrainMostDetailed(viewer.terrainProvider, positions);
+
+    // 캐시에 저장
+    sampledPositions.forEach((position, index) => {
+      const feature = stationData.features[index];
+      const [lng, lat] = feature.geometry.coordinates;
+      const key = `${lng.toFixed(6)}_${lat.toFixed(6)}`;
+      const height = position.height || 0;
+      terrainHeightCache.set(key, height);
+    });
+
+    // 해당 노선의 Billboard Entity 위치 업데이트
+    await updateStationEntityPositions(routeName, direction);
+
+  } catch (error) {
+    console.error(`[sampleTerrainForRoute] Failed to sample terrain for ${routeName}-${direction}:`, error);
+  }
+}
+
+/**
+ * 캐시된 terrain 높이로 정류장 Entity 위치 업데이트
+ * @param routeName - 노선 번호
+ * @param direction - 방향
+ */
+async function updateStationEntityPositions(routeName: string, direction: 'inbound' | 'outbound'): Promise<void> {
+  try {
+    const dataSourceName = getStationDataSourceName(routeName, direction);
+    const dataSource = findDataSource(dataSourceName);
+
+    if (!dataSource) {
+      console.warn(`[updateStationEntityPositions] DataSource not found: ${dataSourceName}`);
+      return;
+    }
+
+    const stationData = stationStore.getStationData(routeName, direction);
+    if (!stationData?.features) return;
+
+    let updatedCount = 0;
+
+    // 각 정류장 Entity의 위치를 terrain 높이로 업데이트
+    stationData.features.forEach(feature => {
+      const entityId = `station_${feature.properties.station_id}`;
+      const entity = dataSource.entities.getById(entityId);
+
+      if (entity) {
+        const [lng, lat] = feature.geometry.coordinates;
+        const key = `${lng.toFixed(6)}_${lat.toFixed(6)}`;
+        const cachedHeight = terrainHeightCache.get(key);
+
+        if (cachedHeight !== undefined) {
+          // 새로운 terrain 높이로 위치 업데이트
+          entity.position = new ConstantProperty(Cartesian3.fromDegrees(lng, lat, cachedHeight));
+          updatedCount++;
+        }
+      }
+    });
+
+
+  } catch (error) {
+    console.error(`[updateStationEntityPositions] Failed to update positions for ${routeName}-${direction}:`, error);
+  }
+}
+
+/**
+ * 캐시에서 terrain 높이 조회
+ * @param longitude - 경도
+ * @param latitude - 위도
+ * @returns 캐시된 높이 또는 0
+ */
+function getCachedTerrainHeight(longitude: number, latitude: number): number {
+  const key = `${longitude.toFixed(6)}_${latitude.toFixed(6)}`;
+  return terrainHeightCache.get(key) || 0;
+}
 
 /**
  * 노선별 정류장 DataSource 이름 생성
@@ -27,48 +130,46 @@ function getStationDataSourceName(routeName: string, direction: 'inbound' | 'out
  */
 function createStationEntity(feature: RouteStationFeature, direction: 'inbound' | 'outbound'): Entity {
   const coords = feature.geometry.coordinates; // [lng, lat]
-  const position = Cartesian3.fromDegrees(coords[0], coords[1]);
+  const basePath = import.meta.env.VITE_BASE_PATH || '/';
+
+  // 캐시된 terrain 높이가 있으면 사용, 없으면 0 높이로 생성
+  const cachedHeight = getCachedTerrainHeight(coords[0], coords[1]);
+  const position = Cartesian3.fromDegrees(coords[0], coords[1], cachedHeight);
 
   return new Entity({
     id: `station_${feature.properties.station_id}`,
     name: feature.properties.station_name,
     position: position,
-    point: new PointGraphics({
-      // 4단계 방향별 선택 상태에 따른 동적 크기
-      pixelSize: new CallbackProperty(() => {
+    billboard: new BillboardGraphics({
+      // 상태에 따른 동적 이미지 변경
+      image: new CallbackProperty(() => {
         const isSelected = stationStore.isStationSelected(feature.properties.station_id);
         const isRouteSelected = stationStore.selectedRouteName === feature.properties.route_name;
         const isDirectionSelected = stationStore.selectedDirection === direction;
 
-        if (isSelected) return 15; // 선택된 정류장 - 더 크게
-        if (isRouteSelected && isDirectionSelected) return 10; // 선택된 노선+방향의 정류장
-        if (isRouteSelected && !isDirectionSelected) return 8; // 선택된 노선의 다른 방향 정류장
-        return 6; // 일반 정류장
+        // 선택된 정류장이거나 활성 상태의 노선+방향이면 활성 아이콘
+        if (isSelected || (isRouteSelected && isDirectionSelected)) {
+          return `${basePath}icon/station_active.svg`;
+        }
+        // 그 외는 비활성 아이콘
+        return `${basePath}icon/station_inactive.svg`;
       }, false),
 
-      // 4단계 방향별 선택 상태에 따른 동적 색상
-      color: new CallbackProperty(() => {
+      // 픽셀 기반 크기 사용
+      sizeInMeters: new ConstantProperty(false),
+      width: new CallbackProperty(() => {
         const isSelected = stationStore.isStationSelected(feature.properties.station_id);
-        const isRouteSelected = stationStore.selectedRouteName === feature.properties.route_name;
-        const isDirectionSelected = stationStore.selectedDirection === direction;
-
-        if (isSelected) {
-          return Color.fromCssColorString('#FFD040'); // 선택된 정류장 - 노란색으로 강조
-        }
-        if (isRouteSelected && isDirectionSelected) {
-          return Color.fromCssColorString('#00AAFF'); // 선택된 노선+방향 - 파란색 (활성)
-        }
-        if (isRouteSelected && !isDirectionSelected) {
-          return Color.fromCssColorString('#888888'); // 선택된 노선의 다른 방향 - 연회색 (비활성)
-        }
-        return Color.fromCssColorString('#444444'); // 일반 정류장 - 진회색 (완전 비활성)
+        return isSelected ? 35 : 30; // 선택된 정류장은 조금 더 크게
+      }, false),
+      height: new CallbackProperty(() => {
+        const isSelected = stationStore.isStationSelected(feature.properties.station_id);
+        return isSelected ? 35 : 30; // 선택된 정류장은 조금 더 크게
       }, false),
 
-      // 고정 스타일 속성
-      outlineColor: new ConstantProperty(Color.fromCssColorString('#FFFFFF')),
-      outlineWidth: new ConstantProperty(2),
+      // 고정 스타일 속성 - terrain 높이를 직접 적용하므로 CLAMP_TO_GROUND 사용
       heightReference: new ConstantProperty(HeightReference.CLAMP_TO_GROUND),
-      disableDepthTestDistance: new ConstantProperty(Number.POSITIVE_INFINITY)
+      disableDepthTestDistance: new ConstantProperty(Number.POSITIVE_INFINITY),
+      verticalOrigin: new ConstantProperty(1) // BOTTOM으로 설정하여 바닥에 맞춤
     }),
 
     // Entity 메타데이터 (InfoBox용)
