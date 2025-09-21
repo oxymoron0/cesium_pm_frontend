@@ -6,11 +6,11 @@
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   headers?: Record<string, string>;
-  body?: any;
+  body?: unknown;
   timeout?: number;
 }
 
-interface RequestResponse<T = any> {
+interface RequestResponse<T = unknown> {
   data: T;
   status: number;
   ok: boolean;
@@ -21,7 +21,7 @@ interface RequestResponse<T = any> {
  * @param url - 요청할 URL (상대경로 또는 절대경로)
  * @param options - 요청 옵션
  */
-export async function request<T = any>(
+export async function request<T = unknown>(
   url: string,
   options: RequestOptions = {}
 ): Promise<RequestResponse<T>> {
@@ -79,14 +79,14 @@ export async function request<T = any>(
 }
 
 // 편의 메서드들
-export const get = <T = any>(url: string, options?: Omit<RequestOptions, 'method'>) =>
+export const get = <T = unknown>(url: string, options?: Omit<RequestOptions, 'method'>) =>
   request<T>(url, { ...options, method: 'GET' });
 
-export const post = <T = any>(url: string, body?: any, options?: Omit<RequestOptions, 'method' | 'body'>) =>
+export const post = <T = unknown>(url: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>) =>
   request<T>(url, { ...options, method: 'POST', body });
 
-export const put = <T = any>(url: string, body?: any, options?: Omit<RequestOptions, 'method' | 'body'>) =>
+export const put = <T = unknown>(url: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>) =>
   request<T>(url, { ...options, method: 'PUT', body });
 
-export const del = <T = any>(url: string, options?: Omit<RequestOptions, 'method'>) =>
+export const del = <T = unknown>(url: string, options?: Omit<RequestOptions, 'method'>) =>
   request<T>(url, { ...options, method: 'DELETE' });
