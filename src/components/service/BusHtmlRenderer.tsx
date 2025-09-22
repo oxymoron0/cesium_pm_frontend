@@ -3,8 +3,6 @@ import { observer } from 'mobx-react-lite';
 import { Entity, Cartographic, Cartesian3, sampleTerrainMostDetailed } from 'cesium';
 import * as Cesium from 'cesium';
 import { busStore } from '@/stores/BusStore';
-import BusInfoContainer from '@/components/basic/BusInfoContainer';
-import { createRoot, type Root } from 'react-dom/client';
 
 /**
  * BusHtmlRenderer
@@ -13,7 +11,7 @@ import { createRoot, type Root } from 'react-dom/client';
  */
 const BusHtmlRenderer = observer(() => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const busElementsRef = useRef<Map<string, { element: HTMLDivElement; root: Root }>>(new Map());
+  const busElementsRef = useRef<Map<string, { element: HTMLDivElement }>>(new Map());
   const lastUpdateTime = useRef<number>(0);
   const terrainHeightCache = useRef<Map<string, number>>(new Map());
 
@@ -49,10 +47,86 @@ const BusHtmlRenderer = observer(() => {
     }
   }, []);
 
+  // 센서 데이터 HTML 생성 함수 (AirQualityDisplay 스타일 기반)
+  const createSensorHTML = useCallback((sensorData: { pm: number; fpm: number; voc: number }) => {
+    const pm10Value = Math.round(sensorData.pm * 10) / 10;
+    const pm25Value = Math.round(sensorData.fpm * 10) / 10;
+    const vocsValue = Math.round(sensorData.voc * 10) / 10;
+
+    // PM10 색상 계산
+    const getPM10Color = (value: number) => {
+      if (value <= 30) return '#18A274';
+      if (value <= 80) return '#FFD040';
+      if (value <= 150) return '#F70';
+      return '#D32F2D';
+    };
+
+    // PM2.5 색상 계산
+    const getPM25Color = (value: number) => {
+      if (value <= 15) return '#18A274';
+      if (value <= 35) return '#FFD040';
+      if (value <= 75) return '#F70';
+      return '#D32F2D';
+    };
+
+    const pm10Color = getPM10Color(pm10Value);
+    const pm25Color = getPM25Color(pm25Value);
+    const vocsColor = '#C8C8C8'; // VOCs는 항상 회색
+
+    // 텍스트 색상 계산 (AirQualitySensor와 동일한 로직)
+    const getPM10TextColor = (bgColor: string) => {
+      return (bgColor === '#D32F2D' || bgColor === '#F70') ? '#FFF' : '#000';
+    };
+
+    const getPM25TextColor = (bgColor: string) => {
+      return (bgColor === '#D32F2D' || bgColor === '#F70') ? '#FFF' : '#000';
+    };
+
+    const pm10TextColor = getPM10TextColor(pm10Color);
+    const pm25TextColor = getPM25TextColor(pm25Color);
+    const vocsTextColor = '#000'; // VOCs는 항상 회색 배경이므로 검정 텍스트
+
+    return `
+      <div style="display: flex; padding: 8px; justify-content: center; align-items: center; gap: 8px; border-radius: 8px; border: 1px solid #C4C6C6; background: rgba(30, 30, 30, 0.90); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); pointer-events: none; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
+        <div style="display: flex; min-width: 64px; flex-direction: column; align-items: center; gap: 8px;">
+          <div style="color: #FFF; text-align: center; font-variant-numeric: lining-nums tabular-nums; font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 14px; font-style: normal; font-weight: 800; line-height: 1; letter-spacing: -0.6px; white-space: nowrap;">미세먼지</div>
+          <div style="display: flex; width: 56px; height: 56px; flex-direction: column; justify-content: center; align-items: center; border-radius: 36px; background: ${pm10Color};">
+            <div style="color: ${pm10TextColor}; text-align: center; font-variant-numeric: lining-nums tabular-nums; font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 20px; font-style: normal; font-weight: 600; line-height: 1; margin-bottom: 2px;">${pm10Value}</div>
+          </div>
+        </div>
+        <div style="display: flex; min-width: 64px; flex-direction: column; align-items: center; gap: 8px;">
+          <div style="color: #FFF; text-align: center; font-variant-numeric: lining-nums tabular-nums; font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 14px; font-style: normal; font-weight: 800; line-height: 1; letter-spacing: -0.6px; white-space: nowrap;">초미세먼지</div>
+          <div style="display: flex; width: 56px; height: 56px; flex-direction: column; justify-content: center; align-items: center; border-radius: 36px; background: ${pm25Color};">
+            <div style="color: ${pm25TextColor}; text-align: center; font-variant-numeric: lining-nums tabular-nums; font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 20px; font-style: normal; font-weight: 600; line-height: 1; margin-bottom: 2px;">${pm25Value}</div>
+          </div>
+        </div>
+        <div style="display: flex; min-width: 64px; flex-direction: column; align-items: center; gap: 8px;">
+          <div style="color: #FFF; text-align: center; font-variant-numeric: lining-nums tabular-nums; font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 14px; font-style: normal; font-weight: 800; line-height: 1; letter-spacing: -0.6px; white-space: nowrap;">VOCs</div>
+          <div style="display: flex; width: 56px; height: 56px; flex-direction: column; justify-content: center; align-items: center; border-radius: 36px; background: ${vocsColor};">
+            <div style="color: ${vocsTextColor}; text-align: center; font-variant-numeric: lining-nums tabular-nums; font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 20px; font-style: normal; font-weight: 600; line-height: 1; margin-bottom: 2px;">${vocsValue}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }, []);
+
+  // 버스 정보 HTML 생성 함수 (BusInfoContainer 스타일 기반)
+  const createBusInfoHTML = useCallback((routeName: string) => {
+    return `
+      <div style="display: inline-flex; padding: 8px 12px; justify-content: center; align-items: center; gap: 4px; border-radius: 34.935px; border: 1px solid #C4C6C6; background: rgba(0, 0, 0, 0.65);">
+        <svg width="13" height="12" viewBox="0 0 13 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9.75 10.7368H3.25V11.3684C3.25 11.5359 3.18152 11.6966 3.05962 11.815C2.93772 11.9335 2.77239 12 2.6 12H1.95C1.77761 12 1.61228 11.9335 1.49038 11.815C1.36848 11.6966 1.3 11.5359 1.3 11.3684V10.7368H0.65V5.68421H0V3.15789H0.65V1.26316C0.65 0.928148 0.786964 0.606858 1.03076 0.36997C1.27456 0.133082 1.60522 0 1.95 0H11.05C11.3948 0 11.7254 0.133082 11.9692 0.36997C12.213 0.606858 12.35 0.928148 12.35 1.26316V3.15789H13V5.68421H12.35V10.7368H11.7V11.3684C11.7 11.5359 11.6315 11.6966 11.5096 11.815C11.3877 11.9335 11.2224 12 11.05 12H10.4C10.2276 12 10.0623 11.9335 9.94038 11.815C9.81848 11.6966 9.75 11.5359 9.75 11.3684V10.7368ZM11.05 5.68421V1.26316H1.95V5.68421H11.05ZM11.05 6.94737H1.95V9.47368H11.05V6.94737ZM2.6 7.57895H5.2V8.8421H2.6V7.57895ZM7.8 7.57895H10.4V8.8421H7.8V7.57895Z" fill="white"/>
+        </svg>
+        <span style="color: #FEFEFE; text-align: center; font-variant-numeric: lining-nums tabular-nums; font-family: Pretendard; font-size: 12px; font-weight: 700; line-height: normal;">${routeName}</span>
+      </div>
+    `;
+  }, []);
+
   // 버스 Element 생성/업데이트
   const createOrUpdateBusElement = useCallback((
     vehicleNumber: string,
     routeName: string,
+    sensorData: { pm: number; fpm: number; voc: number } | undefined,
     left: number,
     top: number
   ) => {
@@ -67,26 +141,38 @@ const BusHtmlRenderer = observer(() => {
       element.style.whiteSpace = 'nowrap';
       element.style.overflow = 'visible';
 
-      // React 컴포넌트를 DOM에 렌더링
-      const root = createRoot(element);
-      root.render(<BusInfoContainer routeName={routeName} />);
+      // 컨테이너 HTML 구성
+      const busInfoHTML = createBusInfoHTML(routeName);
+      const sensorHTML = sensorData ? createSensorHTML(sensorData) : '';
 
-      busInfo = { element, root };
+      element.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+          ${busInfoHTML}
+          ${sensorHTML}
+        </div>
+      `;
+
+      busInfo = { element };
       busElementsRef.current.set(vehicleNumber, busInfo);
       containerRef.current?.appendChild(element);
     } else {
-      // 노선명이 변경된 경우 리렌더링 (일반적으로 변경되지 않지만 안전을 위해)
-      const currentRouteName = busInfo.element.textContent?.trim();
-      if (currentRouteName !== routeName) {
-        busInfo.root.render(<BusInfoContainer routeName={routeName} />);
-      }
+      // 내용 업데이트
+      const busInfoHTML = createBusInfoHTML(routeName);
+      const sensorHTML = sensorData ? createSensorHTML(sensorData) : '';
+
+      busInfo.element.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+          ${busInfoHTML}
+          ${sensorHTML}
+        </div>
+      `;
     }
 
     // 위치 업데이트 (매 프레임) - 버스 모델 아래에 위치
     busInfo.element.style.left = `${left}px`;
-    busInfo.element.style.top = `${top + 5}px`; // 버스 모델 아래 5px
+    busInfo.element.style.top = `${top + 12}px`; // 버스 모델 아래 5px
     busInfo.element.style.zIndex = '1520';
-  }, []);
+  }, [createBusInfoHTML, createSensorHTML]);
 
   // 60fps 제한을 위한 스로틀링
   const updateBusPositions = useCallback(async () => {
@@ -138,10 +224,14 @@ const BusHtmlRenderer = observer(() => {
                   // entity.id에서 vehicle_number 추출 (예: "bus_model_12345" -> "12345")
                   const vehicleNumber = entity.id.replace('bus_model_', '');
 
-                  // BusStore에서 해당 버스의 노선 정보 조회
+                  // BusStore에서 해당 버스의 노선 및 센서 정보 조회
                   const busData = busStore.busData.find(bus => bus.vehicle_number === vehicleNumber);
                   if (busData) {
-                    createOrUpdateBusElement(vehicleNumber, busData.route_name, screenPosition.x, screenPosition.y);
+                    // 최신 센서 데이터 가져오기 (가장 최근 position의 sensor_data)
+                    const latestPosition = busData.positions[busData.positions.length - 1];
+                    const sensorData = latestPosition?.sensor_data;
+
+                    createOrUpdateBusElement(vehicleNumber, busData.route_name, sensorData, screenPosition.x, screenPosition.y);
                     return vehicleNumber;
                   }
                 }
@@ -161,7 +251,6 @@ const BusHtmlRenderer = observer(() => {
       // 더 이상 표시되지 않는 버스 Element 제거
       busElementsRef.current.forEach((busInfo, vehicleNumber) => {
         if (!currentBusIds.has(vehicleNumber)) {
-          busInfo.root.unmount();
           busInfo.element.remove();
           busElementsRef.current.delete(vehicleNumber);
         }
@@ -205,9 +294,8 @@ const BusHtmlRenderer = observer(() => {
         }
       }
 
-      // 모든 React roots와 DOM 요소 정리
+      // 모든 DOM 요소 정리
       busElementsRef.current.forEach(busInfo => {
-        busInfo.root.unmount();
         busInfo.element.remove();
       });
       busElementsRef.current.clear();
