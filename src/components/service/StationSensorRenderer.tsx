@@ -36,21 +36,28 @@ const StationSensorRenderer = observer(() => {
   }, []);
 
   // 센서 HTML 생성 함수
-  const createSensorHTML = useCallback((pm10: number, pm25: number, vocs: number) => {
+  const createSensorHTML = useCallback((sensorData: { pm10: number; pm25: number; vocs: number } | undefined) => {
+    const pm10Display = sensorData ? sensorData.pm10.toString() : '---';
+    const pm25Display = sensorData ? sensorData.pm25.toString() : '---';
+    const vocsDisplay = sensorData ? sensorData.vocs.toString() : '---';
+
+    const pm10Color = sensorData ? getSensorColor('pm10', sensorData.pm10) : '#999';
+    const pm25Color = sensorData ? getSensorColor('pm25', sensorData.pm25) : '#999';
+    const vocsColor = sensorData ? getSensorColor('vocs', sensorData.vocs) : '#999';
 
     return `
       <div style="display: flex; padding: 8px; flex-direction: row; justify-content: center; align-items: center; border-radius: 4px; background: rgba(30, 30, 30, 0.90);">
         <div style="display: flex; width: 60px; flex-direction: column; align-items: center; gap: 4px;">
           <div style="color: #FFF; text-align: center; font-family: Pretendard; font-size: 10px; font-weight: 400;">미세먼지</div>
-          <div style="color: ${getSensorColor('pm10', pm10)}; text-align: center; font-family: Pretendard; font-size: 24px; font-weight: 800; letter-spacing: -0.8px;">${pm10}</div>
+          <div style="color: ${pm10Color}; text-align: center; font-family: Pretendard; font-size: 24px; font-weight: 800; letter-spacing: -0.8px;">${pm10Display}</div>
         </div>
         <div style="display: flex; width: 60px; flex-direction: column; align-items: center; gap: 4px;">
           <div style="color: #FFF; text-align: center; font-family: Pretendard; font-size: 10px; font-weight: 400;">초미세먼지</div>
-          <div style="color: ${getSensorColor('pm25', pm25)}; text-align: center; font-family: Pretendard; font-size: 24px; font-weight: 800; letter-spacing: -0.8px;">${pm25}</div>
+          <div style="color: ${pm25Color}; text-align: center; font-family: Pretendard; font-size: 24px; font-weight: 800; letter-spacing: -0.8px;">${pm25Display}</div>
         </div>
         <div style="display: flex; width: 60px; flex-direction: column; align-items: center; gap: 4px;">
           <div style="color: #FFF; text-align: center; font-family: Pretendard; font-size: 10px; font-weight: 400;">VOCs</div>
-          <div style="color: ${getSensorColor('vocs', vocs)}; text-align: center; font-family: Pretendard; font-size: 24px; font-weight: 800; letter-spacing: -0.8px;">${vocs}</div>
+          <div style="color: ${vocsColor}; text-align: center; font-family: Pretendard; font-size: 24px; font-weight: 800; letter-spacing: -0.8px;">${vocsDisplay}</div>
         </div>
       </div>
     `;
@@ -66,11 +73,7 @@ const StationSensorRenderer = observer(() => {
     let element = sensorElementsRef.current.get(entityId);
 
     // 센서 데이터 조회
-    const sensorData = stationSensorStore.getSensorData(stationId) || {
-      pm10: 50,
-      pm25: 25,
-      vocs: 200
-    };
+    const sensorData = stationSensorStore.getSensorData(stationId);
 
     if (!element) {
       // 새 엘리먼트 생성
@@ -80,13 +83,13 @@ const StationSensorRenderer = observer(() => {
       element.style.transform = 'translateX(-50%)';
       element.style.whiteSpace = 'nowrap';
       element.style.overflow = 'visible';
-      element.innerHTML = createSensorHTML(sensorData.pm10, sensorData.pm25, sensorData.vocs);
+      element.innerHTML = createSensorHTML(sensorData);
 
       sensorElementsRef.current.set(entityId, element);
       containerRef.current?.appendChild(element);
     } else {
       // 기존 엘리먼트 업데이트 (필요한 경우에만)
-      element.innerHTML = createSensorHTML(sensorData.pm10, sensorData.pm25, sensorData.vocs);
+      element.innerHTML = createSensorHTML(sensorData);
     }
 
     // 위치 업데이트 (매 프레임) - Billboard 중심 아래로 정확히 위치
