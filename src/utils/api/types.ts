@@ -216,3 +216,32 @@ export interface AirQualitySensorProps {
   data: AirQualitySensorData;
   title: string; // '미세먼지', '초미세먼지', 'VOCs'
 }
+
+// =============================================================================
+// Station Sensor Data Types (실제 API 연동용)
+// =============================================================================
+
+/**
+ * 정류장 센서 데이터 (API 응답 구조)
+ * GET /api/v1/sensor-data/stations/latest-all
+ */
+export interface StationSensorApiData {
+  station_id: string;
+  route_name: string;
+  recorded_at: string;
+  sensor_data: {
+    humidity: number;
+    temperature: number;
+    voc: number;  // VOCs 값
+    co2: number;
+    pm: number;   // PM10 값
+    fpm: number;  // PM2.5 값
+  };
+}
+
+/**
+ * 정류장 센서 데이터 API 응답
+ */
+export interface StationSensorResponse {
+  data: StationSensorApiData[];
+}
