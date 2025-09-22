@@ -54,6 +54,7 @@ Focus exclusively on:
 - Performance implications
 - Maintainability concerns
 - Official API compliance
+
 ## Development Guidelines
 
 React-based microfrontend application for geospatial bus route visualization using Cesium 3D rendering. Implements clean architecture patterns with MobX state management.
