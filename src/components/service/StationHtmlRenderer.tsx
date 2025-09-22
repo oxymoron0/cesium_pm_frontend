@@ -39,7 +39,7 @@ const StationHtmlRenderer = observer(() => {
     const bgOpacity = isActive ? 'bg-white/90' : 'bg-white/70';
 
     return `
-      <div class="inline-flex justify-center items-center px-2 py-0.5 rounded-[26.87px] border ${bgOpacity} ${shadowClass} ${scaleClass}" style="border-color: ${borderColor}">
+      <div class="inline-flex justify-center items-center px-2 py-0.5 rounded-[26.87px] border ${bgOpacity} ${shadowClass} ${scaleClass}" style="border-color: ${borderColor}; pointer-events: none; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
         <span class="text-center font-bold text-xs leading-normal tracking-[-0.36px]" style="color: ${textColor}; font-family: Pretendard">
           ${stationName}
         </span>
