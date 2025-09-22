@@ -3,56 +3,126 @@
 import fs from 'fs';
 import path from 'path';
 
-// 사용법 검증
-if (process.argv.length !== 3) {
-  console.log('사용법: node create-page.js <PageName>');
-  console.log('예시: node create-page.js ProjectDashboard');
-  process.exit(1);
+/**
+ * PM Frontend Page Generator
+ * Creates new microfrontend pages based on minimal Template structure
+ */
+
+const SOURCE_TEMPLATE = 'src/pages/Template';
+const PAGES_DIRECTORY = 'src/pages';
+
+function validatePageName(name) {
+  if (!name || typeof name !== 'string') {
+    throw new Error('Page name is required');
+  }
+
+  if (!/^[A-Z][a-zA-Z0-9]*$/.test(name)) {
+    throw new Error('Page name must be PascalCase (e.g., ProjectDashboard, UserSettings)');
+  }
+
+  return name;
 }
 
-const pageName = process.argv[2];
-const sourcePath = 'src/pages/SamplePage';
-const targetPath = `src/pages/${pageName}`;
-
-// 이미 존재하는지 확인
-if (fs.existsSync(targetPath)) {
-  console.error(`❌ 페이지 '${pageName}'이 이미 존재합니다.`);
-  process.exit(1);
+function checkTemplateExists() {
+  if (!fs.existsSync(SOURCE_TEMPLATE)) {
+    throw new Error(`Template source not found: ${SOURCE_TEMPLATE}`);
+  }
 }
 
-try {
-  // 디렉토리 복사
+function checkPageExists(pageName) {
+  const targetPath = path.join(PAGES_DIRECTORY, pageName);
+  if (fs.existsSync(targetPath)) {
+    throw new Error(`Page already exists: ${targetPath}`);
+  }
+  return targetPath;
+}
+
+function copyTemplateFiles(sourcePath, targetPath) {
   fs.cpSync(sourcePath, targetPath, { recursive: true });
-  
-  // index.tsx 파일 수정
-  const indexTsxPath = path.join(targetPath, 'index.tsx');
-  let indexContent = fs.readFileSync(indexTsxPath, 'utf8');
-  indexContent = indexContent
-    .replace(/SamplePage/g, pageName)
-    .replace(/microapp-SamplePage/g, `microapp-${pageName}`);
-  fs.writeFileSync(indexTsxPath, indexContent);
-  
-  // index.html 파일 수정
-  const indexHtmlPath = path.join(targetPath, 'index.html');
-  let htmlContent = fs.readFileSync(indexHtmlPath, 'utf8');
-  htmlContent = htmlContent
-    .replace(/SamplePage/g, pageName)
-    .replace(/microapp-SamplePage/g, `microapp-${pageName}`);
-  fs.writeFileSync(indexHtmlPath, htmlContent);
-  
-  // App.tsx 파일 수정 (헤더 텍스트)
-  const appTsxPath = path.join(targetPath, 'App.tsx');
-  let appContent = fs.readFileSync(appTsxPath, 'utf8');
-  appContent = appContent
-    .replace('PM Control Panel', `${pageName} Panel`)
-    .replace('Microfrontend Controls', `${pageName} Controls`);
-  fs.writeFileSync(appTsxPath, appContent);
-  
-  console.log(`새 프로젝트 '${pageName}' 생성 완료!`);
-  console.log(`위치: ${targetPath}`);
-  console.log(`빌드: pnpm build-pages`);
-  
-} catch (error) {
-  console.error('❌ 페이지 생성 중 오류:', error.message);
-  process.exit(1);
 }
+
+function updateFileContent(filePath, replacements) {
+  if (!fs.existsSync(filePath)) return;
+
+  let content = fs.readFileSync(filePath, 'utf8');
+
+  for (const [pattern, replacement] of replacements) {
+    content = content.replace(pattern, replacement);
+  }
+
+  fs.writeFileSync(filePath, content);
+}
+
+function generatePage(pageName) {
+  try {
+    console.log(`Creating page: ${pageName}`);
+
+    validatePageName(pageName);
+    checkTemplateExists();
+    const targetPath = checkPageExists(pageName);
+
+    // Copy template structure
+    copyTemplateFiles(SOURCE_TEMPLATE, targetPath);
+
+    // Define replacement patterns
+    const replacements = [
+      [/Template/g, pageName],
+      [/microapp-Template/g, `microapp-${pageName}`]
+    ];
+
+    // Update TypeScript entry point
+    updateFileContent(
+      path.join(targetPath, 'index.tsx'),
+      replacements
+    );
+
+    // Update HTML template
+    updateFileContent(
+      path.join(targetPath, 'index.html'),
+      replacements
+    );
+
+    // Update React component
+    updateFileContent(
+      path.join(targetPath, 'App.tsx'),
+      [
+        [/Template Page/g, `${pageName} Page`],
+        [/\[Template\]/g, `[${pageName}]`]
+      ]
+    );
+
+    console.log(`Page created successfully: ${targetPath}`);
+    console.log(`Build command: VITE_PAGE=${pageName} pnpm build`);
+    console.log(`Development: pnpm dev (navigate to /${pageName})`);
+
+  } catch (error) {
+    console.error(`Error creating page: ${error.message}`);
+    process.exit(1);
+  }
+}
+
+// CLI Interface
+function main() {
+  const args = process.argv.slice(2);
+
+  if (args.length === 0) {
+    console.log('PM Frontend Page Generator');
+    console.log('Usage: pnpm create-page <PageName>');
+    console.log('Example: pnpm create-page ProjectDashboard');
+    console.log('');
+    console.log('Requirements:');
+    console.log('- Page name must be PascalCase');
+    console.log('- Creates minimal Cesium-enabled microfrontend');
+    console.log('- Based on Template page structure');
+    process.exit(0);
+  }
+
+  if (args.length > 1) {
+    console.error('Error: Only one page name allowed');
+    process.exit(1);
+  }
+
+  generatePage(args[0]);
+}
+
+main();
