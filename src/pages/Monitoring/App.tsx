@@ -4,6 +4,7 @@ import CesiumViewer from '@/components/CesiumViewer'
 import MonitoringPanel from './components/MonitoringPanel'
 import StationHtmlRenderer from '@/components/service/StationHtmlRenderer'
 import StationSensorRenderer from '@/components/service/StationSensorRenderer'
+import BusHtmlRenderer from '@/components/service/BusHtmlRenderer'
 import { flyToLocation } from '@/utils/cesiumControls'
 import { routeStore } from '@/stores/RouteStore'
 import { stationStore } from '@/stores/StationStore'
@@ -129,6 +130,9 @@ const App = observer(function App() {
 
       {/* 정류장 센서 오버레이 */}
       {cesiumStatus === 'ready' && <StationSensorRenderer />}
+
+      {/* 버스 HTML 오버레이 */}
+      {cesiumStatus === 'ready' && <BusHtmlRenderer />}
 
       {/* 통합 모니터링 패널 */}
       <MonitoringPanel />
