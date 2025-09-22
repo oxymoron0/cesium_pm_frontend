@@ -75,9 +75,9 @@ const App = observer(function App() {
           await Promise.all(stationLoadPromises);
           console.log('[App] Station data loading completed');
 
-          // StationStore 데이터가 로드된 후 센서 모의 데이터 업데이트
-          stationSensorStore.updateMockDataFromStationStore();
-          console.log('[App] Sensor mock data updated');
+          // StationStore 데이터가 로드된 후 실제 센서 데이터 로드
+          await stationSensorStore.loadSensorData();
+          console.log('[App] Sensor data loaded from API');
 
           // 초기 방향을 inbound로 설정
           stationStore.setSelectedDirection('inbound');
