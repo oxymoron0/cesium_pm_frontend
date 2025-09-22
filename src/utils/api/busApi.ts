@@ -1,5 +1,6 @@
 import { get } from './request'
 import { getApiPath } from './config'
+import type { StationSensorResponse } from './types'
 
 export interface BusPosition {
   work_id: string
@@ -95,6 +96,30 @@ export async function getBusTrajectoryLatest(): Promise<BusLatestResponse> {
     return response.data
   } catch (error) {
     console.error('[getBusTrajectoryLatest] API 호출 실패:', error)
+    throw error
+  }
+}
+
+/**
+ * 모든 정류장의 최신 센서 데이터를 가져오는 함수
+ * GET /api/v1/sensor-data/stations/latest-all
+ */
+export async function getStationSensorData(): Promise<StationSensorResponse> {
+  try {
+    const response = await get<StationSensorResponse>(getApiPath('api/v1/sensor-data/stations/latest-all'))
+
+    if (!response.ok) {
+      throw new Error(`Station sensor data API failed with status ${response.status}`)
+    }
+
+    console.log('[getStationSensorData] API 호출 성공:', {
+      totalStations: response.data.data.length,
+      sampleData: response.data.data[0] // 첫 번째 데이터 샘플 로그
+    })
+
+    return response.data
+  } catch (error) {
+    console.error('[getStationSensorData] API 호출 실패:', error)
     throw error
   }
 }
