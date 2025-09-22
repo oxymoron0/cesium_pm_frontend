@@ -31,6 +31,9 @@ class StationSensorStore {
   isLoading: boolean = false;
   loadError: string | null = null;
 
+  // 호버 상태 관리
+  hoveredStationId: string | null = null;
+
   constructor() {
     makeAutoObservable(this);
   }
@@ -79,6 +82,23 @@ class StationSensorStore {
     });
   });
 
+  // ============================================================================
+  // 호버 상태 관리
+  // ============================================================================
+
+  /**
+   * 정류장에 마우스 호버 시작
+   */
+  setHoveredStation = action((stationId: string | null) => {
+    this.hoveredStationId = stationId;
+  });
+
+  /**
+   * 마우스 호버 종료
+   */
+  clearHoveredStation = action(() => {
+    this.hoveredStationId = null;
+  });
 
   // ============================================================================
   // 센서 데이터 관리
@@ -167,8 +187,20 @@ class StationSensorStore {
 
   /**
    * 특정 정류장의 센서 표시 여부 확인
+   * 호버 상태이거나 명시적으로 표시 설정된 정류장을 표시
    */
   isStationVisible(stationId: string): boolean {
+    // 호버된 정류장은 항상 표시
+    if (this.hoveredStationId === stationId) {
+      return true;
+    }
+
+    // 사용자가 센서 표시를 비활성화한 경우 호버 외에는 표시하지 않음
+    if (!this.userWantsSensorDisplay) {
+      return false;
+    }
+
+    // 명시적으로 표시 설정된 정류장 확인
     return this.visibleStationIds.has(stationId);
   }
 

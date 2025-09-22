@@ -1,4 +1,5 @@
 import { stationStore } from '../../stores/StationStore';
+import { stationSensorStore } from '../../stores/StationSensorStore';
 import { createGeoJsonDataSource, findDataSource, clearDataSource } from './datasources';
 import type { RouteStationFeature } from '../api/types';
 import type { GeoJsonDataSource } from 'cesium';
@@ -11,6 +12,9 @@ import { Cartesian3, Entity, BillboardGraphics, CallbackProperty, ConstantProper
 
 // Terrain 높이 캐시 (성능 최적화)
 const terrainHeightCache = new Map<string, number>();
+
+// 호버 이벤트 리스너 등록 상태
+let hoverEventSetup = false;
 
 /**
  * 특정 노선의 모든 정류장에 대해 terrain 높이를 비동기적으로 샘플링
@@ -119,6 +123,64 @@ function getCachedTerrainHeight(longitude: number, latitude: number): number {
  */
 function getStationDataSourceName(routeName: string, direction: 'inbound' | 'outbound'): string {
   return `stations_${routeName}_${direction}`;
+}
+
+/**
+ * Cesium 정류장 Entity 호버 이벤트 설정
+ * 한 번만 호출되며 전역 마우스 이벤트 핸들러를 등록
+ */
+export function setupStationHoverEvents(): void {
+  if (hoverEventSetup) return;
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const viewer = (window as unknown as { cviewer: { scene: any; canvas: HTMLCanvasElement } }).cviewer;
+    if (!viewer || !viewer.scene) {
+      console.warn('[setupStationHoverEvents] Viewer not available');
+      return;
+    }
+
+    let currentHoveredEntity: Entity | null = null;
+
+    // 마우스 이동 이벤트 핸들러
+    viewer.scene.canvas.addEventListener('mousemove', (event: MouseEvent) => {
+      try {
+        // Canvas 상대 좌표로 변환
+        const rect = viewer.scene.canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        const pickedObject = viewer.scene.pick({ x, y });
+        const hoveredEntity = pickedObject?.id;
+
+        // 정류장 Entity인지 확인
+        if (hoveredEntity?.id?.startsWith('station_') && hoveredEntity !== currentHoveredEntity) {
+          // 이전 호버 해제
+          if (currentHoveredEntity?.id?.startsWith('station_')) {
+            stationSensorStore.clearHoveredStation();
+          }
+
+          // 새로운 호버 설정
+          const stationId = hoveredEntity.id.replace('station_', '');
+          stationSensorStore.setHoveredStation(stationId);
+          currentHoveredEntity = hoveredEntity;
+        }
+        // 정류장 Entity가 아닌 곳을 호버하는 경우
+        else if (!hoveredEntity?.id?.startsWith('station_') && currentHoveredEntity) {
+          stationSensorStore.clearHoveredStation();
+          currentHoveredEntity = null;
+        }
+      } catch (error) {
+        console.error('[setupStationHoverEvents] Mouse move handler error:', error);
+      }
+    });
+
+    hoverEventSetup = true;
+    console.log('[setupStationHoverEvents] Station hover events configured');
+
+  } catch (error) {
+    console.error('[setupStationHoverEvents] Setup failed:', error);
+  }
 }
 
 /**
@@ -300,6 +362,9 @@ export async function renderAllStations(): Promise<void> {
     for (const routeName of routeNames) {
       await renderStationsByRoute(routeName);
     }
+
+    // 호버 이벤트 설정 (한 번만 실행)
+    setupStationHoverEvents();
 
     console.log(`[renderAllStations] 모든 정류장 렌더링 완료 (${routeNames.length}개 노선)`);
 
