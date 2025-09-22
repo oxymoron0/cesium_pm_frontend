@@ -1,4 +1,6 @@
 import { makeAutoObservable, action } from 'mobx';
+import { getStationSensorData } from '@/utils/api';
+import type { StationSensorApiData } from '@/utils/api/types';
 import { stationStore } from './StationStore';
 import { routeStore } from './RouteStore';
 
@@ -25,10 +27,12 @@ class StationSensorStore {
   // 사용자가 센서 표시를 원하는지 여부 (기본값: true)
   userWantsSensorDisplay: boolean = true;
 
+  // 센서 데이터 로딩 상태
+  isLoading: boolean = false;
+  loadError: string | null = null;
+
   constructor() {
     makeAutoObservable(this);
-    // 초기 모의 데이터 설정
-    this.initializeMockData();
   }
 
   // ============================================================================
@@ -95,21 +99,56 @@ class StationSensorStore {
   }
 
   /**
-   * 모의 데이터 초기화 (실제 API 연동 전까지 사용)
+   * API에서 센서 데이터를 로드하여 저장
+   * 애플리케이션 초기화 시 호출
    */
-  private initializeMockData() {
-    // 생성자에서 호출되므로 StationStore가 아직 로드되지 않았을 수 있음
-    // updateMockDataFromStationStore에서 실제 데이터 생성
-  }
+  loadSensorData = action(async (): Promise<void> => {
+    if (this.isLoading) return; // 이미 로딩 중이면 중복 요청 방지
+
+    this.isLoading = true;
+    this.loadError = null;
+
+    try {
+      console.log('[StationSensorStore] 센서 데이터 로딩 시작...');
+      const response = await getStationSensorData();
+
+      // API 데이터를 UI 포맷으로 변환하여 저장
+      const transformedData = new Map<string, SensorData>();
+
+      response.data.forEach((apiData: StationSensorApiData) => {
+        transformedData.set(apiData.station_id, {
+          pm10: Math.round(apiData.sensor_data.pm * 10) / 10,      // pm → pm10
+          pm25: Math.round(apiData.sensor_data.fpm * 10) / 10,     // fpm → pm25
+          vocs: Math.round(apiData.sensor_data.voc * 10) / 10      // voc → vocs
+        });
+      });
+
+      this.sensorDataMap = transformedData;
+      console.log('[StationSensorStore] 센서 데이터 로딩 완료:', {
+        totalStations: this.sensorDataMap.size,
+        sampleData: Array.from(this.sensorDataMap.entries()).slice(0, 3)
+      });
+
+    } catch (error) {
+      this.loadError = error instanceof Error ? error.message : '센서 데이터 로드 실패';
+      console.error('[StationSensorStore] 센서 데이터 로딩 실패:', error);
+
+      // 실패 시 모의 데이터로 대체
+      console.log('[StationSensorStore] 모의 데이터로 대체합니다.');
+      this.generateFallbackData();
+    } finally {
+      this.isLoading = false;
+    }
+  });
 
   /**
-   * StationStore 데이터가 로드된 후 모의 데이터 업데이트
+   * API 로딩 실패 시 모의 데이터 생성
    */
-  updateMockDataFromStationStore = action(() => {
+  private generateFallbackData = action(() => {
     const generateMockData = (): SensorData => ({
-      pm10: Math.floor(Math.random() * 100) + 20,  // 20-120
-      pm25: Math.floor(Math.random() * 50) + 10,   // 10-60
-      vocs: Math.floor(Math.random() * 300) + 100  // 100-400
+      pm10: Math.round((Math.random() * 100 + 20) * 10) / 10,  // 20-120
+      pm25: Math.round((Math.random() * 50 + 10) * 10) / 10,   // 10-60
+      vocs: Math.round((Math.random() * 300 + 100) * 10) / 10  // 100-400
     });
 
     // StationStore의 모든 정류장에 대해 센서 데이터 생성
