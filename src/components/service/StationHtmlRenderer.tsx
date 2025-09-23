@@ -54,15 +54,52 @@ const StationHtmlRenderer = observer(() => {
     // 색상 스키마 통합: 검색 정류장과 기존 정류장 동일한 색상 적용
     const borderColor = isActive ? '#F12124' : '#888888'; // 활성: 빨간색, 비활성: 회색
     const textColor = isActive ? '#DC5449' : '#666666';   // 활성: 진한 빨간색, 비활성: 진한 회색
-    const bgOpacity = isActive ? 'bg-white/90' : 'bg-white/70';
+
+    // 상세보기 텍스트 스타일 (기본적으로 숨김)
+    const detailTextStyle = `color: ${textColor}; font-family: Pretendard; font-size: 10px; font-weight: 500; line-height: normal; margin-left: 0px; max-width: 0px; opacity: 0; overflow: hidden; transition: all 0.3s ease; white-space: nowrap;`;
 
     return `
-      <div class="inline-flex justify-center items-center px-2 py-0.5 rounded-[26.87px] border ${bgOpacity} ${shadowClass} ${scaleClass}" style="border-color: ${borderColor}; pointer-events: none; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
-        <span class="text-center font-bold text-xs leading-normal tracking-[-0.36px]" style="color: ${textColor}; font-family: Pretendard">
+      <div class="station-tag-container" style="display: inline-flex; justify-content: center; align-items: center; gap: 4px; border-radius: 26.87px; border: 1px solid ${borderColor}; background: white; ${shadowClass} ${scaleClass}; padding: 2px 6px 2px 8px; cursor: pointer; transition: all 0.3s ease; pointer-events: auto; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
+        <span class="station-name" style="color: ${textColor}; text-align: center; font-variant-numeric: lining-nums tabular-nums; font-family: Pretendard; font-size: 12px; font-weight: 700; line-height: normal;">
           ${stationName}
         </span>
+        <span class="detail-text" style="${detailTextStyle}">상세보기</span>
       </div>
     `;
+  }, []);
+
+  // 정류장 이벤트 등록 함수
+  const registerStationEvents = useCallback((element: HTMLElement, stationId: string) => {
+    // 호버 이벤트 핸들러 추가
+    element.addEventListener('mouseenter', () => {
+      stationSensorStore.setHoveredStation(stationId);
+
+      // 상세보기 텍스트 애니메이션 (우측 확장)
+      const detailText = element.querySelector('.detail-text') as HTMLElement;
+      if (detailText) {
+        detailText.style.maxWidth = '60px';
+        detailText.style.marginLeft = '8px';
+        detailText.style.opacity = '1';
+      }
+    });
+
+    element.addEventListener('mouseleave', () => {
+      stationSensorStore.clearHoveredStation();
+
+      // 상세보기 텍스트 애니메이션 (축소)
+      const detailText = element.querySelector('.detail-text') as HTMLElement;
+      if (detailText) {
+        detailText.style.maxWidth = '0px';
+        detailText.style.marginLeft = '0px';
+        detailText.style.opacity = '0';
+      }
+    });
+
+    // 정류장 태그 클릭 이벤트 (비워둠)
+    element.addEventListener('click', () => {
+      // TODO: 정류장 상세보기 기능 구현
+      console.log(`Station detail view clicked: ${stationId}`);
+    });
   }, []);
 
   // 정류장 Element 생성/업데이트
@@ -111,14 +148,8 @@ const StationHtmlRenderer = observer(() => {
       element.style.overflow = 'visible';
       element.innerHTML = createStationTagHTML(stationName, stationId, routeName, direction);
 
-      // 호버 이벤트 핸들러 추가
-      element.addEventListener('mouseenter', () => {
-        stationSensorStore.setHoveredStation(stationId);
-      });
-
-      element.addEventListener('mouseleave', () => {
-        stationSensorStore.clearHoveredStation();
-      });
+      // 이벤트 등록
+      registerStationEvents(element, stationId);
 
       stationElementsRef.current.set(entityId, element);
       containerRef.current?.appendChild(element);
@@ -129,6 +160,9 @@ const StationHtmlRenderer = observer(() => {
 
       if (currentIsSelected !== isSelected || currentIsActive !== isActive) {
         element.innerHTML = createStationTagHTML(stationName, stationId, routeName, direction);
+
+        // HTML 변경 시 이벤트 리스너 재등록
+        registerStationEvents(element, stationId);
       }
     }
 
@@ -136,7 +170,7 @@ const StationHtmlRenderer = observer(() => {
     element.style.left = `${left}px`; // 중심 정렬을 위해 translateX(-50%) 사용
     element.style.top = `${top}px`; // Billboard 바로 아래 5px 간격
     element.style.zIndex = isActive ? '1500' : '1499';
-  }, []);
+  }, [createStationTagHTML, registerStationEvents]);
 
   // 60fps 제한을 위한 스로틀링
   const updateStationPositions = useCallback(() => {
