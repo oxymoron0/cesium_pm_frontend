@@ -10,6 +10,7 @@ import SearchInput from "@/components/basic/SearchInput";
 import Icon from "@/components/basic/Icon";
 import RouteCard from "@/components/service/RouteCard";
 import StationCard from "@/components/service/StationCard";
+import AirQualityStatus from "./AirQualityStatus";
 import { routeStore } from '@/stores/RouteStore';
 import { searchStations } from '@/utils/api/routeApi';
 import { renderSearchStations, updateSearchStationSelection, clearSearchStations } from '@/utils/cesium/searchStationRenderer';
@@ -24,6 +25,7 @@ const Monitoring = observer(function Monitoring({ onRouteSelect }: MonitoringPro
   const [selectedTab, setSelectedTab] = useState<'bus' | 'station'>('bus');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [showAirQualityModal, setShowAirQualityModal] = useState(false);
 
   // API 상태 관리
   const [searchResults, setSearchResults] = useState<StationSearchResponse | null>(null);
@@ -382,7 +384,12 @@ const Monitoring = observer(function Monitoring({ onRouteSelect }: MonitoringPro
         <Spacer height={16} />
         <Divider height="h-[2px]"></Divider>
         <Spacer height={32} />
-        <Button>노선별 실시간 공기질 현황</Button>
+        <Button onClick={() => setShowAirQualityModal(true)}>노선별 실시간 공기질 현황</Button>
+
+        {/* AirQualityStatus Modal */}
+        {showAirQualityModal && (
+          <AirQualityStatus onClose={() => setShowAirQualityModal(false)} />
+        )}
       </>
   )
 });
