@@ -15,6 +15,7 @@ const BusHtmlRenderer = observer(() => {
     element: HTMLDivElement;
     lastSensorData?: { pm: number; fpm: number; voc: number };
     lastRouteName?: string;
+    lastTrackingState?: boolean;
   }>>(new Map());
   const lastUpdateTime = useRef<number>(0);
   const terrainHeightCache = useRef<Map<string, number>>(new Map());
@@ -114,15 +115,30 @@ const BusHtmlRenderer = observer(() => {
     `;
   }, []);
 
-  // 버스 정보 HTML 생성 함수 (기본 버전)
-  const createBusInfoHTML = useCallback((routeName: string) => {
+  // 버스 정보 HTML 생성 함수 (추적 상태 반영)
+  const createBusInfoHTML = useCallback((routeName: string, vehicleNumber: string) => {
+    // 현재 추적 상태 확인
+    const isTracking = busStore.trackedBusId === vehicleNumber;
+
+    // 추적 상태에 따른 스타일 변경
+    const backgroundColor = isTracking ? 'rgba(255, 208, 64, 0.9)' : 'rgba(0, 0, 0, 0.65)';
+    const borderColor = isTracking ? '#FFD040' : '#C4C6C6';
+    const textColor = isTracking ? '#000000' : '#FEFEFE';
+    const iconFill = isTracking ? '#000000' : 'white';
+    const followText = isTracking ? '따라가기 중지' : '따라가기';
+
+    // 추적 중일 때는 항상 확장된 상태
+    const followTextStyle = isTracking
+      ? 'color: #000000; font-family: Pretendard; font-size: 12px; font-weight: 500; line-height: normal; margin-left: 8px; max-width: 80px; opacity: 1; overflow: hidden; transition: all 0.3s ease; white-space: nowrap;'
+      : 'color: #FEFEFE; font-family: Pretendard; font-size: 12px; font-weight: 500; line-height: normal; margin-left: 0px; max-width: 0px; opacity: 0; overflow: hidden; transition: all 0.3s ease; white-space: nowrap;';
+
     return `
-      <div class="bus-route-container" style="display: inline-flex; padding: 8px 12px; justify-content: center; align-items: center; gap: 4px; border-radius: 34.935px; border: 1px solid #C4C6C6; background: rgba(0, 0, 0, 0.65); cursor: pointer; transition: padding 0.3s ease;">
+      <div class="bus-route-container" style="display: inline-flex; padding: 8px 12px; justify-content: center; align-items: center; gap: 4px; border-radius: 34.935px; border: 1px solid ${borderColor}; background: ${backgroundColor}; cursor: pointer; transition: all 0.3s ease;">
         <svg width="13" height="12" viewBox="0 0 13 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M9.75 10.7368H3.25V11.3684C3.25 11.5359 3.18152 11.6966 3.05962 11.815C2.93772 11.9335 2.77239 12 2.6 12H1.95C1.77761 12 1.61228 11.9335 1.49038 11.815C1.36848 11.6966 1.3 11.5359 1.3 11.3684V10.7368H0.65V5.68421H0V3.15789H0.65V1.26316C0.65 0.928148 0.786964 0.606858 1.03076 0.36997C1.27456 0.133082 1.60522 0 1.95 0H11.05C11.3948 0 11.7254 0.133082 11.9692 0.36997C12.213 0.606858 12.35 0.928148 12.35 1.26316V3.15789H13V5.68421H12.35V10.7368H11.7V11.3684C11.7 11.5359 11.6315 11.6966 11.5096 11.815C11.3877 11.9335 11.2224 12 11.05 12H10.4C10.2276 12 10.0623 11.9335 9.94038 11.815C9.81848 11.6966 9.75 11.5359 9.75 11.3684V10.7368ZM11.05 5.68421V1.26316H1.95V5.68421H11.05ZM11.05 6.94737H1.95V9.47368H11.05V6.94737ZM2.6 7.57895H5.2V8.8421H2.6V7.57895ZM7.8 7.57895H10.4V8.8421H7.8V7.57895Z" fill="white"/>
+          <path d="M9.75 10.7368H3.25V11.3684C3.25 11.5359 3.18152 11.6966 3.05962 11.815C2.93772 11.9335 2.77239 12 2.6 12H1.95C1.77761 12 1.61228 11.9335 1.49038 11.815C1.36848 11.6966 1.3 11.5359 1.3 11.3684V10.7368H0.65V5.68421H0V3.15789H0.65V1.26316C0.65 0.928148 0.786964 0.606858 1.03076 0.36997C1.27456 0.133082 1.60522 0 1.95 0H11.05C11.3948 0 11.7254 0.133082 11.9692 0.36997C12.213 0.606858 12.35 0.928148 12.35 1.26316V3.15789H13V5.68421H12.35V10.7368H11.7V11.3684C11.7 11.5359 11.6315 11.6966 11.5096 11.815C11.3877 11.9335 11.2224 12 11.05 12H10.4C10.2276 12 10.0623 11.9335 9.94038 11.815C9.81848 11.6966 9.75 11.5359 9.75 11.3684V10.7368ZM11.05 5.68421V1.26316H1.95V5.68421H11.05ZM11.05 6.94737H1.95V9.47368H11.05V6.94737ZM2.6 7.57895H5.2V8.8421H2.6V7.57895ZM7.8 7.57895H10.4V8.8421H7.8V7.57895Z" fill="${iconFill}"/>
         </svg>
-        <span class="route-number" style="color: #FEFEFE; text-align: center; font-variant-numeric: lining-nums tabular-nums; font-family: Pretendard; font-size: 12px; font-weight: 700; line-height: normal;">${routeName}</span>
-        <span class="follow-text" style="color: #FEFEFE; font-family: Pretendard; font-size: 12px; font-weight: 500; line-height: normal; margin-left: 0px; max-width: 0px; opacity: 0; overflow: hidden; transition: all 0.3s ease; white-space: nowrap;">따라가기</span>
+        <span class="route-number" style="color: ${textColor}; text-align: center; font-variant-numeric: lining-nums tabular-nums; font-family: Pretendard; font-size: 12px; font-weight: 700; line-height: normal;">${routeName}</span>
+        <span class="follow-text" style="${followTextStyle}">${followText}</span>
       </div>
     `;
   }, []);
@@ -131,10 +147,13 @@ const BusHtmlRenderer = observer(() => {
   const hasContentChanged = useCallback((
     lastRouteName: string | undefined,
     lastSensorData: { pm: number; fpm: number; voc: number } | undefined,
+    lastTrackingState: boolean | undefined,
     routeName: string,
-    sensorData: { pm: number; fpm: number; voc: number } | undefined
+    sensorData: { pm: number; fpm: number; voc: number } | undefined,
+    currentTrackingState: boolean
   ): boolean => {
     if (lastRouteName !== routeName) return true;
+    if (lastTrackingState !== currentTrackingState) return true;
     if (!lastSensorData && sensorData) return true;
     if (lastSensorData && !sensorData) return true;
     if (!lastSensorData && !sensorData) return false;
@@ -171,33 +190,45 @@ const BusHtmlRenderer = observer(() => {
       const addBusRouteHoverEvents = () => {
         const busRouteContainer = element.querySelector('.bus-route-container') as HTMLElement;
         if (busRouteContainer) {
-          busRouteContainer.addEventListener('mouseenter', () => {
-            const followText = busRouteContainer.querySelector('.follow-text') as HTMLElement;
-            if (followText) {
-              followText.style.maxWidth = '60px';
-              followText.style.marginLeft = '8px';
-              followText.style.opacity = '1';
-            }
-          });
+          // 추적 중이 아닌 경우에만 호버 이벤트 추가
+          const isCurrentlyTracking = busStore.trackedBusId === vehicleNumber;
 
-          busRouteContainer.addEventListener('mouseleave', () => {
-            const followText = busRouteContainer.querySelector('.follow-text') as HTMLElement;
-            if (followText) {
-              followText.style.maxWidth = '0px';
-              followText.style.marginLeft = '0px';
-              followText.style.opacity = '0';
-            }
-          });
+          if (!isCurrentlyTracking) {
+            busRouteContainer.addEventListener('mouseenter', () => {
+              const followText = busRouteContainer.querySelector('.follow-text') as HTMLElement;
+              if (followText) {
+                followText.style.maxWidth = '60px';
+                followText.style.marginLeft = '8px';
+                followText.style.opacity = '1';
+              }
+            });
+
+            busRouteContainer.addEventListener('mouseleave', () => {
+              const followText = busRouteContainer.querySelector('.follow-text') as HTMLElement;
+              if (followText) {
+                followText.style.maxWidth = '0px';
+                followText.style.marginLeft = '0px';
+                followText.style.opacity = '0';
+              }
+            });
+          }
 
           busRouteContainer.addEventListener('click', () => {
-            console.log(`[버스 따라가기] 차량 번호: ${vehicleNumber}`);
-            // TODO: 버스 따라가기 기능 구현
+            const currentTracked = busStore.trackedBusId;
+
+            if (currentTracked === vehicleNumber) {
+              // 추적 중지
+              busStore.stopCameraTracking();
+            } else {
+              // 추적 시작
+              busStore.trackBus(vehicleNumber);
+            }
           });
         }
       };
 
       // 컨테이너 HTML 구성
-      const busInfoHTML = createBusInfoHTML(routeName);
+      const busInfoHTML = createBusInfoHTML(routeName, vehicleNumber);
       const sensorHTML = sensorData ? createSensorHTML(sensorData) : '';
 
       element.innerHTML = `
@@ -210,7 +241,8 @@ const BusHtmlRenderer = observer(() => {
       busInfo = {
         element,
         lastSensorData: sensorData ? { ...sensorData } : undefined,
-        lastRouteName: routeName
+        lastRouteName: routeName,
+        lastTrackingState: busStore.trackedBusId === vehicleNumber
       };
       busElementsRef.current.set(vehicleNumber, busInfo);
       containerRef.current?.appendChild(element);
@@ -218,9 +250,12 @@ const BusHtmlRenderer = observer(() => {
       // HTML이 DOM에 추가된 후 버스 라우트 이벤트 등록
       setTimeout(() => addBusRouteHoverEvents(), 0);
     } else {
+      // 현재 추적 상태 확인
+      const currentTrackingState = busStore.trackedBusId === vehicleNumber;
+
       // 내용이 변경된 경우에만 HTML 업데이트
-      if (hasContentChanged(busInfo.lastRouteName, busInfo.lastSensorData, routeName, sensorData)) {
-        const busInfoHTML = createBusInfoHTML(routeName);
+      if (hasContentChanged(busInfo.lastRouteName, busInfo.lastSensorData, busInfo.lastTrackingState, routeName, sensorData, currentTrackingState)) {
+        const busInfoHTML = createBusInfoHTML(routeName, vehicleNumber);
         const sensorHTML = sensorData ? createSensorHTML(sensorData) : '';
 
         busInfo.element.innerHTML = `
@@ -233,9 +268,38 @@ const BusHtmlRenderer = observer(() => {
         // 마지막 상태 업데이트
         busInfo.lastSensorData = sensorData ? { ...sensorData } : undefined;
         busInfo.lastRouteName = routeName;
+        busInfo.lastTrackingState = currentTrackingState;
 
         // 내용 업데이트 후 이벤트 리스너 재등록
-        setTimeout(() => addBusRouteHoverEvents(), 0);
+        setTimeout(() => {
+          if (!busInfo) return;
+          const busRouteContainer = busInfo.element.querySelector('.bus-route-container') as HTMLElement;
+          if (busRouteContainer) {
+            // 추적 중이 아닌 경우에만 호버 이벤트 추가
+            const isCurrentlyTracking = busStore.trackedBusId === vehicleNumber;
+
+            if (!isCurrentlyTracking) {
+              busRouteContainer.addEventListener('mouseenter', () => {
+                const followText = busRouteContainer.querySelector('.follow-text') as HTMLElement;
+                if (followText) {
+                  followText.style.maxWidth = '60px';
+                  followText.style.marginLeft = '8px';
+                  followText.style.opacity = '1';
+                }
+              });
+
+              busRouteContainer.addEventListener('mouseleave', () => {
+                const followText = busRouteContainer.querySelector('.follow-text') as HTMLElement;
+                if (followText) {
+                  followText.style.maxWidth = '0px';
+                  followText.style.marginLeft = '0px';
+                  followText.style.opacity = '0';
+                }
+              });
+            }
+
+          }
+        }, 0);
       }
     }
 
@@ -304,8 +368,17 @@ const BusHtmlRenderer = observer(() => {
               }
             }
           } catch (error) {
-            // 개별 Entity 처리 오류 무시
-            console.debug('[BusHtmlRenderer] Entity processing error:', error);
+            // DeveloperError 상세 로깅
+            if (error instanceof Error && error.name === 'DeveloperError') {
+              console.warn('[BusHtmlRenderer] DeveloperError details:', {
+                message: error.message,
+                entityId: entity.id,
+                hasPosition: !!entity.position,
+                stack: error.stack
+              });
+            } else {
+              console.debug('[BusHtmlRenderer] Entity processing error:', error);
+            }
           }
           return null;
         });
