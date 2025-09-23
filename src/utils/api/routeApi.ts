@@ -5,7 +5,7 @@
 
 import { get } from './request';
 import { API_PATHS } from './config';
-import type { RouteInfoResponse, RouteGeom, RouteStationsResponse } from './types';
+import type { RouteInfoResponse, RouteGeom, RouteStationsResponse, StationSearchResponse } from './types';
 
 /**
  * 모든 노선 기본 정보 조회
@@ -105,6 +105,32 @@ export async function getAllRouteGeometries(routeNames: string[] = ['10', '31', 
     return results;
   } catch (error) {
     console.error('[getAllRouteGeometries] 일괄 조회 실패:', error);
+    throw error;
+  }
+}
+
+/**
+ * 정류장 검색
+ * GET /api/v1/route/stations/search?query={query}&page={page}&limit={limit}
+ *
+ * @param query - 검색어
+ * @param page - 페이지 번호 (기본값: 1)
+ * @param limit - 페이지당 결과 수 (기본값: 4)
+ * @returns 검색된 정류장 목록
+ */
+export async function searchStations(query: string): Promise<StationSearchResponse> {
+  try {
+    // 전체 결과를 가져오기 위해 큰 limit 값 사용
+    const url = `${API_PATHS.ROUTE_STATIONS_SEARCH}?q=${encodeURIComponent(query)}&limit=1000`;
+    const response = await get<StationSearchResponse>(url);
+
+    if (!response.ok) {
+      throw new Error(`Station search API failed with status ${response.status}`);
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error(`[searchStations] API 호출 실패 (검색어: ${query}):`, error);
     throw error;
   }
 }

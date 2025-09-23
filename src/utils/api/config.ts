@@ -39,6 +39,7 @@ export const API_PATHS = {
   ROUTE_INFO: getApiPath('api/v1/route/getInfo'),
   ROUTE_GEOM: (routeName: string) => getApiPath(`api/v1/route/geom/${routeName}`),
   ROUTE_STATIONS: (routeName: string, direction: string) => getApiPath(`api/v1/route/stations/${routeName}?direction=${direction}`),
+  ROUTE_STATIONS_SEARCH: getApiPath('api/v1/route/stations/search'),
 } as const;
 
 /**

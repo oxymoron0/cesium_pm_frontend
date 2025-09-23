@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import Title from "@/components/basic/Title";
 import TabNavigation from "@/components/basic/TabNavigation";
@@ -11,51 +11,134 @@ import Icon from "@/components/basic/Icon";
 import RouteCard from "@/components/service/RouteCard";
 import StationCard from "@/components/service/StationCard";
 import { routeStore } from '@/stores/RouteStore';
+import { searchStations } from '@/utils/api/routeApi';
+import { renderSearchStations, updateSearchStationSelection, clearSearchStations } from '@/utils/cesium/searchStationRenderer';
+import type { StationSearchResponse } from '@/utils/api/types';
 
 interface MonitoringProps {
   onRouteSelect: (routeNumber: string) => void;
 }
 
 const Monitoring = observer(function Monitoring({ onRouteSelect }: MonitoringProps) {
-  const [selectedTab, setSelectedTab] = useState<'bus' | 'station'>('station');
-  const [searchQuery, setSearchQuery] = useState('서면역');
+  const [selectedTab, setSelectedTab] = useState<'bus' | 'station'>('bus');
+  const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
-  // 임시 데이터 - 나중에 실제 API 데이터로 교체
-  const savedStations = [
-    { name: '서면역.서면지하상가', description: '05711 (서면역.서면지하상가방면)', isBookmarked: true },
-    { name: '서면역.서면지하상가', description: '05710 (서면역.서면지하상가방면)', isBookmarked: true }
-  ];
+  // API 상태 관리
+  const [searchResults, setSearchResults] = useState<StationSearchResponse | null>(null);
+  const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
-  const searchResults = [
-    { name: '서면역.서면지하상가', description: '05711 (서면역.서면지하상가방면)', isBookmarked: false },
-    { name: '서면역.서면지하상가', description: '05710 (서면역.서면지하상가방면)', isBookmarked: false },
-    { name: '서면한전', description: '05712 (서면역.서면지하상가방면)', isBookmarked: false },
-    { name: '서면한전', description: '05713 (벡내골역방면)', isBookmarked: false },
-    { name: '서면역 1번출구', description: '05714 (서면역방면)', isBookmarked: false },
-    { name: '서면역 2번출구', description: '05715 (서면역방면)', isBookmarked: false },
-    { name: '서면역 3번출구', description: '05716 (서면역방면)', isBookmarked: false },
-    { name: '서면역 4번출구', description: '05717 (서면역방면)', isBookmarked: false },
-    { name: '서면사거리', description: '05718 (서면역방면)', isBookmarked: false },
-    { name: '서면로터리', description: '05719 (서면역방면)', isBookmarked: false },
-    { name: '서면CGV', description: '05720 (서면역방면)', isBookmarked: false },
-    { name: '서면롯데백화점', description: '05721 (서면역방면)', isBookmarked: false },
-    { name: '서면NC백화점', description: '05722 (서면역방면)', isBookmarked: false },
-    { name: '서면젊음의거리', description: '05723 (서면역방면)', isBookmarked: false },
-    { name: '서면맥주거리', description: '05724 (서면역방면)', isBookmarked: false },
-    { name: '서면종합터미널', description: '05725 (서면역방면)', isBookmarked: false }
-  ];
+  // 선택된 정류장 상태 관리
+  const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
+
+  // 임시 저장된 정류장 데이터 (추후 실제 API로 교체)
+  const savedStations = [];
 
   const itemsPerPage = 4;
   const isSearchMode = searchQuery.trim().length > 0;
-  const currentData = isSearchMode ? searchResults : savedStations;
-  const totalItems = currentData.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentItems = currentData.slice(startIndex, startIndex + itemsPerPage);
+
+  // 현재 표시할 데이터 계산
+  const getCurrentData = () => {
+    if (isSearchMode && searchResults) {
+      // API 검색 결과 사용 (클라이언트 사이드 페이징)
+      const allItems = searchResults.features.map(feature => ({
+        stationId: feature.properties.station_id,
+        name: feature.properties.station_name,
+        description: `${feature.properties.ars_id} (${feature.properties.city})`,
+        isBookmarked: false,
+        isSelected: selectedStationId === feature.properties.station_id
+      }));
+
+      const totalItems = allItems.length;
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const items = allItems.slice(startIndex, startIndex + itemsPerPage);
+
+      return { items, totalItems, totalPages };
+    } else {
+      // 저장된 정류장 (클라이언트 사이드 페이징) - 임시 station_id 생성
+      const totalItems = savedStations.length;
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const items = savedStations.slice(startIndex, startIndex + itemsPerPage).map((station, index) => ({
+        stationId: `saved_${startIndex + index}`, // 임시 ID (페이지 고려)
+        name: station.name,
+        description: station.description,
+        isBookmarked: station.isBookmarked,
+        isSelected: selectedStationId === `saved_${startIndex + index}`
+      }));
+
+      return { items, totalItems, totalPages, allItems: [] };
+    }
+  };
+
+  const { items: currentItems, totalItems, totalPages } = getCurrentData();
+
+  // 검색 결과 Cesium 렌더링 (선택 상태 제외)
+  useEffect(() => {
+    const renderSearchResults = async () => {
+      if (isSearchMode && searchResults?.features) {
+        console.log('[Monitoring] Rendering search results to Cesium:', searchResults.features.length);
+        await renderSearchStations(searchResults.features, null); // 선택 상태 없이 렌더링
+        // 렌더링 후 현재 선택 상태 적용
+        updateSearchStationSelection(selectedStationId);
+      } else {
+        console.log('[Monitoring] Clearing search results from Cesium');
+        await clearSearchStations();
+      }
+    };
+
+    renderSearchResults();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchResults, isSearchMode]); // selectedStationId 의도적으로 제외 (깜빡임 방지)
+
+  // 선택 상태만 업데이트 (깜빡임 방지)
+  useEffect(() => {
+    if (isSearchMode && searchResults?.features) {
+      updateSearchStationSelection(selectedStationId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStationId]); // isSearchMode, searchResults 의도적으로 제외 (깜빡임 방지)
+
+  // 검색 API 호출 (검색어 변경시에만)
+  useEffect(() => {
+    const performSearch = async () => {
+      if (!isSearchMode) {
+        setSearchResults(null);
+        return;
+      }
+
+      setIsSearchLoading(true);
+      setSearchError(null);
+
+      try {
+        const result = await searchStations(searchQuery);
+        setSearchResults(result);
+      } catch (error) {
+        console.error('[Monitoring] Station search failed:', error);
+        setSearchError(error instanceof Error ? error.message : '검색 중 오류가 발생했습니다.');
+        setSearchResults(null);
+      } finally {
+        setIsSearchLoading(false);
+      }
+    };
+
+    // 검색어 변경시에만 API 호출 (디바운싱 적용)
+    const debounceTimer = setTimeout(performSearch, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery, isSearchMode]);
 
   const handleTabChange = (index: number) => {
-    setSelectedTab(index === 0 ? 'bus' : 'station');
+    const newTab = index === 0 ? 'bus' : 'station';
+    setSelectedTab(newTab);
+
+    // 버스 탭으로 변경 시 검색 결과 정리
+    if (newTab === 'bus') {
+      setSearchQuery('');
+      setSelectedStationId(null);
+      clearSearchStations();
+    }
   };
 
   const getActiveTabIndex = () => {
@@ -71,9 +154,12 @@ const Monitoring = observer(function Monitoring({ onRouteSelect }: MonitoringPro
     setCurrentPage(page);
   };
 
-  const handleStationSelect = (stationName: string) => {
-    console.log('Station selected:', stationName);
-    // TODO: 정류장 선택 로직 구현
+  const handleStationSelect = (stationId: string, stationName: string) => {
+    console.log('Station selected:', { stationId, stationName });
+    setSelectedStationId(stationId);
+
+    // Cesium 선택 상태 즉시 업데이트
+    updateSearchStationSelection(stationId);
   };
 
   const handleBookmarkToggle = (stationName: string) => {
@@ -175,7 +261,7 @@ const Monitoring = observer(function Monitoring({ onRouteSelect }: MonitoringPro
     }
 
     return (
-      <div className="flex items-center justify-center gap-2 py-4 w-full">
+      <div className="flex items-center justify-center w-full gap-2 py-4">
         <button
           onClick={() => handlePageChange(Math.max(1, currentPage - 5))}
           disabled={totalPages < 5}
@@ -223,26 +309,50 @@ const Monitoring = observer(function Monitoring({ onRouteSelect }: MonitoringPro
       <Spacer height={16} />
 
       <div
-        className="flex flex-col items-start self-stretch gap-2 overflow-y-auto px-1 py-1"
+        className="flex flex-col items-start self-stretch gap-2 px-1 py-1 overflow-y-auto"
         style={{
           alignItems: 'flex-start',
+          height: '400px', // 고정 높이 (4개 StationCard 기준)
+          minHeight: '400px',
           maxHeight: '400px',
           scrollbarWidth: 'thin',
           scrollbarColor: '#FFD040 transparent'
         }}
       >
-        {currentItems.length > 0 ? (
+        {isSearchLoading && !searchResults ? (
+          // 최초 검색 로딩 상태 (페이지 변경시에는 기존 데이터 유지)
+          <>
+            {[1, 2, 3, 4].map((index) => (
+              <div
+                key={`search-skeleton-${index}`}
+                className="bg-[#1A1A1A] rounded-lg p-4 animate-pulse w-full"
+              >
+                <div className="w-3/4 h-4 mb-2 bg-gray-600 rounded"></div>
+                <div className="w-1/2 h-3 bg-gray-600 rounded"></div>
+              </div>
+            ))}
+          </>
+        ) : searchError ? (
+          // 검색 에러 상태
+          <div className="text-red-400 text-center p-4 bg-[#1A1A1A] rounded-lg w-full">
+            {searchError}
+          </div>
+        ) : currentItems.length > 0 ? (
+          // 정상 데이터 표시
           currentItems.map((station, index) => (
             <StationCard
-              key={`${station.name}-${station.description}-${index}`}
+              key={`${station.stationId}-${index}`}
+              stationId={station.stationId}
               name={station.name}
               description={station.description}
               isBookmarked={station.isBookmarked}
+              isSelected={station.isSelected}
               onBookmarkToggle={() => handleBookmarkToggle(station.name)}
               onSelect={handleStationSelect}
             />
           ))
         ) : (
+          // 빈 상태
           <div className="text-gray-400 text-center p-4 bg-[#1A1A1A] rounded-lg w-full">
             {isSearchMode ? '검색 결과가 없습니다.' : '저장된 정류장이 없습니다.'}
           </div>

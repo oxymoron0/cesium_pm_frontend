@@ -104,6 +104,20 @@ export interface RouteStationsResponse {
 }
 
 /**
+ * Station Search API 응답 (GeoJSON FeatureCollection)
+ * GET /api/v1/route/stations/search?q={query}&page={page}&limit={limit}
+ */
+export interface StationSearchResponse {
+  type: 'FeatureCollection';
+  query: string;
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+  features: RouteStationFeature[];
+}
+
+/**
  * 기존 RouteStation 인터페이스 (하위 호환성 유지)
  * @deprecated 새로운 GeoJSON Feature 구조 사용 권장
  */

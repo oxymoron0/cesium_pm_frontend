@@ -1,28 +1,48 @@
 import { observer } from 'mobx-react-lite';
 import Item from '@/components/basic/Item';
-import { testStore } from '@/stores/TestStore';
 
 interface StationCardProps {
+  stationId?: string;
   name: string;
   description: string;
   isBookmarked?: boolean;
+  isSelected?: boolean;
   onBookmarkToggle?: () => void;
-  onSelect?: (stationName: string) => void;
+  onSelect?: (stationId: string, stationName: string) => void;
 }
 
 function StationCard({
+  stationId,
   name,
   description,
   isBookmarked = false,
+  isSelected = false,
   onBookmarkToggle,
   onSelect
 }: StationCardProps) {
   const basePath = import.meta.env.VITE_BASE_PATH || '/';
-  const isSelected = testStore.isSelected(name);
 
   const handleCardClick = () => {
-    testStore.setSelectedStation(name);
-    onSelect?.(name);
+    if (stationId && onSelect) {
+      onSelect(stationId, name);
+    }
+  };
+
+  // 텍스트 길이에 따른 동적 폰트 크기 계산
+  const getNameFontSize = (text: string) => {
+    const length = text.length;
+    if (length > 15) return '18px';      // 매우 긴 텍스트
+    if (length > 12) return '20px';      // 긴 텍스트
+    if (length > 8) return '22px';       // 중간 텍스트
+    return '24px';                       // 기본 크기
+  };
+
+  const getNameLineHeight = (text: string) => {
+    const length = text.length;
+    if (length > 15) return '20px';      // 매우 긴 텍스트
+    if (length > 12) return '22px';      // 긴 텍스트
+    if (length > 8) return '24px';       // 중간 텍스트
+    return '24px';                       // 기본 크기
   };
 
   return (
@@ -37,10 +57,12 @@ function StationCard({
           style={{
             color: '#FFF',
             fontFamily: 'Pretendard',
-            fontSize: '24px',
+            fontSize: getNameFontSize(name),
             fontStyle: 'normal',
             fontWeight: '700',
-            lineHeight: '24px'
+            lineHeight: getNameLineHeight(name),
+            wordBreak: 'keep-all',
+            overflowWrap: 'break-word'
           }}
         >
           {name}
