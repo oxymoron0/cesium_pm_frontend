@@ -1,4 +1,4 @@
-import { Cartesian3, Math as CesiumMath } from 'cesium';
+import { Cartesian3 } from 'cesium';
 
 /**
  * Camera Utilities

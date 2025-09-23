@@ -1,4 +1,4 @@
-import { Entity, ModelGraphics, Cartesian3, Color, ColorBlendMode, HeightReference, HeadingPitchRange, ConstantPositionProperty } from 'cesium'
+import { Entity, ModelGraphics, Cartesian3, Color, ColorBlendMode, HeightReference, HeadingPitchRange, ConstantPositionProperty, Transforms, Matrix4 } from 'cesium'
 import { createDataSource, findDataSource, removeDataSource } from './datasources'
 import { type BusTrajectoryData } from '@/utils/api/busApi'
 
@@ -182,7 +182,7 @@ export function stopSingleBusAnimation(vehicleNumber: string): void {
 }
 
 /**
- * 특정 버스에 카메라 추적 시작
+ * 특정 버스에 카메라 추적 시작 - 줌 레벨 유지
  */
 export function trackBusEntity(vehicleNumber: string): boolean {
   const viewer = getViewer()
@@ -194,7 +194,68 @@ export function trackBusEntity(vehicleNumber: string): boolean {
     return false
   }
 
+  // 기본 카메라 오프셋 (최초 추적 시 사용)
+  const DEFAULT_CAMERA_OFFSET = new HeadingPitchRange(0, -0.4, 180)
+
+  // 현재 추적 중인 entity가 있으면 카메라 offset 보존
+  let preservedOffset: HeadingPitchRange | undefined
+
+  if (viewer.trackedEntity) {
+    try {
+      // 현재 카메라와 추적 entity 간의 상대적 위치 계산
+      const currentEntityPosition = viewer.trackedEntity.position?.getValue(viewer.clock.currentTime)
+      if (currentEntityPosition) {
+        const cameraPosition = viewer.camera.position
+        const distance = Cartesian3.distance(cameraPosition, currentEntityPosition)
+
+        // 현재 카메라의 heading과 pitch 직접 사용
+        const heading = viewer.camera.heading
+        const pitch = viewer.camera.pitch
+
+        preservedOffset = new HeadingPitchRange(heading, pitch, distance)
+
+        console.log(`[trackBusEntity] Preserving camera offset: distance=${distance.toFixed(1)}m, heading=${(heading * 180/Math.PI).toFixed(1)}°, pitch=${(pitch * 180/Math.PI).toFixed(1)}°`)
+      }
+    } catch (error) {
+      console.warn('[trackBusEntity] Failed to preserve camera offset:', error)
+    }
+  } else {
+    console.log(`[trackBusEntity] Using default camera offset: distance=${DEFAULT_CAMERA_OFFSET.range}m, pitch=${(DEFAULT_CAMERA_OFFSET.pitch * 180/Math.PI).toFixed(1)}°`)
+  }
+
+  // 새로운 entity로 추적 설정
   viewer.trackedEntity = entity
+
+  // 적용할 offset 결정 (보존된 offset 또는 기본 offset)
+  const offsetToApply = preservedOffset || DEFAULT_CAMERA_OFFSET
+
+  // 항상 offset 적용 (Cesium 기본 거리 방지)
+  {
+    // 다음 프레임에서 offset 적용 (trackedEntity 설정 직후)
+    viewer.scene.postRender.addEventListener(function applyOffset() {
+      try {
+        const newEntityPosition = entity.position?.getValue(viewer.clock.currentTime)
+        if (newEntityPosition) {
+          // Entity를 중앙에 두고 지정된 거리와 각도로 카메라 위치 설정
+          viewer.camera.lookAt(
+            newEntityPosition,
+            new HeadingPitchRange(
+              offsetToApply.heading,
+              offsetToApply.pitch,
+              offsetToApply.range
+            )
+          )
+
+          // 한 번만 실행되도록 리스너 제거
+          viewer.scene.postRender.removeEventListener(applyOffset)
+        }
+      } catch (error) {
+        console.warn('[trackBusEntity] Failed to apply preserved offset:', error)
+        viewer.scene.postRender.removeEventListener(applyOffset)
+      }
+    })
+  }
+
   return true
 }
 

@@ -143,25 +143,55 @@ const BusHtmlRenderer = observer(() => {
     `;
   }, []);
 
-  // 내용 변경 감지 (성능 최적화)
-  const hasContentChanged = useCallback((
-    lastRouteName: string | undefined,
-    lastSensorData: { pm: number; fpm: number; voc: number } | undefined,
-    lastTrackingState: boolean | undefined,
-    routeName: string,
-    sensorData: { pm: number; fpm: number; voc: number } | undefined,
-    currentTrackingState: boolean
-  ): boolean => {
-    if (lastRouteName !== routeName) return true;
-    if (lastTrackingState !== currentTrackingState) return true;
-    if (!lastSensorData && sensorData) return true;
-    if (lastSensorData && !sensorData) return true;
-    if (!lastSensorData && !sensorData) return false;
-    return (
-      lastSensorData!.pm !== sensorData!.pm ||
-      lastSensorData!.fpm !== sensorData!.fpm ||
-      lastSensorData!.voc !== sensorData!.voc
-    );
+  // 컨테이너 HTML 생성
+  const generateContainerHTML = useCallback((routeName: string, vehicleNumber: string, sensorData: { pm: number; fpm: number; voc: number } | undefined) => {
+    const busInfoHTML = createBusInfoHTML(routeName, vehicleNumber);
+    const sensorHTML = sensorData ? createSensorHTML(sensorData) : '';
+    return `
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        ${busInfoHTML}
+        ${sensorHTML}
+      </div>
+    `;
+  }, [createBusInfoHTML, createSensorHTML]);
+
+  // 이벤트 등록 (단일 함수)
+  const registerBusEvents = useCallback((element: HTMLElement, vehicleNumber: string) => {
+    const busRouteContainer = element.querySelector('.bus-route-container') as HTMLElement;
+    if (!busRouteContainer) return;
+
+    const isTracking = busStore.trackedBusId === vehicleNumber;
+
+    // 호버 이벤트 (추적 중이 아닐 때만)
+    if (!isTracking) {
+      busRouteContainer.addEventListener('mouseenter', () => {
+        const followText = busRouteContainer.querySelector('.follow-text') as HTMLElement;
+        if (followText) {
+          followText.style.maxWidth = '60px';
+          followText.style.marginLeft = '8px';
+          followText.style.opacity = '1';
+        }
+      });
+
+      busRouteContainer.addEventListener('mouseleave', () => {
+        const followText = busRouteContainer.querySelector('.follow-text') as HTMLElement;
+        if (followText) {
+          followText.style.maxWidth = '0px';
+          followText.style.marginLeft = '0px';
+          followText.style.opacity = '0';
+        }
+      });
+    }
+
+    // 클릭 이벤트
+    busRouteContainer.addEventListener('click', () => {
+      const currentTracked = busStore.trackedBusId;
+      if (currentTracked === vehicleNumber) {
+        busStore.stopCameraTracking();
+      } else {
+        busStore.trackBus(vehicleNumber);
+      }
+    });
   }, []);
 
   // 버스 Element 생성/업데이트
@@ -173,6 +203,7 @@ const BusHtmlRenderer = observer(() => {
     top: number
   ) => {
     let busInfo = busElementsRef.current.get(vehicleNumber);
+    const currentTrackingState = busStore.trackedBusId === vehicleNumber;
 
     if (!busInfo) {
       // 새 엘리먼트 생성
@@ -182,132 +213,44 @@ const BusHtmlRenderer = observer(() => {
       element.style.whiteSpace = 'nowrap';
       element.style.overflow = 'visible';
       element.style.zIndex = '1520';
-
-      // CSS 기본 스타일 설정
       element.className = 'bus-html-overlay';
 
-      // 버스 노선 호버 이벤트 추가 함수
-      const addBusRouteHoverEvents = () => {
-        const busRouteContainer = element.querySelector('.bus-route-container') as HTMLElement;
-        if (busRouteContainer) {
-          // 추적 중이 아닌 경우에만 호버 이벤트 추가
-          const isCurrentlyTracking = busStore.trackedBusId === vehicleNumber;
-
-          if (!isCurrentlyTracking) {
-            busRouteContainer.addEventListener('mouseenter', () => {
-              const followText = busRouteContainer.querySelector('.follow-text') as HTMLElement;
-              if (followText) {
-                followText.style.maxWidth = '60px';
-                followText.style.marginLeft = '8px';
-                followText.style.opacity = '1';
-              }
-            });
-
-            busRouteContainer.addEventListener('mouseleave', () => {
-              const followText = busRouteContainer.querySelector('.follow-text') as HTMLElement;
-              if (followText) {
-                followText.style.maxWidth = '0px';
-                followText.style.marginLeft = '0px';
-                followText.style.opacity = '0';
-              }
-            });
-          }
-
-          busRouteContainer.addEventListener('click', () => {
-            const currentTracked = busStore.trackedBusId;
-
-            if (currentTracked === vehicleNumber) {
-              // 추적 중지
-              busStore.stopCameraTracking();
-            } else {
-              // 추적 시작
-              busStore.trackBus(vehicleNumber);
-            }
-          });
-        }
-      };
-
-      // 컨테이너 HTML 구성
-      const busInfoHTML = createBusInfoHTML(routeName, vehicleNumber);
-      const sensorHTML = sensorData ? createSensorHTML(sensorData) : '';
-
-      element.innerHTML = `
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-          ${busInfoHTML}
-          ${sensorHTML}
-        </div>
-      `;
+      element.innerHTML = generateContainerHTML(routeName, vehicleNumber, sensorData);
 
       busInfo = {
         element,
         lastSensorData: sensorData ? { ...sensorData } : undefined,
         lastRouteName: routeName,
-        lastTrackingState: busStore.trackedBusId === vehicleNumber
+        lastTrackingState: currentTrackingState
       };
       busElementsRef.current.set(vehicleNumber, busInfo);
       containerRef.current?.appendChild(element);
 
-      // HTML이 DOM에 추가된 후 버스 라우트 이벤트 등록
-      setTimeout(() => addBusRouteHoverEvents(), 0);
+      registerBusEvents(element, vehicleNumber);
     } else {
-      // 현재 추적 상태 확인
-      const currentTrackingState = busStore.trackedBusId === vehicleNumber;
+      // 내용 변경 확인 (단순화)
+      const contentChanged = (
+        busInfo.lastRouteName !== routeName ||
+        busInfo.lastTrackingState !== currentTrackingState ||
+        JSON.stringify(busInfo.lastSensorData) !== JSON.stringify(sensorData)
+      );
 
-      // 내용이 변경된 경우에만 HTML 업데이트
-      if (hasContentChanged(busInfo.lastRouteName, busInfo.lastSensorData, busInfo.lastTrackingState, routeName, sensorData, currentTrackingState)) {
-        const busInfoHTML = createBusInfoHTML(routeName, vehicleNumber);
-        const sensorHTML = sensorData ? createSensorHTML(sensorData) : '';
+      if (contentChanged) {
+        busInfo.element.innerHTML = generateContainerHTML(routeName, vehicleNumber, sensorData);
 
-        busInfo.element.innerHTML = `
-          <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-            ${busInfoHTML}
-            ${sensorHTML}
-          </div>
-        `;
-
-        // 마지막 상태 업데이트
         busInfo.lastSensorData = sensorData ? { ...sensorData } : undefined;
         busInfo.lastRouteName = routeName;
         busInfo.lastTrackingState = currentTrackingState;
 
-        // 내용 업데이트 후 이벤트 리스너 재등록
-        setTimeout(() => {
-          if (!busInfo) return;
-          const busRouteContainer = busInfo.element.querySelector('.bus-route-container') as HTMLElement;
-          if (busRouteContainer) {
-            // 추적 중이 아닌 경우에만 호버 이벤트 추가
-            const isCurrentlyTracking = busStore.trackedBusId === vehicleNumber;
-
-            if (!isCurrentlyTracking) {
-              busRouteContainer.addEventListener('mouseenter', () => {
-                const followText = busRouteContainer.querySelector('.follow-text') as HTMLElement;
-                if (followText) {
-                  followText.style.maxWidth = '60px';
-                  followText.style.marginLeft = '8px';
-                  followText.style.opacity = '1';
-                }
-              });
-
-              busRouteContainer.addEventListener('mouseleave', () => {
-                const followText = busRouteContainer.querySelector('.follow-text') as HTMLElement;
-                if (followText) {
-                  followText.style.maxWidth = '0px';
-                  followText.style.marginLeft = '0px';
-                  followText.style.opacity = '0';
-                }
-              });
-            }
-
-          }
-        }, 0);
+        registerBusEvents(busInfo.element, vehicleNumber);
       }
     }
 
-    // 위치 업데이트 (매 프레임) - 즉시 반영
+    // 위치 업데이트
     busInfo.element.style.left = `${left}px`;
-    busInfo.element.style.top = `${top + 12}px`; // 버스 모델 아래 12px
+    busInfo.element.style.top = `${top + 12}px`;
     busInfo.element.style.transform = 'translateX(-50%)';
-  }, [createBusInfoHTML, createSensorHTML, hasContentChanged]);
+  }, [generateContainerHTML, registerBusEvents]);
 
   // 60fps 제한을 위한 스로틀링
   const updateBusPositions = useCallback(async () => {
