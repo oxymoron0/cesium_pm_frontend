@@ -528,22 +528,13 @@ export function flyToStation(stationId: string): void {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const viewer = (window as unknown as { cviewer: { camera: any; clock: any; flyTo: any } }).cviewer;
-    if (!viewer || !viewer.camera) {
-      console.warn('[flyToStation] Viewer not available');
-      return;
-    }
+    if (!viewer || !viewer.camera) return;
 
     const stationEntity = findStationEntity(stationId);
-    if (!stationEntity) {
-      console.warn(`[flyToStation] Station entity not found: ${stationId}`);
-      return;
-    }
+    if (!stationEntity) return;
 
     const stationPosition = stationEntity.position?.getValue(viewer.clock.currentTime);
-    if (!stationPosition) {
-      console.warn(`[flyToStation] Station position not available: ${stationId}`);
-      return;
-    }
+    if (!stationPosition) return;
 
     // 현재 카메라 높이 계산 (지구 중심에서의 거리)
     const currentCameraHeight = Cartesian3.magnitude(viewer.camera.position);
@@ -559,8 +550,6 @@ export function flyToStation(stationId: string): void {
       ),
       duration: 1.0 // 1초
     });
-
-    console.log(`[flyToStation] Flying to station ${stationId} with preserved distance: ${preservedDistance.toFixed(1)}m`);
 
   } catch (error) {
     console.error(`[flyToStation] Failed to fly to station ${stationId}:`, error);
