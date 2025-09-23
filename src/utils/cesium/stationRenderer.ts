@@ -208,11 +208,15 @@ function createStationEntity(feature: RouteStationFeature, direction: 'inbound' 
         const isRouteSelected = stationStore.selectedRouteName === feature.properties.route_name;
         const isDirectionSelected = stationStore.selectedDirection === direction;
 
-        // 선택된 정류장이거나 활성 상태의 노선+방향이면 활성 아이콘
-        if (isSelected || (isRouteSelected && isDirectionSelected)) {
+        // 1순위: 개별 정류장 선택 - station_selected.svg
+        if (isSelected) {
+          return `${basePath}icon/station_selected.svg`;
+        }
+        // 2순위: 노선+방향 활성화 - station_active.svg
+        if (isRouteSelected && isDirectionSelected) {
           return `${basePath}icon/station_active.svg`;
         }
-        // 그 외는 비활성 아이콘
+        // 3순위: 비활성 상태 - station_inactive.svg
         return `${basePath}icon/station_inactive.svg`;
       }, false),
 
