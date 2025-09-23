@@ -223,20 +223,3 @@ export function getCurrentSelectedSearchStationId(): string | null {
   return currentSelectedSearchStationId;
 }
 
-/**
- * 검색 정류장이 렌더링되어 있는지 확인
- */
-export function hasSearchStationsRendered(): boolean {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const viewer = (window as unknown as { cviewer: any }).cviewer;
-    if (!viewer) return false;
-
-    const dataSource = viewer.dataSources.getByName(SEARCH_DATASOURCE_NAME);
-    return dataSource.length > 0 && dataSource[0].entities.values.length > 0;
-
-  } catch (error) {
-    console.error('[hasSearchStationsRendered] Error checking render status:', error);
-    return false;
-  }
-}

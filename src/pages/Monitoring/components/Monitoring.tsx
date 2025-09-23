@@ -69,7 +69,7 @@ const Monitoring = observer(function Monitoring({ onRouteSelect }: MonitoringPro
         isSelected: selectedStationId === `saved_${startIndex + index}`
       }));
 
-      return { items, totalItems, totalPages, allItems: [] };
+      return { items, totalItems, totalPages };
     }
   };
 
