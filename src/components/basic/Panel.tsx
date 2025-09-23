@@ -3,10 +3,13 @@ import { type ReactNode } from 'react'
 interface PanelProps {
   children: ReactNode
   className?: string
-  position?: 'left' | 'right'
+  position?: 'left' | 'right' | 'center'
   offset?: number
   width?: string
   maxHeight?: string
+  height?: string
+  marginHorizontal?: number
+  marginVertical?: number
 }
 
 function Panel({
@@ -15,11 +18,26 @@ function Panel({
   position = 'left',
   offset = 20,
   width = '400px',
-  maxHeight
+  maxHeight,
+  height,
+  marginHorizontal = 70,
+  marginVertical = 72
 }: PanelProps) {
-  const positionStyle = position === 'left' 
-    ? { left: `${offset}px` }
-    : { right: `${offset}px` }
+  const getPositionStyle = () => {
+    switch (position) {
+      case 'left':
+        return { left: `${offset}px` }
+      case 'right':
+        return { right: `${offset}px` }
+      case 'center':
+        return {
+          left: '50%',
+          transform: 'translateX(-50%)'
+        }
+      default:
+        return { left: `${offset}px` }
+    }
+  }
 
   return (
     <div
@@ -30,11 +48,12 @@ function Panel({
         ${className}
       `}
       style={{
-        width,
+        width: position === 'center' ? `calc(100vw - ${marginHorizontal * 2}px)` : width,
+        height: position === 'center' ? `calc(100vh - ${marginVertical * 2}px)` : height,
         maxHeight,
-        top: '32px',
+        top: position === 'center' ? `${marginVertical}px` : '32px',
         backgroundColor: 'rgba(0, 0, 0, 0.65)',
-        ...positionStyle
+        ...getPositionStyle()
       }}
     >
       {children}
