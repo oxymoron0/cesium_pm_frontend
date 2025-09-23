@@ -3,6 +3,7 @@ import { getStationSensorData } from '@/utils/api';
 import type { StationSensorApiData } from '@/utils/api/types';
 import { stationStore } from './StationStore';
 import { routeStore } from './RouteStore';
+import { getCurrentSelectedSearchStationId } from '@/utils/cesium/searchStationRenderer';
 
 /**
  * 센서 데이터 타입
@@ -112,6 +113,24 @@ class StationSensorStore {
   });
 
   /**
+   * 검색 결과 정류장에 대한 센서 데이터 생성
+   * @param stationIds - 검색 결과 정류장 ID 배열
+   */
+  generateSensorDataForSearchStations = action((stationIds: string[]) => {
+    const generateMockData = (): SensorData => ({
+      pm10: Math.round((Math.random() * 100 + 20) * 10) / 10,  // 20-120
+      pm25: Math.round((Math.random() * 50 + 10) * 10) / 10,   // 10-60
+      vocs: Math.round((Math.random() * 300 + 100) * 10) / 10  // 100-400
+    });
+
+    stationIds.forEach(stationId => {
+      if (!this.sensorDataMap.has(stationId)) {
+        this.sensorDataMap.set(stationId, generateMockData());
+      }
+    });
+  });
+
+  /**
    * 특정 정류장의 센서 데이터 조회
    */
   getSensorData(stationId: string): SensorData | undefined {
@@ -187,15 +206,23 @@ class StationSensorStore {
 
   /**
    * 특정 정류장의 센서 표시 여부 확인
-   * 호버 상태이거나 명시적으로 표시 설정된 정류장을 표시
+   * 선택된 정류장, 호버 상태, 또는 명시적으로 표시 설정된 정류장을 표시
    */
   isStationVisible(stationId: string): boolean {
+    // 선택된 정류장은 항상 표시 (기존 정류장 + 검색 정류장)
+    const isSelectedInStationStore = stationStore.isStationSelected(stationId);
+    const isSelectedSearchStation = getCurrentSelectedSearchStationId() === stationId;
+
+    if (isSelectedInStationStore || isSelectedSearchStation) {
+      return true;
+    }
+
     // 호버된 정류장은 항상 표시
     if (this.hoveredStationId === stationId) {
       return true;
     }
 
-    // 사용자가 센서 표시를 비활성화한 경우 호버 외에는 표시하지 않음
+    // 사용자가 센서 표시를 비활성화한 경우 선택/호버 외에는 표시하지 않음
     if (!this.userWantsSensorDisplay) {
       return false;
     }

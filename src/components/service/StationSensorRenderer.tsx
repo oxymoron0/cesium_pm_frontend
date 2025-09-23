@@ -111,11 +111,13 @@ const StationSensorRenderer = observer(() => {
 
       const currentEntityIds = new Set<string>();
 
-      // 모든 stations_ DataSource를 순회하여 Entity 찾기
+      // 모든 stations_ 및 search_stations DataSource를 순회하여 Entity 찾기
       for (let i = 0; i < viewer.dataSources.length; i++) {
         const dataSource = viewer.dataSources.get(i);
 
-        if (dataSource?.name?.startsWith('stations_') && dataSource.show && dataSource.entities) {
+        // 정규 정류장 DataSource 또는 검색 정류장 DataSource 처리
+        if ((dataSource?.name?.startsWith('stations_') || dataSource?.name === 'search_stations')
+            && dataSource.show && dataSource.entities) {
           const entities = dataSource.entities.values;
           if (!entities) continue;
 
