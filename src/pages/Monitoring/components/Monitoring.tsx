@@ -13,6 +13,7 @@ import StationCard from "@/components/service/StationCard";
 import { routeStore } from '@/stores/RouteStore';
 import { searchStations } from '@/utils/api/routeApi';
 import { renderSearchStations, updateSearchStationSelection, clearSearchStations } from '@/utils/cesium/searchStationRenderer';
+import { flyToSearchStation } from '@/utils/cesium/cameraUtils';
 import type { StationSearchResponse } from '@/utils/api/types';
 
 interface MonitoringProps {
@@ -160,6 +161,11 @@ const Monitoring = observer(function Monitoring({ onRouteSelect }: MonitoringPro
 
     // Cesium 선택 상태 즉시 업데이트
     updateSearchStationSelection(stationId);
+
+    // 선택된 정류장으로 카메라 이동 (500m 높이, 즉시 이동)
+    if (searchResults?.features) {
+      flyToSearchStation(searchResults.features, stationId, 500);
+    }
   };
 
   const handleBookmarkToggle = (stationName: string) => {
