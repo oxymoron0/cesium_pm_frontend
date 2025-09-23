@@ -2,6 +2,7 @@ import { makeAutoObservable, action } from 'mobx';
 import type { RouteStationsResponse, RouteStation, RouteStationFeature, RouteStationProperties } from '../utils/api/types';
 import { getRouteStations } from '../utils/api/routeApi';
 import { routeStore } from './RouteStore';
+import { flyToStation } from '../utils/cesium/stationRenderer';
 
 type RouteDirection = 'inbound' | 'outbound';
 
@@ -84,6 +85,8 @@ class StationStore {
   
   setSelectedStation = action((stationId: string) => {
     this.selectedStationId = stationId;
+    // 선택된 정류장으로 카메라 이동 (현재 높이 유지, 1초 애니메이션)
+    flyToStation(stationId);
   });
   
   clearSelection = action(() => {

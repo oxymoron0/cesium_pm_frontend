@@ -3,7 +3,7 @@ import { stationSensorStore } from '../../stores/StationSensorStore';
 import { createGeoJsonDataSource, findDataSource, clearDataSource } from './datasources';
 import type { RouteStationFeature } from '../api/types';
 import type { GeoJsonDataSource } from 'cesium';
-import { Cartesian3, Entity, BillboardGraphics, CallbackProperty, ConstantProperty, HeightReference, Cartographic, sampleTerrainMostDetailed } from 'cesium';
+import { Cartesian3, Entity, BillboardGraphics, CallbackProperty, ConstantProperty, HeightReference, Cartographic, sampleTerrainMostDetailed, HeadingPitchRange } from 'cesium';
 
 /**
  * Station rendering utility functions
@@ -486,5 +486,83 @@ export function showOnlyStationsForRoute(routeName: string): void {
 
   } catch (error) {
     console.error(`[showOnlyStationsForRoute] 표시 실패: ${routeName}:`, error);
+  }
+}
+
+/**
+ * 특정 정류장 Entity를 찾는 함수
+ * @param stationId - 정류장 ID
+ * @returns Cesium Entity 또는 undefined
+ */
+function findStationEntity(stationId: string): Entity | undefined {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const viewer = (window as unknown as { cviewer: { dataSources: any } }).cviewer;
+    if (!viewer || !viewer.dataSources) return undefined;
+
+    const entityId = `station_${stationId}`;
+
+    // 모든 stations_ DataSource에서 Entity 검색
+    for (let i = 0; i < viewer.dataSources.length; i++) {
+      const dataSource = viewer.dataSources.get(i);
+      if (dataSource.name.startsWith('stations_')) {
+        const entity = dataSource.entities.getById(entityId);
+        if (entity) {
+          return entity;
+        }
+      }
+    }
+
+    return undefined;
+  } catch (error) {
+    console.error(`[findStationEntity] Error finding station ${stationId}:`, error);
+    return undefined;
+  }
+}
+
+/**
+ * 선택된 정류장으로 카메라 이동 (현재 높이 유지, 1초 애니메이션)
+ * @param stationId - 정류장 ID
+ */
+export function flyToStation(stationId: string): void {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const viewer = (window as unknown as { cviewer: { camera: any; clock: any; flyTo: any } }).cviewer;
+    if (!viewer || !viewer.camera) {
+      console.warn('[flyToStation] Viewer not available');
+      return;
+    }
+
+    const stationEntity = findStationEntity(stationId);
+    if (!stationEntity) {
+      console.warn(`[flyToStation] Station entity not found: ${stationId}`);
+      return;
+    }
+
+    const stationPosition = stationEntity.position?.getValue(viewer.clock.currentTime);
+    if (!stationPosition) {
+      console.warn(`[flyToStation] Station position not available: ${stationId}`);
+      return;
+    }
+
+    // 현재 카메라 높이 계산 (지구 중심에서의 거리)
+    const currentCameraHeight = Cartesian3.magnitude(viewer.camera.position);
+    const stationHeight = Cartesian3.magnitude(stationPosition);
+    const preservedDistance = Math.max(currentCameraHeight - stationHeight, 200); // 최소 200m 거리 보장
+
+    // 1초간 애니메이션으로 해당 정류장으로 이동 (현재 높이 유지)
+    viewer.flyTo(stationEntity, {
+      offset: new HeadingPitchRange(
+        viewer.camera.heading, // 현재 heading 유지
+        viewer.camera.pitch,   // 현재 pitch 유지
+        preservedDistance      // 계산된 거리 사용
+      ),
+      duration: 1.0 // 1초
+    });
+
+    console.log(`[flyToStation] Flying to station ${stationId} with preserved distance: ${preservedDistance.toFixed(1)}m`);
+
+  } catch (error) {
+    console.error(`[flyToStation] Failed to fly to station ${stationId}:`, error);
   }
 }
