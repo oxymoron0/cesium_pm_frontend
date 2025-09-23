@@ -177,16 +177,16 @@ const Monitoring = observer(function Monitoring({ onRouteSelect }: MonitoringPro
     return (
       <div className="flex items-center justify-center gap-2 py-4 w-full">
         <button
-          onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-          disabled={currentPage === 1}
+          onClick={() => handlePageChange(Math.max(1, currentPage - 5))}
+          disabled={totalPages < 5}
           className="p-1 disabled:opacity-50"
         >
           <Icon name="left" className="w-6 h-6" />
         </button>
         {pages}
         <button
-          onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-          disabled={currentPage === totalPages}
+          onClick={() => handlePageChange(Math.min(totalPages, currentPage + 5))}
+          disabled={totalPages < 5}
           className="p-1 disabled:opacity-50"
         >
           <Icon name="right" className="w-6 h-6" />
