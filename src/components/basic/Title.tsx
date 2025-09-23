@@ -5,9 +5,10 @@ import Info from './Info';
 interface TitleProps {
   children: React.ReactNode;
   info?: React.ReactNode;
+  onClose?: () => void;
 }
 
-export default function Title({ children, info }: TitleProps) {
+export default function Title({ children, info, onClose }: TitleProps) {
   return (
     <div className="flex flex-col w-full">
       <div className="flex items-center self-stretch justify-between font-pretendard-h1 mb-2">
@@ -20,7 +21,7 @@ export default function Title({ children, info }: TitleProps) {
         {/* 오른쪽: Minimize + Close 아이콘 */}
         <div className="flex items-center gap-2">
           <Icon name="minimize" />
-          <Icon name="close" />
+          <Icon name="close" onClick={onClose} />
         </div>
       </div>
       
