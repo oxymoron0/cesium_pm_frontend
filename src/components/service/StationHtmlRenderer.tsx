@@ -4,6 +4,7 @@ import { Entity } from 'cesium';
 import * as Cesium from 'cesium';
 import { stationStore } from '@/stores/StationStore';
 import { stationSensorStore } from '@/stores/StationSensorStore';
+import { getCurrentSelectedSearchStationId } from '@/utils/cesium/searchStationRenderer';
 
 /**
  * StationHtmlRenderer
@@ -21,21 +22,38 @@ const StationHtmlRenderer = observer(() => {
     routeName: string,
     direction: 'inbound' | 'outbound'
   ) => {
-    // stationRenderer.ts와 동일한 활성/비활성 로직
-    const isSelected = stationStore.isStationSelected(stationId);
-    const isRouteSelected = stationStore.selectedRouteName === routeName;
-    const isDirectionSelected = stationStore.selectedDirection === direction;
+    // 검색 결과 정류장 여부 확인
+    const isSearchResult = routeName === 'search';
 
-    // 활성 상태 판단: 선택된 정류장이거나 활성 상태의 노선+방향
-    const isActive = isSelected || (isRouteSelected && isDirectionSelected);
+    // 선택 상태 계산
+    let isSelected: boolean;
+    if (isSearchResult) {
+      // 검색 결과 정류장: 전역 상태에서 선택 상태 확인
+      isSelected = getCurrentSelectedSearchStationId() === stationId;
+    } else {
+      // 기존 정류장: StationStore에서 선택 상태 확인
+      isSelected = stationStore.isStationSelected(stationId);
+    }
+
+    // 활성 상태 판단
+    let isActive: boolean;
+    if (isSearchResult) {
+      // 검색 결과 정류장: 선택된 경우만 활성
+      isActive = isSelected;
+    } else {
+      // 기존 정류장: stationRenderer.ts와 동일한 로직
+      const isRouteSelected = stationStore.selectedRouteName === routeName;
+      const isDirectionSelected = stationStore.selectedDirection === direction;
+      isActive = isSelected || (isRouteSelected && isDirectionSelected);
+    }
 
     // 스타일 클래스
     const scaleClass = isSelected ? 'scale-110' : '';
     const shadowClass = isSelected ? 'shadow-lg' : 'shadow-md';
 
-    // 색상 스키마: 활성 상태는 빨간색, 비활성 상태는 회색
-    const borderColor = isActive ? '#F12124' : '#888888';
-    const textColor = isActive ? '#DC5449' : '#666666';
+    // 색상 스키마 통합: 검색 정류장과 기존 정류장 동일한 색상 적용
+    const borderColor = isActive ? '#F12124' : '#888888'; // 활성: 빨간색, 비활성: 회색
+    const textColor = isActive ? '#DC5449' : '#666666';   // 활성: 진한 빨간색, 비활성: 진한 회색
     const bgOpacity = isActive ? 'bg-white/90' : 'bg-white/70';
 
     return `
@@ -59,11 +77,29 @@ const StationHtmlRenderer = observer(() => {
   ) => {
     let element = stationElementsRef.current.get(entityId);
 
-    // 현재 상태 계산 (stationRenderer.ts와 동일한 로직)
-    const isSelected = stationStore.isStationSelected(stationId);
-    const isRouteSelected = stationStore.selectedRouteName === routeName;
-    const isDirectionSelected = stationStore.selectedDirection === direction;
-    const isActive = isSelected || (isRouteSelected && isDirectionSelected);
+    // 검색 결과 정류장 여부 확인
+    const isSearchResult = routeName === 'search';
+
+    // 현재 상태 계산
+    let isSelected: boolean;
+    if (isSearchResult) {
+      // 검색 결과 정류장: 전역 상태에서 선택 상태 확인
+      isSelected = getCurrentSelectedSearchStationId() === stationId;
+    } else {
+      // 기존 정류장: StationStore에서 선택 상태 확인
+      isSelected = stationStore.isStationSelected(stationId);
+    }
+
+    let isActive: boolean;
+    if (isSearchResult) {
+      // 검색 결과 정류장: 선택된 경우만 활성
+      isActive = isSelected;
+    } else {
+      // 기존 정류장: stationRenderer.ts와 동일한 로직
+      const isRouteSelected = stationStore.selectedRouteName === routeName;
+      const isDirectionSelected = stationStore.selectedDirection === direction;
+      isActive = isSelected || (isRouteSelected && isDirectionSelected);
+    }
 
     if (!element) {
       // 새 엘리먼트 생성
@@ -115,10 +151,11 @@ const StationHtmlRenderer = observer(() => {
 
       const currentEntityIds = new Set<string>();
 
-      // 모든 stations_ DataSource를 순회하여 Entity 찾기
+      // 모든 stations_ 및 search_stations DataSource를 순회하여 Entity 찾기
       for (let i = 0; i < viewer.dataSources.length; i++) {
         const dataSource = viewer.dataSources.get(i);
 
+        // 정규 정류장 DataSource 처리
         if (dataSource?.name?.startsWith('stations_') && dataSource.show && dataSource.entities) {
           // DataSource 이름에서 route와 direction 추출: "stations_routeName_direction"
           const nameParts = dataSource.name.split('_');
@@ -158,6 +195,48 @@ const StationHtmlRenderer = observer(() => {
 
                     currentEntityIds.add(entity.id);
                     createOrUpdateStationElement(entity.id, stationName, stationId, routeName, direction, screenPosition.x, screenPosition.y);
+                  }
+                }
+              }
+            } catch {
+              // 개별 Entity 처리 오류는 무시
+            }
+          });
+        }
+        // 검색 정류장 DataSource 처리
+        else if (dataSource?.name === 'search_stations' && dataSource.show && dataSource.entities) {
+          const entities = dataSource.entities.values;
+          if (!entities) continue;
+
+          entities.forEach((entity: Entity) => {
+            try {
+              if (entity.id?.startsWith('station_') && entity.billboard) {
+                // Billboard의 실제 화면 위치 계산 (terrain-clamped position)
+                const billboard = entity.billboard;
+                const entityPosition = entity.position?.getValue(viewer.clock.currentTime);
+
+                if (entityPosition) {
+                  // Billboard가 CLAMP_TO_GROUND인 경우, 실제 terrain 높이 적용된 위치를 계산
+                  let actualPosition = entityPosition;
+
+                  if (billboard.heightReference?.getValue(viewer.clock.currentTime) === Cesium.HeightReference.CLAMP_TO_GROUND) {
+                    // Billboard Entity의 실제 position 값을 사용 (이미 terrain 높이가 적용됨)
+                    actualPosition = entityPosition;
+                  }
+
+                  // terrain-clamped position을 화면 좌표로 변환
+                  const screenPosition = viewer.scene.cartesianToCanvasCoordinates(actualPosition);
+
+                  if (screenPosition &&
+                      screenPosition.x >= -100 && screenPosition.x <= window.innerWidth + 100 &&
+                      screenPosition.y >= -50 && screenPosition.y <= window.innerHeight - 50) {
+
+                    const stationId = entity.id.replace('station_', '');
+                    const stationName = entity.name || stationId;
+
+                    currentEntityIds.add(entity.id);
+                    // 검색 정류장은 가상의 route/direction 사용
+                    createOrUpdateStationElement(entity.id, stationName, stationId, 'search', 'inbound', screenPosition.x, screenPosition.y);
                   }
                 }
               }
