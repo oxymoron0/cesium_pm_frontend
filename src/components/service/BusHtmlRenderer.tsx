@@ -170,7 +170,7 @@ const BusHtmlRenderer = observer(() => {
 
     // 위치 업데이트 (매 프레임) - 버스 모델 아래에 위치
     busInfo.element.style.left = `${left}px`;
-    busInfo.element.style.top = `${top + 12}px`; // 버스 모델 아래 5px
+    busInfo.element.style.top = `${top + 12}px`; // 버스 모델 아래 12px
     busInfo.element.style.zIndex = '1520';
   }, [createBusInfoHTML, createSensorHTML]);
 
