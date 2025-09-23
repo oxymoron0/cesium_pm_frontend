@@ -202,19 +202,28 @@ export function trackBusEntity(vehicleNumber: string): boolean {
 
   if (viewer.trackedEntity) {
     try {
-      // 현재 카메라와 추적 entity 간의 상대적 위치 계산
-      const currentEntityPosition = viewer.trackedEntity.position?.getValue(viewer.clock.currentTime)
-      if (currentEntityPosition) {
-        const cameraPosition = viewer.camera.position
-        const distance = Cartesian3.distance(cameraPosition, currentEntityPosition)
+      // 현재 추적 중인 entity와 새로운 entity가 다른 경우 기본 오프셋 사용
+      const currentTrackedId = viewer.trackedEntity.id
+      const newEntityId = `bus_model_${vehicleNumber}`
 
-        // 현재 카메라의 heading과 pitch 직접 사용
-        const heading = viewer.camera.heading
-        const pitch = viewer.camera.pitch
+      if (currentTrackedId === newEntityId) {
+        // 동일한 entity 재추적 시에만 현재 offset 보존
+        const currentEntityPosition = viewer.trackedEntity.position?.getValue(viewer.clock.currentTime)
+        if (currentEntityPosition) {
+          const cameraPosition = viewer.camera.position
+          const distance = Cartesian3.distance(cameraPosition, currentEntityPosition)
 
-        preservedOffset = new HeadingPitchRange(heading, pitch, distance)
+          // 현재 카메라의 heading과 pitch 직접 사용
+          const heading = viewer.camera.heading
+          const pitch = viewer.camera.pitch
 
-        console.log(`[trackBusEntity] Preserving camera offset: distance=${distance.toFixed(1)}m, heading=${(heading * 180/Math.PI).toFixed(1)}°, pitch=${(pitch * 180/Math.PI).toFixed(1)}°`)
+          preservedOffset = new HeadingPitchRange(heading, pitch, distance)
+
+          console.log(`[trackBusEntity] Preserving camera offset for same entity: distance=${distance.toFixed(1)}m, heading=${(heading * 180/Math.PI).toFixed(1)}°, pitch=${(pitch * 180/Math.PI).toFixed(1)}°`)
+        }
+      } else {
+        // 다른 entity로 전환 시 기본 오프셋 사용 (안전한 전환)
+        console.log(`[trackBusEntity] Switching entities: ${currentTrackedId} → ${newEntityId}, using default offset`)
       }
     } catch (error) {
       console.warn('[trackBusEntity] Failed to preserve camera offset:', error)
