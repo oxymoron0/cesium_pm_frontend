@@ -4,3 +4,4 @@
 
 export * from './testRenderer';
 export * from './datasources';
+export * from './cameraUtils';
