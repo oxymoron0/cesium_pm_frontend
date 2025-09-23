@@ -11,7 +11,11 @@ import { busStore } from '@/stores/BusStore';
  */
 const BusHtmlRenderer = observer(() => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const busElementsRef = useRef<Map<string, { element: HTMLDivElement }>>(new Map());
+  const busElementsRef = useRef<Map<string, {
+    element: HTMLDivElement;
+    lastSensorData?: { pm: number; fpm: number; voc: number };
+    lastRouteName?: string;
+  }>>(new Map());
   const lastUpdateTime = useRef<number>(0);
   const terrainHeightCache = useRef<Map<string, number>>(new Map());
 
@@ -110,16 +114,35 @@ const BusHtmlRenderer = observer(() => {
     `;
   }, []);
 
-  // 버스 정보 HTML 생성 함수 (BusInfoContainer 스타일 기반)
+  // 버스 정보 HTML 생성 함수 (기본 버전)
   const createBusInfoHTML = useCallback((routeName: string) => {
     return `
-      <div style="display: inline-flex; padding: 8px 12px; justify-content: center; align-items: center; gap: 4px; border-radius: 34.935px; border: 1px solid #C4C6C6; background: rgba(0, 0, 0, 0.65);">
+      <div class="bus-route-container" style="display: inline-flex; padding: 8px 12px; justify-content: center; align-items: center; gap: 4px; border-radius: 34.935px; border: 1px solid #C4C6C6; background: rgba(0, 0, 0, 0.65); cursor: pointer; transition: padding 0.3s ease;">
         <svg width="13" height="12" viewBox="0 0 13 12" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M9.75 10.7368H3.25V11.3684C3.25 11.5359 3.18152 11.6966 3.05962 11.815C2.93772 11.9335 2.77239 12 2.6 12H1.95C1.77761 12 1.61228 11.9335 1.49038 11.815C1.36848 11.6966 1.3 11.5359 1.3 11.3684V10.7368H0.65V5.68421H0V3.15789H0.65V1.26316C0.65 0.928148 0.786964 0.606858 1.03076 0.36997C1.27456 0.133082 1.60522 0 1.95 0H11.05C11.3948 0 11.7254 0.133082 11.9692 0.36997C12.213 0.606858 12.35 0.928148 12.35 1.26316V3.15789H13V5.68421H12.35V10.7368H11.7V11.3684C11.7 11.5359 11.6315 11.6966 11.5096 11.815C11.3877 11.9335 11.2224 12 11.05 12H10.4C10.2276 12 10.0623 11.9335 9.94038 11.815C9.81848 11.6966 9.75 11.5359 9.75 11.3684V10.7368ZM11.05 5.68421V1.26316H1.95V5.68421H11.05ZM11.05 6.94737H1.95V9.47368H11.05V6.94737ZM2.6 7.57895H5.2V8.8421H2.6V7.57895ZM7.8 7.57895H10.4V8.8421H7.8V7.57895Z" fill="white"/>
         </svg>
-        <span style="color: #FEFEFE; text-align: center; font-variant-numeric: lining-nums tabular-nums; font-family: Pretendard; font-size: 12px; font-weight: 700; line-height: normal;">${routeName}</span>
+        <span class="route-number" style="color: #FEFEFE; text-align: center; font-variant-numeric: lining-nums tabular-nums; font-family: Pretendard; font-size: 12px; font-weight: 700; line-height: normal;">${routeName}</span>
+        <span class="follow-text" style="color: #FEFEFE; font-family: Pretendard; font-size: 12px; font-weight: 500; line-height: normal; margin-left: 0px; max-width: 0px; opacity: 0; overflow: hidden; transition: all 0.3s ease; white-space: nowrap;">따라가기</span>
       </div>
     `;
+  }, []);
+
+  // 내용 변경 감지 (성능 최적화)
+  const hasContentChanged = useCallback((
+    lastRouteName: string | undefined,
+    lastSensorData: { pm: number; fpm: number; voc: number } | undefined,
+    routeName: string,
+    sensorData: { pm: number; fpm: number; voc: number } | undefined
+  ): boolean => {
+    if (lastRouteName !== routeName) return true;
+    if (!lastSensorData && sensorData) return true;
+    if (lastSensorData && !sensorData) return true;
+    if (!lastSensorData && !sensorData) return false;
+    return (
+      lastSensorData!.pm !== sensorData!.pm ||
+      lastSensorData!.fpm !== sensorData!.fpm ||
+      lastSensorData!.voc !== sensorData!.voc
+    );
   }, []);
 
   // 버스 Element 생성/업데이트
@@ -137,9 +160,41 @@ const BusHtmlRenderer = observer(() => {
       const element = document.createElement('div');
       element.style.position = 'absolute';
       element.style.pointerEvents = 'auto';
-      element.style.transform = 'translateX(-50%)';
       element.style.whiteSpace = 'nowrap';
       element.style.overflow = 'visible';
+      element.style.zIndex = '1520';
+
+      // CSS 기본 스타일 설정
+      element.className = 'bus-html-overlay';
+
+      // 버스 노선 호버 이벤트 추가 함수
+      const addBusRouteHoverEvents = () => {
+        const busRouteContainer = element.querySelector('.bus-route-container') as HTMLElement;
+        if (busRouteContainer) {
+          busRouteContainer.addEventListener('mouseenter', () => {
+            const followText = busRouteContainer.querySelector('.follow-text') as HTMLElement;
+            if (followText) {
+              followText.style.maxWidth = '60px';
+              followText.style.marginLeft = '8px';
+              followText.style.opacity = '1';
+            }
+          });
+
+          busRouteContainer.addEventListener('mouseleave', () => {
+            const followText = busRouteContainer.querySelector('.follow-text') as HTMLElement;
+            if (followText) {
+              followText.style.maxWidth = '0px';
+              followText.style.marginLeft = '0px';
+              followText.style.opacity = '0';
+            }
+          });
+
+          busRouteContainer.addEventListener('click', () => {
+            console.log(`[버스 따라가기] 차량 번호: ${vehicleNumber}`);
+            // TODO: 버스 따라가기 기능 구현
+          });
+        }
+      };
 
       // 컨테이너 HTML 구성
       const busInfoHTML = createBusInfoHTML(routeName);
@@ -152,27 +207,43 @@ const BusHtmlRenderer = observer(() => {
         </div>
       `;
 
-      busInfo = { element };
+      busInfo = {
+        element,
+        lastSensorData: sensorData ? { ...sensorData } : undefined,
+        lastRouteName: routeName
+      };
       busElementsRef.current.set(vehicleNumber, busInfo);
       containerRef.current?.appendChild(element);
-    } else {
-      // 내용 업데이트
-      const busInfoHTML = createBusInfoHTML(routeName);
-      const sensorHTML = sensorData ? createSensorHTML(sensorData) : '';
 
-      busInfo.element.innerHTML = `
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-          ${busInfoHTML}
-          ${sensorHTML}
-        </div>
-      `;
+      // HTML이 DOM에 추가된 후 버스 라우트 이벤트 등록
+      setTimeout(() => addBusRouteHoverEvents(), 0);
+    } else {
+      // 내용이 변경된 경우에만 HTML 업데이트
+      if (hasContentChanged(busInfo.lastRouteName, busInfo.lastSensorData, routeName, sensorData)) {
+        const busInfoHTML = createBusInfoHTML(routeName);
+        const sensorHTML = sensorData ? createSensorHTML(sensorData) : '';
+
+        busInfo.element.innerHTML = `
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+            ${busInfoHTML}
+            ${sensorHTML}
+          </div>
+        `;
+
+        // 마지막 상태 업데이트
+        busInfo.lastSensorData = sensorData ? { ...sensorData } : undefined;
+        busInfo.lastRouteName = routeName;
+
+        // 내용 업데이트 후 이벤트 리스너 재등록
+        setTimeout(() => addBusRouteHoverEvents(), 0);
+      }
     }
 
-    // 위치 업데이트 (매 프레임) - 버스 모델 아래에 위치
+    // 위치 업데이트 (매 프레임) - 즉시 반영
     busInfo.element.style.left = `${left}px`;
     busInfo.element.style.top = `${top + 12}px`; // 버스 모델 아래 12px
-    busInfo.element.style.zIndex = '1520';
-  }, [createBusInfoHTML, createSensorHTML]);
+    busInfo.element.style.transform = 'translateX(-50%)';
+  }, [createBusInfoHTML, createSensorHTML, hasContentChanged]);
 
   // 60fps 제한을 위한 스로틀링
   const updateBusPositions = useCallback(async () => {
@@ -221,24 +292,20 @@ const BusHtmlRenderer = observer(() => {
                     screenPosition.x >= -100 && screenPosition.x <= window.innerWidth + 100 &&
                     screenPosition.y >= -100 && screenPosition.y <= window.innerHeight - 50) {
 
-                  // entity.id에서 vehicle_number 추출 (예: "bus_model_12345" -> "12345")
                   const vehicleNumber = entity.id.replace('bus_model_', '');
-
-                  // BusStore에서 해당 버스의 노선 및 센서 정보 조회
                   const busData = busStore.busData.find(bus => bus.vehicle_number === vehicleNumber);
                   if (busData) {
-                    // 최신 센서 데이터 가져오기 (가장 최근 position의 sensor_data)
                     const latestPosition = busData.positions[busData.positions.length - 1];
                     const sensorData = latestPosition?.sensor_data;
-
                     createOrUpdateBusElement(vehicleNumber, busData.route_name, sensorData, screenPosition.x, screenPosition.y);
                     return vehicleNumber;
                   }
                 }
               }
             }
-          } catch {
-            // 개별 Entity 처리 오류는 무시
+          } catch (error) {
+            // 개별 Entity 처리 오류 무시
+            console.debug('[BusHtmlRenderer] Entity processing error:', error);
           }
           return null;
         });
