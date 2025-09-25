@@ -6,9 +6,10 @@ interface TitleProps {
   children: React.ReactNode;
   info?: React.ReactNode;
   onClose?: () => void;
+  dividerColor?: string;
 }
 
-export default function Title({ children, info, onClose }: TitleProps) {
+export default function Title({ children, info, onClose, dividerColor = "bg-[#FFD040]" }: TitleProps) {
   return (
     <div className="flex flex-col w-full">
       <div className="flex items-center self-stretch justify-between font-pretendard-h1 mb-2">
@@ -26,7 +27,7 @@ export default function Title({ children, info, onClose }: TitleProps) {
       </div>
       
       {/* 하단 Divider */}
-      <Divider height="h-0.5" color="bg-[#FFD040]" />
+      <Divider height="h-px" color={dividerColor} />
     </div>
   );
 }
