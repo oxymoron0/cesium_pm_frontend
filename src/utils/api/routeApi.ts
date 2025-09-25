@@ -5,7 +5,7 @@
 
 import { get } from './request';
 import { API_PATHS } from './config';
-import type { RouteInfoResponse, RouteGeom, RouteStationsResponse, StationSearchResponse } from './types';
+import type { RouteInfoResponse, RouteGeom, RouteStationsResponse, StationSearchResponse, HourlySensorDataResponse, DailySensorDataResponse } from './types';
 
 /**
  * 모든 노선 기본 정보 조회
@@ -131,6 +131,50 @@ export async function searchStations(query: string): Promise<StationSearchRespon
     return response.data;
   } catch (error) {
     console.error(`[searchStations] API 호출 실패 (검색어: ${query}):`, error);
+    throw error;
+  }
+}
+
+/**
+ * 정류장 시간별 센서 데이터 조회
+ * GET /api/v1/sensor-data/stations/{station_id}/hourly
+ *
+ * @param stationId - 정류장 ID
+ * @returns 시간별 센서 데이터
+ */
+export async function getHourlySensorData(stationId: string): Promise<HourlySensorDataResponse> {
+  try {
+    const response = await get<HourlySensorDataResponse>(API_PATHS.SENSOR_DATA_HOURLY(stationId));
+
+    if (!response.ok) {
+      throw new Error(`Hourly sensor data API failed with status ${response.status}`);
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error(`[getHourlySensorData] API 호출 실패 (정류장 ID: ${stationId}):`, error);
+    throw error;
+  }
+}
+
+/**
+ * 정류장 일별 센서 데이터 조회
+ * GET /api/v1/sensor-data/stations/{station_id}/daily
+ *
+ * @param stationId - 정류장 ID
+ * @returns 일별 센서 데이터
+ */
+export async function getDailySensorData(stationId: string): Promise<DailySensorDataResponse> {
+  try {
+    const response = await get<DailySensorDataResponse>(API_PATHS.SENSOR_DATA_DAILY(stationId));
+
+    if (!response.ok) {
+      throw new Error(`Daily sensor data API failed with status ${response.status}`);
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error(`[getDailySensorData] API 호출 실패 (정류장 ID: ${stationId}):`, error);
     throw error;
   }
 }

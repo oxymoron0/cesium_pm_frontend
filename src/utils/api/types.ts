@@ -259,3 +259,81 @@ export interface StationSensorApiData {
 export interface StationSensorResponse {
   data: StationSensorApiData[];
 }
+
+// =============================================================================
+// Hourly/Daily Sensor Data Types (시간별/일별 통계 API용)
+// =============================================================================
+
+/**
+ * 센서 평균 수치 (hourly/daily 공통)
+ */
+export interface SensorReadings {
+  humidity: number    // 습도 (%)
+  temperature: number // 온도 (°C)
+  voc: number        // 휘발성 유기화합물 (ppb)
+  co2: number        // 이산화탄소 (ppm)
+  pm: number         // 미세먼지 PM10 (μg/m³)
+  fpm: number        // 초미세먼지 PM2.5 (μg/m³)
+}
+
+/**
+ * 시간별 센서 데이터 포인트
+ */
+export interface HourlyDataPoint {
+  hour: string                    // ISO datetime string
+  average_readings: SensorReadings
+  sample_count: number           // 해당 시간 샘플 수
+}
+
+/**
+ * 일별 센서 데이터 포인트
+ */
+export interface DailyDataPoint {
+  date: string                   // ISO datetime string
+  average_readings: SensorReadings
+  created_at: string            // 생성 시간
+}
+
+/**
+ * 센서 데이터 메타 정보
+ */
+export interface SensorDataMeta {
+  period_start: string          // 데이터 시작 시간
+  period_end: string           // 데이터 종료 시간
+  total_data_points: number    // 총 데이터 포인트 수
+  data_source: string          // 데이터 소스 (테이블명 등)
+  last_refreshed?: string      // 마지막 갱신 시간
+}
+
+/**
+ * 시간별 센서 데이터 API 응답
+ * GET /api/v1/sensor-data/stations/{station_id}/hourly
+ */
+export interface HourlySensorDataResponse {
+  status: 'success' | 'error'
+  data?: {
+    station_id: string
+    route_name: string
+    hourly_data: HourlyDataPoint[]
+  }
+  meta?: SensorDataMeta
+  error?: string
+  details?: string
+}
+
+/**
+ * 일별 센서 데이터 API 응답
+ * GET /api/v1/sensor-data/stations/{station_id}/daily
+ */
+export interface DailySensorDataResponse {
+  status: 'success' | 'error'
+  data?: {
+    station_id: string
+    route_name: string
+    station_name: string
+    daily_data: DailyDataPoint[]
+  }
+  meta?: SensorDataMeta
+  error?: string
+  details?: string
+}

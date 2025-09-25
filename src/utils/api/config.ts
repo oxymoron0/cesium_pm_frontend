@@ -40,6 +40,10 @@ export const API_PATHS = {
   ROUTE_GEOM: (routeName: string) => getApiPath(`api/v1/route/geom/${routeName}`),
   ROUTE_STATIONS: (routeName: string, direction: string) => getApiPath(`api/v1/route/stations/${routeName}?direction=${direction}`),
   ROUTE_STATIONS_SEARCH: getApiPath('api/v1/route/stations/search'),
+
+  // 센서 데이터 API (PM Backend)
+  SENSOR_DATA_HOURLY: (stationId: string) => getApiPath(`api/v1/sensor-data/stations/${stationId}/hourly`),
+  SENSOR_DATA_DAILY: (stationId: string) => getApiPath(`api/v1/sensor-data/stations/${stationId}/daily`),
 } as const;
 
 /**
