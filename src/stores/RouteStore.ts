@@ -5,6 +5,7 @@ import { createFocusedRoute, removeFocusedRoute } from '../utils/cesium/routeCol
 import { showOnlyStationsForRoute, hideAllStations, sampleTerrainForRoute } from '../utils/cesium/stationRenderer';
 
 type RouteDirection = 'inbound' | 'outbound';
+type UIVersion = 'v1' | 'v2';
 
 interface RouteLoadingState {
   routeInfoLoading: boolean;
@@ -21,6 +22,9 @@ class RouteStore {
   // 사용자 선택 상태
   selectedRouteName: string | null = null;
   selectedDirection: RouteDirection | null = null;
+
+  // UI 버전 상태
+  uiVersion: UIVersion = 'v1';
 
   // API 로딩 상태
   loadingState: RouteLoadingState = {
@@ -167,6 +171,26 @@ class RouteStore {
   get selectedRouteGeom(): RouteGeom | undefined {
     if (!this.selectedRouteName) return undefined;
     return this.getRouteGeom(this.selectedRouteName);
+  }
+
+  // ============================================================================
+  // UI 버전 관리
+  // ============================================================================
+
+  setUIVersion(version: UIVersion) {
+    this.uiVersion = version;
+  }
+
+  toggleUIVersion() {
+    this.uiVersion = this.uiVersion === 'v1' ? 'v2' : 'v1';
+  }
+
+  get isV1(): boolean {
+    return this.uiVersion === 'v1';
+  }
+
+  get isV2(): boolean {
+    return this.uiVersion === 'v2';
   }
 
   // ============================================================================
