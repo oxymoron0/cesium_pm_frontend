@@ -1,22 +1,39 @@
 import { observer } from 'mobx-react-lite'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { routeStore } from '../../../../stores/RouteStore'
 
 interface RouteItem {
-  routeName: string
-  label: string
+  route_name: string
   origin: string
   destination: string
 }
 
-const routes: RouteItem[] = [
-  { routeName: '10', label: '10번 버스', origin: '해운대해수욕장', destination: '송정해수욕장' },
-  { routeName: '31', label: '31번 버스', origin: '부산역', destination: '해운대' },
-  { routeName: '44', label: '44번 버스', origin: '서면', destination: '광안리' },
-  { routeName: '167', label: '167번 버스', origin: '남포동', destination: '태종대' }
-]
+interface RouteSelectorProps {
+  onRouteSelect?: (routeName: string) => void
+}
 
-const RouteSelector = observer(function RouteSelector() {
-  const [selectedRoute, setSelectedRoute] = useState<string>('10')
+const RouteSelector = observer(function RouteSelector({ onRouteSelect }: RouteSelectorProps) {
+  const [selectedRoute, setSelectedRoute] = useState<string | null>(null)
+  const [routes, setRoutes] = useState<RouteItem[]>([])
+
+  useEffect(() => {
+    // Initialize route data if not loaded
+    if (routeStore.routeInfoList.length === 0) {
+      routeStore.initializeRouteData()
+    }
+  }, [])
+
+  useEffect(() => {
+    // Update local routes when RouteStore data changes
+    if (routeStore.routeInfoList.length > 0) {
+      setRoutes(routeStore.routeInfoList)
+    }
+  }, [routeStore.routeInfoList])
+
+  const handleRouteSelect = (routeName: string) => {
+    setSelectedRoute(routeName)
+    onRouteSelect?.(routeName)
+  }
 
   return (
     <div
@@ -29,15 +46,15 @@ const RouteSelector = observer(function RouteSelector() {
     >
       {routes.map((route) => (
         <button
-          key={route.routeName}
-          onClick={() => setSelectedRoute(route.routeName)}
+          key={route.route_name}
+          onClick={() => handleRouteSelect(route.route_name)}
           className="flex flex-col items-start gap-1 self-stretch text-left transition-colors"
           style={{
             borderRadius: '8px',
-            border: selectedRoute === route.routeName
+            border: selectedRoute === route.route_name
               ? '1px solid #FFD040'
               : '1px solid #C4C6C6',
-            background: selectedRoute === route.routeName
+            background: selectedRoute === route.route_name
               ? 'rgba(255, 208, 64, 0.30)'
               : '#000',
             padding: '16px 20px'
@@ -45,16 +62,16 @@ const RouteSelector = observer(function RouteSelector() {
         >
           <div
             style={{
-              color: selectedRoute === route.routeName ? '#FFD040' : '#FFF',
+              color: selectedRoute === route.route_name ? '#FFD040' : '#FFF',
               fontFamily: 'Pretendard',
               fontSize: '16px',
               fontWeight: '700',
               lineHeight: 'normal'
             }}
           >
-            {route.label}
+            {route.route_name}번 버스
           </div>
-          {selectedRoute === route.routeName && (
+          {selectedRoute === route.route_name && (
             <div
               style={{
                 color: '#FFD040',
@@ -70,6 +87,40 @@ const RouteSelector = observer(function RouteSelector() {
           )}
         </button>
       ))}
+
+      {/* UI Version Toggle */}
+      <div className="mt-4 pt-4 border-t border-gray-700">
+        <div className="mb-3">
+          <span className="text-sm text-gray-400 font-medium">UI 버전</span>
+        </div>
+        <div className="flex bg-gray-800 rounded-lg p-1">
+          <button
+            onClick={() => routeStore.setUIVersion('v1')}
+            className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all ${
+              routeStore.isV1
+                ? 'bg-yellow-400 text-black'
+                : 'text-gray-300 hover:text-white'
+            }`}
+          >
+            V1
+          </button>
+          <button
+            onClick={() => routeStore.setUIVersion('v2')}
+            className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all ${
+              routeStore.isV2
+                ? 'bg-yellow-400 text-black'
+                : 'text-gray-300 hover:text-white'
+            }`}
+          >
+            V2
+          </button>
+        </div>
+        <div className="mt-2 text-center">
+          <span className="text-xs text-gray-500">
+            {routeStore.isV1 ? '기본 UI' : '개선된 UI'}
+          </span>
+        </div>
+      </div>
     </div>
   )
 })
