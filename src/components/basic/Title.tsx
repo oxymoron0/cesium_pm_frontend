@@ -6,13 +6,14 @@ interface TitleProps {
   children: React.ReactNode;
   info?: React.ReactNode;
   onClose?: () => void;
+  onMinimize?: () => void;
   dividerColor?: string;
 }
 
-export default function Title({ children, info, onClose, dividerColor = "bg-[#FFD040]" }: TitleProps) {
+export default function Title({ children, info, onClose, onMinimize, dividerColor = "bg-[#FFD040]" }: TitleProps) {
   return (
     <div className="flex flex-col w-full">
-      <div className="flex items-center self-stretch justify-between font-pretendard-h1 mb-2">
+      <div className="flex items-center self-stretch justify-between mb-2 font-pretendard-h1">
         {/* 왼쪽: Children + Info 아이콘 */}
         <div className="flex items-center gap-2">
           {children}
@@ -21,7 +22,7 @@ export default function Title({ children, info, onClose, dividerColor = "bg-[#FF
 
         {/* 오른쪽: Minimize + Close 아이콘 */}
         <div className="flex items-center gap-2">
-          <Icon name="minimize" />
+          {onMinimize && <Icon name="minimize" onClick={onMinimize} />}
           <Icon name="close" onClick={onClose} />
         </div>
       </div>
