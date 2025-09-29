@@ -9,6 +9,7 @@ interface SensorInfoContainerProps {
   previousValue?: number
   unit?: string
   hasValidData?: boolean
+  timeDifference?: string
 }
 
 // 스타일 상수
@@ -42,7 +43,8 @@ const SensorInfoContainer = observer(function SensorInfoContainer({
   value = 0,
   previousValue,
   unit,
-  hasValidData = true
+  hasValidData = true,
+  timeDifference
 }: SensorInfoContainerProps) {
   // 센서 값 포맷팅 (최대 4자리) 또는 데이터 없음 메시지
   const formatSensorValue = useMemo(() => {
@@ -67,7 +69,7 @@ const SensorInfoContainer = observer(function SensorInfoContainer({
     getCircularBarAngle(sensorType, value), [sensorType, value]
   )
 
-  // 실제 API 데이터 기반 변화량 추이 계산
+  // 실제 API 데이터 기반 변화량 추이 계산 (정확한 시간 차이 포함)
   const trendData = useMemo(() => {
     if (!hasValidData) {
       return { icon: '–', text: '데이터 수집되지 않음' }
@@ -79,15 +81,16 @@ const SensorInfoContainer = observer(function SensorInfoContainer({
 
     const diff = value - previousValue
     const changeAmount = formatSensorNumber(Math.abs(diff))
+    const timeText = timeDifference || '1시간'
 
     if (diff > 0.5) {
-      return { icon: '↑', text: `1시간 전보다 ${changeAmount} 증가` }
+      return { icon: '↑', text: `${timeText} 전보다 ${changeAmount} 증가` }
     } else if (diff < -0.5) {
-      return { icon: '↓', text: `1시간 전보다 ${changeAmount} 감소` }
+      return { icon: '↓', text: `${timeText} 전보다 ${changeAmount} 감소` }
     } else {
       return { icon: '–', text: '변화 없음' }
     }
-  }, [value, previousValue, hasValidData])
+  }, [value, previousValue, hasValidData, timeDifference])
 
   // 상태별 아이콘 이름 결정
   const stateIconName = useMemo(() => {
