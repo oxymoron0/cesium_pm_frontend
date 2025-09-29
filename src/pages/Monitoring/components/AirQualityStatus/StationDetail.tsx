@@ -3,9 +3,9 @@ import { useState, useEffect } from 'react'
 import Title from '@/components/basic/Title'
 import Icon from '@/components/basic/Icon'
 import SensorInfoContainer from '@/components/service/sensor/SensorInfoContainer'
-import { getHourlySensorData } from '@/utils/api'
-import type { HourlyDataPoint } from '@/utils/api/types'
-import { formatUTCToKoreaTime, getCurrentKoreaTime } from '@/utils/dateTime'
+import { getHourlySensorData, getLatestSensorData } from '@/utils/api'
+import type { HourlyDataPoint, StationSensorApiData } from '@/utils/api/types'
+import { formatUTCToKoreaTime, getCurrentKoreaTime, formatTimeDifference } from '@/utils/dateTime'
 
 interface StationDetailProps {
   stationId: string
@@ -23,97 +23,104 @@ const StationDetail = observer(function StationDetail({
   const [lastUpdated, setLastUpdated] = useState<string>('')
   const [currentSensorData, setCurrentSensorData] = useState<HourlyDataPoint | null>(null)
   const [previousSensorData, setPreviousSensorData] = useState<HourlyDataPoint | null>(null)
+  const [, setLatestSensorData] = useState<StationSensorApiData | null>(null)
+  const [timeComparisonData, setTimeComparisonData] = useState<{
+    timeDiff: string;
+    latestTimestamp: string;
+    hourlyTimestamp: string;
+  } | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
   useEffect(() => {
     const fetchSensorData = async () => {
       setIsLoading(true)
       try {
-        // 최근 2시간 데이터 요청 (현재값 + 이전값 비교용)
-        const response = await getHourlySensorData(stationId, 2)
+        // Latest Data + Hourly Data 병렬 호출
+        const [latestResponse, hourlyResponse] = await Promise.all([
+          getLatestSensorData(),
+          getHourlySensorData(stationId, 24)
+        ])
 
-        if (response.status === 'success' && response.data?.hourly_data) {
-          const hourlyData = response.data.hourly_data
+        console.log('[StationDetail] 병렬 API 응답:', {
+          stationId,
+          latestStatus: latestResponse?.data?.length || 0,
+          hourlyStatus: hourlyResponse?.status
+        })
 
-          // 디버깅: 실제 API 응답 데이터 확인
-          console.log('[StationDetail] API 응답 데이터:', {
-            stationId,
-            totalRecords: hourlyData.length,
-            rawData: hourlyData.map(item => ({
-              hour: item.hour,
-              pm: item.average_readings.pm,
-              voc: item.average_readings.voc
-            }))
-          })
+        // Latest Data에서 해당 station 찾기
+        const stationLatestData = latestResponse?.data?.find(data => data.station_id === stationId)
+        const hourlyData = hourlyResponse?.status === 'success' ? hourlyResponse.data?.hourly_data : []
 
-          // VOCs 0값 처리: 유효한 값 찾기
-          const findValidSensorValue = (sensorType: 'pm' | 'fpm' | 'voc') => {
-            // 가장 최근 데이터부터 순회하여 0이 아닌 값 찾기
-            for (const dataPoint of hourlyData) {
-              const value = dataPoint.average_readings[sensorType]
-              if (value > 0) {
-                return {
-                  current: value,
-                  dataPoint,
-                  // 이전 값도 같은 방식으로 찾기
-                  previous: hourlyData.find(dp => dp !== dataPoint && dp.average_readings[sensorType] > 0)?.average_readings[sensorType]
-                }
-              }
-            }
-            return { current: null, dataPoint: null, previous: null }
+        if (stationLatestData) {
+          // Latest Data를 Hourly 형식으로 변환 (현재값)
+          const latestAsHourly: HourlyDataPoint = {
+            hour: stationLatestData.recorded_at,
+            average_readings: {
+              humidity: stationLatestData.sensor_data.humidity,
+              temperature: stationLatestData.sensor_data.temperature,
+              voc: stationLatestData.sensor_data.voc,
+              co2: stationLatestData.sensor_data.co2,
+              pm: stationLatestData.sensor_data.pm,
+              fpm: stationLatestData.sensor_data.fpm
+            },
+            sample_count: 1
           }
 
-          // 센서별 유효한 값 찾기 (VOCs만 특별 처리)
-          const vocData = findValidSensorValue('voc')
+          setLatestSensorData(stationLatestData)
+          setCurrentSensorData(latestAsHourly)
 
-          // 현재값과 이전값 설정 (기본적으로는 최신 데이터 사용, VOCs만 특별 처리)
-          const current = hourlyData[0] || null
-          const previous = hourlyData[1] || null
-
-          // VOCs 특별 처리: 유효한 값이 있으면 해당 값 사용
-          const processedCurrent = current ? {
-            ...current,
-            average_readings: {
-              ...current.average_readings,
-              voc: vocData.current || current.average_readings.voc
-            }
-          } : null
-
-          const processedPrevious = previous ? {
-            ...previous,
-            average_readings: {
-              ...previous.average_readings,
-              voc: vocData.previous || previous.average_readings.voc
-            }
-          } : null
-
-          setCurrentSensorData(processedCurrent)
-          setPreviousSensorData(processedPrevious)
-
-          // 실제 측정 시간 표시 (UTC → Korea Seoul 변환)
-          if (current) {
-            console.log('[StationDetail] 시간 변환 디버깅:', {
-              originalUTC: current.hour,
-              parsedDate: new Date(current.hour),
-              convertedTime: formatUTCToKoreaTime(current.hour)
+          // Hourly 데이터가 있는 경우 비교 처리
+          if (hourlyData && hourlyData.length > 0) {
+            console.log('[StationDetail] Latest + Hourly 데이터 성공:', {
+              latestTime: stationLatestData.recorded_at,
+              hourlyTime: hourlyData[hourlyData.length - 1].hour,
+              latestPm: stationLatestData.sensor_data.pm,
+              hourlyPm: hourlyData[hourlyData.length - 1].average_readings.pm
             })
-            const timeString = formatUTCToKoreaTime(current.hour)
-            setLastUpdated(timeString)
+
+            // 가장 최신 Hourly Data (비교값)
+            const latestHourlyData = hourlyData[hourlyData.length - 1]
+
+            // 시간 차이 계산
+            const timeDiff = formatTimeDifference(stationLatestData.recorded_at, latestHourlyData.hour)
+
+            setPreviousSensorData(latestHourlyData)
+            setTimeComparisonData({
+              timeDiff,
+              latestTimestamp: stationLatestData.recorded_at,
+              hourlyTimestamp: latestHourlyData.hour
+            })
+          } else {
+            console.log('[StationDetail] Latest 데이터만 사용 (Hourly 데이터 없음)')
+            setPreviousSensorData(null)
+            setTimeComparisonData(null)
           }
+
+          // 실제 측정 시간 표시 (Latest Data 기준)
+          const timeString = formatUTCToKoreaTime(stationLatestData.recorded_at)
+          setLastUpdated(timeString)
+
         } else {
-          // API 응답이 없거나 실패한 경우 초기화
+          console.warn('[StationDetail] Latest 데이터 없음')
+
+          // 완전 실패 시 초기화
+          setLatestSensorData(null)
           setCurrentSensorData(null)
           setPreviousSensorData(null)
+          setTimeComparisonData(null)
 
           const timeString = getCurrentKoreaTime()
           setLastUpdated(timeString)
         }
+
       } catch (error) {
-        console.error('[StationDetail] 센서 데이터 로딩 실패:', error)
+        console.error('[StationDetail] API 호출 실패:', error)
 
         // 에러 발생 시 초기화
+        setLatestSensorData(null)
         setCurrentSensorData(null)
         setPreviousSensorData(null)
+        setTimeComparisonData(null)
 
         const timeString = getCurrentKoreaTime()
         setLastUpdated(timeString)
@@ -229,18 +236,21 @@ const StationDetail = observer(function StationDetail({
             value={currentSensorData?.average_readings.pm || 0}
             previousValue={previousSensorData?.average_readings.pm}
             hasValidData={!!currentSensorData && currentSensorData.average_readings.pm > 0}
+            timeDifference={timeComparisonData?.timeDiff}
           />
           <SensorInfoContainer
             sensorType="pm25"
             value={currentSensorData?.average_readings.fpm || 0}
             previousValue={previousSensorData?.average_readings.fpm}
             hasValidData={!!currentSensorData && currentSensorData.average_readings.fpm > 0}
+            timeDifference={timeComparisonData?.timeDiff}
           />
           <SensorInfoContainer
             sensorType="vocs"
             value={currentSensorData?.average_readings.voc || 0}
             previousValue={previousSensorData?.average_readings.voc}
             hasValidData={!!currentSensorData && currentSensorData.average_readings.voc > 0}
+            timeDifference={timeComparisonData?.timeDiff}
           />
         </div>
 
