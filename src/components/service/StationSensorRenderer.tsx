@@ -1,7 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Entity } from 'cesium';
-import * as Cesium from 'cesium';
 import { stationSensorStore } from '@/stores/StationSensorStore';
 
 /**
