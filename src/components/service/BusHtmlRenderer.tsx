@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Entity, Cartographic, Cartesian3, sampleTerrainMostDetailed } from 'cesium';
+import { Entity, Cartographic, Cartesian3 } from 'cesium';
 import * as Cesium from 'cesium';
 import { busStore } from '@/stores/BusStore';
 
@@ -20,8 +20,8 @@ const BusHtmlRenderer = observer(() => {
   const lastUpdateTime = useRef<number>(0);
   const terrainHeightCache = useRef<Map<string, number>>(new Map());
 
-  // Terrain 높이 계산 함수 (캐시 활용)
-  const getTerrainHeight = useCallback(async (longitude: number, latitude: number): Promise<number> => {
+  // Terrain 높이 계산 함수 (Viewer 내장 데이터 활용)
+  const getTerrainHeight = useCallback((longitude: number, latitude: number): number => {
     const key = `${longitude.toFixed(6)}_${latitude.toFixed(6)}`;
 
     // 캐시에서 확인
@@ -31,19 +31,17 @@ const BusHtmlRenderer = observer(() => {
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const viewer = (window as unknown as { cviewer: { terrainProvider: any } }).cviewer;
-      if (!viewer?.terrainProvider) {
+      const viewer = (window as unknown as { cviewer: { scene: any } }).cviewer;
+      if (!viewer?.scene?.globe) {
         terrainHeightCache.current.set(key, 0);
         return 0;
       }
 
-      // Terrain 샘플링
+      // 이미 로드된 terrain에서 높이 값 동기 조회 (네트워크 요청 없음)
       const cartographic = Cartographic.fromDegrees(longitude, latitude);
-      const sampledPositions = await sampleTerrainMostDetailed(viewer.terrainProvider, [cartographic]);
+      const height = viewer.scene.globe.getHeight(cartographic) || 0;
 
-      const height = sampledPositions[0]?.height || 0;
       terrainHeightCache.current.set(key, height);
-
       return height;
     } catch (error) {
       console.error('[BusHtmlRenderer] Terrain height calculation error:', error);
@@ -253,7 +251,7 @@ const BusHtmlRenderer = observer(() => {
   }, [generateContainerHTML, registerBusEvents]);
 
   // 60fps 제한을 위한 스로틀링
-  const updateBusPositions = useCallback(async () => {
+  const updateBusPositions = useCallback(() => {
     const now = performance.now();
     if (now - lastUpdateTime.current < 16) return; // ~60fps
     lastUpdateTime.current = now;
@@ -274,7 +272,7 @@ const BusHtmlRenderer = observer(() => {
         const dataSource = busDataSource[0];
         const entities = dataSource.entities.values;
 
-        const entityPromises = entities.map(async (entity: Entity): Promise<string | null> => {
+        entities.forEach((entity: Entity) => {
           try {
             if (entity.id?.startsWith('bus_model_') && entity.position) {
               // 버스 Entity의 실제 화면 위치 계산 (terrain-aware)
@@ -286,8 +284,8 @@ const BusHtmlRenderer = observer(() => {
                 const longitude = Cesium.Math.toDegrees(cartographic.longitude);
                 const latitude = Cesium.Math.toDegrees(cartographic.latitude);
 
-                // Terrain 높이 계산
-                const terrainHeight = await getTerrainHeight(longitude, latitude);
+                // Terrain 높이 계산 (동기식)
+                const terrainHeight = getTerrainHeight(longitude, latitude);
 
                 // 새로운 terrain-aware position 생성
                 const actualPosition = Cartesian3.fromDegrees(longitude, latitude, terrainHeight);
@@ -305,7 +303,7 @@ const BusHtmlRenderer = observer(() => {
                     const latestPosition = busData.positions[busData.positions.length - 1];
                     const sensorData = latestPosition?.sensor_data;
                     createOrUpdateBusElement(vehicleNumber, busData.route_name, sensorData, screenPosition.x, screenPosition.y);
-                    return vehicleNumber;
+                    currentBusIds.add(vehicleNumber);
                   }
                 }
               }
@@ -323,12 +321,7 @@ const BusHtmlRenderer = observer(() => {
               console.debug('[BusHtmlRenderer] Entity processing error:', error);
             }
           }
-          return null;
         });
-
-        // 모든 entity 처리 완료 후 결과 수집
-        const validVehicleNumbers = await Promise.all(entityPromises);
-        currentBusIds = new Set(validVehicleNumbers.filter(id => id !== null) as string[]);
       }
 
       // 더 이상 표시되지 않는 버스 Element 제거
@@ -351,11 +344,7 @@ const BusHtmlRenderer = observer(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const viewer = (window as unknown as { cviewer: { scene: { postRender: any } } }).cviewer;
     if (viewer && viewer.scene && viewer.scene.postRender) {
-      postRenderCallback = () => {
-        updateBusPositions().catch(error => {
-          console.error('[BusHtmlRenderer] Async update error:', error);
-        });
-      };
+      postRenderCallback = updateBusPositions;
       try {
         viewer.scene.postRender.addEventListener(postRenderCallback);
         console.log('[BusHtmlRenderer] PostRender callback registered successfully');

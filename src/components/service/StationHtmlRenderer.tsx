@@ -1,7 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Entity } from 'cesium';
-import * as Cesium from 'cesium';
 import { stationStore } from '@/stores/StationStore';
 import { stationSensorStore } from '@/stores/StationSensorStore';
 import { getCurrentSelectedSearchStationId } from '@/utils/cesium/searchStationRenderer';
@@ -204,21 +203,11 @@ const StationHtmlRenderer = observer(() => {
           entities.forEach((entity: Entity) => {
             try {
               if (entity.id?.startsWith('station_') && entity.billboard) {
-                // Billboard의 실제 화면 위치 계산 (terrain-clamped position)
-                const billboard = entity.billboard;
                 const entityPosition = entity.position?.getValue(viewer.clock.currentTime);
 
                 if (entityPosition) {
-                  // Billboard가 CLAMP_TO_GROUND인 경우, 실제 terrain 높이 적용된 위치를 계산
-                  let actualPosition = entityPosition;
-
-                  if (billboard.heightReference?.getValue(viewer.clock.currentTime) === Cesium.HeightReference.CLAMP_TO_GROUND) {
-                    // Billboard Entity의 실제 position 값을 사용 (이미 terrain 높이가 적용됨)
-                    actualPosition = entityPosition;
-                  }
-
-                  // terrain-clamped position을 화면 좌표로 변환
-                  const screenPosition = viewer.scene.cartesianToCanvasCoordinates(actualPosition);
+                  // position을 화면 좌표로 변환 (terrain 높이 계산 생략)
+                  const screenPosition = viewer.scene.cartesianToCanvasCoordinates(entityPosition);
 
                   if (screenPosition &&
                       screenPosition.x >= -100 && screenPosition.x <= window.innerWidth + 100 &&
@@ -245,21 +234,11 @@ const StationHtmlRenderer = observer(() => {
           entities.forEach((entity: Entity) => {
             try {
               if (entity.id?.startsWith('station_') && entity.billboard) {
-                // Billboard의 실제 화면 위치 계산 (terrain-clamped position)
-                const billboard = entity.billboard;
                 const entityPosition = entity.position?.getValue(viewer.clock.currentTime);
 
                 if (entityPosition) {
-                  // Billboard가 CLAMP_TO_GROUND인 경우, 실제 terrain 높이 적용된 위치를 계산
-                  let actualPosition = entityPosition;
-
-                  if (billboard.heightReference?.getValue(viewer.clock.currentTime) === Cesium.HeightReference.CLAMP_TO_GROUND) {
-                    // Billboard Entity의 실제 position 값을 사용 (이미 terrain 높이가 적용됨)
-                    actualPosition = entityPosition;
-                  }
-
-                  // terrain-clamped position을 화면 좌표로 변환
-                  const screenPosition = viewer.scene.cartesianToCanvasCoordinates(actualPosition);
+                  // position을 화면 좌표로 변환 (terrain 높이 계산 생략)
+                  const screenPosition = viewer.scene.cartesianToCanvasCoordinates(entityPosition);
 
                   if (screenPosition &&
                       screenPosition.x >= -100 && screenPosition.x <= window.innerWidth + 100 &&
