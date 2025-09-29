@@ -151,7 +151,7 @@ export async function renderBusModels(busData: BusTrajectoryData[]): Promise<voi
         maximumScale: 64,
         color: color,
         colorBlendMode: ColorBlendMode.HIGHLIGHT,
-        heightReference: HeightReference.CLAMP_TO_GROUND,
+        heightReference: HeightReference.CLAMP_TO_GROUND, // Note: Avoid querying this in HTMLRenderer
       }),
     })
 
@@ -373,6 +373,81 @@ entity.position = new ConstantPositionProperty(cartesian3)
 
 // Required for safe property access
 const currentPos = entity.position?.getValue(viewer.clock.currentTime)
+```
+
+## Terrain Height Management
+
+### Core Problem: CLAMP_TO_GROUND Limitation
+
+**Issue**: Entities with `HeightReference.CLAMP_TO_GROUND` cannot provide direct height access
+```typescript
+// ❌ Cannot access terrain-adjusted height directly
+const entity = new Entity({
+  position: Cartesian3.fromDegrees(lon, lat, 0),
+  model: new ModelGraphics({
+    heightReference: HeightReference.CLAMP_TO_GROUND // Terrain-clamped but height inaccessible
+  })
+})
+
+// ❌ This returns original Z=0, not terrain height
+const position = entity.position.getValue(viewer.clock.currentTime)
+const height = Cartographic.fromCartesian(position).height // Always 0
+```
+
+### Solution: Entity Position + scene.globe.getHeight()
+
+**Pattern**: Extract coordinates from Entity position, then query terrain height separately
+```typescript
+// ✅ Extract position from terrain-clamped Entity
+const entityPosition = entity.position?.getValue(viewer.clock.currentTime)
+if (entityPosition) {
+  const cartographic = Cartographic.fromCartesian(entityPosition)
+  const longitude = Cesium.Math.toDegrees(cartographic.longitude)
+  const latitude = Cesium.Math.toDegrees(cartographic.latitude)
+
+  // ✅ Get actual terrain height at this coordinate
+  const terrainHeight = viewer.scene.globe.getHeight(
+    Cartographic.fromDegrees(longitude, latitude)
+  ) || 0
+
+  // ✅ Create terrain-aware position for screen calculations
+  const terrainAwarePosition = Cartesian3.fromDegrees(longitude, latitude, terrainHeight)
+  const screenPosition = viewer.scene.cartesianToCanvasCoordinates(terrainAwarePosition)
+}
+```
+
+### Performance Pattern: Terrain Height Caching
+
+**Implementation**: Cache terrain queries to prevent repeated calculations
+```typescript
+const terrainHeightCache = new Map<string, number>()
+
+const getTerrainHeight = (longitude: number, latitude: number): number => {
+  const key = `${longitude.toFixed(6)}_${latitude.toFixed(6)}`
+
+  if (terrainHeightCache.has(key)) {
+    return terrainHeightCache.get(key)!
+  }
+
+  const cartographic = Cartographic.fromDegrees(longitude, latitude)
+  const height = viewer.scene.globe.getHeight(cartographic) || 0
+
+  terrainHeightCache.set(key, height)
+  return height
+}
+```
+
+### Anti-Patterns: Network-Based Terrain Queries
+
+**Avoid**: These cause excessive terrain tile requests
+```typescript
+// ❌ Network request per call
+await sampleTerrainMostDetailed(viewer.terrainProvider, [cartographic])
+
+// ❌ Triggers terrain calculations in render loop
+if (billboard.heightReference?.getValue(viewer.clock.currentTime) === Cesium.HeightReference.CLAMP_TO_GROUND) {
+  // This queries terrain data every frame
+}
 ```
 
 ## Architecture Summary
