@@ -42,8 +42,9 @@ export const API_PATHS = {
   ROUTE_STATIONS_SEARCH: getApiPath('api/v1/route/stations/search'),
 
   // 센서 데이터 API (PM Backend)
-  SENSOR_DATA_HOURLY: (stationId: string) => getApiPath(`api/v1/sensor-data/stations/${stationId}/hourly`),
+  SENSOR_DATA_HOURLY: (stationId: string, hours?: number) => getApiPath(`api/v1/sensor-data/stations/${stationId}/hourly${hours ? `?hours=${hours}` : ''}`),
   SENSOR_DATA_DAILY: (stationId: string) => getApiPath(`api/v1/sensor-data/stations/${stationId}/daily`),
+  SENSOR_DATA_LATEST_ALL: getApiPath('api/v1/sensor-data/stations/latest-all'),
 } as const;
 
 /**

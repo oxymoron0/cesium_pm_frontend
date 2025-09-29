@@ -5,7 +5,7 @@
 
 import { get } from './request';
 import { API_PATHS } from './config';
-import type { RouteInfoResponse, RouteGeom, RouteStationsResponse, StationSearchResponse, HourlySensorDataResponse, DailySensorDataResponse } from './types';
+import type { RouteInfoResponse, RouteGeom, RouteStationsResponse, StationSearchResponse, HourlySensorDataResponse, DailySensorDataResponse, StationSensorResponse } from './types';
 
 /**
  * 모든 노선 기본 정보 조회
@@ -137,14 +137,15 @@ export async function searchStations(query: string): Promise<StationSearchRespon
 
 /**
  * 정류장 시간별 센서 데이터 조회
- * GET /api/v1/sensor-data/stations/{station_id}/hourly
+ * GET /api/v1/sensor-data/stations/{station_id}/hourly?hours={hours}
  *
  * @param stationId - 정류장 ID
+ * @param hours - 조회할 시간 수 (1-168, 기본값: 2)
  * @returns 시간별 센서 데이터
  */
-export async function getHourlySensorData(stationId: string): Promise<HourlySensorDataResponse> {
+export async function getHourlySensorData(stationId: string, hours: number = 2): Promise<HourlySensorDataResponse> {
   try {
-    const response = await get<HourlySensorDataResponse>(API_PATHS.SENSOR_DATA_HOURLY(stationId));
+    const response = await get<HourlySensorDataResponse>(API_PATHS.SENSOR_DATA_HOURLY(stationId, hours));
 
     if (!response.ok) {
       throw new Error(`Hourly sensor data API failed with status ${response.status}`);
@@ -152,7 +153,7 @@ export async function getHourlySensorData(stationId: string): Promise<HourlySens
 
     return response.data;
   } catch (error) {
-    console.error(`[getHourlySensorData] API 호출 실패 (정류장 ID: ${stationId}):`, error);
+    console.error(`[getHourlySensorData] API 호출 실패 (정류장 ID: ${stationId}, hours: ${hours}):`, error);
     throw error;
   }
 }
@@ -175,6 +176,27 @@ export async function getDailySensorData(stationId: string): Promise<DailySensor
     return response.data;
   } catch (error) {
     console.error(`[getDailySensorData] API 호출 실패 (정류장 ID: ${stationId}):`, error);
+    throw error;
+  }
+}
+
+/**
+ * 모든 정류장 최신 센서 데이터 조회
+ * GET /api/v1/sensor-data/stations/latest-all
+ *
+ * @returns 모든 정류장의 최신 센서 데이터
+ */
+export async function getLatestSensorData(): Promise<StationSensorResponse> {
+  try {
+    const response = await get<StationSensorResponse>(API_PATHS.SENSOR_DATA_LATEST_ALL);
+
+    if (!response.ok) {
+      throw new Error(`Latest sensor data API failed with status ${response.status}`);
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error('[getLatestSensorData] API 호출 실패:', error);
     throw error;
   }
 }
