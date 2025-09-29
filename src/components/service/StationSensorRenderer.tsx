@@ -129,20 +129,11 @@ const StationSensorRenderer = observer(() => {
                 // 센서 표시 대상인지 확인
                 if (!stationSensorStore.isStationVisible(stationId)) return;
 
-                // Billboard의 실제 화면 위치 계산
-                const billboard = entity.billboard;
                 const entityPosition = entity.position?.getValue(viewer.clock.currentTime);
 
                 if (entityPosition) {
-                  // Billboard가 CLAMP_TO_GROUND인 경우, 실제 terrain 높이 적용된 위치를 계산
-                  let actualPosition = entityPosition;
-
-                  if (billboard.heightReference?.getValue(viewer.clock.currentTime) === Cesium.HeightReference.CLAMP_TO_GROUND) {
-                    actualPosition = entityPosition;
-                  }
-
-                  // terrain-clamped position을 화면 좌표로 변환
-                  const screenPosition = viewer.scene.cartesianToCanvasCoordinates(actualPosition);
+                  // position을 화면 좌표로 변환 (terrain 높이 계산 생략)
+                  const screenPosition = viewer.scene.cartesianToCanvasCoordinates(entityPosition);
 
                   if (screenPosition &&
                       screenPosition.x >= -100 && screenPosition.x <= window.innerWidth + 100 &&
