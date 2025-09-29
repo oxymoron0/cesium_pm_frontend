@@ -5,9 +5,10 @@ import Icon from '@/components/basic/Icon'
 
 interface SensorInfoContainerProps {
   sensorType: SensorType
-  value: number
-  stationId?: string
+  value?: number
+  previousValue?: number
   unit?: string
+  hasValidData?: boolean
 }
 
 // 스타일 상수
@@ -23,12 +24,32 @@ const STYLES = {
   ICON_SIZE: '48px'
 } as const
 
+// 센서 값 포맷팅 함수 (최대 4자리)
+function formatSensorNumber(inputValue: number): string {
+  const integerPart = Math.floor(Math.abs(inputValue)).toString()
+  const maxDigits = 4
+
+  if (integerPart.length >= maxDigits) {
+    return Math.round(inputValue).toString()
+  }
+
+  const remainingDigits = maxDigits - integerPart.length
+  return inputValue.toFixed(remainingDigits)
+}
+
 const SensorInfoContainer = observer(function SensorInfoContainer({
   sensorType,
-  value,
-  stationId,
-  unit
+  value = 0,
+  previousValue,
+  unit,
+  hasValidData = true
 }: SensorInfoContainerProps) {
+  // 센서 값 포맷팅 (최대 4자리) 또는 데이터 없음 메시지
+  const formatSensorValue = useMemo(() => {
+    if (!hasValidData) return '수집안됨'
+    return formatSensorNumber(value)
+  }, [value, hasValidData])
+
   // 기본 정보 계산 (메모이제이션)
   const sensorInfo = useMemo(() => getSensorInfo(sensorType), [sensorType])
   const airQualityResult = useMemo(() => getAirQualityLevel(sensorType, value), [sensorType, value])
@@ -46,12 +67,18 @@ const SensorInfoContainer = observer(function SensorInfoContainer({
     getCircularBarAngle(sensorType, value), [sensorType, value]
   )
 
-  // 변화량 추이 임시 데이터 (향후 API에서 이전 값과 비교)
+  // 실제 API 데이터 기반 변화량 추이 계산
   const trendData = useMemo(() => {
-    // TODO: stationId 기반 실제 API 호출로 이전 값 비교
-    const mockPreviousValue = value * 0.9 // 임시로 10% 낮은 값으로 설정
-    const diff = value - mockPreviousValue
-    const changeAmount = Math.abs(diff).toFixed(1)
+    if (!hasValidData) {
+      return { icon: '–', text: '데이터 수집되지 않음' }
+    }
+
+    if (previousValue === undefined) {
+      return { icon: '–', text: '이전 데이터 없음' }
+    }
+
+    const diff = value - previousValue
+    const changeAmount = formatSensorNumber(Math.abs(diff))
 
     if (diff > 0.5) {
       return { icon: '↑', text: `1시간 전보다 ${changeAmount} 증가` }
@@ -60,7 +87,7 @@ const SensorInfoContainer = observer(function SensorInfoContainer({
     } else {
       return { icon: '–', text: '변화 없음' }
     }
-  }, [value])
+  }, [value, previousValue, hasValidData])
 
   // 상태별 아이콘 이름 결정
   const stateIconName = useMemo(() => {
@@ -157,7 +184,7 @@ const SensorInfoContainer = observer(function SensorInfoContainer({
               lineHeight: 'normal'
             }}
           >
-            {value}
+            {formatSensorValue}
           </div>
 
           {/* 단위 */}
@@ -172,7 +199,7 @@ const SensorInfoContainer = observer(function SensorInfoContainer({
               lineHeight: 'normal'
             }}
           >
-            {displayUnit}
+            {hasValidData ? displayUnit : ''}
           </div>
         </div>
       </div>
