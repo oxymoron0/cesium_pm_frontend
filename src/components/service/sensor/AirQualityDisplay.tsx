@@ -1,5 +1,5 @@
 import React from 'react';
-import SensorContainer from '../../basic/SensorContainer';
+import SensorContainer from '@/components/basic/SensorContainer';
 import PM10Sensor from './PM10Sensor';
 import PM25Sensor from './PM25Sensor';
 import VOCSensor from './VOCSensor';

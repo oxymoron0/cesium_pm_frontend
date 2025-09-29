@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite'
 import { useMemo, useState, useRef, useEffect } from 'react'
-import type { HourlyDataPoint } from '../../utils/api/types'
+import type { HourlyDataPoint } from '@/utils/api/types'
 
 interface ChartDataPoint {
   hour: string

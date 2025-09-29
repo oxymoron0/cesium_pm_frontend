@@ -1,4 +1,4 @@
-import { routeStore } from '../../stores/RouteStore';
+import { routeStore } from '@/stores/RouteStore';
 import { createGeoJsonDataSource, findDataSource, clearDataSource } from './datasources';
 import type { RouteGeom, GeoJSONLineString } from '../api/types';
 import type { GeoJsonDataSource } from 'cesium';

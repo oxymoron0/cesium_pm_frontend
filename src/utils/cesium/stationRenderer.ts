@@ -1,5 +1,5 @@
-import { stationStore } from '../../stores/StationStore';
-import { stationSensorStore } from '../../stores/StationSensorStore';
+import { stationStore } from '@/stores/StationStore';
+import { stationSensorStore } from '@/stores/StationSensorStore';
 import { createGeoJsonDataSource, findDataSource, clearDataSource } from './datasources';
 import type { RouteStationFeature } from '../api/types';
 import type { GeoJsonDataSource } from 'cesium';

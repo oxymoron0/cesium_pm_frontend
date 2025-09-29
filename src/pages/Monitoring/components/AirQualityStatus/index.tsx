@@ -1,12 +1,12 @@
 import { observer } from 'mobx-react-lite'
 import { useState, useEffect } from 'react'
-import Panel from '../../../../components/basic/Panel'
-import Title from '../../../../components/basic/Title'
+import Panel from '@/components/basic/Panel'
+import Title from '@/components/basic/Title'
 import RouteSelector from './RouteSelector'
 import RouteDetail from './RouteDetail'
 import StationDetail from './StationDetail'
 import StationDetail_2 from './StationDetail_2'
-import { routeStore } from '../../../../stores/RouteStore'
+import { routeStore } from '@/stores/RouteStore'
 
 interface AirQualityStatusProps {
   onClose?: () => void;
@@ -56,7 +56,7 @@ const AirQualityStatus = observer(function AirQualityStatus({ onClose, initialSt
     >
       <Title onClose={onClose}>노선별 실시간 공기질 현황</Title>
 
-      <div className="flex w-full gap-4 flex-1">
+      <div className="flex flex-1 w-full gap-4">
         <RouteSelector onRouteSelect={handleRouteSelect} />
 
         {selectedStationId ? (

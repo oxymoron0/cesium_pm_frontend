@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite'
 import { useEffect, useState } from 'react'
-import { routeStore } from '../../../../stores/RouteStore'
+import { routeStore } from '@/stores/RouteStore'
 
 interface RouteItem {
   route_name: string
@@ -48,7 +48,7 @@ const RouteSelector = observer(function RouteSelector({ onRouteSelect }: RouteSe
         <button
           key={route.route_name}
           onClick={() => handleRouteSelect(route.route_name)}
-          className="flex flex-col items-start gap-1 self-stretch text-left transition-colors"
+          className="flex flex-col items-start self-stretch gap-1 text-left transition-colors"
           style={{
             borderRadius: '8px',
             border: selectedRoute === route.route_name
@@ -89,11 +89,11 @@ const RouteSelector = observer(function RouteSelector({ onRouteSelect }: RouteSe
       ))}
 
       {/* UI Version Toggle */}
-      <div className="mt-4 pt-4 border-t border-gray-700">
+      <div className="pt-4 mt-4 border-t border-gray-700">
         <div className="mb-3">
-          <span className="text-sm text-gray-400 font-medium">UI 버전</span>
+          <span className="text-sm font-medium text-gray-400">UI 버전</span>
         </div>
-        <div className="flex bg-gray-800 rounded-lg p-1">
+        <div className="flex p-1 bg-gray-800 rounded-lg">
           <button
             onClick={() => routeStore.setUIVersion('v1')}
             className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all ${

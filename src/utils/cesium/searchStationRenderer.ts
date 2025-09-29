@@ -1,6 +1,6 @@
 import { createGeoJsonDataSource, clearDataSource } from './datasources';
 import { setupStationHoverEvents } from './stationRenderer';
-import { stationSensorStore } from '../../stores/StationSensorStore';
+import { stationSensorStore } from '@/stores/StationSensorStore';
 import type { RouteStationFeature } from '../api/types';
 import {
   Cartesian3,

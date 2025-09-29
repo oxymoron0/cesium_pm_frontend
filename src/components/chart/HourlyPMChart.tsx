@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite'
 import { useMemo } from 'react'
-import type { HourlyDataPoint } from '../../utils/api/types'
+import type { HourlyDataPoint } from '@/utils/api/types'
 
 interface ChartDataPoint {
   hour: string
@@ -99,9 +99,9 @@ const HourlyPMChart = observer(function HourlyPMChart({ data, stationName }: Hou
 
   if (chartData.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 bg-gray-800/50 rounded-lg border border-gray-700">
+      <div className="flex items-center justify-center h-64 border border-gray-700 rounded-lg bg-gray-800/50">
         <div className="text-center">
-          <div className="text-gray-400 mb-2">📊</div>
+          <div className="mb-2 text-gray-400">📊</div>
           <div className="text-sm text-gray-400">최근 3일 내 데이터가 없습니다</div>
         </div>
       </div>
@@ -109,7 +109,7 @@ const HourlyPMChart = observer(function HourlyPMChart({ data, stationName }: Hou
   }
 
   return (
-    <div className="bg-gray-900/50 rounded-lg border border-gray-700 p-4">
+    <div className="p-4 border border-gray-700 rounded-lg bg-gray-900/50">
       {/* 차트 제목 */}
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -137,7 +137,7 @@ const HourlyPMChart = observer(function HourlyPMChart({ data, stationName }: Hou
         <svg
           width={chartConfig.width}
           height={chartConfig.height}
-          className="bg-gray-800/30 rounded"
+          className="rounded bg-gray-800/30"
           style={{ display: 'block' }}
         >
           {/* 배경 그리드 */}
@@ -274,17 +274,17 @@ const HourlyPMChart = observer(function HourlyPMChart({ data, stationName }: Hou
 
         {/* 데이터 포인트 정보 (우하단) */}
         {chartData.length > 0 && (
-          <div className="absolute bottom-2 right-2 bg-gray-800/90 rounded-lg px-3 py-2 border border-gray-600">
-            <div className="text-xs text-gray-300 mb-1">
+          <div className="absolute px-3 py-2 border border-gray-600 rounded-lg bottom-2 right-2 bg-gray-800/90">
+            <div className="mb-1 text-xs text-gray-300">
               최신 데이터 ({chartData[chartData.length - 1]?.displayTime})
             </div>
             <div className="text-xs space-y-0.5">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-400"></div>
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                 <span className="text-white">{chartData[chartData.length - 1]?.pm.toFixed(1)} μg/m³</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
+                <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
                 <span className="text-white">{chartData[chartData.length - 1]?.fpm.toFixed(1)} μg/m³</span>
               </div>
             </div>
