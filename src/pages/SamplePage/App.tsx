@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import CesiumViewer from '@/components/CesiumViewer'
 import Panel from '@/components/basic/Panel'
 import VulnerabilityManager from '@/components/service/VulnerabilityManager'
-import AirQualityDisplay from '@/components/service/sensor/AirQualityDisplay'
-import StationSensorContainer from '@/components/basic/StationSensorContainer'
+// import AirQualityDisplay from '@/components/service/sensor/AirQualityDisplay'
+// import StationSensorContainer from '@/components/basic/StationSensorContainer'
 import BusHtmlRenderer from '@/components/service/BusHtmlRenderer'
 import { initializePMFrontend } from '@/utils/cesiumControls'
 import { get } from '@/utils/api/request'
@@ -283,23 +283,25 @@ const App = observer(function App(props: AppProps) {
       <BusHtmlRenderer />
 
       {/* 화면 중앙 StationSensorContainer 테스트 */}
-      <div className="absolute z-10 transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
+      {/* <div className="absolute z-10 transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
         <StationSensorContainer
           pm10Value={45}
           pm25Value={15}
           vocsValue={120}
         />
-      </div>
+      </div> */}
 
       {/* 화면 하단 공기질 센서 */}
-      <div className="absolute z-10 transform -translate-x-1/2 bottom-10 left-1/2">
+      {/* <div className="absolute z-10 transform -translate-x-1/2 bottom-10 left-1/2">
         <AirQualityDisplay
           pm10Value={45}
           pm25Value={25}
           vocsValue={120}
         />
+      </div> */} 
+      <div className="absolute z-10 transform -translate-x-1/2 bottom-10 left-1/2">
+        
       </div>
-
 
       {/* UI Container Panel */}
       <Panel>
