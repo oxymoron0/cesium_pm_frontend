@@ -6,7 +6,7 @@ import { getAirQualityLevel } from '@/utils/airQuality';
  * 공기질 센서 컴포넌트
  */
 const AirQualitySensor: React.FC<AirQualitySensorProps> = ({ data, title }) => {
-  const { color: backgroundColor, textColor } = getAirQualityLevel(data.type as any, data.value);
+  const { color: backgroundColor, textColor } = getAirQualityLevel(data.type, data.value);
 
   const containerStyle: React.CSSProperties = {
     display: 'flex',

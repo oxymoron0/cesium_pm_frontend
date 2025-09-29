@@ -36,7 +36,7 @@ const Monitoring = observer(function Monitoring({ onRouteSelect }: MonitoringPro
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
 
   // 임시 저장된 정류장 데이터 (추후 실제 API로 교체)
-  const savedStations: any[] = [];
+  const savedStations: never[] = [];
 
   const itemsPerPage = 4;
   const isSearchMode = searchQuery.trim().length > 0;
