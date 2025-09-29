@@ -2,6 +2,7 @@ import { observer } from 'mobx-react-lite'
 import { useState, useEffect } from 'react'
 import Title from '@/components/basic/Title'
 import Icon from '@/components/basic/Icon'
+import SensorInfoContainer from '@/components/service/sensor/SensorInfoContainer'
 
 interface StationDetailProps {
   stationId: string
@@ -10,37 +11,17 @@ interface StationDetailProps {
   onClose: () => void
 }
 
-interface SensorData {
-  humidity: number;
-  temperature: number;
-  voc: number;
-  co2: number;
-  pm: number;
-  fpm: number;
-}
-
 const StationDetail = observer(function StationDetail({
   stationId,
   stationName,
   routeName,
   onClose
 }: StationDetailProps) {
-  const [sensorData, setSensorData] = useState<SensorData | null>(null)
   const [lastUpdated, setLastUpdated] = useState<string>('')
 
   useEffect(() => {
-    // TODO: Implement API call to get latest sensor data for station
-    // GET /api/v1/sensor-data/stations/latest-all or specific station endpoint
-    // For now, using mock data
-    setSensorData({
-      humidity: 65.5,
-      temperature: 24.8,
-      voc: 98.2,
-      co2: 420,
-      pm: 12.4,
-      fpm: 8.9
-    })
-
+    // TODO: Replace with actual API call to get sensor data with measurement timestamp
+    // Use API response timestamp instead of current time for accurate measurement time display
     const now = new Date()
     const timeString = `${now.getHours() < 12 ? '오전' : '오후'} ${now.getHours() % 12 || 12}시 ${now.getMinutes().toString().padStart(2, '0')}분`
     setLastUpdated(timeString)
@@ -93,10 +74,10 @@ const StationDetail = observer(function StationDetail({
             borderBottom: '1px solid #C4C6C6'
           }}
         >
-          <div style={{ color: '#FFFFFF', fontSize: '18px', fontWeight: '600' }}>
+          <div style={{ color: '#FFFFFF', fontSize: '20px', fontWeight: '600' }}>
             {stationName || '정류장'}
           </div>
-          <div style={{ color: '#C4C6C6', fontSize: '14px' }}>
+          <div style={{ color: '#C4C6C6', fontSize: '16px' }}>
             {stationId} ({routeName || '노선'}번 방면)
           </div>
         </div>
@@ -110,7 +91,7 @@ const StationDetail = observer(function StationDetail({
             alignSelf: 'stretch'
           }}
         >
-          <div style={{ color: '#FFFFFF', fontSize: '16px', fontWeight: '600' }}>
+          <div style={{ color: '#FFFFFF', fontSize: '20px', fontWeight: '600' }}>
             현재 정류장 공기 상태
           </div>
           <div
@@ -118,13 +99,33 @@ const StationDetail = observer(function StationDetail({
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              color: '#C4C6C6',
-              fontSize: '12px'
+              color: '#A6A6A6',
+              fontVariantNumeric: 'lining-nums tabular-nums',
+              fontFamily: 'Pretendard',
+              fontSize: '12px',
+              fontStyle: 'normal',
+              fontWeight: '400',
+              lineHeight: '18px'
             }}
           >
             <span>버스 IoT 센서 측정값 기준 {lastUpdated} 업데이트됨</span>
             <Icon name="refresh" />
           </div>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            paddingLeft: '4px',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            gap: '32px',
+            alignSelf: 'stretch'
+          }}
+        >
+          <SensorInfoContainer sensorType="pm10" value={25} />
+          <SensorInfoContainer sensorType="pm25" value={25} />
+          <SensorInfoContainer sensorType="vocs" value={120} />
         </div>
 
       </div>
