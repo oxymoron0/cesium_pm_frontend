@@ -79,3 +79,39 @@ export function getHoursDifference(laterTime: Date, earlierTime: Date): number {
   const diffMs = laterTime.getTime() - earlierTime.getTime()
   return Math.round(diffMs / (1000 * 60 * 60))
 }
+
+/**
+ * 두 UTC timestamp 간의 차이를 한국어 형식으로 반환
+ * @param laterTimestamp - 최신 시간 (ISO 8601 형식)
+ * @param earlierTimestamp - 이전 시간 (ISO 8601 형식)
+ * @returns 시간 차이 문자열 (예: "45분", "1시간 15분", "2시간")
+ */
+export function formatTimeDifference(laterTimestamp: string, earlierTimestamp: string): string {
+  const laterTime = new Date(laterTimestamp)
+  const earlierTime = new Date(earlierTimestamp)
+
+  const diffMs = laterTime.getTime() - earlierTime.getTime()
+  const diffMinutes = Math.floor(diffMs / (1000 * 60))
+
+  console.log('[dateTime] 시간 차이 계산:', {
+    latest: laterTimestamp,
+    earlier: earlierTimestamp,
+    diffMs,
+    diffMinutes
+  })
+
+  if (diffMinutes < 60) {
+    // 1시간 미만: "N분"
+    return `${diffMinutes}분`
+  } else {
+    // 1시간 이상: "N시간" 또는 "N시간 M분"
+    const hours = Math.floor(diffMinutes / 60)
+    const remainingMinutes = diffMinutes % 60
+
+    if (remainingMinutes === 0) {
+      return `${hours}시간`
+    } else {
+      return `${hours}시간 ${remainingMinutes}분`
+    }
+  }
+}
