@@ -478,5 +478,88 @@ When implementing new features or making changes, **always run `pnpm lint` to id
 - `src/utils/cesium/routeRenderer.ts` - Route geometry rendering
 - `src/utils/cesium/stationRenderer.ts` - Station point rendering
 - `src/utils/api/types.ts` - API type definitions
+- `src/utils/airQuality/index.ts` - Air quality standards and calculations
+- `src/components/service/sensor/SensorInfoContainer.tsx` - Circular progress visualization
 - `vite.config.ts` - Build configuration
 - `postcss.config.js` - CSS isolation setup
+
+## Circular Progress Bar Implementation
+
+### Architecture Overview
+
+**Sensor Data Visualization**: Three-layer positioning system for precise SVG alignment
+
+```typescript
+// Container Structure
+<div position="relative" 98px>
+  <div position="absolute">  // Base border layer
+  <svg position="absolute">  // Progress bar layer
+  <div position="absolute">  // Text content layer
+</div>
+```
+
+### Critical Coordinates
+
+**Container Dimensions**: 98px × 98px (border-box)
+**Border Thickness**: 8px solid
+**SVG Alignment**:
+- Container center: (49, 49)
+- Border centerline radius: 45px
+- SVG circle: `cx="49" cy="49" r="45"`
+
+### Progress Calculation
+
+**Angular Distribution**: 360° ÷ 4 quality levels = 90° per range
+- Good: 0°-90° (12h-3h)
+- Normal: 90°-180° (3h-6h)
+- Bad: 180°-270° (6h-9h)
+- Very Bad: 270°-360° (9h-12h)
+
+**Proportional Fill**: Value position within range × 90°
+
+### Sensor Type Handling
+
+**VOCs**: Static gray border (`#999`)
+**PM10/PM25**: Dynamic stroke overlay with `strokeDasharray`
+
+```typescript
+strokeDasharray={`${(angle/360) * circumference} ${circumference}`}
+```
+
+### Air Quality Standards Utility
+
+**Centralized Standards**: `/src/utils/airQuality/index.ts`
+
+```typescript
+export function getAirQualityLevel(sensorType: SensorType, value: number): AirQualityResult
+export function getCircularBarAngle(sensorType: SensorType, value: number): number
+export function getSensorInfo(sensorType: SensorType): SensorInfo
+```
+
+**Quality Thresholds**:
+- PM10: 30/80/150 μg/m³
+- PM25: 15/35/75 μg/m³
+- Maximum visualization: Bad threshold × 1.5
+
+**Color Mapping**: Level-based color assignment with automatic text contrast
+
+## Air Quality Utility Functions
+
+### Centralized Standards Management
+
+**File**: `/src/utils/airQuality/index.ts`
+
+**Core Functions**:
+```typescript
+getAirQualityLevel(sensorType, value) → { level, levelText, color, textColor }
+getCircularBarAngle(sensorType, value) → degrees (0-360)
+getCircularBarMaxValue(sensorType) → maximum threshold for visualization
+getSensorInfo(sensorType) → { name, shortName, unit }
+```
+
+**Standards Constants**:
+- **AIR_QUALITY_STANDARDS**: Threshold definitions per sensor type
+- **AIR_QUALITY_COLORS**: Level-to-color mapping
+- **Maximum Values**: Bad threshold × 1.5 for complete circle visualization
+
+**Integration**: Replaces fragmented logic across PM10Sensor, PM25Sensor, VOCSensor, AirQualitySensor components
