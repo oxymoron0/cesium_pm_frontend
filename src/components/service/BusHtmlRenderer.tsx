@@ -39,7 +39,10 @@ const BusHtmlRenderer = observer(() => {
 
       // 이미 로드된 terrain에서 높이 값 동기 조회 (네트워크 요청 없음)
       const cartographic = Cartographic.fromDegrees(longitude, latitude);
-      const height = viewer.scene.globe.getHeight(cartographic) || 0;
+      const rawHeight = viewer.scene.globe.getHeight(cartographic);
+
+      // null, undefined, 음수 값 모두 0으로 처리
+      const height = (rawHeight != null && rawHeight >= 0) ? rawHeight : 0;
 
       terrainHeightCache.current.set(key, height);
       return height;
@@ -264,7 +267,7 @@ const BusHtmlRenderer = observer(() => {
 
     try {
 
-      let currentBusIds = new Set<string>();
+      const currentBusIds = new Set<string>();
 
       // 버스 모델 DataSource 찾기
       const busDataSource = viewer.dataSources.getByName('bus_models');
