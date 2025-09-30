@@ -8,6 +8,11 @@ import { getHourlySensorData, getLatestSensorData } from '@/utils/api'
 import type { HourlyDataPoint, StationSensorApiData } from '@/utils/api/types'
 import { formatUTCToKoreaTime, getCurrentKoreaTime, formatTimeDifference } from '@/utils/dateTime'
 import { stationDetailStore } from '@/stores/StationDetailStore'
+import {
+  renderTodayContent,
+  renderWeekContent,
+  renderMonthContent
+} from './StationSensorMetric'
 
 interface StationDetailProps {
   stationId: string
@@ -31,42 +36,6 @@ const StationDetail = observer(function StationDetail({
   } | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [activeTab, setActiveTab] = useState<number>(0)
-
-  // 오늘 탭 콘텐츠 렌더링
-  const renderTodayContent = () => {
-    return (
-      <div style={{ color: '#FFFFFF' }}>
-        {/* TODO: 오늘(24시간) 데이터 시각화 추가 */}
-        {/* - 시간별 트렌드 차트 */}
-        {/* - 최고/최저값 표시 */}
-        {/* - 평균값 비교 */}
-      </div>
-    )
-  }
-
-  // 최근 7일 탭 콘텐츠 렌더링
-  const renderWeekContent = () => {
-    return (
-      <div style={{ color: '#FFFFFF' }}>
-        {/* TODO: 최근 7일 데이터 시각화 추가 */}
-        {/* - 일별 평균 트렌드 */}
-        {/* - 요일별 패턴 분석 */}
-        {/* - 주간 통계 요약 */}
-      </div>
-    )
-  }
-
-  // 최근 1개월 탭 콘텐츠 렌더링
-  const renderMonthContent = () => {
-    return (
-      <div style={{ color: '#FFFFFF' }}>
-        {/* TODO: 최근 1개월 데이터 시각화 추가 */}
-        {/* - 일별 평균 트렌드 */}
-        {/* - 월간 통계 요약 */}
-        {/* - 공기질 등급 분포 */}
-      </div>
-    )
-  }
 
   // 활성 탭에 따른 콘텐츠 렌더링
   const renderTabContent = () => {
