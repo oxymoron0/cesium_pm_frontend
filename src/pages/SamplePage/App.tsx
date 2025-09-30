@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import CesiumViewer from '@/components/CesiumViewer'
 import Panel from '@/components/basic/Panel'
+import Title from '@/components/basic/Title'
 import VulnerabilityManager from '@/components/service/VulnerabilityManager'
 // import AirQualityDisplay from '@/components/service/sensor/AirQualityDisplay'
 // import StationSensorContainer from '@/components/basic/StationSensorContainer'
@@ -27,7 +28,8 @@ interface StationApiResponse {
 }
 
 interface AppProps {
-  [key: string]: unknown;
+  onCloseMicroApp?: () => void;
+  dispatch?: (action: unknown) => void;
 }
 
 const App = observer(function App(props: AppProps) {
@@ -309,8 +311,16 @@ const App = observer(function App(props: AppProps) {
           scrollbarWidth: 'thin',
           scrollbarColor: '#FFD040 transparent'
         }}>
-          <div className="sticky top-0 z-10 pb-2 mb-4 text-lg font-semibold bg-gray-800 border-b border-yellow-400">
-            Bus GLB Models & Station Testing
+          <div className="sticky top-0 z-10 bg-gray-800">
+            <Title
+              onClose={() => {
+                console.log('[SamplePage] Close icon clicked: Triggering onCloseMicroApp');
+                console.log('[SamplePage] DataSources before close:', window.cviewer?.dataSources.length);
+                props.onCloseMicroApp?.();
+              }}
+            >
+              Bus GLB Models & Station Testing
+            </Title>
           </div>
 
           <div className="pb-4 space-y-6">

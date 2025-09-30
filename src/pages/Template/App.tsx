@@ -3,7 +3,8 @@ import CesiumViewer from '@/components/CesiumViewer'
 import Panel from '@/components/basic/Panel'
 
 interface AppProps {
-  [key: string]: unknown;
+  onCloseMicroApp?: () => void;
+  dispatch?: (action: unknown) => void;
 }
 
 function App(props: AppProps) {
@@ -80,6 +81,20 @@ function App(props: AppProps) {
                   환경: {window.__POWERED_BY_QIANKUN__ ? 'Qiankun' : '독립 실행'}
                 </p>
               </div>
+
+              {props.onCloseMicroApp && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => {
+                      console.log('[Template] Test Close: Triggering onCloseMicroApp');
+                      props.onCloseMicroApp?.();
+                    }}
+                    className="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-bold"
+                  >
+                    🧪 Test Close
+                  </button>
+                </div>
+              )}
             </div>
           </Panel>
         )
