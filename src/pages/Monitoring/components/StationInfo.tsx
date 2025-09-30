@@ -3,7 +3,6 @@ import { useEffect } from 'react';
 import Title from '@/components/basic/Title';
 import Divider from '@/components/basic/Divider';
 import Spacer from '@/components/basic/Spacer';
-import SubTitle from '@/components/basic/SubTitle';
 import Item from '@/components/basic/Item';
 import TabNavigation from '@/components/basic/TabNavigation';
 import { routeStore } from '@/stores/RouteStore';
@@ -12,6 +11,7 @@ import { stationSensorStore } from '@/stores/StationSensorStore';
 
 interface StationInfoProps {
   onBackClick: () => void;
+  onCloseMicroApp?: () => void;
 }
 
 /**
@@ -19,7 +19,7 @@ interface StationInfoProps {
  * 선택된 노선의 정류장 정보를 표시하는 컴포넌트
  * RouteStore와 StationStore를 연동하여 방향별 정류장 목록을 제공
  */
-const StationInfo = observer(function StationInfo({ onBackClick }: StationInfoProps) {
+const StationInfo = observer(function StationInfo({ onBackClick, onCloseMicroApp }: StationInfoProps) {
   const basePath = import.meta.env.VITE_BASE_PATH || '/';
 
   // RouteStore에서 선택된 노선 정보
@@ -93,7 +93,27 @@ const StationInfo = observer(function StationInfo({ onBackClick }: StationInfoPr
     return (
       <>
         <Spacer height={16} />
-        <SubTitle>버스 전체 노선</SubTitle>
+        <Title
+          onClose={() => {
+            console.log('[Monitoring] Close icon clicked: Triggering onCloseMicroApp');
+            console.log('[Monitoring] DataSources before close:', window.cviewer?.dataSources.length);
+            onCloseMicroApp?.();
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onBackClick}
+              className="flex items-center justify-center w-6 h-6 transition-opacity hover:opacity-80"
+            >
+              <img
+                src={`${basePath}icon/back.svg`}
+                alt="뒤로가기"
+                className="w-3 h-4"
+              />
+            </button>
+            <span>버스 전체 노선</span>
+          </div>
+        </Title>
         <Divider color="bg-white" />
         <Spacer height={16} />
         <div className="text-gray-400 text-center p-4 bg-[#1A1A1A] rounded-lg w-full">
@@ -110,7 +130,13 @@ const StationInfo = observer(function StationInfo({ onBackClick }: StationInfoPr
   return (
     <>
       {/* 제목과 뒤로가기 버튼 */}
-      <Title>
+      <Title
+        onClose={() => {
+          console.log('[Monitoring] Close icon clicked: Triggering onCloseMicroApp');
+          console.log('[Monitoring] DataSources before close:', window.cviewer?.dataSources.length);
+          onCloseMicroApp?.();
+        }}
+      >
         <div className="flex items-center gap-2">
           <button
             onClick={onBackClick}

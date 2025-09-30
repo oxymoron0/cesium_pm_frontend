@@ -12,7 +12,11 @@ import { renderAllStations } from '@/utils/cesium/stationRenderer';
 
 type ViewType = 'routes' | 'stations';
 
-const MonitoringPanel = observer(function MonitoringPanel() {
+interface MonitoringPanelProps {
+  onCloseMicroApp?: () => void;
+}
+
+const MonitoringPanel = observer(function MonitoringPanel(props: MonitoringPanelProps) {
   const [currentView, setCurrentView] = useState<ViewType>('routes');
 
   // Auto-render all routes and stations when data loading is complete
@@ -96,12 +100,12 @@ const MonitoringPanel = observer(function MonitoringPanel() {
 
   // 노선 목록 뷰 렌더링
   const renderRoutesView = () => (
-    <Monitoring onRouteSelect={handleRouteSelect} />
+    <Monitoring onRouteSelect={handleRouteSelect} onCloseMicroApp={props.onCloseMicroApp} />
   );
 
   // 정류장 상세 뷰 렌더링
   const renderStationsView = () => (
-    <StationInfo onBackClick={handleBackToRoutes} />
+    <StationInfo onBackClick={handleBackToRoutes} onCloseMicroApp={props.onCloseMicroApp} />
   );
 
   return (
