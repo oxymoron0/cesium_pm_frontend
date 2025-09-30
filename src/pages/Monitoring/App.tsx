@@ -11,8 +11,11 @@ import { stationStore } from '@/stores/StationStore'
 import { busStore } from '@/stores/BusStore'
 import { stationSensorStore } from '@/stores/StationSensorStore'
 
-const App = observer(function App() {
-  // const { onCloseMicroApp, dispatch, user } = props // user.userid
+interface AppProps {
+  onCloseMicroApp?: () => void;
+}
+
+const App = observer(function App(props: AppProps) {
   const [cesiumStatus, setCesiumStatus] = useState<'loading' | 'ready' | 'error'>('loading')
 
   useEffect(() => {
@@ -135,7 +138,7 @@ const App = observer(function App() {
       {cesiumStatus === 'ready' && <BusHtmlRenderer />}
 
       {/* 통합 모니터링 패널 */}
-      <MonitoringPanel />
+      <MonitoringPanel onCloseMicroApp={props.onCloseMicroApp} />
     </div>
   )
 });

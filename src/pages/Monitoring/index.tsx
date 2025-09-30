@@ -1,19 +1,22 @@
 import { createRoot, type Root } from 'react-dom/client'
 import App from './App'
 import '@/index.css'
+import { cleanupAll } from './cleanup'
 
 let root: Root | null = null;
 
 interface MountProps {
   container?: Element;
+  onCloseMicroApp?: () => void;
 }
 
 export async function bootstrap() {
+  console.log('[qiankun] Monitoring bootstrap');
 }
 
 export async function mount(props: MountProps) {
-  const { container } = props
-  // const { container, onCloseMicroApp, dispatch } = props
+  const { container, onCloseMicroApp } = props
+  console.log('[qiankun] Monitoring mount', props);
 
   const domElement = container
     ? container.querySelector('#microapp-Monitoring')
@@ -22,12 +25,16 @@ export async function mount(props: MountProps) {
   if (domElement) {
     root = createRoot(domElement);
     root.render(
-      <App />
+      <App onCloseMicroApp={onCloseMicroApp} />
     );
   }
 }
 
 export async function unmount() {
+  console.log('[qiankun] Monitoring unmount');
+
+  cleanupAll();
+
   if (root) {
     root.unmount();
     root = null;
