@@ -7,20 +7,19 @@ import SensorInfoContainer from '@/components/service/sensor/SensorInfoContainer
 import { getHourlySensorData, getLatestSensorData } from '@/utils/api'
 import type { HourlyDataPoint, StationSensorApiData } from '@/utils/api/types'
 import { formatUTCToKoreaTime, getCurrentKoreaTime, formatTimeDifference } from '@/utils/dateTime'
+import { stationDetailStore } from '@/stores/StationDetailStore'
 
 interface StationDetailProps {
   stationId: string
-  stationName?: string
-  routeName?: string
   onClose: () => void
 }
 
 const StationDetail = observer(function StationDetail({
   stationId,
-  stationName,
-  routeName,
   onClose
 }: StationDetailProps) {
+  // Store에서 정류장 정보 가져오기
+  const { selectedStationName, selectedRouteName, selectedDirection, selectedDirectionName } = stationDetailStore
   const [lastUpdated, setLastUpdated] = useState<string>('')
   const [currentSensorData, setCurrentSensorData] = useState<HourlyDataPoint | null>(null)
   const [previousSensorData, setPreviousSensorData] = useState<HourlyDataPoint | null>(null)
@@ -220,7 +219,7 @@ const StationDetail = observer(function StationDetail({
               width: '302px',
               padding: '12px',
               flexDirection: 'column',
-              justifyContent: 'center',
+              justifyContent: 'flex-start',
               alignItems: 'flex-start',
               gap: '16px',
               alignSelf: 'stretch',
@@ -242,10 +241,10 @@ const StationDetail = observer(function StationDetail({
               }}
             >
               <div style={{ color: '#FFFFFF', fontSize: '20px', fontWeight: '600' }}>
-                {stationName || '정류장'}
+                {selectedStationName || '정류장'}
               </div>
-              <div style={{ color: '#C4C6C6', fontSize: '16px' }}>
-                {stationId} ({routeName || '노선'}번 방면)
+              <div style={{ color: '#C4C6C6', fontSize: '14px' }}>
+                {stationId} ({selectedDirectionName || (selectedDirection === 'inbound' ? '상행선' : selectedDirection === 'outbound' ? '하행선' : `${selectedRouteName || '노선'}번`)} 방면)
               </div>
             </div>
             <div

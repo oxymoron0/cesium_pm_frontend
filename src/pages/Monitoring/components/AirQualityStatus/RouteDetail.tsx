@@ -9,7 +9,7 @@ import type { RouteStationsResponse } from '@/utils/api/types'
 interface RouteDetailProps {
   selectedRoute: string | null
   initialStationId?: string
-  onStationSelect?: (stationId: string, stationName: string, routeName: string) => void
+  onStationSelect?: (stationId: string, stationName: string, routeName: string, direction: 'inbound' | 'outbound', directionName: string) => void
 }
 
 const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStationId, onStationSelect }: RouteDetailProps) {
@@ -164,10 +164,13 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
                   setSelectedStationId(stationId)
                   // Call parent callback for detailed station view
                   if (onStationSelect && selectedRoute) {
+                    const currentDirectionData = stationData[selectedDirection]
                     onStationSelect(
                       stationId,
                       stationFeature.properties.station_name,
-                      selectedRoute
+                      selectedRoute,
+                      selectedDirection,
+                      currentDirectionData?.direction_name || (selectedDirection === 'inbound' ? '상행선' : '하행선')
                     )
                   }
                 }}
