@@ -1,4 +1,3 @@
-import React from 'react';
 import SensorContainer from '@/components/basic/SensorContainer';
 import PM10Sensor from './PM10Sensor';
 import PM25Sensor from './PM25Sensor';
@@ -14,11 +13,11 @@ interface AirQualityDisplayProps {
  * 공기질 센서 표시 컴포넌트
  * 미세먼지, 초미세먼지, VOCs 값을 외부에서 전달받아 표시
  */
-const AirQualityDisplay: React.FC<AirQualityDisplayProps> = ({
+export default function AirQualityDisplay({
   pm10Value,
   pm25Value,
   vocsValue
-}) => {
+}: AirQualityDisplayProps) {
   return (
     <SensorContainer>
       <PM10Sensor value={pm10Value} />
@@ -26,6 +25,4 @@ const AirQualityDisplay: React.FC<AirQualityDisplayProps> = ({
       <VOCSensor value={vocsValue} />
     </SensorContainer>
   );
-};
-
-export default AirQualityDisplay;
+}
