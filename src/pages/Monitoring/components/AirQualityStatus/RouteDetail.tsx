@@ -1,6 +1,7 @@
 import { observer } from 'mobx-react-lite'
 import { useEffect, useState } from 'react'
 import { routeStore } from '@/stores/RouteStore'
+import { stationDetailStore } from '@/stores/StationDetailStore'
 import { getRouteStations } from '@/utils/api/routeApi'
 import StationCard from '@/components/service/StationCard'
 import AirQualityDisplay from '@/components/service/sensor/AirQualityDisplay'
@@ -24,6 +25,14 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
   // Load station data when route is selected
   useEffect(() => {
     if (selectedRoute) {
+      // Check cache first
+      const cached = stationDetailStore.getCachedRouteStations(selectedRoute)
+      if (cached) {
+        setStationData(cached)
+        return
+      }
+
+      // Load from API if not cached
       const loadStations = async () => {
         setIsLoading(true)
         try {
@@ -31,10 +40,12 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
             getRouteStations(selectedRoute, 'inbound'),
             getRouteStations(selectedRoute, 'outbound')
           ])
-          setStationData({
+          const data = {
             inbound: inboundData,
             outbound: outboundData
-          })
+          }
+          stationDetailStore.cacheRouteStations(selectedRoute, data)
+          setStationData(data)
         } catch (error) {
           console.error('Failed to load station data:', error)
         } finally {

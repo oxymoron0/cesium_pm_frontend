@@ -1,4 +1,5 @@
 import { makeAutoObservable } from 'mobx'
+import type { RouteStationsResponse } from '@/utils/api/types'
 
 /**
  * StationDetailStore
@@ -16,6 +17,12 @@ class StationDetailStore {
   selectedRouteName: string | null = null
   selectedDirection: 'inbound' | 'outbound' | null = null
   selectedDirectionName: string | null = null
+
+  // 노선별 정류장 데이터 캐시
+  routeStationCache: Map<string, {
+    inbound: RouteStationsResponse
+    outbound: RouteStationsResponse
+  }> = new Map()
 
   constructor() {
     makeAutoObservable(this)
@@ -64,6 +71,33 @@ class StationDetailStore {
   clearAll = () => {
     this.selectedRoute = null
     this.clearStationSelection()
+  }
+
+  /**
+   * 노선별 정류장 데이터 캐싱
+   */
+  cacheRouteStations = (
+    routeName: string,
+    data: {
+      inbound: RouteStationsResponse
+      outbound: RouteStationsResponse
+    }
+  ) => {
+    this.routeStationCache.set(routeName, data)
+  }
+
+  /**
+   * 캐시된 노선별 정류장 데이터 가져오기
+   */
+  getCachedRouteStations = (routeName: string) => {
+    return this.routeStationCache.get(routeName)
+  }
+
+  /**
+   * 노선 데이터가 캐시되어 있는지 확인
+   */
+  hasRouteStationCache = (routeName: string): boolean => {
+    return this.routeStationCache.has(routeName)
   }
 
   /**
