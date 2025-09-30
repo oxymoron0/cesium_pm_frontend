@@ -2,6 +2,7 @@ import { observer } from 'mobx-react-lite'
 import { useState, useEffect } from 'react'
 import Title from '@/components/basic/Title'
 import Icon from '@/components/basic/Icon'
+import TabNavigation from '@/components/basic/TabNavigation'
 import SensorInfoContainer from '@/components/service/sensor/SensorInfoContainer'
 import { getHourlySensorData, getLatestSensorData } from '@/utils/api'
 import type { HourlyDataPoint, StationSensorApiData } from '@/utils/api/types'
@@ -30,6 +31,57 @@ const StationDetail = observer(function StationDetail({
     hourlyTimestamp: string;
   } | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [activeTab, setActiveTab] = useState<number>(0)
+
+  // 오늘 탭 콘텐츠 렌더링
+  const renderTodayContent = () => {
+    return (
+      <div style={{ color: '#FFFFFF' }}>
+        {/* TODO: 오늘(24시간) 데이터 시각화 추가 */}
+        {/* - 시간별 트렌드 차트 */}
+        {/* - 최고/최저값 표시 */}
+        {/* - 평균값 비교 */}
+      </div>
+    )
+  }
+
+  // 최근 7일 탭 콘텐츠 렌더링
+  const renderWeekContent = () => {
+    return (
+      <div style={{ color: '#FFFFFF' }}>
+        {/* TODO: 최근 7일 데이터 시각화 추가 */}
+        {/* - 일별 평균 트렌드 */}
+        {/* - 요일별 패턴 분석 */}
+        {/* - 주간 통계 요약 */}
+      </div>
+    )
+  }
+
+  // 최근 1개월 탭 콘텐츠 렌더링
+  const renderMonthContent = () => {
+    return (
+      <div style={{ color: '#FFFFFF' }}>
+        {/* TODO: 최근 1개월 데이터 시각화 추가 */}
+        {/* - 일별 평균 트렌드 */}
+        {/* - 월간 통계 요약 */}
+        {/* - 공기질 등급 분포 */}
+      </div>
+    )
+  }
+
+  // 활성 탭에 따른 콘텐츠 렌더링
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 0:
+        return renderTodayContent()
+      case 1:
+        return renderWeekContent()
+      case 2:
+        return renderMonthContent()
+      default:
+        return renderTodayContent()
+    }
+  }
 
   useEffect(() => {
     const fetchSensorData = async () => {
@@ -133,6 +185,7 @@ const StationDetail = observer(function StationDetail({
   }, [stationId])
 
   return (
+    <>
     <div
       style={{
         display: 'flex',
@@ -151,111 +204,145 @@ const StationDetail = observer(function StationDetail({
       <Title onClose={onClose} dividerColor='bg-[#FFFFFF]'>
         정류장 공기질 모니터링
       </Title>
-
       <div
         style={{
           display: 'flex',
-          width: '302px',
-          padding: '12px',
-          flexDirection: 'column',
-          justifyContent: 'center',
           alignItems: 'flex-start',
           gap: '16px',
-          alignSelf: 'stretch',
-          borderRadius: '8px',
-          border: '1px solid rgba(196, 198, 198, 0.20)',
-          background: 'rgba(255, 255, 255, 0.10)',
-          boxShadow: '0 23px 28.6px 0 rgba(0, 0, 0, 0.03)'
+          flex: '1 0 0',
+          alignSelf: 'stretch'
         }}
       >
+        {/* 좌측 컨테이너 */}
         <div
-          style={{
-            display: 'flex',
-            paddingBottom: '12px',
-            flexDirection: 'column',
-            alignItems: 'flex-start',
-            gap: '4px',
-            alignSelf: 'stretch',
-            borderBottom: '1px solid #C4C6C6'
-          }}
-        >
-          <div style={{ color: '#FFFFFF', fontSize: '20px', fontWeight: '600' }}>
-            {stationName || '정류장'}
-          </div>
-          <div style={{ color: '#C4C6C6', fontSize: '16px' }}>
-            {stationId} ({routeName || '노선'}번 방면)
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-start',
-            gap: '4px',
-            alignSelf: 'stretch'
-          }}
-        >
-          <div style={{ color: '#FFFFFF', fontSize: '20px', fontWeight: '600' }}>
-            현재 정류장 공기 상태
-          </div>
-          <div
             style={{
               display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              color: '#A6A6A6',
-              fontVariantNumeric: 'lining-nums tabular-nums',
-              fontFamily: 'Pretendard',
-              fontSize: '12px',
-              fontStyle: 'normal',
-              fontWeight: '400',
-              lineHeight: '18px'
+              width: '302px',
+              padding: '12px',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'flex-start',
+              gap: '16px',
+              alignSelf: 'stretch',
+              borderRadius: '8px',
+              border: '1px solid rgba(196, 198, 198, 0.20)',
+              background: 'rgba(255, 255, 255, 0.10)',
+              boxShadow: '0 23px 28.6px 0 rgba(0, 0, 0, 0.03)'
             }}
           >
-            <span>
-              버스 IoT 센서 측정값 기준 {lastUpdated} 업데이트됨
-              {isLoading && ' (로딩 중...)'}
-            </span>
-            <Icon name="refresh" />
-          </div>
+            <div
+              style={{
+                display: 'flex',
+                paddingBottom: '12px',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                gap: '4px',
+                alignSelf: 'stretch',
+                borderBottom: '1px solid #C4C6C6'
+              }}
+            >
+              <div style={{ color: '#FFFFFF', fontSize: '20px', fontWeight: '600' }}>
+                {stationName || '정류장'}
+              </div>
+              <div style={{ color: '#C4C6C6', fontSize: '16px' }}>
+                {stationId} ({routeName || '노선'}번 방면)
+              </div>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                gap: '4px',
+                alignSelf: 'stretch'
+              }}
+            >
+              <div style={{ color: '#FFFFFF', fontSize: '20px', fontWeight: '600' }}>
+                현재 정류장 공기 상태
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: '#A6A6A6',
+                  fontVariantNumeric: 'lining-nums tabular-nums',
+                  fontFamily: 'Pretendard',
+                  fontSize: '12px',
+                  fontStyle: 'normal',
+                  fontWeight: '400',
+                  lineHeight: '18px'
+                }}
+              >
+                <span>
+                  버스 IoT 센서 측정값 기준 {lastUpdated} 업데이트됨
+                  {isLoading && ' (로딩 중...)'}
+                </span>
+                <Icon name="refresh" />
+              </div>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                paddingLeft: '4px',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                gap: '32px',
+                alignSelf: 'stretch'
+              }}
+            >
+              <SensorInfoContainer
+                sensorType="pm10"
+                value={currentSensorData?.average_readings.pm || 0}
+                previousValue={previousSensorData?.average_readings.pm}
+                hasValidData={!!currentSensorData && currentSensorData.average_readings.pm > 0}
+                timeDifference={timeComparisonData?.timeDiff}
+              />
+              <SensorInfoContainer
+                sensorType="pm25"
+                value={currentSensorData?.average_readings.fpm || 0}
+                previousValue={previousSensorData?.average_readings.fpm}
+                hasValidData={!!currentSensorData && currentSensorData.average_readings.fpm > 0}
+                timeDifference={timeComparisonData?.timeDiff}
+              />
+              <SensorInfoContainer
+                sensorType="vocs"
+                value={currentSensorData?.average_readings.voc || 0}
+                previousValue={previousSensorData?.average_readings.voc}
+                hasValidData={!!currentSensorData && currentSensorData.average_readings.voc > 0}
+                timeDifference={timeComparisonData?.timeDiff}
+              />
+            </div>
         </div>
 
+        {/* 우측 컨테이너 */}
         <div
           style={{
             display: 'flex',
-            paddingLeft: '4px',
+            padding: '12px',
             flexDirection: 'column',
             alignItems: 'flex-start',
-            gap: '32px',
-            alignSelf: 'stretch'
+            gap: '16px',
+            flex: '1 0 0',
+            alignSelf: 'stretch',
+            borderRadius: '8px',
+            border: '1px solid rgba(196, 198, 198, 0.20)',
+            background: 'rgba(255, 255, 255, 0.10)',
+            boxShadow: '0 23px 28.6px 0 rgba(0, 0, 0, 0.03)'
           }}
         >
-          <SensorInfoContainer
-            sensorType="pm10"
-            value={currentSensorData?.average_readings.pm || 0}
-            previousValue={previousSensorData?.average_readings.pm}
-            hasValidData={!!currentSensorData && currentSensorData.average_readings.pm > 0}
-            timeDifference={timeComparisonData?.timeDiff}
+          <TabNavigation
+            tabs={['오늘', '최근 7일', '최근 1개월']}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
           />
-          <SensorInfoContainer
-            sensorType="pm25"
-            value={currentSensorData?.average_readings.fpm || 0}
-            previousValue={previousSensorData?.average_readings.fpm}
-            hasValidData={!!currentSensorData && currentSensorData.average_readings.fpm > 0}
-            timeDifference={timeComparisonData?.timeDiff}
-          />
-          <SensorInfoContainer
-            sensorType="vocs"
-            value={currentSensorData?.average_readings.voc || 0}
-            previousValue={previousSensorData?.average_readings.voc}
-            hasValidData={!!currentSensorData && currentSensorData.average_readings.voc > 0}
-            timeDifference={timeComparisonData?.timeDiff}
-          />
-        </div>
 
+          {/* 탭 콘텐츠 영역 */}
+          {renderTabContent()}
+        </div>
       </div>
     </div>
+    </>
   )
 })
 
