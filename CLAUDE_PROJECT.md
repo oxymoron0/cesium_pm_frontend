@@ -1,7 +1,7 @@
 # PM Frontend - Technical Specification
 
-**Version**: 2.0
-**Last Updated**: 2025-09-30
+**Version**: 2.1
+**Last Updated**: 2025-10-02
 **React Version**: 19.1.1
 **Cesium Version**: 1.115.0
 **Architecture**: Qiankun Microfrontend
@@ -16,14 +16,17 @@ React-based microfrontend application for geospatial bus route visualization usi
 - **UI Framework**: React 19.1.1 with TypeScript 5.x
 - **3D Rendering**: Cesium 1.115 for WebGL-based geospatial visualization
 - **State Management**: MobX 6.x with reactive patterns
-- **Build Tool**: Vite 6.x with optimized build pipeline
-- **Styling**: Tailwind CSS with PostCSS prefixing for CSS isolation
+- **Data Visualization**: Recharts 3.2.1 for time-series charts
+- **Build Tool**: Vite 7.x with optimized build pipeline
+- **Styling**: Tailwind CSS 4.x with PostCSS prefixing for CSS isolation
 
 ### System Capabilities
-- Real-time bus tracking with 3D visualization
+- Real-time bus tracking with 3D visualization and HTML overlays
 - Route geometry rendering with PostGIS LineString support
 - Station management with direction-aware color coding
-- Environmental sensor data visualization
+- Environmental sensor data visualization with circular progress indicators
+- Time-series sensor data charts (hourly/daily/monthly)
+- Air quality monitoring with modal-based detail views
 - Microfrontend deployment with Qiankun integration
 
 ---
@@ -77,16 +80,24 @@ pm-frontend/
 │   │   │   ├── Monitoring.tsx     # Root component
 │   │   │   └── components/        # Page-specific components
 │   │   │       ├── AirQualityStatus/
-│   │   │       │   ├── RouteDetail.tsx
-│   │   │       │   ├── StationDetail.tsx
-│   │   │       │   └── RouteSelector.tsx
-│   │   │       └── CesiumViewer/
+│   │   │       │   ├── index.tsx              # Modal wrapper
+│   │   │       │   ├── RouteDetail.tsx        # Route station list
+│   │   │       │   ├── StationDetail.tsx      # Station sensor detail
+│   │   │       │   ├── StationSensorMetric.tsx # Tab content renderers
+│   │   │       │   └── RouteSelector.tsx      # Route selection
+│   │   │       ├── Monitoring.tsx
+│   │   │       ├── MonitoringPanel.tsx
+│   │   │       └── StationInfo.tsx
 │   │   └── SamplePage/            # Sample page template
 │   │
 │   ├── stores/                     # MobX state management
 │   │   ├── RouteStore.ts          # Route data and selection state
 │   │   ├── StationStore.ts        # Station data with dependency inversion
-│   │   └── SensorStore.ts         # Sensor data management
+│   │   ├── StationDetailStore.ts  # AirQualityStatus modal state
+│   │   ├── SensorSelectionStore.ts # User sensor type preferences
+│   │   ├── StationSensorStore.ts  # Station sensor display management
+│   │   ├── BusStore.ts            # Bus tracking and animation
+│   │   └── VulnerabilityStore.ts  # Vulnerability data management
 │   │
 │   ├── utils/                      # Utility modules
 │   │   ├── api/                   # API integration
@@ -102,19 +113,31 @@ pm-frontend/
 │   │   │   └── cameraUtils.ts     # Camera control utilities
 │   │   ├── airQuality/            # Air quality standards
 │   │   │   └── index.ts           # Centralized standards
-│   │   └── timezone/              # Timezone conversion
-│   │       └── index.ts           # UTC to KST utilities
+│   │   ├── chart/                 # Chart data transformation
+│   │   │   └── sensorDataTransform.ts # Recharts data formatters
+│   │   └── dateTime.ts            # Timezone conversion utilities
 │   │
 │   ├── components/                 # Reusable UI components
-│   │   ├── common/                # Common components
+│   │   ├── basic/                 # Basic UI components
 │   │   │   ├── Panel.tsx          # Floating panel container
 │   │   │   ├── Title.tsx          # Panel title bar
 │   │   │   ├── Icon.tsx           # Icon wrapper
 │   │   │   └── TabNavigation.tsx  # Tab navigation
+│   │   ├── chart/                 # Chart components (Recharts)
+│   │   │   ├── SensorLineChart.tsx     # Time-series line chart
+│   │   │   ├── SensorTooltip.tsx       # Custom chart tooltip
+│   │   │   ├── ChartController.tsx     # Sensor type selection
+│   │   │   ├── ChartHeader.tsx         # Chart period header
+│   │   │   ├── LineChartContainer.tsx  # Chart layout wrapper
+│   │   │   └── StatsSummaryContainer.tsx # Statistics summary
 │   │   └── service/               # Service-specific components
-│   │       └── sensor/
-│   │           ├── SensorInfoContainer.tsx  # Sensor display
-│   │           └── SensorInfoContainer_2.tsx
+│   │       ├── sensor/
+│   │       │   ├── SensorInfoContainer.tsx  # Circular progress sensor display
+│   │       │   ├── AirQualityDisplay.tsx    # Air quality status
+│   │       │   └── PM10Sensor.tsx / PM25Sensor.tsx / VOCSensor.tsx
+│   │       ├── StationHtmlRenderer.tsx      # HTML overlay for stations
+│   │       ├── StationSensorRenderer.tsx    # Sensor overlay renderer
+│   │       └── BusHtmlRenderer.tsx          # Bus HTML overlay
 │   │
 │   ├── assets/                     # Static assets
 │   │   ├── icons/                 # SVG icons
@@ -327,59 +350,89 @@ export const routeStore = new RouteStore()
 
 **Responsibilities**:
 - Station data management per route-direction
-- Station selection state
+- Station selection state (for Cesium rendering)
 - Dependency on RouteStore for route context
+
+**Implementation**: See existing code (unchanged from v2.0)
+
+#### StationDetailStore - Modal State Management
+
+**Purpose**: Independent state management for AirQualityStatus modal
+
+**Responsibilities**:
+- Modal visibility control
+- Route and station selection within modal
+- Station data caching per route
+
+**Key Features**:
+```typescript
+class StationDetailStore {
+  isModalOpen: boolean
+  selectedRoute: string | null
+  selectedStationId: string | null
+  selectedStationName: string | null
+  selectedDirection: 'inbound' | 'outbound' | null
+  routeStationCache: Map<string, { inbound, outbound }>
+
+  openModal() / closeModal()
+  selectRoute(routeName)
+  selectStation(stationId, stationName, routeName, direction, directionName)
+  cacheRouteStations(routeName, data)
+  getCachedRouteStations(routeName)
+}
+```
+
+**Integration**: Separates modal UI state from Cesium rendering state
+
+#### SensorSelectionStore - User Preference Management
+
+**Purpose**: Persist sensor type selection across tabs and stations
+
+**Responsibilities**:
+- Track PM vs VOCs selection
+- Track PM10 vs PM25 selection
+- Provide computed selection state
 
 **Implementation**:
 ```typescript
-import { makeAutoObservable } from 'mobx'
-import { routeStore } from './RouteStore'
+class SensorSelectionStore {
+  selectedSensorType: 'PM' | 'VOCs' = 'PM'
+  selectedPMType: 'PM10' | 'PM25' | null = null
 
-class StationStore {
-  // Single source of truth from RouteStore
-  get selectedRouteName(): string | null {
-    return routeStore.selectedRouteName
-  }
+  setSensorType(type: 'PM' | 'VOCs')
+  togglePMType(type: 'PM10' | 'PM25')
 
-  // Observable state
-  selectedDirection: 'inbound' | 'outbound' | null = null
-  selectedStationId: string | null = null
-  stationDataMap: Map<string, RouteStationsResponse> = new Map()
-
-  constructor() {
-    makeAutoObservable(this)
-  }
-
-  // Computed values
-  get currentStationData(): RouteStationsResponse | undefined {
-    if (!this.selectedRouteName || !this.selectedDirection) return undefined
-    const key = `${this.selectedRouteName}_${this.selectedDirection}`
-    return this.stationDataMap.get(key)
-  }
-
-  get currentStations(): RouteStationFeature[] {
-    return this.currentStationData?.features || []
-  }
-
-  // Actions
-  setSelectedDirection(direction: 'inbound' | 'outbound') {
-    this.selectedDirection = direction
-  }
-
-  setSelectedStation(stationId: string | null) {
-    this.selectedStationId = stationId
-  }
-
-  async loadStations(routeName: string, direction: 'inbound' | 'outbound') {
-    const key = `${routeName}_${direction}`
-    if (this.stationDataMap.has(key)) return
-
-    const data = await getRouteStations(routeName, direction)
-    this.stationDataMap.set(key, data)
-  }
+  get isPMSelected(): boolean
+  get isVOCsSelected(): boolean
+  get isPM10Selected(): boolean
+  get isPM25Selected(): boolean
 }
+```
 
-export const stationStore = new StationStore()
+**Usage**: Drives chart visibility and sensor icon highlighting
+
+#### StationSensorStore - Sensor Display Management
+
+**Purpose**: Manage sensor visibility on Cesium HTML overlays
+
+**Responsibilities**:
+- Track which stations show sensor data
+- Manage hover state
+- Load and cache API sensor data
+
+**Key Methods**:
+```typescript
+class StationSensorStore {
+  visibleStationIds: Set<string>
+  sensorDataMap: Map<string, SensorData>
+  hoveredStationId: string | null
+
+  showSelectedRoute()  // Show sensors for current route
+  clearAll()           // Hide all sensors
+  setHoveredStation(stationId)
+  loadSensorData()     // API integration
+  isStationVisible(stationId): boolean
+}
 ```
 
 #### Observer Pattern
@@ -388,6 +441,7 @@ export const stationStore = new StationStore()
 ```typescript
 import { observer } from 'mobx-react-lite'
 
+// Example 1: StationInfo with RouteStore + StationStore
 const StationInfo = observer(function StationInfo() {
   const selectedRouteName = routeStore.selectedRouteName
   const selectedRouteInfo = routeStore.selectedRouteInfo
@@ -398,7 +452,6 @@ const StationInfo = observer(function StationInfo() {
 
   return (
     <Panel position="right" offset={96}>
-      <Title text="정류장 정보" />
       <TabNavigation
         tabs={[
           `${selectedRouteInfo.destination} 방면`,
@@ -413,7 +466,23 @@ const StationInfo = observer(function StationInfo() {
     </Panel>
   )
 })
+
+// Example 2: SensorLineChart with SensorSelectionStore
+const SensorLineChart = observer(function SensorLineChart({ data }) {
+  const isPMMode = sensorSelectionStore.isPMSelected
+  const showPM10 = isPMMode && (sensorSelectionStore.selectedPMType === null || sensorSelectionStore.isPM10Selected)
+  const showPM25 = isPMMode && (sensorSelectionStore.selectedPMType === null || sensorSelectionStore.isPM25Selected)
+
+  return (
+    <LineChart data={data}>
+      <Line dataKey="pm10" hide={!showPM10} />
+      <Line dataKey="pm25" hide={!showPM25} />
+    </LineChart>
+  )
+})
 ```
+
+**Key Pattern**: Observer components automatically re-render when observed store values change
 
 ---
 
@@ -1175,44 +1244,77 @@ export function getSensorInfo(sensorType: SensorType) {
 }
 ```
 
-### Timezone Conversion
+### DateTime Utilities
 
-**UTC to Korea Time**:
+**File**: `/src/utils/dateTime.ts`
+
+**Timezone Conversion**:
 ```typescript
-// src/utils/timezone/index.ts
-
 export function formatUTCToKoreaTime(utcTimestamp: string): string {
+  // ISO 8601 → "오후 2:30" format
   const date = new Date(utcTimestamp)
+  return new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  }).format(date)
+}
 
-  const formatter = new Intl.DateTimeFormat('ko-KR', {
+export function getCurrentKoreaTime(): string {
+  // Current time in "오후 2:30" format
+  return new Date().toLocaleString('ko-KR', {
     timeZone: 'Asia/Seoul',
     hour: 'numeric',
     minute: '2-digit',
     hour12: true
   })
-
-  return formatter.format(date)
 }
 
 export function formatTimeDifference(
   latestTimestamp: string,
   hourlyTimestamp: string
 ): string {
-  const latest = new Date(latestTimestamp)
-  const hourly = new Date(hourlyTimestamp)
-
-  const diffMs = Math.abs(latest.getTime() - hourly.getTime())
+  // Calculate "2시간 30분 전" style relative time
+  const diffMs = Math.abs(
+    new Date(latestTimestamp).getTime() - new Date(hourlyTimestamp).getTime()
+  )
   const diffMinutes = Math.floor(diffMs / (1000 * 60))
   const diffHours = Math.floor(diffMinutes / 60)
   const remainingMinutes = diffMinutes % 60
 
-  if (diffHours > 0) {
-    return `${diffHours}시간 ${remainingMinutes}분 전`
-  } else {
-    return `${remainingMinutes}분 전`
-  }
+  return diffHours > 0
+    ? `${diffHours}시간 ${remainingMinutes}분`
+    : `${remainingMinutes}분`
 }
 ```
+
+**Usage**: Sensor data timestamps, trend calculations
+
+### Chart Data Transformation
+
+**File**: `/src/utils/chart/sensorDataTransform.ts`
+
+**Recharts Data Formatting**:
+```typescript
+export interface ChartDataPoint {
+  time: string          // Display label ("09:00" or "10/01")
+  timestamp: string     // Original ISO timestamp
+  pm10: number | null
+  pm25: number | null
+  voc: number | null
+}
+
+export function transformHourlyData(hourlyData: HourlyDataPoint[]): ChartDataPoint[]
+export function transformDailyData(dailyData: DailyDataPoint[]): ChartDataPoint[]
+export function formatTimeLabel(isoString: string, period: 'today' | 'week' | 'month'): string
+```
+
+**Features**:
+- Sort data by timestamp
+- Convert API response to Recharts format
+- Format X-axis labels based on time period
+- Handle null values with `connectNulls`
 
 ---
 
@@ -1418,14 +1520,119 @@ export default defineConfig({
 
 ---
 
+## Recent Updates (v2.1)
+
+### Chart Visualization System (2025-10-02)
+
+**Recharts Integration**:
+- Time-series sensor data visualization (PM10/PM25/VOCs)
+- Three time periods: Today (hourly), 7 days (daily), 1 month (daily)
+- Dynamic line visibility based on SensorSelectionStore
+- Custom tooltip with air quality levels
+- ReferenceArea for air quality threshold zones
+
+**New Components**:
+- `SensorLineChart`: Responsive line chart with Recharts
+- `SensorTooltip`: Custom tooltip with air quality status
+- `ChartController`: PM/VOCs sensor type toggle
+- `ChartHeader`: Period indicator with date display
+- `LineChartContainer` / `StatsSummaryContainer`: Layout wrappers
+
+**Data Flow**:
+```
+API (hourly/daily) → sensorDataTransform → ChartDataPoint[] → Recharts
+```
+
+### Enhanced Sensor Display (2025-10-02)
+
+**SensorInfoContainer Updates**:
+- Circular progress bar with exact SVG alignment (98px × 98px)
+- Trend indicators with actual time differences
+- API-driven previous value comparison
+- Four-digit number formatting for sensor values
+- State icons (good/normal/bad/very_bad)
+
+**Features**:
+- Real-time vs hourly data comparison
+- Dynamic border color based on air quality level
+- "수집안됨" state for missing data
+- PM10/PM25 separate threshold zones
+- New SVG icons: `state_good`, `state_normal`, `state_bad`, `state_very_bad`
+- PM10/PM25 icon variations for ChartController
+
+### Modal Architecture (2025-10-02)
+
+**AirQualityStatus Modal**:
+- Integrated into App.tsx with StationDetailStore
+- Route selection → Station list → Station detail flow
+- Independent state from Cesium rendering
+- Cached station data per route
+
+**StationDetail Component**:
+- Left panel: Current sensor readings with circular progress
+- Right panel: Tabbed time-series charts
+- Parallel API calls: `getLatestSensorData()` + `getHourlySensorData()`
+- Time difference calculation for trend display
+
+**Click Integration**:
+- StationHtmlRenderer click → StationDetailStore.selectStation()
+- Opens modal with pre-selected station
+- RouteSelector syncs with StationDetailStore.selectedRoute
+
+### Store Architecture Evolution
+
+**Separation of Concerns**:
+- **StationStore**: Cesium rendering state only
+- **StationDetailStore**: Modal UI state only
+- **SensorSelectionStore**: User preferences across tabs
+- **StationSensorStore**: HTML overlay sensor visibility
+
+**Benefits**:
+- Independent modal operation from 3D map
+- Persistent sensor type selection
+- Cached data reduces API calls
+
+### HTML Overlay System (2025-09-30)
+
+**Components**:
+- `StationHtmlRenderer`: HTML overlays for stations with click handlers
+- `StationSensorRenderer`: Sensor data overlays with hover states
+- `BusHtmlRenderer`: Real-time bus position overlays
+
+**Features**:
+- Terrain height optimization with caching
+- Negative height handling for underground/sea level positions
+- Click events integrated with StationDetailStore
+- Performance: Terrain height cache prevents redundant calculations
+
+### Lifecycle Management (2025-09-30)
+
+**Cleanup System**:
+- `src/pages/Monitoring/cleanup.ts`: Centralized cleanup utilities
+- `onCloseMicroApp` integration for Qiankun unmount
+- BusStore animation cleanup on component unmount
+- Proper DataSource removal to prevent memory leaks
+
+**Implementation**:
+```typescript
+// App.tsx
+useEffect(() => {
+  return () => {
+    busStore.cleanup()  // Stop animations, clear intervals
+  }
+}, [])
+```
+
+---
+
 ## Future Enhancements
 
 ### Planned Features
-1. Real-time bus animation with smooth transitions
+1. ~~Real-time bus animation with smooth transitions~~ ✅ Implemented
 2. Advanced route filtering and search
-3. Historical sensor data visualization with charts
+3. ~~Historical sensor data visualization with charts~~ ✅ Implemented
 4. User preferences and saved views
-5. Offline mode with service worker
+5. Statistics summary in StatsSummaryContainer
 
 ### Technical Improvements
 1. React Testing Library integration
