@@ -14,7 +14,7 @@
 
 ### Sensor Data
 - `GET /api/v1/sensor-data/stations/{station_id}/hourly?hours=1-168` - Hourly statistics
-- `GET /api/v1/sensor-data/stations/{station_id}/daily?days=1-365` - Daily trends
+- `GET /api/v1/sensor-data/stations/{station_id}/daily?days=1-60` - Daily trends (default: 30 days)
 - `GET /api/v1/sensor-data/stations/latest-all` - Current readings (373 stations)
 
 ### Route Information
