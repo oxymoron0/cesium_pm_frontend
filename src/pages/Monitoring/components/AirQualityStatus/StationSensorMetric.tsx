@@ -1,7 +1,7 @@
-import { useState } from 'react'
 import LineChartContainer from '@/components/chart/LineChartContainer'
 import StatsSummaryContainer from '@/components/chart/StatsSummaryContainer'
 import ChartHeader from '@/components/chart/ChartHeader'
+import ChartController from '@/components/chart/ChartController'
 
 /**
  * Tab Content Components for StationDetail
@@ -11,8 +11,6 @@ import ChartHeader from '@/components/chart/ChartHeader'
 
 // 오늘 탭 콘텐츠 컴포넌트
 export function TodayContent() {
-  const [selectedSensorType, setSelectedSensorType] = useState<'PM' | 'VOCs'>('PM')
-
   // Get current date in MM/DD format
   const now = new Date()
   const month = String(now.getMonth() + 1).padStart(2, '0')
@@ -30,12 +28,8 @@ export function TodayContent() {
       }}
     >
       <LineChartContainer>
-        <ChartHeader
-          period="today"
-          currentDate={currentDate}
-          selectedSensorType={selectedSensorType}
-          onSensorTypeChange={setSelectedSensorType}
-        />
+        <ChartHeader period="today" currentDate={currentDate} />
+        <ChartController />
         {/* TODO: 오늘(24시간) 데이터 시각화 추가 */}
         {/* - 최고/최저값 표시 */}
         {/* - 평균값 비교 */}
@@ -49,8 +43,6 @@ export function TodayContent() {
 
 // 최근 7일 탭 콘텐츠 컴포넌트
 export function WeekContent() {
-  const [selectedSensorType, setSelectedSensorType] = useState<'PM' | 'VOCs'>('PM')
-
   return (
     <div
       style={{
@@ -62,11 +54,8 @@ export function WeekContent() {
       }}
     >
       <LineChartContainer>
-        <ChartHeader
-          period="week"
-          selectedSensorType={selectedSensorType}
-          onSensorTypeChange={setSelectedSensorType}
-        />
+        <ChartHeader period="week" />
+        <ChartController />
         {/* TODO: 최근 7일 데이터 시각화 추가 */}
         {/* - 요일별 패턴 분석 */}
         {/* - 주간 통계 요약 */}
@@ -80,8 +69,6 @@ export function WeekContent() {
 
 // 최근 1개월 탭 콘텐츠 컴포넌트
 export function MonthContent() {
-  const [selectedSensorType, setSelectedSensorType] = useState<'PM' | 'VOCs'>('PM')
-
   return (
     <div
       style={{
@@ -93,11 +80,8 @@ export function MonthContent() {
       }}
     >
       <LineChartContainer>
-        <ChartHeader
-          period="month"
-          selectedSensorType={selectedSensorType}
-          onSensorTypeChange={setSelectedSensorType}
-        />
+        <ChartHeader period="month" />
+        <ChartController />
         {/* TODO: 최근 1개월 데이터 시각화 추가 */}
         {/* - 월간 통계 요약 */}
         {/* - 공기질 등급 분포 */}

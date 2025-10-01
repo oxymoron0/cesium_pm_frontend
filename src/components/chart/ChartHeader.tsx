@@ -1,10 +1,10 @@
 import { useState } from 'react'
+import { observer } from 'mobx-react-lite'
+import { sensorSelectionStore } from '@/stores/SensorSelectionStore'
 
 interface ChartHeaderProps {
   period: 'today' | 'week' | 'month'
   currentDate?: string // MM/DD format for 'today'
-  selectedSensorType: 'PM' | 'VOCs'
-  onSensorTypeChange: (sensorType: 'PM' | 'VOCs') => void
 }
 
 /**
@@ -15,11 +15,9 @@ interface ChartHeaderProps {
  * - Week: "주간 공기질 농도 변화"
  * - Month: "월간 공기질 농도 변화"
  */
-export default function ChartHeader({
+const ChartHeader = observer(function ChartHeader({
   period,
-  currentDate,
-  selectedSensorType,
-  onSensorTypeChange
+  currentDate
 }: ChartHeaderProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
@@ -43,7 +41,7 @@ export default function ChartHeader({
   }
 
   const handleSensorTypeSelect = (type: 'PM' | 'VOCs') => {
-    onSensorTypeChange(type)
+    sensorSelectionStore.setSensorType(type)
     setIsDropdownOpen(false)
   }
 
@@ -93,7 +91,7 @@ export default function ChartHeader({
             lineHeight: 'normal'
           }}
         >
-          {getSensorTypeLabel(selectedSensorType)}
+          {getSensorTypeLabel(sensorSelectionStore.selectedSensorType)}
           <svg
             width="12"
             height="8"
@@ -132,8 +130,8 @@ export default function ChartHeader({
                 padding: '8px 16px',
                 alignItems: 'center',
                 cursor: 'pointer',
-                background: selectedSensorType === 'PM' ? '#1A1A1A' : '#000',
-                color: selectedSensorType === 'PM' ? '#FFD040' : '#FFF',
+                background: sensorSelectionStore.isPMSelected ? '#1A1A1A' : '#000',
+                color: sensorSelectionStore.isPMSelected ? '#FFD040' : '#FFF',
                 fontFamily: 'Pretendard',
                 fontSize: '14px',
                 fontWeight: 400,
@@ -143,12 +141,12 @@ export default function ChartHeader({
                 transition: 'background 0.2s ease'
               }}
               onMouseEnter={(e) => {
-                if (selectedSensorType !== 'PM') {
+                if (!sensorSelectionStore.isPMSelected) {
                   e.currentTarget.style.background = '#1A1A1A'
                 }
               }}
               onMouseLeave={(e) => {
-                if (selectedSensorType !== 'PM') {
+                if (!sensorSelectionStore.isPMSelected) {
                   e.currentTarget.style.background = '#000'
                 }
               }}
@@ -162,8 +160,8 @@ export default function ChartHeader({
                 padding: '8px 16px',
                 alignItems: 'center',
                 cursor: 'pointer',
-                background: selectedSensorType === 'VOCs' ? '#1A1A1A' : '#000',
-                color: selectedSensorType === 'VOCs' ? '#FFD040' : '#FFF',
+                background: sensorSelectionStore.isVOCsSelected ? '#1A1A1A' : '#000',
+                color: sensorSelectionStore.isVOCsSelected ? '#FFD040' : '#FFF',
                 fontFamily: 'Pretendard',
                 fontSize: '14px',
                 fontWeight: 400,
@@ -173,12 +171,12 @@ export default function ChartHeader({
                 transition: 'background 0.2s ease'
               }}
               onMouseEnter={(e) => {
-                if (selectedSensorType !== 'VOCs') {
+                if (!sensorSelectionStore.isVOCsSelected) {
                   e.currentTarget.style.background = '#1A1A1A'
                 }
               }}
               onMouseLeave={(e) => {
-                if (selectedSensorType !== 'VOCs') {
+                if (!sensorSelectionStore.isVOCsSelected) {
                   e.currentTarget.style.background = '#000'
                 }
               }}
@@ -190,4 +188,6 @@ export default function ChartHeader({
       </div>
     </div>
   )
-}
+})
+
+export default ChartHeader
