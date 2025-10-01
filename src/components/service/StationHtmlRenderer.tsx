@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite';
 import { Entity } from 'cesium';
 import { stationStore } from '@/stores/StationStore';
 import { stationSensorStore } from '@/stores/StationSensorStore';
+import { stationDetailStore } from '@/stores/StationDetailStore';
 import { getCurrentSelectedSearchStationId } from '@/utils/cesium/searchStationRenderer';
 
 /**
@@ -68,7 +69,13 @@ const StationHtmlRenderer = observer(() => {
   }, []);
 
   // 정류장 이벤트 등록 함수
-  const registerStationEvents = useCallback((element: HTMLElement, stationId: string) => {
+  const registerStationEvents = useCallback((
+    element: HTMLElement,
+    stationId: string,
+    stationName: string,
+    routeName: string,
+    direction: 'inbound' | 'outbound'
+  ) => {
     // 호버 이벤트 핸들러 추가
     element.addEventListener('mouseenter', () => {
       stationSensorStore.setHoveredStation(stationId);
@@ -94,10 +101,30 @@ const StationHtmlRenderer = observer(() => {
       }
     });
 
-    // 정류장 태그 클릭 이벤트 (비워둠)
+    // 정류장 태그 클릭 이벤트
     element.addEventListener('click', () => {
-      // TODO: 정류장 상세보기 기능 구현
-      console.log(`Station detail view clicked: ${stationId}`);
+      // 검색 정류장은 상세보기 미지원
+      if (routeName === 'search') {
+        console.log(`[StationHtmlRenderer] Search station clicked (not supported)`);
+        return;
+      }
+
+      // StationStore에서 direction_name 가져오기
+      const stationData = stationStore.getStationData(routeName, direction);
+      if (!stationData) {
+        console.warn(`[StationHtmlRenderer] No station data for ${routeName}-${direction}`);
+        return;
+      }
+
+      const directionName = stationData.direction_name;
+
+      // StationDetailStore에 정류장 정보 설정
+      stationDetailStore.selectStation(stationId, stationName, routeName, direction, directionName);
+
+      // AirQualityStatus 모달 열기
+      stationDetailStore.openModal();
+
+      console.log(`[StationHtmlRenderer] Station detail opened: ${stationName} (${routeName}-${direction})`);
     });
   }, []);
 
@@ -148,7 +175,7 @@ const StationHtmlRenderer = observer(() => {
       element.innerHTML = createStationTagHTML(stationName, stationId, routeName, direction);
 
       // 이벤트 등록
-      registerStationEvents(element, stationId);
+      registerStationEvents(element, stationId, stationName, routeName, direction);
 
       stationElementsRef.current.set(entityId, element);
       containerRef.current?.appendChild(element);
@@ -161,7 +188,7 @@ const StationHtmlRenderer = observer(() => {
         element.innerHTML = createStationTagHTML(stationName, stationId, routeName, direction);
 
         // HTML 변경 시 이벤트 리스너 재등록
-        registerStationEvents(element, stationId);
+        registerStationEvents(element, stationId, stationName, routeName, direction);
       }
     }
 
