@@ -14,10 +14,10 @@ export function TodayContent() {
   const [selectedSensorType, setSelectedSensorType] = useState<'PM' | 'VOCs'>('PM')
 
   // Get current date in MM/DD format
-  const currentDate = new Date().toLocaleDateString('ko-KR', {
-    month: '2-digit',
-    day: '2-digit'
-  })
+  const now = new Date()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const currentDate = `${month}/${day}`
 
   return (
     <div
