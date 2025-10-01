@@ -1,4 +1,5 @@
 import { observer } from 'mobx-react-lite'
+import { useState, useEffect } from 'react'
 import {
   ResponsiveContainer,
   LineChart,
@@ -29,6 +30,19 @@ interface SensorLineChartProps {
 const SensorLineChart = observer(function SensorLineChart({
   data
 }: SensorLineChartProps) {
+  // Track initial mount for animation
+  const [isInitialMount, setIsInitialMount] = useState(true)
+
+  useEffect(() => {
+    if (isInitialMount && data.length > 0) {
+      // Disable animation after initial load
+      const timer = setTimeout(() => {
+        setIsInitialMount(false)
+      }, 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [data.length, isInitialMount])
+
   // Determine which lines to show based on store
   const isPMMode = sensorSelectionStore.isPMSelected
   const isVOCsMode = sensorSelectionStore.isVOCsSelected
@@ -172,43 +186,43 @@ const SensorLineChart = observer(function SensorLineChart({
         )}
 
         {/* PM10 Line */}
-        {showPM10 && (
-          <Line
-            type="monotone"
-            dataKey="pm10"
-            stroke="#CFFF40"
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 4, fill: '#CFFF40' }}
-            connectNulls
-          />
-        )}
+        <Line
+          type="monotone"
+          dataKey="pm10"
+          stroke="#CFFF40"
+          strokeWidth={2}
+          dot={false}
+          activeDot={{ r: 4, fill: '#CFFF40' }}
+          connectNulls
+          hide={!showPM10}
+          isAnimationActive={isInitialMount}
+        />
 
         {/* PM25 Line */}
-        {showPM25 && (
-          <Line
-            type="monotone"
-            dataKey="pm25"
-            stroke="#FFD040"
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 4, fill: '#FFD040' }}
-            connectNulls
-          />
-        )}
+        <Line
+          type="monotone"
+          dataKey="pm25"
+          stroke="#FFD040"
+          strokeWidth={2}
+          dot={false}
+          activeDot={{ r: 4, fill: '#FFD040' }}
+          connectNulls
+          hide={!showPM25}
+          isAnimationActive={isInitialMount}
+        />
 
         {/* VOCs Line */}
-        {showVOCs && (
-          <Line
-            type="monotone"
-            dataKey="voc"
-            stroke="#C8C8C8"
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 4, fill: '#C8C8C8' }}
-            connectNulls
-          />
-        )}
+        <Line
+          type="monotone"
+          dataKey="voc"
+          stroke="#C8C8C8"
+          strokeWidth={2}
+          dot={false}
+          activeDot={{ r: 4, fill: '#C8C8C8' }}
+          connectNulls
+          hide={!showVOCs}
+          isAnimationActive={isInitialMount}
+        />
       </LineChart>
     </ResponsiveContainer>
   )
