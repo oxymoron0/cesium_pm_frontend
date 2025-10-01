@@ -57,10 +57,11 @@ const SensorLineChart = observer(function SensorLineChart({
   }
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" style={{ outline: 'none' }}>
       <LineChart
         data={data}
         margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
+        style={{ outline: 'none' }}
       >
         {/* Grid */}
         <CartesianGrid strokeDasharray="3 3" stroke="#555" strokeOpacity={0.5} />
