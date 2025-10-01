@@ -1,6 +1,7 @@
 import { observer } from 'mobx-react-lite'
 import { useEffect, useState } from 'react'
 import { routeStore } from '@/stores/RouteStore'
+import { stationDetailStore } from '@/stores/StationDetailStore'
 
 interface RouteItem {
   route_name: string
@@ -13,8 +14,10 @@ interface RouteSelectorProps {
 }
 
 const RouteSelector = observer(function RouteSelector({ onRouteSelect }: RouteSelectorProps) {
-  const [selectedRoute, setSelectedRoute] = useState<string | null>(null)
   const [routes, setRoutes] = useState<RouteItem[]>([])
+
+  // Use stationDetailStore.selectedRoute instead of local state
+  const selectedRoute = stationDetailStore.selectedRoute
 
   useEffect(() => {
     // Initialize route data if not loaded
@@ -31,7 +34,6 @@ const RouteSelector = observer(function RouteSelector({ onRouteSelect }: RouteSe
   }, [routeStore.routeInfoList])
 
   const handleRouteSelect = (routeName: string) => {
-    setSelectedRoute(routeName)
     onRouteSelect?.(routeName)
   }
 
