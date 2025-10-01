@@ -9,9 +9,9 @@ import type { HourlyDataPoint, StationSensorApiData } from '@/utils/api/types'
 import { formatUTCToKoreaTime, getCurrentKoreaTime, formatTimeDifference } from '@/utils/dateTime'
 import { stationDetailStore } from '@/stores/StationDetailStore'
 import {
-  renderTodayContent,
-  renderWeekContent,
-  renderMonthContent
+  TodayContent,
+  WeekContent,
+  MonthContent
 } from './StationSensorMetric'
 
 interface StationDetailProps {
@@ -41,13 +41,13 @@ const StationDetail = observer(function StationDetail({
   const renderTabContent = () => {
     switch (activeTab) {
       case 0:
-        return renderTodayContent()
+        return <TodayContent />
       case 1:
-        return renderWeekContent()
+        return <WeekContent />
       case 2:
-        return renderMonthContent()
+        return <MonthContent />
       default:
-        return renderTodayContent()
+        return <TodayContent />
     }
   }
 
