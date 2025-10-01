@@ -8,7 +8,7 @@ import { makeAutoObservable } from 'mobx'
  */
 class SensorSelectionStore {
   selectedSensorType: 'PM' | 'VOCs' = 'PM'
-  selectedPMType: 'PM10' | 'PM25' | null = 'PM10'
+  selectedPMType: 'PM10' | 'PM25' | null = null
 
   constructor() {
     makeAutoObservable(this)
