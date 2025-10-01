@@ -15,8 +15,6 @@ import type { ChartDataPoint } from '@/utils/chart/sensorDataTransform'
 
 interface SensorLineChartProps {
   data: ChartDataPoint[]
-  period: 'today' | 'week' | 'month'
-  height?: number
 }
 
 /**
@@ -29,8 +27,7 @@ interface SensorLineChartProps {
  * - Custom tooltip with air quality levels
  */
 const SensorLineChart = observer(function SensorLineChart({
-  data,
-  height = 300
+  data
 }: SensorLineChartProps) {
   // Determine which lines to show based on store
   const showPM10 = sensorSelectionStore.selectedPMType === null || sensorSelectionStore.isPM10Selected
@@ -44,7 +41,7 @@ const SensorLineChart = observer(function SensorLineChart({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          height: `${height}px`,
+          height: '100%',
           color: '#999',
           fontFamily: 'Pretendard',
           fontSize: '14px'
@@ -56,7 +53,7 @@ const SensorLineChart = observer(function SensorLineChart({
   }
 
   return (
-    <ResponsiveContainer width="100%" height={height}>
+    <ResponsiveContainer width="100%" height="100%">
       <LineChart
         data={data}
         margin={{ top: 10, right: 10, left: 0, bottom: 0 }}

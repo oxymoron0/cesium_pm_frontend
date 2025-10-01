@@ -61,21 +61,23 @@ export function TodayContent() {
       <LineChartContainer>
         <ChartHeader period="today" currentDate={currentDate} />
         <ChartController />
-        {isLoading ? (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '300px',
-            color: '#999',
-            fontFamily: 'Pretendard',
-            fontSize: '14px'
-          }}>
-            데이터 로딩 중...
-          </div>
-        ) : (
-          <SensorLineChart data={chartData} period="today" height={300} />
-        )}
+        <div style={{ flex: '1 0 0', alignSelf: 'stretch', minHeight: 0 }}>
+          {isLoading ? (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              color: '#999',
+              fontFamily: 'Pretendard',
+              fontSize: '14px'
+            }}>
+              데이터 로딩 중...
+            </div>
+          ) : (
+            <SensorLineChart data={chartData} />
+          )}
+        </div>
       </LineChartContainer>
       <StatsSummaryContainer>
         {/* TODO: 오늘 통계 요약 */}
@@ -125,21 +127,23 @@ export function WeekContent() {
       <LineChartContainer>
         <ChartHeader period="week" />
         <ChartController />
-        {isLoading ? (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '300px',
-            color: '#999',
-            fontFamily: 'Pretendard',
-            fontSize: '14px'
-          }}>
-            데이터 로딩 중...
-          </div>
-        ) : (
-          <SensorLineChart data={chartData} period="week" height={300} />
-        )}
+        <div style={{ flex: '1 0 0', alignSelf: 'stretch', minHeight: 0 }}>
+          {isLoading ? (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              color: '#999',
+              fontFamily: 'Pretendard',
+              fontSize: '14px'
+            }}>
+              데이터 로딩 중...
+            </div>
+          ) : (
+            <SensorLineChart data={chartData} />
+          )}
+        </div>
       </LineChartContainer>
       <StatsSummaryContainer>
         {/* TODO: 최근 7일 통계 요약 */}
@@ -189,21 +193,23 @@ export function MonthContent() {
       <LineChartContainer>
         <ChartHeader period="month" />
         <ChartController />
-        {isLoading ? (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '300px',
-            color: '#999',
-            fontFamily: 'Pretendard',
-            fontSize: '14px'
-          }}>
-            데이터 로딩 중...
-          </div>
-        ) : (
-          <SensorLineChart data={chartData} period="month" height={300} />
-        )}
+        <div style={{ flex: '1 0 0', alignSelf: 'stretch', minHeight: 0 }}>
+          {isLoading ? (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              color: '#999',
+              fontFamily: 'Pretendard',
+              fontSize: '14px'
+            }}>
+              데이터 로딩 중...
+            </div>
+          ) : (
+            <SensorLineChart data={chartData} />
+          )}
+        </div>
       </LineChartContainer>
       <StatsSummaryContainer>
         {/* TODO: 최근 1개월 통계 요약 */}
