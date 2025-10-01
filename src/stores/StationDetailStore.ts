@@ -8,6 +8,9 @@ import type { RouteStationsResponse } from '@/utils/api/types'
  * Cesium 렌더링용 StationStore와 분리된 독립적인 Store
  */
 class StationDetailStore {
+  // AirQualityStatus 모달 표시 여부
+  isModalOpen = false
+
   // 선택된 노선
   selectedRoute: string | null = null
 
@@ -29,6 +32,20 @@ class StationDetailStore {
   }
 
   /**
+   * 모달 열기
+   */
+  openModal = () => {
+    this.isModalOpen = true
+  }
+
+  /**
+   * 모달 닫기
+   */
+  closeModal = () => {
+    this.isModalOpen = false
+  }
+
+  /**
    * 노선 선택
    * 정류장 선택 상태 초기화
    */
@@ -38,7 +55,7 @@ class StationDetailStore {
   }
 
   /**
-   * 정류장 선택
+   * 정류장 선택 (노선 및 방면 정보도 함께 설정)
    */
   selectStation = (
     stationId: string,
@@ -47,6 +64,7 @@ class StationDetailStore {
     direction: 'inbound' | 'outbound',
     directionName: string
   ) => {
+    this.selectedRoute = routeName
     this.selectedStationId = stationId
     this.selectedStationName = stationName
     this.selectedRouteName = routeName
