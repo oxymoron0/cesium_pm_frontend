@@ -98,9 +98,9 @@ export function WeekContent() {
 
       setIsLoading(true)
       try {
-        const response = await getHourlySensorData(stationId, 168) // 7 days = 168 hours
+        const response = await getDailySensorData(stationId, 7)
         if (response.status === 'success' && response.data) {
-          const transformed = transformHourlyData(response.data.hourly_data)
+          const transformed = transformDailyData(response.data.daily_data)
           setChartData(transformed)
         }
       } catch (error) {

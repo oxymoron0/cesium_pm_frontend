@@ -160,14 +160,15 @@ export async function getHourlySensorData(stationId: string, hours: number = 2):
 
 /**
  * 정류장 일별 센서 데이터 조회
- * GET /api/v1/sensor-data/stations/{station_id}/daily
+ * GET /api/v1/sensor-data/stations/{station_id}/daily?days={days}
  *
  * @param stationId - 정류장 ID
+ * @param days - 조회할 일 수 (1-60, 기본값: 30)
  * @returns 일별 센서 데이터
  */
-export async function getDailySensorData(stationId: string): Promise<DailySensorDataResponse> {
+export async function getDailySensorData(stationId: string, days: number = 30): Promise<DailySensorDataResponse> {
   try {
-    const response = await get<DailySensorDataResponse>(API_PATHS.SENSOR_DATA_DAILY(stationId));
+    const response = await get<DailySensorDataResponse>(API_PATHS.SENSOR_DATA_DAILY(stationId, days));
 
     if (!response.ok) {
       throw new Error(`Daily sensor data API failed with status ${response.status}`);
@@ -175,7 +176,7 @@ export async function getDailySensorData(stationId: string): Promise<DailySensor
 
     return response.data;
   } catch (error) {
-    console.error(`[getDailySensorData] API 호출 실패 (정류장 ID: ${stationId}):`, error);
+    console.error(`[getDailySensorData] API 호출 실패 (정류장 ID: ${stationId}, days: ${days}):`, error);
     throw error;
   }
 }
