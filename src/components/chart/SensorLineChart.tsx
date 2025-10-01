@@ -35,10 +35,10 @@ const SensorLineChart = observer(function SensorLineChart({
 
   useEffect(() => {
     if (isInitialMount && data.length > 0) {
-      // Disable animation after initial load
+      // Disable animation after initial load (increased duration for smoother finish)
       const timer = setTimeout(() => {
         setIsInitialMount(false)
-      }, 1000)
+      }, 1500)
       return () => clearTimeout(timer)
     }
   }, [data.length, isInitialMount])
@@ -196,6 +196,8 @@ const SensorLineChart = observer(function SensorLineChart({
           connectNulls
           hide={!showPM10}
           isAnimationActive={isInitialMount}
+          animationDuration={1500}
+          animationEasing="ease-in-out"
         />
 
         {/* PM25 Line */}
@@ -209,6 +211,8 @@ const SensorLineChart = observer(function SensorLineChart({
           connectNulls
           hide={!showPM25}
           isAnimationActive={isInitialMount}
+          animationDuration={1500}
+          animationEasing="ease-in-out"
         />
 
         {/* VOCs Line */}
@@ -222,6 +226,8 @@ const SensorLineChart = observer(function SensorLineChart({
           connectNulls
           hide={!showVOCs}
           isAnimationActive={isInitialMount}
+          animationDuration={1500}
+          animationEasing="ease-in-out"
         />
       </LineChart>
     </ResponsiveContainer>
