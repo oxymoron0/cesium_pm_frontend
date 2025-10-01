@@ -4,6 +4,7 @@ import { getAirQualityLevel } from '@/utils/airQuality'
 interface SensorTooltipProps extends TooltipProps<number, string> {
   showPM10?: boolean
   showPM25?: boolean
+  showVOCs?: boolean
 }
 
 /**
@@ -12,17 +13,19 @@ interface SensorTooltipProps extends TooltipProps<number, string> {
  * Displays sensor values with air quality level indicators
  * Styled to match design system (Pretendard, dark theme)
  */
-export default function SensorTooltip({ active, payload, label, showPM10 = true, showPM25 = true }: SensorTooltipProps) {
+export default function SensorTooltip({ active, payload, label, showPM10 = true, showPM25 = true, showVOCs = false }: SensorTooltipProps) {
   if (!active || !payload || payload.length === 0) {
     return null
   }
 
-  // Find PM10 and PM25 data from payload
+  // Find PM10, PM25, and VOC data from payload
   const pm10Data = payload.find(p => p.dataKey === 'pm10')
   const pm25Data = payload.find(p => p.dataKey === 'pm25')
+  const vocData = payload.find(p => p.dataKey === 'voc')
 
   const pm10Value = pm10Data?.value as number | undefined
   const pm25Value = pm25Data?.value as number | undefined
+  const vocValue = vocData?.value as number | undefined
 
   return (
     <div
@@ -204,6 +207,85 @@ export default function SensorTooltip({ active, payload, label, showPM10 = true,
             }}
           >
             {getAirQualityLevel('pm25', pm25Value).levelText}
+          </span>
+        </div>
+      )}
+
+      {/* VOCs */}
+      {showVOCs && vocValue !== undefined && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '6px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: '#C8C8C8'
+              }}
+            />
+            <span
+              style={{
+                color: '#FFF',
+                fontFamily: 'Pretendard',
+                fontSize: '13px',
+                fontWeight: 400
+              }}
+            >
+              VOCs
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span
+              style={{
+                color: '#C8C8C8',
+                fontFamily: 'Pretendard',
+                fontSize: '14px',
+                fontWeight: 600
+              }}
+            >
+              {vocValue.toFixed(1)}
+            </span>
+            <span
+              style={{
+                color: '#A6A6A6',
+                fontFamily: 'Pretendard',
+                fontSize: '12px',
+                fontWeight: 400
+              }}
+            >
+              ppb
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* VOCs Air Quality Level */}
+      {showVOCs && vocValue !== undefined && (
+        <div
+          style={{
+            marginLeft: '14px',
+            padding: '2px 6px',
+            borderRadius: '3px',
+            background: getAirQualityLevel('vocs', vocValue).color + '20',
+            display: 'inline-block'
+          }}
+        >
+          <span
+            style={{
+              color: getAirQualityLevel('vocs', vocValue).color,
+              fontFamily: 'Pretendard',
+              fontSize: '11px',
+              fontWeight: 500
+            }}
+          >
+            {getAirQualityLevel('vocs', vocValue).levelText}
           </span>
         </div>
       )}

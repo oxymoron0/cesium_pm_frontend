@@ -12,10 +12,7 @@ import Icon from '@/components/basic/Icon'
  * Purpose: Color map selector for PM10/PM25 visualization
  */
 const ChartController = observer(function ChartController() {
-  // Only render for PM sensors
-  if (!sensorSelectionStore.isPMSelected) {
-    return null
-  }
+  const isPMMode = sensorSelectionStore.isPMSelected
 
   return (
     <div
@@ -23,7 +20,9 @@ const ChartController = observer(function ChartController() {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        alignSelf: 'stretch'
+        alignSelf: 'stretch',
+        height: '32px', // Fixed height to prevent layout shift
+        visibility: isPMMode ? 'visible' : 'hidden' // Keep space but hide content
       }}
     >
       {/* Left: Color map label and icons */}

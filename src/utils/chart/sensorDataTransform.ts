@@ -19,7 +19,12 @@ export interface ChartDataPoint {
  * @returns Transformed data for Recharts
  */
 export function transformHourlyData(hourlyData: HourlyDataPoint[]): ChartDataPoint[] {
-  return hourlyData.map(point => ({
+  // Sort by timestamp first, then transform
+  const sorted = [...hourlyData].sort((a, b) =>
+    new Date(a.hour).getTime() - new Date(b.hour).getTime()
+  )
+
+  return sorted.map(point => ({
     time: formatTimeLabel(point.hour, 'today'),
     timestamp: point.hour,
     pm10: point.average_readings.pm,
@@ -35,7 +40,12 @@ export function transformHourlyData(hourlyData: HourlyDataPoint[]): ChartDataPoi
  * @returns Transformed data for Recharts
  */
 export function transformDailyData(dailyData: DailyDataPoint[]): ChartDataPoint[] {
-  return dailyData.map(point => ({
+  // Sort by timestamp first, then transform
+  const sorted = [...dailyData].sort((a, b) =>
+    new Date(a.date).getTime() - new Date(b.date).getTime()
+  )
+
+  return sorted.map(point => ({
     time: formatTimeLabel(point.date, 'week'),
     timestamp: point.date,
     pm10: point.average_readings.pm,

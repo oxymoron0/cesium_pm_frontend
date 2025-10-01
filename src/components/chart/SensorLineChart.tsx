@@ -30,8 +30,12 @@ const SensorLineChart = observer(function SensorLineChart({
   data
 }: SensorLineChartProps) {
   // Determine which lines to show based on store
-  const showPM10 = sensorSelectionStore.selectedPMType === null || sensorSelectionStore.isPM10Selected
-  const showPM25 = sensorSelectionStore.selectedPMType === null || sensorSelectionStore.isPM25Selected
+  const isPMMode = sensorSelectionStore.isPMSelected
+  const isVOCsMode = sensorSelectionStore.isVOCsSelected
+
+  const showPM10 = isPMMode && (sensorSelectionStore.selectedPMType === null || sensorSelectionStore.isPM10Selected)
+  const showPM25 = isPMMode && (sensorSelectionStore.selectedPMType === null || sensorSelectionStore.isPM25Selected)
+  const showVOCs = isVOCsMode
 
   // Empty state
   if (!data || data.length === 0) {
@@ -56,10 +60,10 @@ const SensorLineChart = observer(function SensorLineChart({
     <ResponsiveContainer width="100%" height="100%">
       <LineChart
         data={data}
-        margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+        margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
       >
         {/* Grid */}
-        <CartesianGrid strokeDasharray="3 3" stroke="#333" strokeOpacity={0.3} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#555" strokeOpacity={0.5} />
 
         {/* X Axis */}
         <XAxis
@@ -81,7 +85,7 @@ const SensorLineChart = observer(function SensorLineChart({
           }}
           stroke="#666"
           label={{
-            value: 'μg/m³',
+            value: isVOCsMode ? 'ppb' : 'μg/m³',
             angle: -90,
             position: 'insideLeft',
             style: {
@@ -94,7 +98,7 @@ const SensorLineChart = observer(function SensorLineChart({
 
         {/* Tooltip */}
         <Tooltip
-          content={<SensorTooltip showPM10={showPM10} showPM25={showPM25} />}
+          content={<SensorTooltip showPM10={showPM10} showPM25={showPM25} showVOCs={showVOCs} />}
           cursor={{ stroke: '#FFD040', strokeWidth: 1, strokeDasharray: '5 5' }}
         />
 
@@ -188,6 +192,19 @@ const SensorLineChart = observer(function SensorLineChart({
             strokeWidth={2}
             dot={false}
             activeDot={{ r: 4, fill: '#FFD040' }}
+            connectNulls
+          />
+        )}
+
+        {/* VOCs Line */}
+        {showVOCs && (
+          <Line
+            type="monotone"
+            dataKey="voc"
+            stroke="#C8C8C8"
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 4, fill: '#C8C8C8' }}
             connectNulls
           />
         )}
