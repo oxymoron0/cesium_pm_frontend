@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { observer } from 'mobx-react-lite'
 import CesiumViewer from '@/components/CesiumViewer'
 import MonitoringPanel from './components/MonitoringPanel'
+import AirQualityStatus from './components/AirQualityStatus'
 import StationHtmlRenderer from '@/components/service/StationHtmlRenderer'
 import StationSensorRenderer from '@/components/service/StationSensorRenderer'
 import BusHtmlRenderer from '@/components/service/BusHtmlRenderer'
@@ -10,6 +11,7 @@ import { routeStore } from '@/stores/RouteStore'
 import { stationStore } from '@/stores/StationStore'
 import { busStore } from '@/stores/BusStore'
 import { stationSensorStore } from '@/stores/StationSensorStore'
+import { stationDetailStore } from '@/stores/StationDetailStore'
 
 interface AppProps {
   onCloseMicroApp?: () => void;
@@ -139,6 +141,11 @@ const App = observer(function App(props: AppProps) {
 
       {/* 통합 모니터링 패널 */}
       <MonitoringPanel onCloseMicroApp={props.onCloseMicroApp} />
+
+      {/* AirQualityStatus 모달 */}
+      {stationDetailStore.isModalOpen && (
+        <AirQualityStatus onClose={() => stationDetailStore.closeModal()} />
+      )}
     </div>
   )
 });
