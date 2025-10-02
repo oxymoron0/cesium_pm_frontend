@@ -66,7 +66,20 @@ export function formatTimeLabel(isoString: string, period: 'today' | 'week' | 'm
 
   switch (period) {
     case 'today':
-      // Format: "09:00"
+      // 오늘 자정 (00:00) 계산
+      const now = new Date()
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
+
+      // 오늘 자정 이전 데이터는 날짜 포함 (예: "10/01 11:00")
+      if (date < todayStart) {
+        const month = (date.getMonth() + 1).toString().padStart(2, '0')
+        const day = date.getDate().toString().padStart(2, '0')
+        const hour = date.getHours().toString().padStart(2, '0')
+        const minute = date.getMinutes().toString().padStart(2, '0')
+        return `${month}/${day} ${hour}:${minute}`
+      }
+
+      // 오늘 데이터는 시간만 (예: "11:00")
       return date.toLocaleTimeString('ko-KR', {
         hour: '2-digit',
         minute: '2-digit',
