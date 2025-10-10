@@ -1,10 +1,19 @@
 import type { TooltipProps } from 'recharts'
 import { getAirQualityLevel } from '@/utils/airQuality'
 
+interface PayloadItem {
+  dataKey?: string
+  value?: number
+  payload?: unknown
+}
+
 interface SensorTooltipProps extends TooltipProps<number, string> {
   showPM10?: boolean
   showPM25?: boolean
   showVOCs?: boolean
+  active?: boolean
+  payload?: PayloadItem[]
+  label?: string
 }
 
 /**
@@ -19,9 +28,9 @@ export default function SensorTooltip({ active, payload, label, showPM10 = true,
   }
 
   // Find PM10, PM25, and VOC data from payload
-  const pm10Data = payload.find(p => p.dataKey === 'pm10')
-  const pm25Data = payload.find(p => p.dataKey === 'pm25')
-  const vocData = payload.find(p => p.dataKey === 'voc')
+  const pm10Data = payload.find((p: PayloadItem) => p.dataKey === 'pm10')
+  const pm25Data = payload.find((p: PayloadItem) => p.dataKey === 'pm25')
+  const vocData = payload.find((p: PayloadItem) => p.dataKey === 'voc')
 
   const pm10Value = pm10Data?.value as number | undefined
   const pm25Value = pm25Data?.value as number | undefined
