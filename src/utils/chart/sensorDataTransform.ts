@@ -65,7 +65,7 @@ export function formatTimeLabel(isoString: string, period: 'today' | 'week' | 'm
   const date = new Date(isoString)
 
   switch (period) {
-    case 'today':
+    case 'today': {
       // 오늘 자정 (00:00) 계산
       const now = new Date()
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
@@ -85,6 +85,7 @@ export function formatTimeLabel(isoString: string, period: 'today' | 'week' | 'm
         minute: '2-digit',
         hour12: false
       })
+    }
 
     case 'week':
     case 'month':
