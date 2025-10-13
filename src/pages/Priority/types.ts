@@ -32,4 +32,14 @@ export interface NearbyStation {
   measurements: StationMeasurement[];
 }
 
+// 근방 도로 데이터
+export interface NearbyRoad {
+  id: string;
+  roadName?: string; // 도로명 (optional)
+  roadAddress?: string; // 도로명 주소 (optional)
+  lotNumber?: string; // 지번 (optional)
+  lotAddress?: string; // 지번 주소 (optional)
+  startPoint: string; // 시작점 주소 (기존 호환용)
+}
+
 export type PriorityView = 'config' | 'result';
