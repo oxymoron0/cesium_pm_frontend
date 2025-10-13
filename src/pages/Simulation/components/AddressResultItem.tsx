@@ -58,8 +58,8 @@ export default function AddressResultItem({ result, isSelected, onSelect }: Addr
   );
 
   // 건물명은 지번 주소에 표시, 지번이 없으면 도로명에 표시
-  const showDetailOnRoad = !result.jibunAddress && result.detailAddress;
-  const showDetailOnJibun = result.jibunAddress && result.detailAddress;
+  const showDetailOnRoad = !result.jibunAddress && !!result.detailAddress;
+  const showDetailOnJibun = !!result.jibunAddress && !!result.detailAddress;
 
   return (
     <div
