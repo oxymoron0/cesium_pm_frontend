@@ -23,7 +23,7 @@ const NearbyRoadList = observer(function NearbyRoadList({ roads, onClose }: Near
     <div className="flex items-start gap-2">
       {/* 라벨 */}
       <div
-        className="font-pretendard flex-shrink-0"
+        className="flex-shrink-0 font-pretendard"
         style={{
           color: '#FFD040',
           fontSize: '14px',
@@ -65,7 +65,7 @@ const NearbyRoadList = observer(function NearbyRoadList({ roads, onClose }: Near
   return (
     <>
       <Title onClose={onClose}>
-        실수차 우선 투입 주변 도로 정보
+        살수차 우선 투입 주변 도로 정보
       </Title>
 
       <Spacer height={8} />
@@ -82,14 +82,14 @@ const NearbyRoadList = observer(function NearbyRoadList({ roads, onClose }: Near
           opacity: 0.8
         }}
       >
-        실수차 우선 투입 취약시설에 인접한 도로를 파악할 수 있습니다.
+        살수차 우선 투입 취약시설에 인접한 도로를 파악할 수 있습니다.
       </div>
 
       <Spacer height={16} />
 
       {/* 도로 리스트 */}
       <div
-        className="flex flex-col gap-2 self-stretch custom-scrollbar"
+        className="flex flex-col self-stretch gap-2 custom-scrollbar"
         style={{
           maxHeight: '400px',
           overflowY: 'auto'
@@ -99,7 +99,7 @@ const NearbyRoadList = observer(function NearbyRoadList({ roads, onClose }: Near
           return (
             <div
               key={road.id}
-              className="flex items-start gap-3 self-stretch px-4 py-3"
+              className="flex items-start self-stretch gap-3 px-4 py-3"
               style={{
                 backgroundColor: '#454545',
                 borderRadius: '4px'
@@ -108,14 +108,14 @@ const NearbyRoadList = observer(function NearbyRoadList({ roads, onClose }: Near
               {/* 체크박스 */}
               <input
                 type="checkbox"
-                className="custom-checkbox flex-shrink-0"
+                className="flex-shrink-0 custom-checkbox"
                 style={{ marginTop: '2px' }}
                 checked={priorityStore.isRoadSelected(road.id)}
                 onChange={() => toggleRoad(road.id)}
               />
 
               {/* 도로명/지번 정보 */}
-              <div className="flex flex-col gap-1 flex-1">
+              <div className="flex flex-col flex-1 gap-1">
                 {road.roadName && road.roadAddress && renderAddressLine('도로명', road.roadAddress)}
                 {road.lotNumber && road.lotAddress && renderAddressLine('지번', road.lotAddress)}
               </div>
