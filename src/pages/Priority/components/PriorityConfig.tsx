@@ -5,14 +5,16 @@ import Spacer from '@/components/basic/Spacer';
 import Button from '@/components/basic/Button';
 import InputField from '@/components/basic/InputField';
 import Select from '@/components/basic/Select';
-import Icon from '@/components/basic/Icon';
+import Info from '@/components/basic/Info';
 import Divider from '@/components/basic/Divider';
+import type { PriorityConfig as PriorityConfigData } from '../types';
 
 interface PriorityConfigProps {
   onClose?: () => void;
+  onSearch?: (config: PriorityConfigData) => void;
 }
 
-export default function PriorityConfig({ onClose }: PriorityConfigProps) {
+export default function PriorityConfig({ onClose, onSearch }: PriorityConfigProps) {
   // 현재 날짜와 시간
   const now = new Date();
   const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
@@ -49,23 +51,6 @@ export default function PriorityConfig({ onClose }: PriorityConfigProps) {
       >
         우선순위
       </Title>
-
-      <Spacer height={16} />
-
-      {/* 캡션 텍스트 */}
-      <div
-        className="self-stretch"
-        style={{
-          color: '#A6A6A6',
-          fontFamily: 'Pretendard',
-          fontSize: '14px',
-          fontWeight: '400',
-          lineHeight: 'normal',
-          opacity: 0.8
-        }}
-      >
-        * 현재 시간 기준, 부산진구 전체의 취약시설 및 살수차 투입 우선순위를 조회할 수 있습니다. 원하는 조건으로 변경하려면 [맞춤설정 조회] 버튼을 눌러주세요.
-      </div>
 
       <Spacer height={16} />
       <SubTitle>기본 설정</SubTitle>
@@ -105,11 +90,14 @@ export default function PriorityConfig({ onClose }: PriorityConfigProps) {
           >
             관찰일시
           </div>
-          <Icon name="info" className="w-[14px] h-[14px]" />
+          <Info>
+            시뮬레이션을 실행할 시점을 선택합니다.
+            날짜와 시간대를 지정하여 해당 시점의 대기질 상태를 시뮬레이션할 수 있습니다.
+          </Info>
         </div>
 
         {/* 날짜와 시간 입력 */}
-        <div className="flex gap-4 w-full">
+        <div className="flex w-full gap-4">
           <InputField
             label="날짜"
             value={dateStr}
@@ -132,7 +120,7 @@ export default function PriorityConfig({ onClose }: PriorityConfigProps) {
       <Spacer height={16} />
 
       {/* 행정구역 섹션 */}
-      <div className="flex flex-col gap-4 self-stretch">
+      <div className="flex flex-col self-stretch gap-4">
         {/* 행정구역 제목 */}
         <div className="flex items-center gap-[5px] self-stretch">
           <div
@@ -146,11 +134,16 @@ export default function PriorityConfig({ onClose }: PriorityConfigProps) {
           >
             행정구역
           </div>
-          <Icon name="info" className="w-[14px] h-[14px]" />
+          <Info>
+            <SubTitle>행정구역</SubTitle>
+            <Divider height='h-[2px]' />
+            우선순위를 조회할 행정구역을 선택합니다.
+            시/도, 군/구, 읍/면/동 단위로 지역을 지정할 수 있습니다.
+          </Info>
         </div>
 
         {/* 시/도, 군/구 */}
-        <div className="flex gap-4 w-full">
+        <div className="flex w-full gap-4">
           <Select
             label="시/도"
             value={city}
@@ -168,7 +161,7 @@ export default function PriorityConfig({ onClose }: PriorityConfigProps) {
         </div>
 
         {/* 읍/면/동 */}
-        <div className="flex gap-4 w-full">
+        <div className="flex w-full gap-4">
           <Select
             label="읍/면/동"
             value={dong}
@@ -195,7 +188,17 @@ export default function PriorityConfig({ onClose }: PriorityConfigProps) {
         <Button
           variant="solid"
           showIcon={false}
-          onClick={() => console.log('우선순위 조회')}
+          onClick={() => {
+            if (onSearch) {
+              onSearch({
+                date: dateStr,
+                time: timeStr,
+                city,
+                district,
+                dong
+              });
+            }
+          }}
         >
           우선순위 조회
         </Button>
