@@ -27,6 +27,59 @@ html, body {
     line-height: normal;
   }
 
+  /* Custom Scrollbar Styles */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(173, 173, 173, 0.3);
+    border-radius: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #FFD040;
+    border-radius: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #FFC020;
+  }
+
+  /* Custom Checkbox Styles */
+  .custom-checkbox {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 1px solid #ADADAD;
+    border-radius: 4px;
+    background-color: transparent;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+  }
+
+  .custom-checkbox:checked {
+    background-color: #FFD040;
+    border-color: #FFD040;
+  }
+
+  .custom-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 1px;
+    width: 5px;
+    height: 9px;
+    border: solid #000;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  .custom-checkbox:hover {
+    border-color: #FFD040;
+  }
+
 }
 
 @source "./src/**/*.{js,ts,jsx,tsx}";
