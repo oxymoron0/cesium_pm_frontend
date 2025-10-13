@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import CesiumViewer from '@/components/CesiumViewer'
 import Panel from '@/components/basic/Panel'
 import PriorityConfig from './components/PriorityConfig'
+import PriorityResult from './components/PriorityResult'
+import type { PriorityView, PriorityConfig as PriorityConfigData } from './types'
 
 interface AppProps {
   onCloseMicroApp?: () => void;
@@ -10,6 +12,8 @@ interface AppProps {
 
 function App(props: AppProps) {
   const [cesiumStatus, setCesiumStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [currentView, setCurrentView] = useState<PriorityView>('config')
+  const [configData, setConfigData] = useState<PriorityConfigData | null>(null)
 
   useEffect(() => {
     // Cesium 초기화 및 상태 감지
@@ -60,7 +64,23 @@ function App(props: AppProps) {
       {/* Priority Panel - Left Top */}
       {cesiumStatus === 'ready' && (
         <Panel position="left" width="540px" maxHeight="calc(100vh - 160px)">
-          <PriorityConfig onClose={props.onCloseMicroApp} />
+          {currentView === 'config' ? (
+            <PriorityConfig
+              onClose={props.onCloseMicroApp}
+              onSearch={(config) => {
+                setConfigData(config)
+                setCurrentView('result')
+              }}
+            />
+          ) : (
+            configData && (
+              <PriorityResult
+                config={configData}
+                onBack={() => setCurrentView('config')}
+                onClose={props.onCloseMicroApp}
+              />
+            )
+          )}
         </Panel>
       )}
 
