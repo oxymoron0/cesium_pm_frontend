@@ -47,8 +47,8 @@ export interface GeoJSONPolygon {
  */
 export interface RouteGeom {
   route_name: string;
-  inbound: GeoJSONLineString;    // ✅ Correct: LineString not Polygon
-  outbound: GeoJSONLineString;   // ✅ Correct: LineString not Polygon
+  inbound: GeoJSONLineString;    // Correct: LineString not Polygon
+  outbound: GeoJSONLineString;   // Correct: LineString not Polygon
 }
 
 

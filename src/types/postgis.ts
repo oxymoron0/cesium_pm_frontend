@@ -23,8 +23,8 @@ export interface GeoJSONPolygon {
 // Route Geometry API 응답 (실제 구조)
 export interface RouteGeometry {
   route_name: string;
-  inbound: GeoJSONLineString;   // ✅ 올바른 타입
-  outbound: GeoJSONLineString;  // ✅ 올바른 타입
+  inbound: GeoJSONLineString;   // 올바른 타입
+  outbound: GeoJSONLineString;  // 올바른 타입
 }
 
 // Cesium 변환용 2D 좌표 타입
