@@ -1,6 +1,7 @@
 import { createRoot, type Root } from 'react-dom/client'
 import App from './App'
 import '@/index.css'
+import { cleanupAll } from './cleanup'
 
 let root: Root | null = null;
 
@@ -32,6 +33,9 @@ export async function mount(props: MountProps) {
 
 export async function unmount() {
   console.log('[qiankun] Simulation unmount');
+
+  cleanupAll();
+
   if (root) {
     root.unmount();
     root = null;
