@@ -1,23 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { observer } from 'mobx-react-lite';
 import Title from '@/components/basic/Title';
 import SubTitle from '@/components/basic/SubTitle';
 import Spacer from '@/components/basic/Spacer';
 import TabNavigation from '@/components/basic/TabNavigation';
 import Icon from '@/components/basic/Icon';
 import Divider from '@/components/basic/Divider';
+import AddressResultList from './AddressResultList';
+import { simulationStore } from '@/stores/SimulationStore';
 
 interface SimulationConfigProps {
   onClose?: () => void;
 }
 
-export default function SimulationConfig({ onClose }: SimulationConfigProps) {
+const SimulationConfig = observer(function SimulationConfig({ onClose }: SimulationConfigProps) {
   const [activeTab, setActiveTab] = useState(0);
-  const [address, setAddress] = useState('부산광역시 부산진구');
-  const [detailedAddress, setDetailedAddress] = useState('');
+  const [searchInput, setSearchInput] = useState('');
 
-  const addressOptions = [
-    { value: '부산광역시 부산진구', label: '부산광역시 부산진구' }
-  ];
+  // 검색어 입력 시 디바운싱 적용하여 검색 수행
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      simulationStore.searchAddress(searchInput);
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchInput]);
+
+  const handleSearchClick = () => {
+    simulationStore.searchAddress(searchInput);
+  };
 
   return (
     <>
@@ -130,28 +141,18 @@ export default function SimulationConfig({ onClose }: SimulationConfigProps) {
               주소
             </div>
 
-            {/* Dropdown */}
-            <div className="relative flex-1 h-10">
-              <select
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className="w-full h-10 px-3.5 py-2.5 bg-black rounded-md border border-[#424242] text-white outline-none cursor-pointer appearance-none"
+            {/* Fixed Address */}
+            <div className="flex-1 h-10 flex items-center px-3.5 py-2.5 bg-black rounded-md border border-[#424242]">
+              <div
                 style={{
                   fontFamily: 'Pretendard',
                   fontSize: '16px',
                   fontWeight: '400',
-                  lineHeight: 'normal'
+                  lineHeight: 'normal',
+                  color: '#FFF'
                 }}
               >
-                {addressOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              {/* Dropdown Arrow */}
-              <div className="absolute text-xs text-white transform -translate-y-1/2 pointer-events-none right-3 top-1/2">
-                ▼
+                부산광역시 부산진구
               </div>
             </div>
           </div>
@@ -174,8 +175,8 @@ export default function SimulationConfig({ onClose }: SimulationConfigProps) {
           <div className="relative flex-1 h-10">
             <input
               type="text"
-              value={detailedAddress}
-              onChange={(e) => setDetailedAddress(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               placeholder="지번, 도로명 입력"
               className="w-full h-10 px-3.5 py-2.5 bg-black rounded-md border border-[#ADADAD] text-white outline-none"
               style={{
@@ -183,6 +184,11 @@ export default function SimulationConfig({ onClose }: SimulationConfigProps) {
                 fontSize: '16px',
                 fontWeight: '400',
                 lineHeight: 'normal'
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearchClick();
+                }
               }}
             />
           </div>
@@ -195,7 +201,7 @@ export default function SimulationConfig({ onClose }: SimulationConfigProps) {
               height: '40px',
               background: '#FFD040'
             }}
-            onClick={() => console.log('주소 검색:', detailedAddress)}
+            onClick={handleSearchClick}
           >
             <div
               style={{
@@ -213,6 +219,14 @@ export default function SimulationConfig({ onClose }: SimulationConfigProps) {
           </div>
         </div>
       </div>
+
+      {/* Address Search Results */}
+      {simulationStore.hasSearchResults && (
+        <>
+          <Spacer height={16} />
+          <AddressResultList />
+        </>
+      )}
 
       <Spacer height={36} />
 
@@ -243,4 +257,6 @@ export default function SimulationConfig({ onClose }: SimulationConfigProps) {
       </div>
     </>
   );
-}
+});
+
+export default SimulationConfig;
