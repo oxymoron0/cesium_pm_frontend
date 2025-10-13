@@ -9,7 +9,7 @@ interface AppProps {
 }
 
 function App(props: AppProps) {
-  const [cesiumStatus, setCesiumStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [cesiumStatus, setCesiumStatus] = useState<'loading' | 'ready'>('loading')
 
   useEffect(() => {
     // Cesium 초기화 및 상태 감지
@@ -18,32 +18,15 @@ function App(props: AppProps) {
       const parentViewer = window.cviewer
 
       if (isQiankun && parentViewer) {
-        console.log('[Simulation] 부모 Cesium Viewer 감지됨')
         setCesiumStatus('ready')
       } else if (!isQiankun) {
-        console.log('[Simulation] 독립 실행 모드 - Cesium Viewer 초기화 대기')
-        // 독립 실행 시 CesiumViewer 컴포넌트가 초기화될 때까지 대기
+        // 독립 모드에서는 CesiumViewer 컴포넌트가 window.cviewer를 설정할 때까지 대기
         const waitForViewer = setInterval(() => {
           if (window.cviewer) {
-            console.log('[Simulation] 독립 Cesium Viewer 초기화 완료')
             setCesiumStatus('ready')
             clearInterval(waitForViewer)
           }
         }, 100)
-
-        // 10초 후 타임아웃
-        setTimeout(() => {
-          if (cesiumStatus === 'loading') {
-            console.error('[Simulation] Cesium Viewer 초기화 타임아웃')
-            setCesiumStatus('error')
-            clearInterval(waitForViewer)
-          }
-        }, 10000)
-
-        return () => clearInterval(waitForViewer)
-      } else {
-        console.error('[Simulation] Qiankun 환경이지만 부모 Viewer를 찾을 수 없음')
-        setCesiumStatus('error')
       }
     }
 
@@ -68,13 +51,6 @@ function App(props: AppProps) {
       {cesiumStatus === 'loading' && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
           <div className="text-lg text-white">Cesium 초기화 중...</div>
-        </div>
-      )}
-
-      {/* Error State */}
-      {cesiumStatus === 'error' && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-          <div className="text-lg text-red-500">Cesium 초기화 실패</div>
         </div>
       )}
     </div>
