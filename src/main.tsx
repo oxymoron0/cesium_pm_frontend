@@ -57,7 +57,7 @@ function DevRouter() {
     return (
       <div>
         <div style={{ padding: '20px', backgroundColor: '#f0f0f0', borderBottom: '1px solid #ccc' }}>
-          <h2>🛠️ 개발 모드: {currentPageName}</h2>
+          <h2>개발 모드: {currentPageName}</h2>
           <p>독립 실행 환경에서 자체 Cesium Viewer를 사용합니다.</p>
           <p style={{ fontSize: '12px', color: '#666' }}>
             브라우저 개발자 도구를 열어 Cesium 로딩 상태를 확인해보세요.

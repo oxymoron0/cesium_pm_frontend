@@ -373,7 +373,7 @@ const App = observer(function App(props: AppProps) {
                 <span className="text-blue-300">{busData.length} buses loaded</span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-gray-300">🚌 System:</span>
+                <span className="text-gray-300">System:</span>
                 <span className={busStore.isSystemReady ? 'text-green-400' : 'text-yellow-400'}>
                   {busStore.isSystemReady ? 'Ready' : busStore.isLoading ? 'Loading...' : 'Standby'}
                 </span>
@@ -383,13 +383,13 @@ const App = observer(function App(props: AppProps) {
                 <span className="text-blue-300">{busStore.activeBuses}/{busStore.totalBuses}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-gray-300">📹 Tracking:</span>
+                <span className="text-gray-300">Tracking:</span>
                 <span className="text-green-300">
                   {busStore.trackedBusId || 'None'}
                 </span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-gray-300">🔄 Real-time:</span>
+                <span className="text-gray-300">Real-time:</span>
                 <span className={busStore.isPolling ? (busStore.pollFailureCount > 0 ? 'text-yellow-400' : 'text-green-400') : 'text-gray-400'}>
                   {busStore.isPolling ?
                     (busStore.pollFailureCount > 0 ? `Polling (${busStore.pollFailureCount} fails)` : 'Polling') :
@@ -398,7 +398,7 @@ const App = observer(function App(props: AppProps) {
                 </span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-gray-300">📅 Last Poll:</span>
+                <span className="text-gray-300">Last Poll:</span>
                 <span className="text-blue-300">
                   {busStore.lastSuccessfulPoll ?
                     new Date(busStore.lastSuccessfulPoll).toLocaleTimeString() :
@@ -488,7 +488,7 @@ const App = observer(function App(props: AppProps) {
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-300">Polling Status:</span>
                   <span className={busStore.isPolling ? 'text-green-400' : 'text-red-400'}>
-                    {busStore.isPolling ? '🟢 Active' : '🔴 Stopped'}
+                    {busStore.isPolling ? 'Active' : 'Stopped'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
@@ -507,14 +507,14 @@ const App = observer(function App(props: AppProps) {
                   disabled={cesiumStatus !== 'ready' || busStore.isPolling || busStore.totalBuses === 0}
                   className="px-3 py-2 text-xs text-white bg-green-600 rounded hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
                 >
-                  🔄 Start Polling
+                  Start Polling
                 </button>
                 <button
                   onClick={() => busStore.stopRealTimePolling()}
                   disabled={!busStore.isPolling}
                   className="px-3 py-2 text-xs text-white bg-red-600 rounded hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
                 >
-                  ⏹ Stop Polling
+                  Stop Polling
                 </button>
               </div>
 
@@ -601,7 +601,7 @@ const App = observer(function App(props: AppProps) {
               </div>
 
               <div className="pt-2 border-t border-gray-600">
-                <div className="pb-1 text-xs font-medium text-gray-400">🎬 Individual Bus Tests</div>
+                <div className="pb-1 text-xs font-medium text-gray-400">Individual Bus Tests</div>
                 <div className="space-y-1">
                   <button
                     onClick={() => {
@@ -622,7 +622,7 @@ const App = observer(function App(props: AppProps) {
                   </button>
                 </div>
                 <div className="pt-2 border-t border-gray-500">
-                  <div className="pb-1 text-xs font-medium text-gray-400">📹 Camera Tracking</div>
+                  <div className="pb-1 text-xs font-medium text-gray-400">Camera Tracking</div>
                   <div className="space-y-1">
                     <button
                       onClick={() => {
