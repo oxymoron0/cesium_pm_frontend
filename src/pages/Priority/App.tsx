@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
+import { observer } from 'mobx-react-lite'
 import CesiumViewer from '@/components/CesiumViewer'
 import Panel from '@/components/basic/Panel'
 import PriorityConfig from './components/PriorityConfig'
 import PriorityResult from './components/PriorityResult'
+import NearbyRoadList from './components/NearbyRoadList'
+import { priorityStore } from '@/stores/PriorityStore'
 import type { PriorityView, PriorityConfig as PriorityConfigData } from './types'
 
 interface AppProps {
@@ -10,7 +13,7 @@ interface AppProps {
   dispatch?: (action: unknown) => void;
 }
 
-function App(props: AppProps) {
+const App = observer(function App(props: AppProps) {
   const [cesiumStatus, setCesiumStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [currentView, setCurrentView] = useState<PriorityView>('config')
   const [configData, setConfigData] = useState<PriorityConfigData | null>(null)
@@ -84,6 +87,16 @@ function App(props: AppProps) {
         </Panel>
       )}
 
+      {/* Nearby Road Panel - Right Top */}
+      {cesiumStatus === 'ready' && currentView === 'result' && priorityStore.selectedRoads.length > 0 && (
+        <Panel position="right" width="540px" maxHeight="calc(100vh - 160px)">
+          <NearbyRoadList
+            roads={priorityStore.selectedRoads}
+            onClose={() => priorityStore.clearFacilitySelection()}
+          />
+        </Panel>
+      )}
+
       {/* Loading State */}
       {cesiumStatus === 'loading' && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
@@ -99,6 +112,6 @@ function App(props: AppProps) {
       )}
     </div>
   )
-}
+})
 
 export default App
