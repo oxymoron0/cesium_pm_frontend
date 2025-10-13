@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
+import { observer } from 'mobx-react-lite'
 import CesiumViewer from '@/components/CesiumViewer'
 import Panel from '@/components/basic/Panel'
 import SimulationConfig from './components/SimulationConfig'
+import DirectLocationGuide from './components/DirectLocationGuide'
+import { simulationStore } from '@/stores/SimulationStore'
 
 interface AppProps {
   onCloseMicroApp?: () => void;
   dispatch?: (action: unknown) => void;
 }
 
-function App(props: AppProps) {
+const App = observer(function App(props: AppProps) {
   const [cesiumStatus, setCesiumStatus] = useState<'loading' | 'ready'>('loading')
 
   useEffect(() => {
@@ -40,6 +43,11 @@ function App(props: AppProps) {
       {/* Cesium Viewer */}
       {!isQiankun && <CesiumViewer />}
 
+      {/* Direct Location Guide - Top Center */}
+      {cesiumStatus === 'ready' && simulationStore.isDirectLocationMode && (
+        <DirectLocationGuide />
+      )}
+
       {/* Simulation Panel - Left Top */}
       {cesiumStatus === 'ready' && (
         <Panel position="left" width="540px" maxHeight="calc(100vh - 160px)">
@@ -55,6 +63,6 @@ function App(props: AppProps) {
       )}
     </div>
   )
-}
+});
 
 export default App
