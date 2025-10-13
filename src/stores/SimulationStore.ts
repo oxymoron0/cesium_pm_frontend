@@ -271,6 +271,10 @@ class SimulationStore {
   // 시뮬레이션 설정
   config: SimulationConfig | null = null;
 
+  // 직접 위치 지정 모드
+  isDirectLocationMode: boolean = false;
+  selectedLocation: { lat: number; lng: number } | null = null;
+
   constructor() {
     makeAutoObservable(this);
   }
@@ -355,6 +359,28 @@ class SimulationStore {
 
   clearConfig() {
     this.config = null;
+  }
+
+  // ============================================================================
+  // 직접 위치 지정
+  // ============================================================================
+
+  enableDirectLocationMode() {
+    this.isDirectLocationMode = true;
+    this.clearSearchResults();
+  }
+
+  disableDirectLocationMode() {
+    this.isDirectLocationMode = false;
+    this.selectedLocation = null;
+  }
+
+  setSelectedLocation(lat: number, lng: number) {
+    this.selectedLocation = { lat, lng };
+  }
+
+  clearSelectedLocation() {
+    this.selectedLocation = null;
   }
 
   // ============================================================================
