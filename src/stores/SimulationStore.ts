@@ -373,6 +373,8 @@ class SimulationStore {
   disableDirectLocationMode() {
     this.isDirectLocationMode = false;
     this.selectedLocation = null;
+    this.clearSearchResults();
+    this.clearSelection();
   }
 
   setSelectedLocation(lat: number, lng: number) {

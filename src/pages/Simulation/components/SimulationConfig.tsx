@@ -133,6 +133,14 @@ const SimulationConfig = observer(function SimulationConfig({ onClose }: Simulat
           </div>
 
           <Spacer height={16} />
+
+          {/* Direct Location Results (shared with address search) */}
+          {simulationStore.hasSearchResults && (
+            <>
+              <AddressResultList />
+              <Spacer height={16} />
+            </>
+          )}
         </>
       ) : (
         <>
