@@ -556,6 +556,31 @@ class PriorityStore {
   }
 
   // ============================================================================
+  // Reset and Cleanup
+  // ============================================================================
+
+  /**
+   * 결과 화면 선택 상태 초기화
+   * 뒤로 가기 시 호출하여 선택 상태만 정리
+   */
+  resetResultState() {
+    this.closeDropdown();
+    this.clearFacilitySelection();
+    this.clearRoadSelection();
+  }
+
+  /**
+   * 전체 상태 초기화
+   * 페이지 종료 시 호출
+   */
+  resetAll() {
+    this.config = null;
+    this.isDropdownOpen = false;
+    this.selectedFacilityIds.clear();
+    this.selectedRoadIds.clear();
+  }
+
+  // ============================================================================
   // Computed Properties
   // ============================================================================
 

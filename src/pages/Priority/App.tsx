@@ -79,7 +79,10 @@ const App = observer(function App(props: AppProps) {
             configData && (
               <PriorityResult
                 config={configData}
-                onBack={() => setCurrentView('config')}
+                onBack={() => {
+                  priorityStore.resetResultState()
+                  setCurrentView('config')
+                }}
                 onClose={props.onCloseMicroApp}
               />
             )
