@@ -1,5 +1,5 @@
 import { makeAutoObservable } from 'mobx';
-import type { PriorityConfig, NearbyStation, VulnerableFacility } from '../pages/Priority/types';
+import type { PriorityConfig, NearbyStation, NearbyRoad, VulnerableFacility } from '../pages/Priority/types';
 
 // ============================================================================
 // API Response Types (향후 백엔드 API 연동용)
@@ -45,6 +45,16 @@ export interface NearbyStationsResponse {
   facilityId: string;
   facilityName: string;
   stations: NearbyStation[];
+}
+
+/**
+ * 근방 도로 조회 API 응답
+ * GET /api/priority/facilities/{facilityId}/nearby-roads
+ */
+export interface NearbyRoadsResponse {
+  facilityId: string;
+  facilityName: string;
+  roads: NearbyRoad[];
 }
 
 // ============================================================================
@@ -145,6 +155,135 @@ const MOCK_NEARBY_STATIONS: Record<string, NearbyStation[]> = {
   ]
 };
 
+const MOCK_NEARBY_ROADS: Record<string, NearbyRoad[]> = {
+  '1': [ // 백병원
+    {
+      id: 'road_1',
+      roadName: '도로명',
+      roadAddress: '부산광역시 부산진구 복지로 75번길 10',
+      lotNumber: '지번',
+      lotAddress: '부산광역시 부산진구 전포동 10-28',
+      startPoint: '부산광역시 부산진구 정보 10-번지 28'
+    },
+    {
+      id: 'road_2',
+      lotNumber: '지번',
+      lotAddress: '부산광역시 부산진구 초읍동 5-11',
+      startPoint: '부산광역시 부산진구 초읍동 5-번'
+    },
+    {
+      id: 'road_3',
+      roadName: '도로명',
+      roadAddress: '부산광역시 부산진구 복지로 402-11',
+      startPoint: '부산광역시 부산진구 초읍동 402-11'
+    },
+    {
+      id: 'road_4',
+      lotNumber: '지번',
+      lotAddress: '부산광역시 부산진구 초읍동 506-6',
+      startPoint: '부산광역시 부산진구 초읍동 506-6'
+    },
+    {
+      id: 'road_5',
+      roadName: '도로명',
+      roadAddress: '부산광역시 부산진구 전포대로 833',
+      lotNumber: '지번',
+      lotAddress: '부산광역시 부산진구 개금동 833-179',
+      startPoint: '부산광역시 부산진구 개금동 833-179'
+    }
+  ],
+  '2': [ // 당감초등학교
+    {
+      id: 'road_6',
+      roadName: '도로명',
+      roadAddress: '부산광역시 부산진구 당감로 100-1',
+      startPoint: '부산광역시 부산진구 당감동 100-1'
+    },
+    {
+      id: 'road_7',
+      roadName: '도로명',
+      roadAddress: '부산광역시 부산진구 당감중앙로 55',
+      lotNumber: '지번',
+      lotAddress: '부산광역시 부산진구 당감동 55-3',
+      startPoint: '부산광역시 부산진구 당감동 55-3'
+    },
+    {
+      id: 'road_8',
+      lotNumber: '지번',
+      lotAddress: '부산광역시 부산진구 당감동 22-5',
+      startPoint: '부산광역시 부산진구 당감동 22-5'
+    }
+  ],
+  '3': [ // 초읍초등학교
+    {
+      id: 'road_9',
+      roadName: '도로명',
+      roadAddress: '부산광역시 부산진구 성지로104번길 26',
+      lotNumber: '지번',
+      lotAddress: '부산광역시 부산진구 초읍동 88-15',
+      startPoint: '부산광역시 부산진구 초읍동 104번길 26'
+    },
+    {
+      id: 'road_10',
+      roadName: '도로명',
+      roadAddress: '부산광역시 부산진구 초읍중앙로 88-7',
+      startPoint: '부산광역시 부산진구 초읍동 88-7'
+    },
+    {
+      id: 'road_11',
+      lotNumber: '지번',
+      lotAddress: '부산광역시 부산진구 초읍동 256-8',
+      startPoint: '부산광역시 부산진구 초읍동 256-8'
+    }
+  ],
+  '4': [ // 부전역
+    {
+      id: 'road_12',
+      roadName: '도로명',
+      roadAddress: '부산광역시 부산진구 부전로 181',
+      lotNumber: '지번',
+      lotAddress: '부산광역시 부산진구 부전동 88-3',
+      startPoint: '부산광역시 부산진구 부전동 181'
+    },
+    {
+      id: 'road_13',
+      roadName: '도로명',
+      roadAddress: '부산광역시 부산진구 중앙대로 255',
+      lotNumber: '지번',
+      lotAddress: '부산광역시 부산진구 부전동 255-6',
+      startPoint: '부산광역시 부산진구 부전동 255-6'
+    },
+    {
+      id: 'road_14',
+      lotNumber: '지번',
+      lotAddress: '부산광역시 부산진구 부전동 88-12',
+      startPoint: '부산광역시 부산진구 부전동 88-12'
+    }
+  ],
+  '5': [ // 범내골역
+    {
+      id: 'road_15',
+      roadName: '도로명',
+      roadAddress: '부산광역시 부산진구 중앙대로 612',
+      startPoint: '부산광역시 부산진구 범천동 612'
+    },
+    {
+      id: 'road_16',
+      roadName: '도로명',
+      roadAddress: '부산광역시 부산진구 범내골로 45',
+      lotNumber: '지번',
+      lotAddress: '부산광역시 부산진구 범천동 45-2',
+      startPoint: '부산광역시 부산진구 범천동 45-2'
+    },
+    {
+      id: 'road_17',
+      lotNumber: '지번',
+      lotAddress: '부산광역시 부산진구 범천동 123-7',
+      startPoint: '부산광역시 부산진구 범천동 123-7'
+    }
+  ]
+};
+
 // ============================================================================
 // PriorityStore Class
 // ============================================================================
@@ -163,13 +302,18 @@ class PriorityStore {
   // 취약시설 선택 상태 (주변 정류장 표시용)
   selectedFacilityIds: Set<string> = new Set();
 
+  // 도로 선택 상태
+  selectedRoadIds: Set<string> = new Set();
+
   // 데이터 캐시
   private adminRegionsCache: Map<string, AdminRegion> = new Map();
   private nearbyStationsCache: Map<string, NearbyStation[]> = new Map();
+  private nearbyRoadsCache: Map<string, NearbyRoad[]> = new Map();
 
   // 로딩 상태
   isLoadingDongs: boolean = false;
   isLoadingStations: boolean = false;
+  isLoadingRoads: boolean = false;
 
   constructor() {
     makeAutoObservable(this);
@@ -191,6 +335,11 @@ class PriorityStore {
     // Mock 주변 정류장 데이터 초기화
     Object.entries(MOCK_NEARBY_STATIONS).forEach(([facilityId, stations]) => {
       this.nearbyStationsCache.set(facilityId, stations);
+    });
+
+    // Mock 근방 도로 데이터 초기화
+    Object.entries(MOCK_NEARBY_ROADS).forEach(([facilityId, roads]) => {
+      this.nearbyRoadsCache.set(facilityId, roads);
     });
   }
 
@@ -293,6 +442,26 @@ class PriorityStore {
   }
 
   // ============================================================================
+  // 도로 선택 관리
+  // ============================================================================
+
+  toggleRoadSelection(roadId: string) {
+    if (this.selectedRoadIds.has(roadId)) {
+      this.selectedRoadIds.delete(roadId);
+    } else {
+      this.selectedRoadIds.add(roadId);
+    }
+  }
+
+  clearRoadSelection() {
+    this.selectedRoadIds.clear();
+  }
+
+  isRoadSelected(roadId: string): boolean {
+    return this.selectedRoadIds.has(roadId);
+  }
+
+  // ============================================================================
   // 주변 정류장 데이터 조회
   // ============================================================================
 
@@ -334,12 +503,55 @@ class PriorityStore {
     }
   }
 
+  // ============================================================================
+  // 근방 도로 데이터 조회
+  // ============================================================================
+
+  getNearbyRoads(facilityId: string): NearbyRoad[] {
+    return this.nearbyRoadsCache.get(facilityId) || [];
+  }
+
+  get selectedRoads(): NearbyRoad[] {
+    const roads: NearbyRoad[] = [];
+    this.selectedFacilityIds.forEach(facilityId => {
+      const nearby = this.getNearbyRoads(facilityId);
+      roads.push(...nearby);
+    });
+    return roads;
+  }
+
+  /**
+   * 근방 도로 로드 (향후 API 연동)
+   * @param facilityId - 취약시설 ID
+   */
+  async loadNearbyRoads(facilityId: string): Promise<void> {
+    // 캐시에 이미 있으면 스킵
+    if (this.nearbyRoadsCache.has(facilityId)) {
+      return;
+    }
+
+    this.isLoadingRoads = true;
+
+    try {
+      // TODO: 실제 API 호출
+      // const response: NearbyRoadsResponse = await fetch(`/api/priority/facilities/${facilityId}/nearby-roads`).then(r => r.json());
+      // this.nearbyRoadsCache.set(facilityId, response.roads);
+
+      console.log(`[PriorityStore] Load nearby roads for facility ${facilityId}`);
+    } catch (error) {
+      console.error('[PriorityStore] Failed to load nearby roads:', error);
+    } finally {
+      this.isLoadingRoads = false;
+    }
+  }
+
   /**
    * 캐시 초기화
    */
   clearCache() {
     this.adminRegionsCache.clear();
     this.nearbyStationsCache.clear();
+    this.nearbyRoadsCache.clear();
     this.initializeMockData();
   }
 
