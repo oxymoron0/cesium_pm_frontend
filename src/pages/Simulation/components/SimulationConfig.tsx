@@ -99,146 +99,187 @@ const SimulationConfig = observer(function SimulationConfig({ onClose }: Simulat
 
       <Spacer height={16} />
 
-      <SubTitle info="주소를 조회하거나 지도를 클릭하여 시뮬레이션할 위치를 지정할 수 있습니다.">주소 조회</SubTitle>
-      <Divider color="bg-[#C3C3C3]" />
+      {/* 조건부 렌더링: 주소 조회 vs 직접 위치 지정 */}
+      {simulationStore.isDirectLocationMode ? (
+        <>
+          {/* 직접 위치 지정 섹션 */}
+          <div className="flex items-center gap-2">
+            <Icon
+              name="chevron-left"
+              className="w-5 h-5 cursor-pointer"
+              onClick={() => simulationStore.disableDirectLocationMode()}
+            />
+            <SubTitle info="지도를 클릭하여 시뮬레이션할 위치를 직접 지정할 수 있습니다.">
+              직접 위치 지정
+            </SubTitle>
+          </div>
+          <Divider color="bg-[#C3C3C3]" />
 
-      <Spacer height={16} />
+          <Spacer height={16} />
 
-      {/* Caption */}
-      <div
-        className="self-stretch"
-        style={{
-          color: '#A6A6A6',
-          fontFamily: 'Pretendard',
-          fontSize: '14px',
-          fontWeight: '400',
-          lineHeight: 'normal',
-          opacity: 0.8
-        }}
-      >
-        * 먼저, 주소를 조회하거나 지도를 클릭하여 시뮬레이션할 위치를 지정해주세요.
-      </div>
+          {/* Caption */}
+          <div
+            className="self-stretch"
+            style={{
+              color: '#A6A6A6',
+              fontFamily: 'Pretendard',
+              fontSize: '14px',
+              fontWeight: '400',
+              lineHeight: 'normal',
+              opacity: 0.8
+            }}
+          >
+            * 지도를 클릭하여 시뮬레이션할 위치를 지정해주세요.
+          </div>
 
-      <Spacer height={16} />
+          <Spacer height={16} />
+        </>
+      ) : (
+        <>
+          {/* 주소 조회 섹션 */}
+          <SubTitle info="주소를 조회하거나 지도를 클릭하여 시뮬레이션할 위치를 지정할 수 있습니다.">주소 조회</SubTitle>
+          <Divider color="bg-[#C3C3C3]" />
 
-      {/* Address Search Section */}
-      <div className="flex flex-col self-stretch gap-3">
-        {/* Row 1: Address Dropdown + Search Button */}
-        <div className="flex items-center self-stretch h-10 gap-3">
-          {/* Address Dropdown Container */}
-          <div className="flex items-center flex-1 h-10 gap-3">
-            <div
-              style={{
-                fontFamily: 'Pretendard',
-                fontSize: '16px',
-                fontWeight: '800',
-                lineHeight: 'normal',
-                color: '#FFF',
-                width: '43px',
-                flexShrink: 0
-              }}
-            >
-              주소
-            </div>
+          <Spacer height={16} />
 
-            {/* Fixed Address */}
-            <div className="flex-1 h-10 flex items-center px-3.5 py-2.5 bg-black rounded-md border border-[#424242]">
+          {/* Caption */}
+          <div
+            className="self-stretch"
+            style={{
+              color: '#A6A6A6',
+              fontFamily: 'Pretendard',
+              fontSize: '14px',
+              fontWeight: '400',
+              lineHeight: 'normal',
+              opacity: 0.8
+            }}
+          >
+            * 먼저, 주소를 조회하거나 지도를 클릭하여 시뮬레이션할 위치를 지정해주세요.
+          </div>
+
+          <Spacer height={16} />
+
+          {/* Address Search Section */}
+          <div className="flex flex-col self-stretch gap-3">
+            {/* Row 1: Address Dropdown + Search Button */}
+            <div className="flex items-center self-stretch h-10 gap-3">
+              {/* Address Dropdown Container */}
+              <div className="flex items-center flex-1 h-10 gap-3">
+                <div
+                  style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '16px',
+                    fontWeight: '800',
+                    lineHeight: 'normal',
+                    color: '#FFF',
+                    width: '43px',
+                    flexShrink: 0
+                  }}
+                >
+                  주소
+                </div>
+
+                {/* Fixed Address */}
+                <div className="flex-1 h-10 flex items-center px-3.5 py-2.5 bg-black rounded-md border border-[#424242]">
+                  <div
+                    style={{
+                      fontFamily: 'Pretendard',
+                      fontSize: '16px',
+                      fontWeight: '400',
+                      lineHeight: 'normal',
+                      color: '#FFF'
+                    }}
+                  >
+                    부산광역시 부산진구
+                  </div>
+                </div>
+              </div>
+
+              {/* Search Button (Disabled) */}
               <div
+                className="flex items-center justify-center px-4 py-2.5 rounded"
                 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '16px',
-                  fontWeight: '400',
-                  lineHeight: 'normal',
-                  color: '#FFF'
+                  width: '86px',
+                  height: '40px',
+                  background: 'transparent'
                 }}
               >
-                부산광역시 부산진구
+              </div>
+            </div>
+
+            {/* Row 2: Text Input + Search Button */}
+            <div className="flex items-center self-stretch gap-3">
+              {/* Text Input */}
+              <div className="relative flex-1 h-10">
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="지번, 도로명 입력"
+                  className="w-full h-10 px-3.5 py-2.5 bg-black rounded-md border border-[#ADADAD] text-white outline-none"
+                  style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '16px',
+                    fontWeight: '400',
+                    lineHeight: 'normal'
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearchClick();
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Search Button (Yellow) */}
+              <div
+                className="flex items-center justify-center px-4 py-2.5 rounded cursor-pointer"
+                style={{
+                  width: '86px',
+                  height: '40px',
+                  background: '#FFD040'
+                }}
+                onClick={handleSearchClick}
+              >
+                <div
+                  style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '16px',
+                    fontWeight: '700',
+                    lineHeight: 'normal',
+                    color: '#000',
+                    textAlign: 'center',
+                    width: '58px'
+                  }}
+                >
+                  검색
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Search Button (Disabled) */}
-          <div
-            className="flex items-center justify-center px-4 py-2.5 rounded"
-            style={{
-              width: '86px',
-              height: '40px',
-              background: 'transparent'
-            }}
-          >
-          </div>
-        </div>
-
-        {/* Row 2: Text Input + Search Button */}
-        <div className="flex items-center self-stretch gap-3">
-          {/* Text Input */}
-          <div className="relative flex-1 h-10">
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="지번, 도로명 입력"
-              className="w-full h-10 px-3.5 py-2.5 bg-black rounded-md border border-[#ADADAD] text-white outline-none"
-              style={{
-                fontFamily: 'Pretendard',
-                fontSize: '16px',
-                fontWeight: '400',
-                lineHeight: 'normal'
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleSearchClick();
-                }
-              }}
-            />
-          </div>
-
-          {/* Search Button (Yellow) */}
-          <div
-            className="flex items-center justify-center px-4 py-2.5 rounded cursor-pointer"
-            style={{
-              width: '86px',
-              height: '40px',
-              background: '#FFD040'
-            }}
-            onClick={handleSearchClick}
-          >
-            <div
-              style={{
-                fontFamily: 'Pretendard',
-                fontSize: '16px',
-                fontWeight: '700',
-                lineHeight: 'normal',
-                color: '#000',
-                textAlign: 'center',
-                width: '58px'
-              }}
-            >
-              검색
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Address Search Results */}
-      {simulationStore.hasSearchResults && (
-        <>
-          <Spacer height={16} />
-          <AddressResultList />
+          {/* Address Search Results */}
+          {simulationStore.hasSearchResults && (
+            <>
+              <Spacer height={16} />
+              <AddressResultList />
+            </>
+          )}
         </>
       )}
 
       <Spacer height={36} />
 
-      {/* Bottom Button */}
-      <div className="flex flex-col pt-9 border-t border-[#696A6A] self-stretch">
+      {/* Bottom Buttons */}
+      <div className="flex flex-col gap-3 pt-9 border-t border-[#696A6A] self-stretch">
+        {/* 직접 위치 지정 버튼 */}
         <div
           className="h-10 flex items-center justify-center gap-2 px-4 py-2.5 rounded cursor-pointer border-2"
           style={{
             background: 'rgba(0, 0, 0, 0.4)',
             borderColor: '#CFFF40'
           }}
-          onClick={() => console.log('직접 위치 지정')}
+          onClick={() => simulationStore.enableDirectLocationMode()}
         >
           <Icon name="saas" className="w-4 h-4" />
           <div
@@ -252,6 +293,29 @@ const SimulationConfig = observer(function SimulationConfig({ onClose }: Simulat
             }}
           >
             직접 위치 지정
+          </div>
+        </div>
+
+        {/* 위치 설정 완료 버튼 */}
+        <div
+          className="h-10 flex items-center justify-center px-4 py-2.5 rounded cursor-pointer"
+          style={{
+            background: 'linear-gradient(180deg, #FDF106 0%, #FFD040 100%)',
+            borderRadius: '4px'
+          }}
+          onClick={() => console.log('위치 설정 완료')}
+        >
+          <div
+            style={{
+              fontFamily: 'Pretendard',
+              fontSize: '16px',
+              fontWeight: '700',
+              lineHeight: 'normal',
+              color: '#000',
+              textAlign: 'center'
+            }}
+          >
+            위치 설정 완료
           </div>
         </div>
       </div>
