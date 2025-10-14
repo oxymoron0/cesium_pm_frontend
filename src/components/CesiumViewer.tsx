@@ -26,7 +26,7 @@ const CesiumViewer = () => {
     // vWorld 위성사진 URL Template Provider (한국 영역으로 제한)
     const koreaRectangle = Rectangle.fromDegrees(124.0, 33.0, 132.0, 39.0); // 한국 영역
     const vworldProvider = new UrlTemplateImageryProvider({
-      url: 'http://api.vworld.kr/req/wmts/1.0.0/EEB70A84-A772-3BB0-9BCE-FD3C1AC2570A/Satellite/{z}/{y}/{x}.jpeg',
+      url: 'https://api.vworld.kr/req/wmts/1.0.0/EEB70A84-A772-3BB0-9BCE-FD3C1AC2570A/Satellite/{z}/{y}/{x}.jpeg',
       maximumLevel: 18,
       minimumLevel: 5,
       rectangle: koreaRectangle,
