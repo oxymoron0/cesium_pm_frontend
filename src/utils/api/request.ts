@@ -17,7 +17,6 @@ interface RequestResponse<T = unknown> {
 }
 
 /**
- * 간단한 HTTP 요청 함수
  * @param url - 요청할 URL (상대경로 또는 절대경로)
  * @param options - 요청 옵션
  */
