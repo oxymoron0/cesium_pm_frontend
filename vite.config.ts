@@ -39,7 +39,7 @@ export default defineConfig(({ command, mode }) => {
             { from: /\/\w+Page\.html/, to: '/index.html' }
           ]
         },
-        allowedHosts: ['services.leorca.org']
+        allowedHosts: ['pm.leorca.org']
       },
       css: {
         postcss: './postcss.config.js'
