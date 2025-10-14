@@ -42,4 +42,4 @@ export interface NearbyRoad {
   startPoint: string; // 시작점 주소 (기존 호환용)
 }
 
-export type PriorityView = 'config' | 'result';
+export type PriorityView = 'config' | 'customConfig' | 'result';
