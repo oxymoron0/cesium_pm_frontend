@@ -14,7 +14,7 @@ export default function DirectLocationGuide() {
       }}
     >
       {/* 십자선 아이콘 */}
-      <Icon name="saas" className="w-5 h-5" style={{ color: '#000' }} />
+      <Icon name="saas" className="w-5 h-5" />
 
       {/* 텍스트 */}
       <div
