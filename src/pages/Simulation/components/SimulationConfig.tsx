@@ -282,10 +282,11 @@ const SimulationConfig = observer(function SimulationConfig({ onClose }: Simulat
       <div className="flex flex-col gap-3 pt-9 border-t border-[#696A6A] self-stretch">
         {/* 직접 위치 지정 버튼 */}
         <div
-          className="h-10 flex items-center justify-center gap-2 px-4 py-2.5 rounded cursor-pointer border-2"
+          className="h-10 flex items-center justify-center gap-2 px-4 py-2.5 cursor-pointer border"
           style={{
             background: 'rgba(0, 0, 0, 0.4)',
-            borderColor: '#CFFF40'
+            borderColor: '#CFFF40',
+            borderRadius: '4px'
           }}
           onClick={() => simulationStore.enableDirectLocationMode()}
         >
@@ -304,28 +305,33 @@ const SimulationConfig = observer(function SimulationConfig({ onClose }: Simulat
           </div>
         </div>
 
-        {/* 위치 설정 완료 버튼 */}
-        <div
-          className="h-10 flex items-center justify-center px-4 py-2.5 rounded cursor-pointer"
-          style={{
-            background: 'linear-gradient(180deg, #FDF106 0%, #FFD040 100%)',
-            borderRadius: '4px'
-          }}
-          onClick={() => console.log('위치 설정 완료')}
-        >
+        {/* 위치 설정 완료 버튼 - 위치 선택 후에만 표시 */}
+        {simulationStore.hasSelectedLocation && (
           <div
+            className="h-10 flex items-center justify-center px-4 py-2.5 cursor-pointer"
             style={{
-              fontFamily: 'Pretendard',
-              fontSize: '16px',
-              fontWeight: '700',
-              lineHeight: 'normal',
-              color: '#000',
-              textAlign: 'center'
+              background: '#CFFF40',
+              borderRadius: '4px'
+            }}
+            onClick={() => {
+              const geometry = simulationStore.selectedLocationGeometry;
+              console.log('위치 설정 완료:', geometry);
             }}
           >
-            위치 설정 완료
+            <div
+              style={{
+                fontFamily: 'Pretendard',
+                fontSize: '16px',
+                fontWeight: '700',
+                lineHeight: 'normal',
+                color: '#000',
+                textAlign: 'center'
+              }}
+            >
+              위치 설정 완료
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </>
   );
