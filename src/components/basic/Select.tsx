@@ -4,11 +4,12 @@ interface SelectOption {
 }
 
 interface SelectProps {
-  label: string;
+  label?: string;
   value: string;
   options: SelectOption[];
   onChange?: (value: string) => void;
   className?: string;
+  hideLabel?: boolean;
 }
 
 export default function Select({
@@ -16,7 +17,8 @@ export default function Select({
   value,
   options,
   onChange,
-  className = ""
+  className = "",
+  hideLabel = false
 }: SelectProps) {
   return (
     <div
@@ -26,18 +28,20 @@ export default function Select({
       }}
     >
       {/* Label */}
-      <div
-        style={{
-          color: '#FFF',
-          fontSize: '13px',
-          fontWeight: '400',
-          lineHeight: 'normal',
-          width: '48px',
-          flexShrink: 0
-        }}
-      >
-        {label}
-      </div>
+      {!hideLabel && label && (
+        <div
+          style={{
+            color: '#FFF',
+            fontSize: '13px',
+            fontWeight: '400',
+            lineHeight: 'normal',
+            width: '48px',
+            flexShrink: 0
+          }}
+        >
+          {label}
+        </div>
+      )}
 
       {/* Select Container */}
       <div className="flex-1 relative">
