@@ -1,7 +1,7 @@
 # PM Frontend - Technical Specification
 
-**Version**: 2.1
-**Last Updated**: 2025-10-02
+**Version**: 2.2
+**Last Updated**: 2025-10-14
 **React Version**: 19.1.1
 **Cesium Version**: 1.115.0
 **Architecture**: Qiankun Microfrontend
@@ -27,6 +27,8 @@ React-based microfrontend application for geospatial bus route visualization usi
 - Environmental sensor data visualization with circular progress indicators
 - Time-series sensor data charts (hourly/daily/monthly)
 - Air quality monitoring with modal-based detail views
+- Priority-based vulnerable facility route optimization
+- Simulation address search and direct location selection
 - Microfrontend deployment with Qiankun integration
 
 ---
@@ -88,6 +90,26 @@ pm-frontend/
 │   │   │       ├── Monitoring.tsx
 │   │   │       ├── MonitoringPanel.tsx
 │   │   │       └── StationInfo.tsx
+│   │   ├── Priority/              # Vulnerable facility priority
+│   │   │   ├── index.tsx          # Page entry point
+│   │   │   ├── App.tsx            # Root component
+│   │   │   ├── types.ts           # Type definitions
+│   │   │   └── components/
+│   │   │       ├── PriorityConfig.tsx         # Initial settings
+│   │   │       ├── PriorityCustomConfig.tsx   # Custom settings
+│   │   │       ├── PriorityResult.tsx         # Result display
+│   │   │       ├── DongDropdown.tsx           # Region selector
+│   │   │       ├── NearbyStationList.tsx      # Nearby stations
+│   │   │       └── NearbyRoadList.tsx         # Nearby roads
+│   │   ├── Simulation/            # Route simulation
+│   │   │   ├── index.tsx          # Page entry point
+│   │   │   ├── App.tsx            # Root component
+│   │   │   ├── types.ts           # Type definitions
+│   │   │   └── components/
+│   │   │       ├── SimulationConfig.tsx       # Configuration panel
+│   │   │       ├── DirectLocationGuide.tsx    # Location guide
+│   │   │       ├── AddressResultList.tsx      # Search results
+│   │   │       └── AddressResultItem.tsx      # Result item
 │   │   └── SamplePage/            # Sample page template
 │   │
 │   ├── stores/                     # MobX state management
@@ -97,7 +119,9 @@ pm-frontend/
 │   │   ├── SensorSelectionStore.ts # User sensor type preferences
 │   │   ├── StationSensorStore.ts  # Station sensor display management
 │   │   ├── BusStore.ts            # Bus tracking and animation
-│   │   └── VulnerabilityStore.ts  # Vulnerability data management
+│   │   ├── VulnerabilityStore.ts  # Vulnerability data management
+│   │   ├── PriorityStore.ts       # Priority facility management
+│   │   └── SimulationStore.ts     # Simulation address search
 │   │
 │   ├── utils/                      # Utility modules
 │   │   ├── api/                   # API integration
@@ -122,7 +146,9 @@ pm-frontend/
 │   │   │   ├── Panel.tsx          # Floating panel container
 │   │   │   ├── Title.tsx          # Panel title bar
 │   │   │   ├── Icon.tsx           # Icon wrapper
-│   │   │   └── TabNavigation.tsx  # Tab navigation
+│   │   │   ├── TabNavigation.tsx  # Tab navigation
+│   │   │   ├── DatePicker.tsx     # Date selection input
+│   │   │   └── TimePicker.tsx     # Time selection input
 │   │   ├── chart/                 # Chart components (Recharts)
 │   │   │   ├── SensorLineChart.tsx     # Time-series line chart
 │   │   │   ├── SensorTooltip.tsx       # Custom chart tooltip
@@ -383,6 +409,61 @@ class StationDetailStore {
 ```
 
 **Integration**: Separates modal UI state from Cesium rendering state
+
+#### PriorityStore - Priority Facility Management
+
+**Purpose**: Manage vulnerable facility priority analysis configuration and results
+
+**Responsibilities**:
+- Configuration state (date, time, administrative region)
+- Facility and road selection tracking
+- Mock data caching for administrative regions, nearby stations, and roads
+- Dropdown state management
+
+**Key Features**:
+```typescript
+class PriorityStore {
+  config: PriorityConfig | null
+  isDropdownOpen: boolean
+  selectedFacilityIds: Set<string>
+  selectedRoadIds: Set<string>
+
+  // Cache management
+  private adminRegionsCache: Map<string, AdminRegion>
+  private nearbyStationsCache: Map<string, NearbyStation[]>
+  private nearbyRoadsCache: Map<string, NearbyRoad[]>
+
+  toggleFacilitySelection(facilityId: string)
+  getNearbyStations(facilityId: string): NearbyStation[]
+  getNearbyRoads(facilityId: string): NearbyRoad[]
+}
+```
+
+#### SimulationStore - Simulation Address Management
+
+**Purpose**: Manage address search and direct location selection for simulation
+
+**Responsibilities**:
+- Address search query and results
+- Direct location mode toggle
+- Selected address and location state
+- Simulation configuration
+
+**Key Features**:
+```typescript
+class SimulationStore {
+  searchQuery: string
+  searchResults: AddressSearchResult[]
+  selectedAddressId: string | null
+  isDirectLocationMode: boolean
+  selectedLocation: { lat: number; lng: number } | null
+  config: SimulationConfig | null
+
+  async searchAddress(query: string): Promise<void>
+  enableDirectLocationMode()
+  setSelectedLocation(lat: number, lng: number)
+}
+```
 
 #### SensorSelectionStore - User Preference Management
 
@@ -779,7 +860,7 @@ export interface RouteStationProperties {
 
 **Base Configuration**:
 ```typescript
-const API_BASE_URL = 'http://services.leorca.org:8088/api/v1'
+const API_BASE_URL = ''
 
 async function get<T>(endpoint: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${endpoint}`)
@@ -975,6 +1056,9 @@ const Monitoring = observer(function Monitoring() {
 interface PanelProps {
   position?: 'left' | 'right' | 'center'
   offset?: number
+  width?: string
+  maxHeight?: string
+  allowOverflow?: boolean  // Allow dropdown overflow outside panel
   children: React.ReactNode
   onClose?: () => void
 }
@@ -1070,6 +1154,56 @@ export function TabNavigation({ tabs, activeTab, onTabChange }: TabNavigationPro
           {tab}
         </button>
       ))}
+    </div>
+  )
+}
+```
+
+#### DatePicker
+**Purpose**: Date selection input with label
+```typescript
+interface DatePickerProps {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  className?: string
+}
+
+export function DatePicker({ label, value, onChange, className }: DatePickerProps) {
+  return (
+    <div className={`flex items-center gap-[7px] h-8 ${className}`}>
+      <div style={{ width: '48px', flexShrink: 0 }}>{label}</div>
+      <input
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="flex-1 h-8 px-3 py-1 bg-black rounded border border-[#696A6A]"
+      />
+    </div>
+  )
+}
+```
+
+#### TimePicker
+**Purpose**: Time selection input with label
+```typescript
+interface TimePickerProps {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  className?: string
+}
+
+export function TimePicker({ label, value, onChange, className }: TimePickerProps) {
+  return (
+    <div className={`flex items-center gap-[7px] h-8 ${className}`}>
+      <div style={{ width: '48px', flexShrink: 0 }}>{label}</div>
+      <input
+        type="time"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="flex-1 h-8 px-3 py-1 bg-black rounded border border-[#696A6A]"
+      />
     </div>
   )
 }
@@ -1348,6 +1482,8 @@ export function formatTimeLabel(isoString: string, period: 'today' | 'week' | 'm
 ```bash
 # Single page build
 VITE_PAGE=Monitoring pnpm build
+VITE_PAGE=Priority pnpm build
+VITE_PAGE=Simulation pnpm build
 
 # All pages build
 pnpm build
@@ -1517,6 +1653,51 @@ export default defineConfig({
 - **UMD Module**: Served by parent application
 - **API Base URL**: Configured via environment variables
 - **Cesium Assets**: CDN or local assets
+
+---
+
+## Recent Updates (v2.2)
+
+### Priority Page System (2025-10-14)
+
+**PriorityStore**:
+- Mock data management for administrative regions, nearby stations, and roads
+- Facility and road selection tracking with Set-based state
+- Cache-based data loading preparation for API integration
+
+**Components**:
+- `PriorityConfig`: Initial configuration panel with date/time/region selection
+- `PriorityCustomConfig`: Custom settings with overflow dropdown support
+- `PriorityResult`: Facility list display with nearby station integration
+- `DongDropdown`: Administrative region (읍면동) selector component
+- `NearbyStationList`: Display stations near selected facilities
+- `NearbyRoadList`: Display roads near selected facilities
+
+**View Management**: 3-view state pattern (config → customConfig → result)
+
+### Simulation Page System (2025-10-14)
+
+**SimulationStore**:
+- Address search with mock data filtering
+- Direct location mode toggle for map-based selection
+- Search result and selected location state management
+
+**Components**:
+- `SimulationConfig`: Address search and simulation configuration panel
+- `DirectLocationGuide`: Top-center guide overlay for map click instructions
+- `AddressResultList`: Search result rendering with item selection
+- `AddressResultItem`: Individual address result display
+
+**Dual Mode Pattern**: Address search vs direct location selection
+
+### New Basic Components (2025-10-14)
+
+**DatePicker**: Date selection input with 48px label + flex-1 input layout
+**TimePicker**: Time selection input with 48px label + flex-1 input layout
+
+**Panel allowOverflow**: New prop to support dropdown overflow outside panel bounds (used in PriorityCustomConfig)
+
+**Select hideLabel**: New optional prop to hide label while maintaining layout structure
 
 ---
 
