@@ -31,8 +31,20 @@ export interface SimulationConfig {
   timestamp: string; // ISO 8601 format
 }
 
+export interface SimulationDetailConfig {
+  title: string; // 시뮬레이션 제목
+  pollutant: string; // 오염물질 항목
+  concentration: number; // 농도
+  location: AddressSearchResult; // 발생 위치
+  altitude: number; // 발생 고도 (m)
+  windDirection: number; // 풍향 (°)
+  windSpeed: number; // 풍속 (m/s)
+  useCurrentWeather: boolean; // 현재 기상 정보 적용 여부
+  isPublic: boolean; // 공개 설정
+}
+
 // ============================================================================
 // Simulation State
 // ============================================================================
 
-export type SimulationView = 'config' | 'running' | 'result';
+export type SimulationView = 'config' | 'detailConfig' | 'running' | 'result';
