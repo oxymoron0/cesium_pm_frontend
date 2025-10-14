@@ -7,14 +7,16 @@ import InputField from '@/components/basic/InputField';
 import Select from '@/components/basic/Select';
 import Info from '@/components/basic/Info';
 import Divider from '@/components/basic/Divider';
+import { priorityStore } from '@/stores/PriorityStore';
 import type { PriorityConfig as PriorityConfigData } from '../types';
 
 interface PriorityConfigProps {
   onClose?: () => void;
+  onCustomConfig?: () => void;
   onSearch?: (config: PriorityConfigData) => void;
 }
 
-export default function PriorityConfig({ onClose, onSearch }: PriorityConfigProps) {
+export default function PriorityConfig({ onClose, onCustomConfig, onSearch }: PriorityConfigProps) {
   // 현재 날짜와 시간
   const now = new Date();
   const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
@@ -181,7 +183,19 @@ export default function PriorityConfig({ onClose, onSearch }: PriorityConfigProp
         <Button
           variant="outline"
           showIcon={false}
-          onClick={() => console.log('맞춤설정으로 조회')}
+          onClick={() => {
+            // Store에 현재 설정 저장 후 맞춤설정 화면으로 이동
+            priorityStore.setConfig({
+              date: dateStr,
+              time: timeStr,
+              city,
+              district,
+              dong
+            });
+            if (onCustomConfig) {
+              onCustomConfig();
+            }
+          }}
         >
           맞춤설정으로 조회
         </Button>
