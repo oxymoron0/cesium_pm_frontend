@@ -8,7 +8,7 @@ Qiankun 마이크로 프론트엔드 기반 Station DataSource 관리 시스템
 - **MobX 6.13.7** (상태 관리)
 - **Cesium 1.115.0** (3D 지도)
 - **Qiankun** 마이크로 프론트엔드 호환
-- **Station API** (61.98.41.151:8088)
+- **Station API** ("/dt-gw/bump-svc3d-back-pm/")
 
 ## 빌드 및 배포
 
