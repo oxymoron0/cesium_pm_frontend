@@ -351,6 +351,42 @@ class PriorityStore {
     this.config = config;
   }
 
+  updateDate(date: string) {
+    if (this.config) {
+      this.config = {
+        ...this.config,
+        date
+      };
+    }
+  }
+
+  updateTime(time: string) {
+    if (this.config) {
+      this.config = {
+        ...this.config,
+        time
+      };
+    }
+  }
+
+  updateCity(city: string) {
+    if (this.config) {
+      this.config = {
+        ...this.config,
+        city
+      };
+    }
+  }
+
+  updateDistrict(district: string) {
+    if (this.config) {
+      this.config = {
+        ...this.config,
+        district
+      };
+    }
+  }
+
   updateDong(dong: string) {
     if (this.config) {
       this.config = {
