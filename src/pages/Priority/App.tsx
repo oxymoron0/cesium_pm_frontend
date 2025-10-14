@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite'
 import CesiumViewer from '@/components/CesiumViewer'
 import Panel from '@/components/basic/Panel'
 import PriorityConfig from './components/PriorityConfig'
+import PriorityCustomConfig from './components/PriorityCustomConfig'
 import PriorityResult from './components/PriorityResult'
 import NearbyRoadList from './components/NearbyRoadList'
 import { priorityStore } from '@/stores/PriorityStore'
@@ -66,14 +67,20 @@ const App = observer(function App(props: AppProps) {
 
       {/* Priority Panel - Left Top */}
       {cesiumStatus === 'ready' && (
-        <Panel position="left" width="540px" maxHeight="calc(100vh - 160px)">
+        <Panel position="left" width="540px" maxHeight="calc(100vh - 160px)" allowOverflow={currentView === 'customConfig'}>
           {currentView === 'config' ? (
             <PriorityConfig
               onClose={props.onCloseMicroApp}
+              onCustomConfig={() => setCurrentView('customConfig')}
               onSearch={(config) => {
                 setConfigData(config)
                 setCurrentView('result')
               }}
+            />
+          ) : currentView === 'customConfig' ? (
+            <PriorityCustomConfig
+              onBack={() => setCurrentView('config')}
+              onSearch={() => setCurrentView('result')}
             />
           ) : (
             configData && (
