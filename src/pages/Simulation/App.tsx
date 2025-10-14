@@ -3,8 +3,10 @@ import { observer } from 'mobx-react-lite'
 import CesiumViewer from '@/components/CesiumViewer'
 import Panel from '@/components/basic/Panel'
 import SimulationConfig from './components/SimulationConfig'
+import SimulationDetailConfig from './components/SimulationDetailConfig'
 import DirectLocationGuide from './components/DirectLocationGuide'
 import { simulationStore } from '@/stores/SimulationStore'
+import type { SimulationView } from './types'
 
 interface AppProps {
   onCloseMicroApp?: () => void;
@@ -13,6 +15,7 @@ interface AppProps {
 
 const App = observer(function App(props: AppProps) {
   const [cesiumStatus, setCesiumStatus] = useState<'loading' | 'ready'>('loading')
+  const [currentView, setCurrentView] = useState<SimulationView>('config')
 
   useEffect(() => {
     // Cesium 초기화 및 상태 감지
@@ -51,7 +54,17 @@ const App = observer(function App(props: AppProps) {
       {/* Simulation Panel - Left Top */}
       {cesiumStatus === 'ready' && (
         <Panel position="left" width="540px" maxHeight="calc(100vh - 160px)">
-          <SimulationConfig onClose={props.onCloseMicroApp} />
+          {currentView === 'config' ? (
+            <SimulationConfig
+              onClose={props.onCloseMicroApp}
+              onLocationComplete={() => setCurrentView('detailConfig')}
+            />
+          ) : currentView === 'detailConfig' ? (
+            <SimulationDetailConfig
+              onBack={() => setCurrentView('config')}
+              onExecute={() => console.log('시뮬레이션 실행')}
+            />
+          ) : null}
         </Panel>
       )}
 

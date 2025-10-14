@@ -11,9 +11,10 @@ import { simulationStore } from '@/stores/SimulationStore';
 
 interface SimulationConfigProps {
   onClose?: () => void;
+  onLocationComplete?: () => void;
 }
 
-const SimulationConfig = observer(function SimulationConfig({ onClose }: SimulationConfigProps) {
+const SimulationConfig = observer(function SimulationConfig({ onClose, onLocationComplete }: SimulationConfigProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [searchInput, setSearchInput] = useState('');
 
@@ -316,6 +317,7 @@ const SimulationConfig = observer(function SimulationConfig({ onClose }: Simulat
             onClick={() => {
               const geometry = simulationStore.selectedLocationGeometry;
               console.log('위치 설정 완료:', geometry);
+              onLocationComplete?.();
             }}
           >
             <div
