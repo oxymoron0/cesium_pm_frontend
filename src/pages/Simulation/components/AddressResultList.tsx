@@ -3,7 +3,7 @@ import AddressResultItem from './AddressResultItem';
 import { simulationStore } from '@/stores/SimulationStore';
 
 const AddressResultList = observer(function AddressResultList() {
-  const { searchResults, selectedAddressId, isSearching } = simulationStore;
+  const { currentResults, selectedAddressId, isSearching } = simulationStore;
 
   const handleSelect = (id: string) => {
     simulationStore.selectAddress(id);
@@ -30,8 +30,8 @@ const AddressResultList = observer(function AddressResultList() {
     );
   }
 
-  if (searchResults.length === 0) {
-    return null; // 검색 결과가 없으면 아무것도 표시하지 않음
+  if (currentResults.length === 0) {
+    return null; // 현재 모드의 결과가 없으면 아무것도 표시하지 않음
   }
 
   return (
@@ -44,7 +44,7 @@ const AddressResultList = observer(function AddressResultList() {
         scrollbarColor: '#FFD040 transparent'
       }}
     >
-      {searchResults.map((result) => (
+      {currentResults.map((result) => (
         <AddressResultItem
           key={result.id}
           result={result}

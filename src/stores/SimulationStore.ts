@@ -265,15 +265,19 @@ class SimulationStore {
   searchResults: AddressSearchResult[] = [];
   isSearching: boolean = false;
 
-  // 선택 상태
+  // 직접 위치 지정 모드
+  isDirectLocationMode: boolean = false;
+  directLocationResults: AddressSearchResult[] = []; // 직접 위치 지정 시 선택한 위치 목록
+  selectedLocation: { lat: number; lng: number } | null = null;
+
+  // 선택 상태 (검색 또는 직접 위치 지정)
   selectedAddressId: string | null = null;
+
+  // 모드 전환 시 이전 선택 상태 임시 저장
+  private previousSelectedAddressId: string | null = null;
 
   // 시뮬레이션 설정
   config: SimulationConfig | null = null;
-
-  // 직접 위치 지정 모드
-  isDirectLocationMode: boolean = false;
-  selectedLocation: { lat: number; lng: number } | null = null;
 
   constructor() {
     makeAutoObservable(this);
@@ -344,9 +348,12 @@ class SimulationStore {
     return this.selectedAddressId === addressId;
   }
 
+  /**
+   * 선택된 주소 (현재 모드의 리스트에서 검색)
+   */
   get selectedAddress(): AddressSearchResult | null {
     if (!this.selectedAddressId) return null;
-    return this.searchResults.find(result => result.id === this.selectedAddressId) || null;
+    return this.currentResults.find(result => result.id === this.selectedAddressId) || null;
   }
 
   // ============================================================================
@@ -367,21 +374,54 @@ class SimulationStore {
 
   enableDirectLocationMode() {
     this.isDirectLocationMode = true;
-    this.clearSearchResults();
+
+    // 현재 선택 상태를 임시 저장 후 초기화 (위치 설정 완료 버튼 숨김)
+    this.previousSelectedAddressId = this.selectedAddressId;
+    this.selectedAddressId = null;
+
+    // 직접 위치 지정 리스트 초기화 (검색 결과는 유지)
+    this.directLocationResults = [];
   }
 
   disableDirectLocationMode() {
     this.isDirectLocationMode = false;
+
+    // 이전에 선택했던 주소 복원
+    this.selectedAddressId = this.previousSelectedAddressId;
+    this.previousSelectedAddressId = null;
+
     this.selectedLocation = null;
-    this.clearSearchResults();
-    this.clearSelection();
+    // 검색 결과는 유지 (뒤로가기 시 검색 결과 보존)
+    // 직접 위치 지정 결과는 자동으로 무시됨
   }
 
-  setSelectedLocation(lat: number, lng: number) {
+  /**
+   * 직접 위치 지정: 지도 클릭 시 호출
+   * 좌표를 기반으로 임시 AddressSearchResult 생성
+   */
+  addDirectLocationResult(lat: number, lng: number, addressLabel?: string) {
     this.selectedLocation = { lat, lng };
+
+    // 임시 ID 생성 (타임스탬프 기반)
+    const tempId = `direct_location_${Date.now()}`;
+
+    // 좌표를 기반으로 간단한 주소 표시 (역지오코딩 전까지 임시)
+    const tempResult: AddressSearchResult = {
+      id: tempId,
+      roadAddress: addressLabel || `위도: ${lat.toFixed(6)}, 경도: ${lng.toFixed(6)}`,
+      geometry: {
+        type: 'Point',
+        coordinates: [lng, lat]
+      }
+    };
+
+    // 기존 결과 제거 후 새 결과 추가 (한 번에 하나만 선택 가능)
+    this.directLocationResults = [tempResult];
+    this.selectedAddressId = tempId;
   }
 
-  clearSelectedLocation() {
+  clearDirectLocationResults() {
+    this.directLocationResults = [];
     this.selectedLocation = null;
   }
 
@@ -389,8 +429,18 @@ class SimulationStore {
   // Computed Properties
   // ============================================================================
 
+  /**
+   * 현재 모드에 따라 표시할 결과 리스트 반환
+   */
+  get currentResults(): AddressSearchResult[] {
+    return this.isDirectLocationMode ? this.directLocationResults : this.searchResults;
+  }
+
+  /**
+   * 현재 모드의 결과가 있는지 확인
+   */
   get hasSearchResults(): boolean {
-    return this.searchResults.length > 0;
+    return this.currentResults.length > 0;
   }
 
   get hasSelectedAddress(): boolean {
@@ -399,6 +449,31 @@ class SimulationStore {
 
   get hasConfig(): boolean {
     return this.config !== null;
+  }
+
+  /**
+   * 위치가 선택되었는지 확인 (주소 검색 또는 직접 위치 지정)
+   */
+  get hasSelectedLocation(): boolean {
+    return this.selectedAddressId !== null || this.selectedLocation !== null;
+  }
+
+  /**
+   * 선택된 위치의 좌표 반환 (Point Geometry)
+   */
+  get selectedLocationGeometry(): { type: 'Point'; coordinates: [number, number] } | null {
+    // 주소 검색에서 선택된 경우
+    if (this.selectedAddress) {
+      return this.selectedAddress.geometry;
+    }
+    // 직접 위치 지정에서 선택된 경우
+    if (this.selectedLocation) {
+      return {
+        type: 'Point',
+        coordinates: [this.selectedLocation.lng, this.selectedLocation.lat]
+      };
+    }
+    return null;
   }
 }
 
