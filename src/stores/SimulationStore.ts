@@ -279,6 +279,10 @@ class SimulationStore {
   // 시뮬레이션 설정
   config: SimulationConfig | null = null;
 
+  // 현재 기상 정보
+  weatherLocation: string = '부전동';
+  weatherTimestamp: string = '08.07. 09:00';
+
   constructor() {
     makeAutoObservable(this);
   }
@@ -474,6 +478,37 @@ class SimulationStore {
       };
     }
     return null;
+  }
+
+  // ============================================================================
+  // 현재 기상 정보
+  // ============================================================================
+
+  /**
+   * 현재 기상 정보 불러오기
+   * 실제로는 API 호출: GET /api/simulation/current-weather
+   */
+  async loadWeatherInfo(): Promise<void> {
+    try {
+      // TODO: 실제 API 호출
+      // const response = await fetch('/api/simulation/current-weather');
+      // const data = await response.json();
+      // this.weatherLocation = data.location;
+      // this.weatherTimestamp = data.timestamp;
+
+      // Mock: 기본값 사용
+      // 실제 구현 시 API에서 받은 데이터로 업데이트
+    } catch (error) {
+      console.error('[SimulationStore] Weather info load failed:', error);
+      // 실패 시 기본값 유지
+    }
+  }
+
+  /**
+   * 체크박스 라벨용 기상 정보 문자열
+   */
+  get weatherInfoLabel(): string {
+    return `현재 기상 정보 적용 (기상청, ${this.weatherLocation}, ${this.weatherTimestamp} 기준)`;
   }
 }
 
