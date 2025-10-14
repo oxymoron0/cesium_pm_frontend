@@ -10,6 +10,7 @@ interface PanelProps {
   height?: string
   marginHorizontal?: number
   marginVertical?: number
+  allowOverflow?: boolean
 }
 
 function Panel({
@@ -21,7 +22,8 @@ function Panel({
   maxHeight,
   height,
   marginHorizontal = 70,
-  marginVertical = 72
+  marginVertical = 72,
+  allowOverflow = false
 }: PanelProps) {
   const getPositionStyle = () => {
     switch (position) {
@@ -43,7 +45,7 @@ function Panel({
     <div
       className={`
         fixed z-[1002] flex flex-col justify-start items-start
-        overflow-hidden rounded-[10px] border-t-[1.25px] border-t-yellow-400
+        ${allowOverflow ? 'overflow-visible' : 'overflow-hidden'} rounded-[10px] border-t-[1.25px] border-t-yellow-400
         pb-[32px] px-[20px] pt-[32px] text-white text-sm
         ${className}
       `}
