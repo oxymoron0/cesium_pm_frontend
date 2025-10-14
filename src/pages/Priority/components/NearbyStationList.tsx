@@ -83,23 +83,26 @@ const NearbyStationList = observer(function NearbyStationList({ stations }: Near
           </div>
 
           {/* 테이블 데이터 */}
-          {stations.map((station) => (
-            <div key={station.id} className="flex items-start self-stretch">
-              {/* 정류장명 */}
-              <div
-                className="flex items-center justify-center text-white font-pretendard text-[14px] text-center border-b border-[#696A6A]"
-                style={{ width: '120px', minHeight: '80px', flexShrink: 0 }}
-              >
-                {station.stationName}
-              </div>
+          {stations.map((station) => {
+            const totalHeight = station.measurements.length * 40;
 
-              {/* 정류장 ID */}
-              <div
-                className="flex items-center justify-center text-white font-pretendard text-[14px] text-center border-b border-[#696A6A]"
-                style={{ width: '120px', minHeight: '80px', flexShrink: 0 }}
-              >
-                {station.stationId}
-              </div>
+            return (
+              <div key={station.id} className="flex items-start self-stretch">
+                {/* 정류장명 */}
+                <div
+                  className="flex items-center justify-center text-white font-pretendard text-[14px] text-center border-b border-[#696A6A]"
+                  style={{ width: '120px', height: `${totalHeight}px`, flexShrink: 0 }}
+                >
+                  {station.stationName}
+                </div>
+
+                {/* 정류장 ID */}
+                <div
+                  className="flex items-center justify-center text-white font-pretendard text-[14px] text-center border-b border-[#696A6A]"
+                  style={{ width: '120px', height: `${totalHeight}px`, flexShrink: 0 }}
+                >
+                  {station.stationId}
+                </div>
 
               {/* 측정 데이터 (시간, 농도, 등급) */}
               <div className="flex flex-1 flex-col items-start justify-center">
@@ -146,7 +149,8 @@ const NearbyStationList = observer(function NearbyStationList({ stations }: Near
                 })}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
