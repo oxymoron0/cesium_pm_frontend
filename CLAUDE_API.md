@@ -265,20 +265,6 @@ class BaseStore {
 - `GET /api/v1/route/stations/{route_name}` - Route stations (direction required)
 - `GET /api/v1/route/stations/search` - Station search
 
-### Station APIs (Test - 24,253 records)
-- `GET /api/v1/stations` - Paginated station list
-- `GET /api/v1/stations/{id}` - Station details
-- `GET /api/v1/stations/summary` - System statistics
-- `GET /api/v1/stations/search` - Station search
-- `GET /api/v1/stations/filter` - Multi-criteria filter
-- `GET /api/v1/stations/nearby` - Location-based search
-- `GET /api/v1/stations/optimal` - Route optimization
-- `GET /api/v1/stations/route/{route}` - Route stations
-- `GET /api/v1/stations/connections` - Route connections
-- `GET /api/v1/stations/ranking` - Popularity ranking
-- `GET /api/v1/stations/validate/{station_id}` - ID validation
-- `GET /api/v1/stations/distance` - Distance calculation
-
 ### Vulnerability Data
 - `GET /api/v1/vulnerabilities/senior` - Senior centers
 - `GET /api/v1/vulnerabilities/childcare` - Childcare centers

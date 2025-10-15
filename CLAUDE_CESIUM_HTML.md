@@ -94,18 +94,7 @@ const CCTVOverlay = observer(() => {
   );
 });
 ```
-**파일**: `CCTVOverlay.tsx`
 
-## 절대 위치 스타일링
-
-```typescript
-style={{
-  position: 'absolute',
-  left: left,           // Cesium 변환 X 좌표
-  top: top + 50,        // Y 좌표 + 오프셋
-  pointerEvents: 'auto'
-}}
-```
 **파일**: `OverlayLabel.tsx:53-61`
 
 ## 핵심 처리 방식
@@ -122,7 +111,7 @@ style={{
 **문제점**: `HeightReference.CLAMP_TO_GROUND`를 사용한 Entity는 실제 terrain 높이를 직접 제공하지 않음
 
 ```typescript
-// ❌ Entity의 height는 항상 원래 Z값 (terrain 높이 아님)
+// Entity의 height는 항상 원래 Z값 (terrain 높이 아님)
 const entityPosition = entity.position?.getValue(viewer.clock.currentTime)
 const cartographic = Cartographic.fromCartesian(entityPosition)
 const height = cartographic.height // 0 (원래 값), terrain 높이 아님
@@ -178,19 +167,19 @@ const getTerrainHeight = (longitude: number, latitude: number): number => {
 }
 ```
 
-### 성능 최적화 주의사항
+### 피해야 할 패턴 정리
 
-**피해야 할 패턴**: 매 프레임 terrain API 호출
+**매 프레임 terrain API 호출**
 ```typescript
-// ❌ 매 프레임마다 네트워크 요청 (초당 180건+)
+// 매 프레임마다 네트워크 요청 (초당 180건+)
 await sampleTerrainMostDetailed(viewer.terrainProvider, [cartographic])
 
-// ❌ 렌더링 루프에서 heightReference 쿼리
+// 렌더링 루프에서 heightReference 쿼리
 if (billboard.heightReference?.getValue(viewer.clock.currentTime) === Cesium.HeightReference.CLAMP_TO_GROUND) {
   // 매 프레임마다 terrain 계산 트리거
 }
 
-// ✅ 대신 Entity position 직접 사용
+// 대신 Entity position 직접 사용
 const screenPosition = viewer.scene.cartesianToCanvasCoordinates(entityPosition)
 ```
 
