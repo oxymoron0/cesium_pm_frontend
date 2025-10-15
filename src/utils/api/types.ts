@@ -135,44 +135,6 @@ export interface RouteStation {
   latitude: number;
 }
 
-/**
- * Station 기본 인터페이스 (기존 테스트용 예제)
- */
-export interface Station {
-  id: number;
-  name: string;
-  latitude: number;
-  longitude: number;
-  altitude?: number;
-  ars_id?: string;
-  station_id?: string;
-  location?: {
-    latitude: number;
-    longitude: number;
-    address: string;
-  };
-}
-
-/**
- * Station 목록 응답 (페이지네이션)
- */
-export interface StationListResponse {
-  data: Station[];
-  pagination?: {
-    page: number;
-    limit: number;
-    total: number;
-    total_pages: number;
-  };
-}
-
-/**
- * Station 상세 응답
- */
-export interface StationResponse {
-  data: Station;
-}
-
 // =============================================================================
 // Common Types
 // =============================================================================
