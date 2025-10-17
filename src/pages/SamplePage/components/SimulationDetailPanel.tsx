@@ -75,7 +75,7 @@ const SimulationDetailPanel = observer(function SimulationDetailPanel() {
                 <DetailRow label="요청 시간" value={formatDate(detail.requestedAt)} />
                 <DetailRow label="시작 시간" value={detail.startedAt ? formatDate(detail.startedAt) : '-'} />
                 <DetailRow label="완료 시간" value={detail.completedAt ? formatDate(detail.completedAt) : '-'} />
-                <DetailRow label="재시도 횟수" value={detail.retryCount.toString()} />
+                <DetailRow label="재시도 횟수" value={detail.retryCount?.toString() ?? '0'} />
               </div>
 
               {/* Location */}
@@ -89,31 +89,35 @@ const SimulationDetailPanel = observer(function SimulationDetailPanel() {
               </div>
 
               {/* Weather */}
-              <div className="p-3 space-y-2 rounded-lg bg-gray-900/50">
-                <div className="pb-2 text-sm font-semibold border-b text-cyan-400 border-cyan-400/20">
-                  기상 정보
+              {detail.weatherData && (
+                <div className="p-3 space-y-2 rounded-lg bg-gray-900/50">
+                  <div className="pb-2 text-sm font-semibold border-b text-cyan-400 border-cyan-400/20">
+                    기상 정보
+                  </div>
+                  <DetailRow label="온도" value={`${detail.weatherData.temperature}°C`} />
+                  <DetailRow label="습도" value={`${detail.weatherData.humidity}%`} />
+                  <DetailRow label="해면 기압" value={`${detail.weatherData.sea_level_pressure} hPa`} />
+                  <DetailRow label="풍속 (1m)" value={`${detail.weatherData.wind_speed_1m} m/s`} />
+                  <DetailRow label="풍향 (1m)" value={`${detail.weatherData.wind_direction_1m}°`} />
+                  <DetailRow label="풍속 (10m)" value={`${detail.weatherData.wind_speed_10m} m/s`} />
+                  <DetailRow label="풍향 (10m)" value={`${detail.weatherData.wind_direction_10m}°`} />
                 </div>
-                <DetailRow label="온도" value={`${detail.weatherData.temperature}°C`} />
-                <DetailRow label="습도" value={`${detail.weatherData.humidity}%`} />
-                <DetailRow label="해면 기압" value={`${detail.weatherData.sea_level_pressure} hPa`} />
-                <DetailRow label="풍속 (1m)" value={`${detail.weatherData.wind_speed_1m} m/s`} />
-                <DetailRow label="풍향 (1m)" value={`${detail.weatherData.wind_direction_1m}°`} />
-                <DetailRow label="풍속 (10m)" value={`${detail.weatherData.wind_speed_10m} m/s`} />
-                <DetailRow label="풍향 (10m)" value={`${detail.weatherData.wind_direction_10m}°`} />
-              </div>
+              )}
 
               {/* Air Quality */}
-              <div className="p-3 space-y-2 rounded-lg bg-gray-900/50">
-                <div className="pb-2 text-sm font-semibold border-b text-cyan-400 border-cyan-400/20">
-                  대기질 정보
+              {detail.airQualityData && (
+                <div className="p-3 space-y-2 rounded-lg bg-gray-900/50">
+                  <div className="pb-2 text-sm font-semibold border-b text-cyan-400 border-cyan-400/20">
+                    대기질 정보
+                  </div>
+                  <DetailRow label="PM 타입" value={detail.pmtype?.toUpperCase() ?? '-'} />
+                  <DetailRow label="측정소" value={detail.firstStationName ?? '-'} />
+                  <DetailRow label="농도" value={detail.firstStationConcentration !== undefined ? `${detail.firstStationConcentration} μg/m³` : '-'} />
+                  <div className="pt-2 text-xs text-gray-500">
+                    총 {detail.airQualityData.stations.length}개 측정소
+                  </div>
                 </div>
-                <DetailRow label="PM 타입" value={detail.pmtype.toUpperCase()} />
-                <DetailRow label="측정소" value={detail.firstStationName} />
-                <DetailRow label="농도" value={`${detail.firstStationConcentration} μg/m³`} />
-                <div className="pt-2 text-xs text-gray-500">
-                  총 {detail.airQualityData.stations.length}개 측정소
-                </div>
-              </div>
+              )}
 
               {/* Results */}
               {detail.resultPath && (
