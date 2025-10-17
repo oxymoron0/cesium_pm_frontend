@@ -133,14 +133,14 @@ export interface SimulationDetail {
   status: string;                    // Current status
   startedAt: string | null;          // Start timestamp (ISO 8601)
   completedAt: string | null;        // Completion timestamp (ISO 8601)
-  retryCount: number;                // Retry count
-  errorMessage: string;              // Error message (if failed)
-  weatherData: Weather;              // Weather data
-  airQualityData: AirQuality;        // Air quality data
-  pmtype: PMType;                    // PM type (pm10 or pm25)
-  firstStationConcentration: number; // First station concentration
-  firstStationName: string;          // First station name
-  resultPath: string;                // Result file path (GLB)
+  retryCount?: number;               // Retry count (optional)
+  errorMessage?: string;             // Error message (if failed, optional)
+  weatherData?: Weather;             // Weather data (optional)
+  airQualityData?: AirQuality;       // Air quality data (optional)
+  pmtype?: PMType;                   // PM type (pm10 or pm25, optional)
+  firstStationConcentration?: number; // First station concentration (optional)
+  firstStationName?: string;         // First station name (optional)
+  resultPath?: string;               // Result file path (GLB, optional)
   createdAt: string;                 // Creation timestamp (ISO 8601)
   updatedAt: string;                 // Update timestamp (ISO 8601)
 }
