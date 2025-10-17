@@ -1,5 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import { simulationStore } from '@/stores/SimulationStore';
+import { userStore } from '@/stores/UserStore';
 import type { SimulationRequest } from '../../../types/simulation_request_types';
 
 /**
@@ -10,7 +11,7 @@ const SimulationTestButton = observer(function SimulationTestButton() {
   const handleTestSubmit = async () => {
     const testData: SimulationRequest = {
       simulation_name: 'test',
-      user: 'leorca',
+      user: userStore.currentUser,
       is_private: true,
       timestamp: '2025-10-15T09:00:00Z',
       lot: '부산광역시 부산진구 부전동 573-1',

@@ -8,6 +8,7 @@ import type {
   SimulationDetail
 } from '../types/simulation_request_types';
 import { submitSimulation, getSimulationList, getSimulationDetail } from '@/utils/api';
+import { userStore } from './UserStore';
 
 // ============================================================================
 // Mock Data
@@ -572,6 +573,8 @@ class SimulationStore {
   /**
    * 시뮬레이션 목록 조회
    * GET /api/v1/simulation/list
+   *
+   * userId가 제공되지 않으면 userStore.user를 사용합니다.
    */
   async loadSimulationList(
     page: number = 1,
@@ -583,7 +586,10 @@ class SimulationStore {
     this.listError = null;
 
     try {
-      const response = await getSimulationList(page, limit, userId, includePrivate);
+      // userId가 없으면 userStore의 현재 사용자 사용
+      const effectiveUserId = userId || userStore.currentUser;
+
+      const response = await getSimulationList(page, limit, effectiveUserId, includePrivate);
       this.simulationList = response.simulations;
       this.pagination = response.pagination;
     } catch (error) {
