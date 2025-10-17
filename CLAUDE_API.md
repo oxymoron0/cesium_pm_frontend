@@ -22,6 +22,16 @@
 - `GET /api/v1/route/geom/{route_name}` - GeoJSON LineString geometry
 - `GET /api/v1/route/stations/{route_name}?direction=inbound|outbound` - Station points
 
+### Simulation
+- `POST /api/v1/simulation/process` - Submit simulation request (queued processing)
+- `GET /api/v1/simulation/list?page=1&limit=7&user_id=&include_private=false` - Paginated list
+- `GET /api/v1/simulation/{uuid}` - Simulation details by UUID
+- `POST /api/v1/simulation/callback` - Webhook callback (internal use)
+
+### Testing (Development Only)
+- `POST /api/v1/test/simulation` - Mock external simulation API
+- `POST /api/v1/test/complete-all` - Complete all pending simulations
+
 ---
 
 ## Response Formats
@@ -135,6 +145,74 @@
 }
 ```
 
+### Simulation Request (POST /api/v1/simulation/process)
+```json
+{
+  "simulation_name": "Busan PM10 Test",
+  "user": "leorca",
+  "is_private": false,
+  "timestamp": "2025-10-17T12:00:00Z",
+  "lot": "부산광역시 부산진구 부전동 573-1",
+  "road_name": "부산광역시 부산진구 중앙대로 지하730",
+  "location": "Busan",
+  "weather": {
+    "wind_direction_1m": 180,
+    "wind_speed_1m": 2.5,
+    "wind_direction_10m": 185,
+    "wind_speed_10m": 3.2,
+    "humidity": 65.0,
+    "sea_level_pressure": 1013.25,
+    "temperature": 22.5
+  },
+  "air_quality": {
+    "pm_type": "pm10",
+    "stations": [
+      {
+        "station_name": "연제공용버스차고지",
+        "location": { "longitude": 129.0531938, "latitude": 35.1852289 },
+        "concentration": 45.5
+      }
+    ]
+  }
+}
+```
+
+### Simulation Response
+```json
+{
+  "success": true,
+  "message": "Simulation request queued successfully",
+  "data": {
+    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+    "status": "대기",
+    "position_in_queue": 3,
+    "simulation_name": "Busan PM10 Test"
+  }
+}
+```
+
+### Simulation List Response
+```json
+{
+  "simulations": [
+    {
+      "index": 1,
+      "uuid": "550e8400-e29b-41d4-a716-446655440000",
+      "simulation_name": "Busan PM10 Test",
+      "pm_type": "pm10",
+      "requested_at": "2025-10-17T12:00:00Z",
+      "status": "완료",
+      "concentration": 45.5,
+      "station_name": "연제공용버스차고지",
+      "lot": "부산광역시 부산진구 부전동 573-1",
+      "road_name": "부산광역시 부산진구 중앙대로 지하730",
+      "weather": { "temperature": 22.5, "humidity": 65.0 }
+    }
+  ],
+  "pagination": { "page": 1, "limit": 7, "total": 42, "total_pages": 6 }
+}
+```
+
 ## Frontend Integration
 
 ### Store Pattern
@@ -162,6 +240,47 @@ class SensorStore {
     return response.data;
   }
 }
+
+// Simulation management
+class SimulationStore {
+  @observable simulations: Simulation[] = [];
+  @observable currentSimulation: Simulation | null = null;
+
+  @action
+  async createSimulation(request: SimulationRequest) {
+    const response = await post('/api/v1/simulation/process', request);
+    if (response.data.success) {
+      await this.loadSimulations(); // Refresh list
+      return response.data.data.uuid;
+    }
+    throw new Error(response.data.message);
+  }
+
+  @action
+  async loadSimulations(userId?: string) {
+    const response = await get('/api/v1/simulation/list', {
+      params: { user_id: userId, page: 1, limit: 10 }
+    });
+    this.simulations = response.data.simulations;
+  }
+
+  @action
+  async loadSimulation(uuid: string) {
+    const response = await get(`/api/v1/simulation/${uuid}`);
+    this.currentSimulation = response.data;
+  }
+
+  // Poll for status updates
+  async monitorSimulation(uuid: string, onComplete: (result: Simulation) => void) {
+    const interval = setInterval(async () => {
+      await this.loadSimulation(uuid);
+      if (this.currentSimulation?.status === '완료' || this.currentSimulation?.status === '실패') {
+        clearInterval(interval);
+        onComplete(this.currentSimulation);
+      }
+    }, 5000); // Poll every 5 seconds
+  }
+}
 ```
 
 ### API Functions
@@ -175,6 +294,28 @@ export async function getRouteGeometry(routeName: string) {
 // Station API
 export async function getRouteStations(routeName: string, direction: 'inbound' | 'outbound') {
   const response = await get(`/api/v1/route/stations/${routeName}?direction=${direction}`);
+  return response.data;
+}
+
+// Simulation API
+export async function createSimulation(request: SimulationRequest) {
+  const response = await post('/api/v1/simulation/process', request);
+  return response.data;
+}
+
+export async function listSimulations(params?: {
+  page?: number;
+  limit?: number;
+  user_id?: string;
+  include_private?: boolean;
+}) {
+  const query = new URLSearchParams(params as any).toString();
+  const response = await get(`/api/v1/simulation/list?${query}`);
+  return response.data;
+}
+
+export async function getSimulation(uuid: string) {
+  const response = await get(`/api/v1/simulation/${uuid}`);
   return response.data;
 }
 ```
@@ -270,3 +411,108 @@ class BaseStore {
 - `GET /api/v1/vulnerabilities/childcare` - Childcare centers
 - `GET /api/v1/vulnerabilities/getFacilities` - Facility search
 - `GET /api/v1/vulnerabilities/statistics` - Facility statistics
+
+### Simulation APIs
+- `POST /api/v1/simulation/process` - Create simulation request
+- `GET /api/v1/simulation/list` - List simulations (pagination)
+- `GET /api/v1/simulation/{uuid}` - Get simulation details
+- `POST /api/v1/simulation/callback` - Webhook (internal)
+- `POST /api/v1/test/simulation` - Mock simulation API (dev)
+- `POST /api/v1/test/complete-all` - Complete all pending (dev)
+
+## TypeScript Types
+
+### Simulation Types
+```typescript
+export interface SimulationRequest {
+  simulation_name: string;
+  user: string;
+  is_private: boolean;
+  timestamp: string; // ISO 8601
+  lot: string;
+  road_name: string;
+  location: string;
+  weather: WeatherData;
+  air_quality: AirQualityData;
+}
+
+export interface WeatherData {
+  wind_direction_1m: number; // 0-360 degrees
+  wind_speed_1m: number; // m/s
+  wind_direction_10m: number; // 0-360 degrees
+  wind_speed_10m: number; // m/s
+  humidity: number; // 0-100 %
+  sea_level_pressure: number; // 900-1100 hPa
+  temperature: number; // -50 to 60 °C
+}
+
+export interface AirQualityData {
+  pm_type: 'pm10' | 'pm25';
+  stations: StationMeasurement[];
+}
+
+export interface StationMeasurement {
+  station_name: string;
+  location: { longitude: number; latitude: number };
+  concentration: number; // μg/m³
+}
+
+export interface Simulation {
+  uuid: string;
+  simulationName: string;
+  userID: string;
+  isPrivate: boolean;
+  requestedAt: string;
+  lot: string;
+  roadName: string;
+  location: string;
+  status: '대기' | '진행중' | '완료' | '실패';
+  startedAt?: string;
+  completedAt?: string;
+  retryCount: number;
+  errorMessage: string;
+  weatherData: WeatherData;
+  airQualityData: AirQualityData;
+  pmtype: string;
+  firstStationConcentration: number;
+  firstStationName: string;
+  resultPath: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SimulationListItem {
+  index: number;
+  uuid: string;
+  simulation_name: string;
+  pm_type: string;
+  requested_at: string;
+  status: string;
+  concentration: number;
+  station_name: string;
+  lot: string;
+  road_name: string;
+  weather: WeatherData;
+}
+```
+
+## Validation Rules
+
+### Weather Data
+- `wind_direction_1m`, `wind_direction_10m`: 0-360 degrees
+- `wind_speed_1m`, `wind_speed_10m`: 0-100 m/s
+- `humidity`: 0-100%
+- `sea_level_pressure`: 900-1100 hPa
+- `temperature`: -50 to 60°C
+
+### Air Quality Data
+- `pm_type`: "pm10" or "pm25"
+- `concentration`: 0-10000 μg/m³
+- `longitude`: -180 to 180
+- `latitude`: -90 to 90
+
+### Simulation Request
+- `simulation_name`: max 200 characters
+- `user`: max 50 characters, required
+- `location`: max 100 characters, required
+- `timestamp`: ISO 8601 format required
