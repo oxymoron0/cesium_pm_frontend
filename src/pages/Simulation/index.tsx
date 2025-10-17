@@ -2,6 +2,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import App from './App'
 import '@/index.css'
 import { cleanupAll } from './cleanup'
+import { userStore } from '@/stores/UserStore'
 
 let root: Root | null = null;
 
@@ -9,6 +10,7 @@ interface MountProps {
   container?: Element;
   onCloseMicroApp?: () => void;
   dispatch?: (action: unknown) => void;
+  user?: string;
 }
 
 export async function bootstrap() {
@@ -16,8 +18,13 @@ export async function bootstrap() {
 }
 
 export async function mount(props: MountProps) {
-  const { container, onCloseMicroApp, dispatch } = props
+  const { container, onCloseMicroApp, dispatch, user } = props
   console.log('[qiankun] Simulation mount', props);
+
+  // Register user in UserStore (overrides default if provided)
+  if (user) {
+    userStore.setUser(user);
+  }
 
   const domElement = container
     ? container.querySelector('#microapp-Simulation')
@@ -33,6 +40,9 @@ export async function mount(props: MountProps) {
 
 export async function unmount() {
   console.log('[qiankun] Simulation unmount');
+
+  // Clear user from UserStore
+  userStore.clearUser();
 
   cleanupAll();
 
