@@ -38,6 +38,11 @@ export const API_PATHS = {
   SENSOR_DATA_HOURLY: (stationId: string, hours?: number) => getApiPath(`api/v1/sensor-data/stations/${stationId}/hourly${hours ? `?hours=${hours}` : ''}`),
   SENSOR_DATA_DAILY: (stationId: string, days?: number) => getApiPath(`api/v1/sensor-data/stations/${stationId}/daily${days ? `?days=${days}` : ''}`),
   SENSOR_DATA_LATEST_ALL: getApiPath('api/v1/sensor-data/stations/latest-all'),
+
+  // 시뮬레이션 API (PM Backend)
+  SIMULATION_PROCESS: getApiPath('api/v1/simulation/process'),
+  SIMULATION_LIST: getApiPath('api/v1/simulation/list'),
+  SIMULATION_DETAIL: (uuid: string) => getApiPath(`api/v1/simulation/${uuid}`),
 } as const;
 
 /**
