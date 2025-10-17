@@ -14,13 +14,10 @@ const SimulationDetailPanel = observer(function SimulationDetailPanel() {
   const detail = simulationStore.simulationDetail;
 
   return (
-    <Panel position="right" offset={96}>
-      <div className="w-[420px] h-full overflow-y-auto" style={{
-        scrollbarWidth: 'thin',
-        scrollbarColor: '#60A5FA transparent'
-      }}>
+    <Panel position="right" offset={96} width="640px" className="!p-0">
+      <div className="w-full h-full flex flex-col">
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between p-4 border-b bg-gray-800 border-gray-700">
+        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b bg-gray-800 border-gray-700">
           <div className="text-lg font-semibold text-blue-400">
             시뮬레이션 상세 정보
           </div>
@@ -33,7 +30,13 @@ const SimulationDetailPanel = observer(function SimulationDetailPanel() {
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-4">
+        <div
+          className="flex-1 px-6 py-4 space-y-4 overflow-y-auto"
+          style={{
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#60A5FA transparent'
+          }}
+        >
           {/* Loading State */}
           {simulationStore.isLoadingDetail && (
             <div className="py-12 text-center text-gray-400">
