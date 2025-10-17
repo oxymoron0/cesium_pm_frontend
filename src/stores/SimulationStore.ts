@@ -1,5 +1,14 @@
 import { makeAutoObservable } from 'mobx';
 import type { AddressSearchResult, SimulationConfig } from '../pages/Simulation/types';
+import type {
+  SimulationRequest,
+  SimulationResponse,
+  SimulationListItem,
+  SimulationListPagination,
+  SimulationDetail
+} from '../types/simulation_request_types';
+import { submitSimulation, getSimulationList, getSimulationDetail } from '@/utils/api';
+import { userStore } from './UserStore';
 
 // ============================================================================
 // Mock Data
@@ -283,6 +292,22 @@ class SimulationStore {
   weatherLocation: string = '부전동';
   weatherTimestamp: string = '08.07. 09:00';
 
+  // 시뮬레이션 제출
+  isSubmitting: boolean = false;
+  submitError: string | null = null;
+
+  // 시뮬레이션 목록 (API 기반)
+  simulationList: SimulationListItem[] = [];
+  isLoadingList: boolean = false;
+  listError: string | null = null;
+  pagination: SimulationListPagination | null = null;
+
+  // 시뮬레이션 상세 정보
+  selectedSimulationUuid: string | null = null;
+  simulationDetail: SimulationDetail | null = null;
+  isLoadingDetail: boolean = false;
+  detailError: string | null = null;
+
   constructor() {
     makeAutoObservable(this);
   }
@@ -509,6 +534,122 @@ class SimulationStore {
    */
   get weatherInfoLabel(): string {
     return `현재 기상 정보 적용 (기상청, ${this.weatherLocation}, ${this.weatherTimestamp} 기준)`;
+  }
+
+  // ============================================================================
+  // 시뮬레이션 제출
+  // ============================================================================
+
+  /**
+   * 시뮬레이션 제출 후 목록 갱신
+   * POST /api/v1/simulation/process
+   */
+  async submitSimulationRequest(simulationData: SimulationRequest): Promise<SimulationResponse | null> {
+    this.isSubmitting = true;
+    this.submitError = null;
+
+    try {
+      const response = await submitSimulation(simulationData);
+
+      if (response.success && response.data) {
+        // 성공 시 목록 갱신
+        await this.loadSimulationList();
+      }
+
+      return response;
+    } catch (error) {
+      console.error('[SimulationStore] Simulation submission failed:', error);
+      this.submitError = error instanceof Error ? error.message : 'Unknown error occurred';
+      return null;
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
+  // ============================================================================
+  // 시뮬레이션 목록 관리
+  // ============================================================================
+
+  /**
+   * 시뮬레이션 목록 조회
+   * GET /api/v1/simulation/list
+   *
+   * userId가 제공되지 않으면 userStore.user를 사용합니다.
+   */
+  async loadSimulationList(
+    page: number = 1,
+    limit: number = 7,
+    userId?: string,
+    includePrivate: boolean = true
+  ): Promise<void> {
+    this.isLoadingList = true;
+    this.listError = null;
+
+    try {
+      // userId가 없으면 userStore의 현재 사용자 사용
+      const effectiveUserId = userId || userStore.currentUser;
+
+      const response = await getSimulationList(page, limit, effectiveUserId, includePrivate);
+      this.simulationList = response.simulations;
+      this.pagination = response.pagination;
+    } catch (error) {
+      console.error('[SimulationStore] Failed to load simulation list:', error);
+      this.listError = error instanceof Error ? error.message : 'Unknown error occurred';
+      this.simulationList = [];
+      this.pagination = null;
+    } finally {
+      this.isLoadingList = false;
+    }
+  }
+
+  /**
+   * 목록 초기화
+   */
+  clearSimulationList() {
+    this.simulationList = [];
+    this.pagination = null;
+    this.listError = null;
+  }
+
+  // ============================================================================
+  // 시뮬레이션 상세 정보
+  // ============================================================================
+
+  /**
+   * 시뮬레이션 선택 및 상세 정보 조회
+   * GET /api/v1/simulation/:uuid
+   */
+  async selectSimulation(uuid: string): Promise<void> {
+    this.selectedSimulationUuid = uuid;
+    this.isLoadingDetail = true;
+    this.detailError = null;
+
+    try {
+      const detail = await getSimulationDetail(uuid);
+      this.simulationDetail = detail;
+    } catch (error) {
+      console.error(`[SimulationStore] Failed to load simulation detail (${uuid}):`, error);
+      this.detailError = error instanceof Error ? error.message : 'Unknown error occurred';
+      this.simulationDetail = null;
+    } finally {
+      this.isLoadingDetail = false;
+    }
+  }
+
+  /**
+   * 선택 해제 및 상세 패널 닫기
+   */
+  closeSimulationDetail() {
+    this.selectedSimulationUuid = null;
+    this.simulationDetail = null;
+    this.detailError = null;
+  }
+
+  /**
+   * 상세 정보가 열려있는지 확인
+   */
+  get isDetailPanelOpen(): boolean {
+    return this.selectedSimulationUuid !== null;
   }
 }
 

@@ -7,6 +7,9 @@ import VulnerabilityManager from '@/components/service/VulnerabilityManager'
 import StationHtmlRenderer from '@/components/service/StationHtmlRenderer'
 import StationSensorRenderer from '@/components/service/StationSensorRenderer'
 import BusHtmlRenderer from '@/components/service/BusHtmlRenderer'
+import SimulationTestButton from './components/SimulationTestButton'
+import SimulationList from './components/SimulationList'
+import SimulationDetailPanel from './components/SimulationDetailPanel'
 import { initializePMFrontend } from '@/utils/cesiumControls'
 import { routeStore } from '@/stores/RouteStore'
 import { stationStore } from '@/stores/StationStore'
@@ -142,6 +145,9 @@ const App = observer(function App(props: AppProps) {
       {cesiumStatus === 'ready' && <StationSensorRenderer />}
       {cesiumStatus === 'ready' && <BusHtmlRenderer />}
 
+      {/* Simulation Detail Panel */}
+      <SimulationDetailPanel />
+
       {/* UI Container Panel */}
       <Panel>
         <div className="w-full max-h-[936px] overflow-y-auto" style={{
@@ -192,6 +198,15 @@ const App = observer(function App(props: AppProps) {
                   {busStore.isAnimationSystemEnabled ? '활성화' : '비활성화'}
                 </span>
               </div>
+            </div>
+
+            {/* Simulation Test Section */}
+            <div className="p-3 pt-6 space-y-4 border-t border-gray-600 rounded-lg bg-gray-900/30">
+              <div className="pb-2 text-lg font-semibold border-b border-blue-400">
+                시뮬레이션 시스템
+              </div>
+              <SimulationTestButton />
+              <SimulationList />
             </div>
 
             {/* Vulnerability System */}
