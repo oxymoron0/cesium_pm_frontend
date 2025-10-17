@@ -1,6 +1,7 @@
 import { createRoot, type Root } from 'react-dom/client'
 import App from './App'
 import '@/index.css'
+import { userStore } from '@/stores/UserStore'
 
 let root: Root | null = null;
 
@@ -8,6 +9,7 @@ interface MountProps {
   container?: Element;
   onCloseMicroApp?: () => void;
   dispatch?: (action: unknown) => void;
+  user?: string;
 }
 
 export async function bootstrap() {
@@ -15,8 +17,11 @@ export async function bootstrap() {
 }
 
 export async function mount(props: MountProps) {
-  const { container, onCloseMicroApp, dispatch } = props
+  const { container, onCloseMicroApp, dispatch, user = 'leorca' } = props
   console.log('[qiankun] Priority mount', props);
+
+  // Register user in UserStore
+  userStore.setUser(user);
 
   const domElement = container
     ? container.querySelector('#microapp-Priority')
@@ -32,6 +37,10 @@ export async function mount(props: MountProps) {
 
 export async function unmount() {
   console.log('[qiankun] Priority unmount');
+
+  // Clear user from UserStore
+  userStore.clearUser();
+
   if (root) {
     root.unmount();
     root = null;
