@@ -7,8 +7,8 @@ import { makeAutoObservable } from 'mobx';
  * 각 페이지의 mount/unmount 라이프사이클에서 사용자 정보를 등록/제거합니다.
  */
 class UserStore {
-  // 현재 로그인한 사용자 ID
-  user: string | null = null;
+  // 현재 로그인한 사용자 ID (기본값: 독립 실행 모드용)
+  user: string = 'leorca';
 
   constructor() {
     makeAutoObservable(this);
@@ -26,25 +26,25 @@ class UserStore {
   }
 
   /**
-   * 사용자 정보 제거
-   * 페이지 unmount 시 호출되어 사용자 정보를 store에서 제거합니다.
+   * 사용자 정보 초기화
+   * 페이지 unmount 시 호출되어 사용자 정보를 기본값으로 초기화합니다.
    */
   clearUser(): void {
     console.log('[UserStore] User cleared:', this.user);
-    this.user = null;
+    this.user = 'leorca';
   }
 
   /**
    * 사용자 로그인 여부 확인
    */
   get isLoggedIn(): boolean {
-    return this.user !== null;
+    return this.user !== 'leorca';
   }
 
   /**
    * 현재 사용자 ID 반환
    */
-  get currentUser(): string | null {
+  get currentUser(): string {
     return this.user;
   }
 }

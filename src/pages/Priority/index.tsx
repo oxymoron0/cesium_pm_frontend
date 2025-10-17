@@ -17,11 +17,13 @@ export async function bootstrap() {
 }
 
 export async function mount(props: MountProps) {
-  const { container, onCloseMicroApp, dispatch, user = 'leorca' } = props
+  const { container, onCloseMicroApp, dispatch, user } = props
   console.log('[qiankun] Priority mount', props);
 
-  // Register user in UserStore
-  userStore.setUser(user);
+  // Register user in UserStore (overrides default if provided)
+  if (user) {
+    userStore.setUser(user);
+  }
 
   const domElement = container
     ? container.querySelector('#microapp-Priority')
