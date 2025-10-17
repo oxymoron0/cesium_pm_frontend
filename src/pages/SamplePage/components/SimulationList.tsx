@@ -125,10 +125,36 @@ const SimulationList = observer(function SimulationList() {
         </div>
       )}
 
-      {/* Pagination Info */}
-      {pagination && pagination.total > 0 && (
-        <div className="pt-2 text-xs text-center border-t text-gray-500 border-gray-700">
-          {pagination.page} / {pagination.total_pages} 페이지
+      {/* Pagination Controls */}
+      {pagination && pagination.total_pages > 1 && (
+        <div className="flex items-center justify-between pt-2 border-t border-gray-700">
+          <button
+            onClick={() => simulationStore.loadSimulationList(pagination.page - 1)}
+            disabled={pagination.page === 1 || simulationStore.isLoadingList}
+            className={`px-3 py-1 text-xs transition-colors rounded ${
+              pagination.page === 1 || simulationStore.isLoadingList
+                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                : 'bg-blue-600/20 hover:bg-blue-600/40 text-blue-300'
+            }`}
+          >
+            이전
+          </button>
+
+          <div className="text-xs text-gray-400">
+            {pagination.page} / {pagination.total_pages}
+          </div>
+
+          <button
+            onClick={() => simulationStore.loadSimulationList(pagination.page + 1)}
+            disabled={pagination.page === pagination.total_pages || simulationStore.isLoadingList}
+            className={`px-3 py-1 text-xs transition-colors rounded ${
+              pagination.page === pagination.total_pages || simulationStore.isLoadingList
+                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                : 'bg-blue-600/20 hover:bg-blue-600/40 text-blue-300'
+            }`}
+          >
+            다음
+          </button>
         </div>
       )}
     </div>
