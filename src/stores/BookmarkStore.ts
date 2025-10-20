@@ -82,7 +82,7 @@ class BookmarkStore {
       // Set 초기화 및 데이터 추가
       this.routeBookmarks.clear();
       response.bookmarks.forEach(bookmark => {
-        this.routeBookmarks.add(bookmark.routeName);
+        this.routeBookmarks.add(bookmark.route_name);
       });
 
       console.log(`[BookmarkStore] Route bookmarks loaded: ${this.routeBookmarks.size} routes`);
@@ -184,7 +184,7 @@ class BookmarkStore {
       // Set 초기화 및 데이터 추가
       this.stationBookmarks.clear();
       response.bookmarks.forEach(bookmark => {
-        this.stationBookmarks.add(bookmark.stationID);
+        this.stationBookmarks.add(bookmark.station_id);
       });
 
       console.log(`[BookmarkStore] Station bookmarks loaded: ${this.stationBookmarks.size} stations`);

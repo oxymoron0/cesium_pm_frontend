@@ -198,11 +198,23 @@ export interface AirQualitySensorProps {
 // =============================================================================
 
 /**
- * Route Bookmark
+ * User Entity (snake_case as per Go backend)
+ */
+export interface User {
+  user_id: string;
+  username: string;
+  email: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Route Bookmark (snake_case as per Go backend)
  */
 export interface RouteBookmark {
-  userID: string;
-  routeName: string;
+  user_id: string;
+  route_name: string;
 }
 
 /**
@@ -224,11 +236,11 @@ export interface CreateRouteBookmarkRequest {
 }
 
 /**
- * Station Bookmark
+ * Station Bookmark (snake_case as per Go backend)
  */
 export interface StationBookmark {
-  userID: string;
-  stationID: string;
+  user_id: string;
+  station_id: string;
 }
 
 /**
