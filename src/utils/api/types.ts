@@ -194,6 +194,62 @@ export interface AirQualitySensorProps {
 }
 
 // =============================================================================
+// Bookmark API Types
+// =============================================================================
+
+/**
+ * Route Bookmark
+ */
+export interface RouteBookmark {
+  userID: string;
+  routeName: string;
+}
+
+/**
+ * Route Bookmarks GET response
+ * GET /api/v1/bookmarks/routes?user={user}
+ */
+export interface RouteBookmarksResponse {
+  bookmarks: RouteBookmark[];
+  total: number;
+}
+
+/**
+ * Route Bookmark POST request
+ * POST /api/v1/bookmarks/routes
+ */
+export interface CreateRouteBookmarkRequest {
+  user: string;
+  route_name: string;
+}
+
+/**
+ * Station Bookmark
+ */
+export interface StationBookmark {
+  userID: string;
+  stationID: string;
+}
+
+/**
+ * Station Bookmarks GET response
+ * GET /api/v1/bookmarks/stations?user={user}
+ */
+export interface StationBookmarksResponse {
+  bookmarks: StationBookmark[];
+  total: number;
+}
+
+/**
+ * Station Bookmark POST request
+ * POST /api/v1/bookmarks/stations
+ */
+export interface CreateStationBookmarkRequest {
+  user: string;
+  station_id: string;
+}
+
+// =============================================================================
 // Station Sensor Data Types (실제 API 연동용)
 // =============================================================================
 
