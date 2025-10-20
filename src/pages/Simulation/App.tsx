@@ -7,6 +7,11 @@ import SimulationDetailConfig from './components/SimulationDetailConfig'
 import DirectLocationGuide from './components/DirectLocationGuide'
 import { simulationStore } from '@/stores/SimulationStore'
 import type { SimulationView } from './types'
+import TabNavigation from '@/components/basic/TabNavigation'
+import Title from '@/components/basic/Title'
+import SimulationActiveTabList from './components/SimulationActvieTabList'
+import Spacer from '@/components/basic/Spacer'
+import SimulationRunningList from './components/SimulationRunningList'
 
 interface AppProps {
   onCloseMicroApp?: () => void;
@@ -15,6 +20,8 @@ interface AppProps {
 
 const App = observer(function App(props: AppProps) {
   const [cesiumStatus, setCesiumStatus] = useState<'loading' | 'ready'>('loading')
+  const [activeTab, setActiveTab] = useState(0);
+  const [activeList, setActiveList] = useState('상세설정');
   const [currentView, setCurrentView] = useState<SimulationView>('config')
 
   useEffect(() => {
@@ -54,17 +61,50 @@ const App = observer(function App(props: AppProps) {
       {/* Simulation Panel - Left Top */}
       {cesiumStatus === 'ready' && (
         <Panel position="left" width="540px" maxHeight="calc(100vh - 160px)">
-          {currentView === 'config' ? (
-            <SimulationConfig
-              onClose={props.onCloseMicroApp}
-              onLocationComplete={() => setCurrentView('detailConfig')}
+          <Title
+            info="시뮬레이션 실행을 위한 설정 페이지입니다."
+            onClose={()=> setCurrentView('config')}
+          >
+            시뮬레이션
+          </Title>
+          <TabNavigation
+            tabs={['맞춤실행', '빠른실행']}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
+
+          <Spacer height={16} />
+
+          {activeTab === 0 ? (
+            <>
+            <SimulationActiveTabList 
+              activeList={activeList}
+              setActiveList={setActiveList}
             />
-          ) : currentView === 'detailConfig' ? (
-            <SimulationDetailConfig
-              onBack={() => setCurrentView('config')}
-              onExecute={() => console.log('시뮬레이션 실행')}
-            />
-          ) : null}
+              {activeList === '상세설정' ? (
+                <>
+                {currentView === 'config' ? (
+                  <SimulationConfig
+                  onClose={props.onCloseMicroApp}
+                  onLocationComplete={() => setCurrentView('detailConfig')}
+                  />
+                ) : currentView === 'detailConfig' ? (
+                 <SimulationDetailConfig
+                  // onBack={() => setCurrentView('config')}
+                  onExecute={() => console.log('시뮬레이션 실행')}
+                  />)
+                : null}
+                </>
+              ) : activeList === '실행목록' ? (
+                <SimulationRunningList />
+              ) : null}
+            </>
+          ) 
+          : 
+          <div>
+            빠른실행
+          </div>
+          }
         </Panel>
       )}
 

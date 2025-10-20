@@ -1,21 +1,22 @@
 import { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
-import Title from '@/components/basic/Title';
+// import Title from '@/components/basic/Title';
+// import TabNavigation from '@/components/basic/TabNavigation';
 import SubTitle from '@/components/basic/SubTitle';
 import Spacer from '@/components/basic/Spacer';
-import TabNavigation from '@/components/basic/TabNavigation';
 import Icon from '@/components/basic/Icon';
 import Divider from '@/components/basic/Divider';
 import AddressResultList from './AddressResultList';
 import { simulationStore } from '@/stores/SimulationStore';
 
 interface SimulationConfigProps {
-  onClose?: () => void;
+  // onClose?: () => void;
   onLocationComplete?: () => void;
 }
 
-const SimulationConfig = observer(function SimulationConfig({ onClose, onLocationComplete }: SimulationConfigProps) {
-  const [activeTab, setActiveTab] = useState(0);
+const SimulationConfig = observer(function SimulationConfig({ onLocationComplete }: SimulationConfigProps) {
+  // const [activeTab, setActiveTab] = useState(0);
+  // const [activeList, setActiveList] = useState('상세설정');
   const [searchInput, setSearchInput] = useState('');
 
   // 검색어 입력 시 디바운싱 적용하여 검색 수행
@@ -33,73 +34,6 @@ const SimulationConfig = observer(function SimulationConfig({ onClose, onLocatio
 
   return (
     <>
-      <Title
-        info="시뮬레이션 실행을 위한 설정 페이지입니다."
-        onClose={onClose}
-      >
-        시뮬레이션
-      </Title>
-
-      {/* Tab Navigation */}
-      <TabNavigation
-        tabs={['맞춤실행', '빠른실행']}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-      />
-
-      <Spacer height={16} />
-
-      {/* Button Group */}
-      <div className="flex self-stretch gap-4">
-        {/* 상세설정 - Gradient Button */}
-        <div
-          className="flex-1 h-10 flex items-center justify-center gap-1 px-4 py-2.5 cursor-pointer"
-          style={{
-            background: 'linear-gradient(180deg, #FDF106 0%, #FFD040 100%)',
-            borderRadius: '19px'
-          }}
-          onClick={() => console.log('상세설정')}
-        >
-          <div
-            style={{
-              fontFamily: 'Pretendard',
-              fontSize: '16px',
-              fontWeight: '700',
-              lineHeight: 'normal',
-              color: '#000',
-              textAlign: 'center'
-            }}
-          >
-            상세설정
-          </div>
-        </div>
-
-        {/* 실행목록 - Gray Button */}
-        <div
-          className="flex-1 h-10 flex items-center justify-center gap-1 px-4 py-2.5 cursor-pointer"
-          style={{
-            background: '#696A6A',
-            borderRadius: '19px'
-          }}
-          onClick={() => console.log('실행목록')}
-        >
-          <div
-            style={{
-              fontFamily: 'Pretendard',
-              fontSize: '16px',
-              fontWeight: '500',
-              lineHeight: 'normal',
-              color: '#000',
-              textAlign: 'center'
-            }}
-          >
-            실행목록
-          </div>
-        </div>
-      </div>
-
-      <Spacer height={16} />
-
       {/* 조건부 렌더링: 주소 조회 vs 직접 위치 지정 */}
       {simulationStore.isDirectLocationMode ? (
         <>

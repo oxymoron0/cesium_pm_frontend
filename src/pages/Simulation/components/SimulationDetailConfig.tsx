@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import Title from '@/components/basic/Title';
-import TabNavigation from '@/components/basic/TabNavigation';
+// import Title from '@/components/basic/Title';
+// import TabNavigation from '@/components/basic/TabNavigation';
 import Spacer from '@/components/basic/Spacer';
 import Icon from '@/components/basic/Icon';
 import Info from '@/components/basic/Info';
@@ -9,11 +9,10 @@ import Checkbox from './Checkbox';
 import { simulationStore } from '@/stores/SimulationStore';
 
 interface SimulationDetailConfigProps {
-  onBack?: () => void;
   onExecute?: () => void;
 }
 
-const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack, onExecute }: SimulationDetailConfigProps) {
+const SimulationDetailConfig = observer(function SimulationDetailConfig({ onExecute }: SimulationDetailConfigProps) {
   // Form state
   const [title, setTitle] = useState('');
   const [pollutant, setPollutant] = useState('');
@@ -38,66 +37,6 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
 
   return (
     <>
-      <Title onClose={onBack}>시뮬레이션</Title>
-
-      {/* Tab Navigation */}
-      <TabNavigation
-        tabs={['맞춤실행', '빠른실행']}
-        activeTab={0}
-        onTabChange={() => {}}
-      />
-
-      <Spacer height={16} />
-
-      {/* Button Group */}
-      <div className="flex self-stretch gap-4">
-        {/* 상세설정 - Gradient Button */}
-        <div
-          className="flex-1 h-10 flex items-center justify-center gap-1 px-4 py-2.5 cursor-pointer"
-          style={{
-            background: 'linear-gradient(180deg, #FDF106 0%, #FFD040 100%)',
-            borderRadius: '19px'
-          }}
-        >
-          <div
-            style={{
-              fontFamily: 'Pretendard',
-              fontSize: '16px',
-              fontWeight: '700',
-              lineHeight: 'normal',
-              color: '#000',
-              textAlign: 'center'
-            }}
-          >
-            상세설정
-          </div>
-        </div>
-
-        {/* 실행목록 - Gray Button */}
-        <div
-          className="flex-1 h-10 flex items-center justify-center gap-1 px-4 py-2.5 cursor-pointer"
-          style={{
-            background: '#696A6A',
-            borderRadius: '19px'
-          }}
-        >
-          <div
-            style={{
-              fontFamily: 'Pretendard',
-              fontSize: '16px',
-              fontWeight: '500',
-              lineHeight: 'normal',
-              color: '#000',
-              textAlign: 'center'
-            }}
-          >
-            실행목록
-          </div>
-        </div>
-      </div>
-
-      <Spacer height={16} />
-
       {/* Form Fields */}
       <div className="flex flex-col self-stretch gap-3">
         {/* 시뮬레이션 제목 */}
