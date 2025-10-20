@@ -649,6 +649,7 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onExec
               useCurrentWeather,
               isPublic
             });
+            simulationStore.openModal();
             onExecute?.();
           }}
         >

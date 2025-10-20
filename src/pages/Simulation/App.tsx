@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { observer } from 'mobx-react-lite'
 import CesiumViewer from '@/components/CesiumViewer'
 import Panel from '@/components/basic/Panel'
+import SimulationConfirm from './components/SimulationConfirm'
 import SimulationConfig from './components/SimulationConfig'
 import SimulationDetailConfig from './components/SimulationDetailConfig'
 import DirectLocationGuide from './components/DirectLocationGuide'
@@ -113,6 +114,11 @@ const App = observer(function App(props: AppProps) {
         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
           <div className="text-lg text-white">Cesium 초기화 중...</div>
         </div>
+      )}
+
+        {/* SimulationConfirm 모달 */}
+      {simulationStore.isModalOpen && (
+        <SimulationConfirm onClose={() => simulationStore.closeModal()} />
       )}
     </div>
   )

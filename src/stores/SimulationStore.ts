@@ -308,6 +308,9 @@ class SimulationStore {
   isLoadingDetail: boolean = false;
   detailError: string | null = null;
 
+  // confirm modal active
+  isModalOpen = false
+
   constructor() {
     makeAutoObservable(this);
   }
@@ -651,6 +654,24 @@ class SimulationStore {
   get isDetailPanelOpen(): boolean {
     return this.selectedSimulationUuid !== null;
   }
+
+  // ============================================================================
+  //confirm
+  // ============================================================================
+    /**
+   * 모달 열기
+   */
+  openModal = () => {
+    this.isModalOpen = true
+  }
+
+  /**
+   * 모달 닫기
+   */
+  closeModal = () => {
+    this.isModalOpen = false
+  }
+
 }
 
 export const simulationStore = new SimulationStore();
