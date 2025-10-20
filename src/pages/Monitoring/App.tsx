@@ -12,6 +12,8 @@ import { stationStore } from '@/stores/StationStore'
 import { busStore } from '@/stores/BusStore'
 import { stationSensorStore } from '@/stores/StationSensorStore'
 import { stationDetailStore } from '@/stores/StationDetailStore'
+import { bookmarkStore } from '@/stores/BookmarkStore'
+import { userStore } from '@/stores/UserStore'
 
 interface AppProps {
   onCloseMicroApp?: () => void;
@@ -88,6 +90,10 @@ const App = observer(function App(props: AppProps) {
           // 초기 방향을 inbound로 설정
           stationStore.setSelectedDirection('inbound');
           console.log('[App] Initial direction set to inbound');
+
+          // BookmarkStore 초기화 (StationStore 로드 후)
+          await bookmarkStore.initializeBookmarks(userStore.currentUser);
+          console.log('[App] Bookmark data loaded');
         } catch (error) {
           console.error('[App] Station data loading failed:', error);
         }
