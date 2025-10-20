@@ -43,6 +43,14 @@ export const API_PATHS = {
   SIMULATION_PROCESS: getApiPath('api/v1/simulation/process'),
   SIMULATION_LIST: getApiPath('api/v1/simulation/list'),
   SIMULATION_DETAIL: (uuid: string) => getApiPath(`api/v1/simulation/${uuid}`),
+
+  // 북마크 API (PM Backend)
+  BOOKMARKS_ROUTES: (user: string) => getApiPath(`api/v1/bookmarks/routes?user=${user}`),
+  BOOKMARKS_ROUTES_CREATE: getApiPath('api/v1/bookmarks/routes'),
+  BOOKMARKS_ROUTES_DELETE: (routeName: string, user: string) => getApiPath(`api/v1/bookmarks/routes/${routeName}?user=${user}`),
+  BOOKMARKS_STATIONS: (user: string) => getApiPath(`api/v1/bookmarks/stations?user=${user}`),
+  BOOKMARKS_STATIONS_CREATE: getApiPath('api/v1/bookmarks/stations'),
+  BOOKMARKS_STATIONS_DELETE: (stationId: string, user: string) => getApiPath(`api/v1/bookmarks/stations/${stationId}?user=${user}`),
 } as const;
 
 /**
