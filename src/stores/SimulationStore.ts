@@ -380,10 +380,30 @@ class SimulationStore {
 
   selectAddress(addressId: string) {
     this.selectedAddressId = addressId;
+
+    // 선택된 주소의 좌표를 selectedLocation에 설정
+    const address = this.currentResults.find(result => result.id === addressId);
+    if (address?.geometry) {
+      const [lng, lat] = address.geometry.coordinates;
+      this.selectedLocation = { lng, lat };
+    }
   }
 
   clearSelection() {
     this.selectedAddressId = null;
+  }
+
+  /**
+   * 모든 상태 초기화 (DetailConfig 뒤로가기 시)
+   */
+  resetToInitial() {
+    this.selectedAddressId = null;
+    this.selectedLocation = null;
+    this.searchResults = [];
+    this.searchQuery = '';
+    this.directLocationResults = [];
+    this.isDirectLocationMode = false;
+    this.previousSelectedAddressId = null;
   }
 
   isAddressSelected(addressId: string): boolean {
@@ -421,45 +441,55 @@ class SimulationStore {
     this.previousSelectedAddressId = this.selectedAddressId;
     this.selectedAddressId = null;
 
+    // 위치 정보 초기화 (마커 제거)
+    this.selectedLocation = null;
+
     // 직접 위치 지정 리스트 초기화 (검색 결과는 유지)
     this.directLocationResults = [];
   }
 
   disableDirectLocationMode() {
     this.isDirectLocationMode = false;
-
-    // 이전에 선택했던 주소 복원
-    this.selectedAddressId = this.previousSelectedAddressId;
-    this.previousSelectedAddressId = null;
-
     this.selectedLocation = null;
-    // 검색 결과는 유지 (뒤로가기 시 검색 결과 보존)
-    // 직접 위치 지정 결과는 자동으로 무시됨
+
   }
 
   /**
    * 직접 위치 지정: 지도 클릭 시 호출
-   * 좌표를 기반으로 임시 AddressSearchResult 생성
+   * Mock: 도로명/지번 주소를 별도 항목으로 반환 (실제로는 역지오코딩 API 호출)
    */
-  addDirectLocationResult(lat: number, lng: number, addressLabel?: string) {
+  addDirectLocationResult(lat: number, lng: number) {
     this.selectedLocation = { lat, lng };
 
-    // 임시 ID 생성 (타임스탬프 기반)
-    const tempId = `direct_location_${Date.now()}`;
+    // Mock: 첫 번째 주소 결과 사용 (실제로는 역지오코딩 API로 좌표 → 주소 변환)
+    const mockResult = MOCK_ADDRESS_RESULTS[0];
 
-    // 좌표를 기반으로 간단한 주소 표시 (역지오코딩 전까지 임시)
-    const tempResult: AddressSearchResult = {
-      id: tempId,
-      roadAddress: addressLabel || `위도: ${lat.toFixed(6)}, 경도: ${lng.toFixed(6)}`,
-      geometry: {
-        type: 'Point',
-        coordinates: [lng, lat]
-      }
-    };
+    const results: AddressSearchResult[] = [];
+    const geometry = { type: 'Point' as const, coordinates: [lng, lat] as [number, number] };
 
-    // 기존 결과 제거 후 새 결과 추가 (한 번에 하나만 선택 가능)
-    this.directLocationResults = [tempResult];
-    this.selectedAddressId = tempId;
+    // 도로명 주소가 있으면 추가
+    if (mockResult.roadAddress) {
+      results.push({
+        id: `direct_road_${Date.now()}`,
+        roadAddress: mockResult.roadAddress,
+        detailAddress: mockResult.detailAddress,
+        geometry
+      });
+    }
+
+    // 지번 주소가 있으면 추가
+    if (mockResult.jibunAddress) {
+      results.push({
+        id: `direct_jibun_${Date.now()}`,
+        jibunAddress: mockResult.jibunAddress,
+        detailAddress: mockResult.detailAddress,
+        geometry
+      });
+    }
+
+    // 결과 설정 및 첫 번째 항목 자동 선택
+    this.directLocationResults = results;
+    this.selectedAddressId = results.length > 0 ? results[0].id : null;
   }
 
   clearDirectLocationResults() {

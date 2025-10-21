@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
+import { reaction } from 'mobx';
 // import Title from '@/components/basic/Title';
 // import TabNavigation from '@/components/basic/TabNavigation';
 import SubTitle from '@/components/basic/SubTitle';
@@ -9,6 +10,8 @@ import Icon from '@/components/basic/Icon';
 import Info from '@/components/basic/Info';
 import Checkbox from './Checkbox';
 import { simulationStore } from '@/stores/SimulationStore';
+import { renderLocationMarker } from '@/utils/cesium/locationMarker';
+import { renderAdministrativeBoundary } from '@/utils/cesium/districtRenderer';
 
 interface SimulationDetailConfigProps {
   onBack?: () => void;
@@ -20,11 +23,14 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
   const [title, setTitle] = useState('');
   const [pollutant, setPollutant] = useState('');
   const [concentration, setConcentration] = useState('');
-  const [altitude, setAltitude] = useState('1.5');
+  //const [altitude, setAltitude] = useState('1.5');
   const [windDirection, setWindDirection] = useState('270');
   const [windSpeed, setWindSpeed] = useState('2.31');
   const [useCurrentWeather, setUseCurrentWeather] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
+
+  // Validation: Check if all required fields are filled
+  const isFormValid = title.trim() !== '' && pollutant !== '' && concentration.trim() !== '';
 
   // Options
   const pollutantOptions = [
@@ -37,6 +43,40 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
 
   // Get selected location from store
   const selectedLocation = simulationStore.selectedAddress;
+
+  // 선택된 위치(selectedLocation)에 따라 마커 표시
+  useEffect(() => {
+    const dispose = reaction(
+      () => simulationStore.selectedLocation,
+      (selectedLocation) => {
+        if (selectedLocation) {
+          renderLocationMarker(selectedLocation.lng, selectedLocation.lat);
+        }
+      },
+      { fireImmediately: true }
+    );
+
+    return () => {
+      dispose();
+    };
+  }, []);
+
+  // 선택된 시군구의 경계 렌더링
+  useEffect(() => {
+    const dispose = reaction(
+      () => simulationStore.selectedDistrict,
+      (selectedDistrict) => {
+        if (selectedDistrict?.geometry) {
+          renderAdministrativeBoundary(selectedDistrict.geometry, selectedDistrict.code);
+        }
+      },
+      { fireImmediately: true }
+    );
+
+    return () => {
+      dispose();
+    };
+  }, []);
 
   return (
     <>
@@ -344,7 +384,7 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
         </div>
 
         {/* 발생 고도 */}
-        <div className="flex items-center self-stretch justify-between">
+        {/* <div className="flex items-center self-stretch justify-between">
           <div className="flex items-center gap-[5px]">
             <div
               style={{
@@ -405,7 +445,7 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
               m
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* 기상 조건 */}
         <div className="flex items-center self-stretch justify-between">
@@ -651,22 +691,26 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
       {/* 시뮬레이션 실행 버튼 */}
       <div className="flex flex-col pt-9 border-t border-[#696A6A] self-stretch">
         <div
-          className="h-10 flex items-center justify-center gap-2 px-4 py-2.5 rounded cursor-pointer"
+          className="h-10 flex items-center justify-center gap-2 px-4 py-2.5 rounded"
           style={{
-            background: '#696A6A',
-            borderRadius: '4px'
+            background: isFormValid ? '#CFFF40' : '#696A6A',
+            borderRadius: '4px',
+            cursor: isFormValid ? 'pointer' : 'not-allowed',
           }}
           onClick={() => {
-            console.log('시뮬레이션 실행:', {
+            if (!isFormValid) return;
+
+            const executionData = {
               title,
               pollutant,
               concentration,
-              altitude,
+              //altitude,
               windDirection,
               windSpeed,
-              useCurrentWeather,
               isPublic
-            });
+            };
+
+            console.log('시뮬레이션 실행:', executionData);
             simulationStore.openModal();
             onExecute?.();
           }}

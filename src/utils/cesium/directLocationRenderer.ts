@@ -1,5 +1,4 @@
 import { simulationStore } from '@/stores/SimulationStore';
-import { renderLocationMarker } from './locationMarker';
 import {
   Cartographic,
   Math as CesiumMath,
@@ -73,9 +72,6 @@ export function enableDirectLocationClickHandler(): void {
 
         // SimulationStore에 위치 추가
         simulationStore.addDirectLocationResult(latitude, longitude);
-
-        // 마커 렌더링 (경위도 + 높이 전달)
-        renderLocationMarker(longitude, latitude, height);
 
       } catch (error) {
         console.error('[directLocationRenderer] Click handler error:', error);

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
+import { reaction } from 'mobx';
 // import Title from '@/components/basic/Title';
 // import TabNavigation from '@/components/basic/TabNavigation';
 import SubTitle from '@/components/basic/SubTitle';
@@ -10,8 +11,8 @@ import AddressResultList from './AddressResultList';
 import { simulationStore } from '@/stores/SimulationStore';
 import { renderAdministrativeBoundary, clearAdministrativeBoundary } from '@/utils/cesium/districtRenderer';
 import { enableDirectLocationClickHandler,disableDirectLocationClickHandler } from '@/utils/cesium/directLocationRenderer';
+import { renderLocationMarker, clearLocationMarker } from '@/utils/cesium/locationMarker';
 interface SimulationConfigProps {
-  onClose?: () => void;
   onLocationComplete?: () => void;
 }
 
@@ -50,12 +51,34 @@ const SimulationConfig = observer(function SimulationConfig({ onLocationComplete
       renderAdministrativeBoundary(selectedDistrict.geometry, selectedDistrict.code);
     }
 
-    // Cleanup: 컴포넌트 언마운트 시 경계 제거
+
     return () => {
       clearAdministrativeBoundary();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [simulationStore.selectedDistrict]);
+
+  // 선택된 위치(selectedLocation)에 따라 마커 표시/제거
+  useEffect(() => {
+    const dispose = reaction(
+      () => simulationStore.selectedLocation,
+      (selectedLocation) => {
+        if (selectedLocation) {
+          // 위치가 선택되면 마커 렌더링
+          renderLocationMarker(selectedLocation.lng, selectedLocation.lat);
+        } else {
+          // 위치 선택이 해제되면 마커 제거
+          clearLocationMarker();
+        }
+      },
+      { fireImmediately: true }
+    );
+
+    return () => {
+      dispose();
+      clearLocationMarker(); // 상세설정 화면으로 이동해도 마커 유지
+    };
+  }, []);
 
   // 검색어 입력 시 디바운싱 적용하여 검색 수행
   useEffect(() => {
