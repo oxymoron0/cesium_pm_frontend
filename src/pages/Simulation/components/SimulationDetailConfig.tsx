@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 // import Title from '@/components/basic/Title';
 // import TabNavigation from '@/components/basic/TabNavigation';
+import SubTitle from '@/components/basic/SubTitle';
+import Divider from '@/components/basic/Divider';
 import Spacer from '@/components/basic/Spacer';
 import Icon from '@/components/basic/Icon';
 import Info from '@/components/basic/Info';
@@ -9,10 +11,11 @@ import Checkbox from './Checkbox';
 import { simulationStore } from '@/stores/SimulationStore';
 
 interface SimulationDetailConfigProps {
+  onBack?: () => void;
   onExecute?: () => void;
 }
 
-const SimulationDetailConfig = observer(function SimulationDetailConfig({ onExecute }: SimulationDetailConfigProps) {
+const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack, onExecute }: SimulationDetailConfigProps) {
   // Form state
   const [title, setTitle] = useState('');
   const [pollutant, setPollutant] = useState('');
@@ -37,6 +40,21 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onExec
 
   return (
     <>
+      {/* Header with back button */}
+      <div className="flex items-center gap-2">
+        <Icon
+          name="chevron-left"
+          className="w-5 h-5 cursor-pointer"
+          onClick={onBack}
+        />
+        <SubTitle info="시뮬레이션 실행에 필요한 세부 설정을 입력해주세요.">
+          상세설정
+        </SubTitle>
+      </div>
+      <Divider color="bg-[#C3C3C3]" />
+
+      <Spacer height={16} />
+
       {/* Form Fields */}
       <div className="flex flex-col self-stretch gap-3">
         {/* 시뮬레이션 제목 */}

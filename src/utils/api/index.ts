@@ -9,6 +9,7 @@ export * from './types';
 export * from './routeApi';
 export * from './busApi';
 export * from './simulationApi';
+export * from './regionApi';
 
 // 사용 예시:
 // import { get, post, getApiPath, API_PATHS, getRouteInfo, getRouteGeometry, submitSimulation } from '@/utils/api';

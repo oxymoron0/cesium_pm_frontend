@@ -7,6 +7,7 @@ import SimulationConfig from './components/SimulationConfig'
 import SimulationDetailConfig from './components/SimulationDetailConfig'
 import DirectLocationGuide from './components/DirectLocationGuide'
 import { simulationStore } from '@/stores/SimulationStore'
+import { flyToLocation } from '@/utils/cesiumControls'
 import type { SimulationView } from './types'
 import TabNavigation from '@/components/basic/TabNavigation'
 import Title from '@/components/basic/Title'
@@ -33,12 +34,20 @@ const App = observer(function App(props: AppProps) {
 
       if (isQiankun && parentViewer) {
         setCesiumStatus('ready')
+        // 부모 Viewer 사용 시 부산진구 중심으로 이동
+        setTimeout(() => {
+          flyToLocation(parentViewer, 129.0545, 35.1598, 3000)
+        }, 500)
       } else if (!isQiankun) {
         // 독립 모드에서는 CesiumViewer 컴포넌트가 window.cviewer를 설정할 때까지 대기
         const waitForViewer = setInterval(() => {
           if (window.cviewer) {
             setCesiumStatus('ready')
             clearInterval(waitForViewer)
+            // 독립 모드에서 부산진구 중심으로 이동
+            setTimeout(() => {
+              flyToLocation(window.cviewer!, 129.0545, 35.1598, 3000)
+            }, 500)
           }
         }, 100)
       }
@@ -91,7 +100,7 @@ const App = observer(function App(props: AppProps) {
                   />
                 ) : currentView === 'detailConfig' ? (
                  <SimulationDetailConfig
-                  // onBack={() => setCurrentView('config')}
+                  onBack={() => setCurrentView('config')}
                   onExecute={() => console.log('시뮬레이션 실행')}
                   />)
                 : null}

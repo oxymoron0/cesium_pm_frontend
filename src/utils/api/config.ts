@@ -43,6 +43,11 @@ export const API_PATHS = {
   SIMULATION_PROCESS: getApiPath('api/v1/simulation/process'),
   SIMULATION_LIST: getApiPath('api/v1/simulation/list'),
   SIMULATION_DETAIL: (uuid: string) => getApiPath(`api/v1/simulation/${uuid}`),
+
+  // 지역 정보 API (PM Backend)
+  REGION_CITIES: getApiPath('api/v1/region/cities'),
+  REGION_DISTRICTS: (cityCode: string) => getApiPath(`api/v1/region/districts?cityCode=${cityCode}`),
+  REGION_DONGS: (districtCode: string) => getApiPath(`api/v1/region/dongs?districtCode=${districtCode}`),
 } as const;
 
 /**

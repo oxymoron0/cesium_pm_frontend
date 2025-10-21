@@ -8,9 +8,10 @@ import Icon from '@/components/basic/Icon';
 import Divider from '@/components/basic/Divider';
 import AddressResultList from './AddressResultList';
 import { simulationStore } from '@/stores/SimulationStore';
-
+import { renderAdministrativeBoundary, clearAdministrativeBoundary } from '@/utils/cesium/districtRenderer';
+import { enableDirectLocationClickHandler,disableDirectLocationClickHandler } from '@/utils/cesium/directLocationRenderer';
 interface SimulationConfigProps {
-  // onClose?: () => void;
+  onClose?: () => void;
   onLocationComplete?: () => void;
 }
 
@@ -18,6 +19,43 @@ const SimulationConfig = observer(function SimulationConfig({ onLocationComplete
   // const [activeTab, setActiveTab] = useState(0);
   // const [activeList, setActiveList] = useState('상세설정');
   const [searchInput, setSearchInput] = useState('');
+
+  // 직접 위치 지정 모드에 따라 클릭 핸들러 활성화/비활성화
+  useEffect(() => {
+    if (simulationStore.isDirectLocationMode) {
+      enableDirectLocationClickHandler();
+    } else {
+      disableDirectLocationClickHandler();
+    }
+
+    // Cleanup: 컴포넌트 언마운트 시 핸들러 비활성화
+    return () => {
+      disableDirectLocationClickHandler();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [simulationStore.isDirectLocationMode]);
+
+  // 시군구 목록 불러오기
+  useEffect(() => {
+    simulationStore.loadDistrictList();
+  }, []);
+
+  // 선택된 시군구의 경계 렌더링
+  useEffect(() => {
+    const selectedDistrict = simulationStore.selectedDistrict;
+    console.log('[SimulationConfig] Selected district:', selectedDistrict);
+
+    if (selectedDistrict?.geometry) {
+      console.log('[SimulationConfig] Rendering administrative boundary...');
+      renderAdministrativeBoundary(selectedDistrict.geometry, selectedDistrict.code);
+    }
+
+    // Cleanup: 컴포넌트 언마운트 시 경계 제거
+    return () => {
+      clearAdministrativeBoundary();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [simulationStore.selectedDistrict]);
 
   // 검색어 입력 시 디바운싱 적용하여 검색 수행
   useEffect(() => {
@@ -122,20 +160,28 @@ const SimulationConfig = observer(function SimulationConfig({ onLocationComplete
                   주소
                 </div>
 
-                {/* Fixed Address */}
-                <div className="flex-1 h-10 flex items-center px-3.5 py-2.5 bg-black rounded-md border border-[#424242]">
-                  <div
-                    style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: '400',
-                      lineHeight: 'normal',
-                      color: '#FFF'
-                    }}
-                  >
-                    부산광역시 부산진구
-                  </div>
-                </div>
+                {/* Address Select */}
+                <select
+                  value={simulationStore.selectedDistrictCode}
+                  onChange={(e) => simulationStore.setDistrictCode(e.target.value)}
+                  disabled= {true} //{simulationStore.isLoadingDistricts}
+                  className="flex-1 h-10 px-3.5 py-2.5 bg-black rounded-md border border-[#424242] text-white outline-none cursor-pointer"
+                  style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '16px',
+                    fontWeight: '400',
+                    lineHeight: 'normal',
+                    appearance: 'none',
+                    WebkitAppearance: 'none',
+                    MozAppearance: 'none'
+                  }}
+                >
+                  {simulationStore.districtList.map(district => (
+                    <option key={district.code} value={district.code}>
+                      {district.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Search Button (Disabled) */}
@@ -216,6 +262,7 @@ const SimulationConfig = observer(function SimulationConfig({ onLocationComplete
       {/* Bottom Buttons */}
       <div className="flex flex-col gap-3 pt-9 border-t border-[#696A6A] self-stretch">
         {/* 직접 위치 지정 버튼 */}
+                {!simulationStore.isDirectLocationMode && (
         <div
           className="h-10 flex items-center justify-center gap-2 px-4 py-2.5 cursor-pointer border"
           style={{
@@ -225,7 +272,7 @@ const SimulationConfig = observer(function SimulationConfig({ onLocationComplete
           }}
           onClick={() => simulationStore.enableDirectLocationMode()}
         >
-          <Icon name="saas" className="w-4 h-4" />
+          <Icon name="saas" className="w-4 h-4 text-[#CFFF40]" />
           <div
             style={{
               fontFamily: 'Pretendard',
@@ -239,6 +286,7 @@ const SimulationConfig = observer(function SimulationConfig({ onLocationComplete
             직접 위치 지정
           </div>
         </div>
+                )}
 
         {/* 위치 설정 완료 버튼 - 위치 선택 후에만 표시 */}
         {simulationStore.hasSelectedLocation && (
