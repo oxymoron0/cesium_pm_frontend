@@ -16,9 +16,10 @@ import { renderAdministrativeBoundary } from '@/utils/cesium/districtRenderer';
 interface SimulationDetailConfigProps {
   onBack?: () => void;
   onExecute?: () => void;
+  onShowPanels?: () => void;
 }
 
-const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack, onExecute }: SimulationDetailConfigProps) {
+const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack, onExecute, onShowPanels }: SimulationDetailConfigProps) {
   // Form state
   const [title, setTitle] = useState('');
   const [pollutant, setPollutant] = useState('');
@@ -687,6 +688,33 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
       </div>
 
       <Spacer height={36} />
+
+      {/* 테스트 버튼 (임시) */}
+      <div className="flex flex-col gap-3 self-stretch">
+        <div
+          className="h-10 flex items-center justify-center px-4 py-2.5 rounded cursor-pointer"
+          style={{
+            background: '#00AAFF',
+            borderRadius: '4px'
+          }}
+          onClick={() => onShowPanels?.()}
+        >
+          <div
+            style={{
+              fontFamily: 'Pretendard',
+              fontSize: '16px',
+              fontWeight: '700',
+              lineHeight: 'normal',
+              color: '#FFF',
+              textAlign: 'center'
+            }}
+          >
+            패널 테스트 (임시)
+          </div>
+        </div>
+      </div>
+
+      <Spacer height={16} />
 
       {/* 시뮬레이션 실행 버튼 */}
       <div className="flex flex-col pt-9 border-t border-[#696A6A] self-stretch">

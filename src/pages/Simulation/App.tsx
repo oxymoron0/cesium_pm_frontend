@@ -5,6 +5,8 @@ import Panel from '@/components/basic/Panel'
 import SimulationConfirm from './components/SimulationConfirm'
 import SimulationConfig from './components/SimulationConfig'
 import SimulationDetailConfig from './components/SimulationDetailConfig'
+import SimulationConfigInfo from './components/SimulationConfigInfo'
+import SimulationResultSummary from './components/SimulationResultSummary'
 import DirectLocationGuide from './components/DirectLocationGuide'
 import { simulationStore } from '@/stores/SimulationStore'
 import { flyToLocation } from '@/utils/cesiumControls'
@@ -25,6 +27,8 @@ const App = observer(function App(props: AppProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [activeList, setActiveList] = useState('상세설정');
   const [currentView, setCurrentView] = useState<SimulationView>('config')
+  const [showConfigInfo, setShowConfigInfo] = useState(false)
+  const [showResultSummary, setShowResultSummary] = useState(false)
 
   useEffect(() => {
     // Cesium 초기화 및 상태 감지
@@ -104,6 +108,10 @@ const App = observer(function App(props: AppProps) {
                     setCurrentView('config');
                   }}
                   onExecute={() => console.log('시뮬레이션 실행')}
+                  onShowPanels={() => {
+                    setShowConfigInfo(true);
+                    setShowResultSummary(true);
+                  }}
                   />)
                 : null}
                 </>
@@ -127,9 +135,17 @@ const App = observer(function App(props: AppProps) {
         </div>
       )}
 
-        {/* SimulationConfirm 모달 */}
+      {/* SimulationConfirm 모달 */}
       {simulationStore.isModalOpen && (
         <SimulationConfirm onClose={() => simulationStore.closeModal()} />
+      )}
+
+      {/* 시뮬레이션 패널들 */}
+      {showConfigInfo && (
+        <SimulationConfigInfo onClose={() => setShowConfigInfo(false)} />
+      )}
+      {showResultSummary && (
+        <SimulationResultSummary onClose={() => setShowResultSummary(false)} />
       )}
     </div>
   )
