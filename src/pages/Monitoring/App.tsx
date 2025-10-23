@@ -12,6 +12,8 @@ import { stationStore } from '@/stores/StationStore'
 import { busStore } from '@/stores/BusStore'
 import { stationSensorStore } from '@/stores/StationSensorStore'
 import { stationDetailStore } from '@/stores/StationDetailStore'
+import { bookmarkStore } from '@/stores/BookmarkStore'
+import { userStore } from '@/stores/UserStore'
 
 interface AppProps {
   onCloseMicroApp?: () => void;
@@ -56,14 +58,18 @@ const App = observer(function App(props: AppProps) {
     
     const initializeData = async () => {
       if (isInitialized) {
-        console.log('[App] RouteStore initialization already completed');
+        console.log('[App] Data initialization already completed');
         return;
       }
       isInitialized = true;
-      
-      console.log('[App] Starting RouteStore initialization');
-      await routeStore.initializeRouteData();
-      console.log('[App] RouteStore initialization completed');
+
+      // RouteStore와 BookmarkStore를 병렬로 로드 (최대 성능)
+      console.log('[App] Starting parallel RouteStore and BookmarkStore initialization');
+      await Promise.all([
+        routeStore.initializeRouteData(),
+        bookmarkStore.initializeBookmarks(userStore.currentUser)
+      ]);
+      console.log('[App] RouteStore and BookmarkStore initialization completed');
       
       // RouteStore 초기화 완료 후 즉시 StationStore 초기화
       const routeNames = routeStore.routeInfoList.map(route => route.route_name);
