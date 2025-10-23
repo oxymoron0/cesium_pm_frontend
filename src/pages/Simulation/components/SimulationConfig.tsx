@@ -13,6 +13,7 @@ import { renderAdministrativeBoundary, clearAdministrativeBoundary } from '@/uti
 import { enableDirectLocationClickHandler,disableDirectLocationClickHandler } from '@/utils/cesium/directLocationRenderer';
 import { renderLocationMarker, clearLocationMarker } from '@/utils/cesium/locationMarker';
 interface SimulationConfigProps {
+  onClose?: () => void;
   onLocationComplete?: () => void;
 }
 
@@ -51,7 +52,7 @@ const SimulationConfig = observer(function SimulationConfig({ onLocationComplete
       renderAdministrativeBoundary(selectedDistrict.geometry, selectedDistrict.code);
     }
 
-
+    // Cleanup: 컴포넌트 언마운트 시 경계 제거
     return () => {
       clearAdministrativeBoundary();
     };
