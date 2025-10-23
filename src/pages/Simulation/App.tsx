@@ -64,7 +64,7 @@ const App = observer(function App(props: AppProps) {
         <Panel position="left" width="540px" maxHeight="calc(100vh - 160px)">
           <Title
             info="시뮬레이션 실행을 위한 설정 페이지입니다."
-            onClose={()=> setCurrentView('config')}
+            onClose={props.onCloseMicroApp}
           >
             시뮬레이션
           </Title>
@@ -86,7 +86,6 @@ const App = observer(function App(props: AppProps) {
                 <>
                 {currentView === 'config' ? (
                   <SimulationConfig
-                  onClose={props.onCloseMicroApp}
                   onLocationComplete={() => setCurrentView('detailConfig')}
                   />
                 ) : currentView === 'detailConfig' ? (
