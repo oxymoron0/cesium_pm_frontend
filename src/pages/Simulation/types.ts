@@ -47,4 +47,4 @@ export interface SimulationDetailConfig {
 // Simulation State
 // ============================================================================
 
-export type SimulationView = 'config' | 'detailConfig' | 'running' | 'result';
+export type SimulationView = 'config' | 'detailConfig' | 'running' | 'result' | 'quick' | 'quickResult';
