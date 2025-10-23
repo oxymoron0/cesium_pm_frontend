@@ -1,6 +1,28 @@
 import { makeAutoObservable } from 'mobx';
 
 /**
+ * 부모 애플리케이션에서 전달되는 사용자 정보 타입
+ */
+export interface User {
+  account: string;
+  areaId: string;
+  areaName: string;
+  cityId: string;
+  cityName: string;
+  createTime: string;
+  createUser: string;
+  departmentId: string;
+  departmentName: string;
+  organizationId: string;
+  organizationName: string;
+  provinceid: string;
+  roleId: string | null;
+  sysType: string | null;
+  userState: number;
+  userid: string;
+}
+
+/**
  * UserStore
  *
  * 마이크로프론트엔드 아키텍처에서 사용자 정보를 중앙 관리합니다.
@@ -18,11 +40,12 @@ class UserStore {
    * 사용자 정보 등록
    * 페이지 mount 시 호출되어 사용자 정보를 store에 등록합니다.
    *
-   * @param user - 사용자 ID
+   * @param user - 사용자 객체 또는 사용자 ID 문자열
    */
-  setUser(user: string): void {
-    this.user = user;
-    console.log('[UserStore] User registered:', user);
+  setUser(user: User | string): void {
+    // User 객체인 경우 userid 추출, 문자열인 경우 그대로 사용
+    this.user = typeof user === 'string' ? user : user.userid;
+    console.log('[UserStore] User registered:', this.user);
   }
 
   /**
