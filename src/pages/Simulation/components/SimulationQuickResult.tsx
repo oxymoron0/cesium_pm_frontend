@@ -20,31 +20,11 @@ type StationRow = {
 
 function InfoField({ label, value }: { label: string; value: string }) {
   return (
-    <div
-      className="flex items-center gap-[7px] h-8 self-stretch"
-      style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.3)" }}
-    >
-      <div
-        style={{
-          width: "120px",
-          flexShrink: 0,
-          fontFamily: "Pretendard",
-          fontSize: "14px",
-          fontWeight: 700,
-          color: "rgba(255, 255, 255, 1)",
-        }}
-      >
+    <div className="flex items-center self-stretch border-b border-[rgba(255,255,255,0.3)]">
+      <div className="w-[120px] my-[10px] font-pretendard text-[14px] font-bold text-white text-center border-r [border-right-color:rgba(255,255,255,0.3)]">
         {label}
       </div>
-      <div
-        className="flex-1 px-3 py-1"
-        style={{
-          fontFamily: "Pretendard",
-          fontSize: "14px",
-          fontWeight: 400,
-          color: "#FFFFFF",
-        }}
-      >
+      <div className="flex-1 px-3 font-pretendard text-[14px] font-normal text-white">
         {value}
       </div>
     </div>
@@ -68,69 +48,35 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
   }, []);
 
   const rows: StationRow[] = [
-    {
-      id: 1,
-      name: "부전시장 (05709)",
-      time: "2024.08.07 15:00",
-      pm10: "22 μg/m³",
-    },
-    {
-      id: 2,
-      name: "범내골역 (05715)",
-      time: "2024.08.07 14:59",
-      pm10: "13 μg/m³",
-    },
-    {
-      id: 3,
-      name: "가야역 (05723)",
-      time: "2024.08.07 14:58",
-      pm10: "33 μg/m³",
-    },
-    {
-      id: 4,
-      name: "동의대역 (05727)",
-      time: "2024.08.07 14:57",
-      pm10: "70 μg/m³",
-    },
-    {
-      id: 5,
-      name: "동의대역 (05727)",
-      time: "2024.08.07 14:57",
-      pm10: "70 μg/m³",
-    },
+    { id: 1, name: "부전시장 (05709)", time: "2024.08.07 15:00", pm10: "22 μg/m³" },
+    { id: 2, name: "범내골역 (05715)", time: "2024.08.07 14:59", pm10: "13 μg/m³" },
+    { id: 3, name: "가야역 (05723)", time: "2024.08.07 14:58", pm10: "33 μg/m³" },
+    { id: 4, name: "동의대역 (05727)", time: "2024.08.07 14:57", pm10: "70 μg/m³" },
+    { id: 5, name: "동의대역 (05727)", time: "2024.08.07 14:57", pm10: "70 μg/m³" },
   ];
-
-  const textStyle = {
-    fontFamily: "Pretendard",
-    fontSize: "14px",
-    fontWeight: 400,
-    color: "#FFFFFF",
-  };
 
   return (
     <>
-      <Title onClose={onCloseMicroApp} onBack={() => simulationStore.setCurrentView("config")}>
-        <span
-          style={{
-            fontFamily: "Pretendard",
-            fontSize: "24px",
-            fontWeight: 700,
-            color: "#FFFFFF",
-          }}
-        >
+      <Title onClose={onCloseMicroApp} onBack={() =>  simulationStore.setCurrentView("config")}>
+        <span className="font-pretendard text-[24px] font-bold text-white">
           시뮬레이션 설정 정보
         </span>
       </Title>
 
       <Spacer height={8} />
 
-      <div className="self-stretch">
-        <InfoField label="현재 시간" value={nowText} />
+      <div className="w-full flex items-center py-[20px] border-b border-b-[rgba(255,255,255,1)]">
+        <div className="w-[120px] text-white font-pretendard font-bold text-[16px]">
+          현재 시간
+        </div>
+        <div className="w-[320px] rounded-[4px] border border-[rgba(105,106,106,1)] bg-[rgba(0,0,0,1)] text-white text-[14px] font-pretendard font-normal px-[8px] py-[6px]">
+          {nowText}
+        </div>
       </div>
 
       <Spacer height={16} />
 
-      <div className="flex flex-col gap-3 self-stretch">
+      <div className="flex flex-col self-stretch">
         <InfoField label="측정물질" value="미세먼지 (PM-10)" />
         <InfoField label="측정일시" value="2025.08.07 오후 15:00" />
         <InfoField label="측정위치" value="부산진구 정류장" />
@@ -142,30 +88,17 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
       <Spacer height={20} />
 
       <SubTitle>
-        <span
-          style={{
-            fontFamily: "Pretendard",
-            fontSize: "18px",
-            fontWeight: 700,
-            color: "#FFFFFF",
-          }}
-        >
+        <span className="font-pretendard text-[18px] font-bold text-white">
           정류장 측정 목록 (19)
         </span>
       </SubTitle>
+
       <Divider />
       <Spacer height={12} />
 
       {/* 헤더 */}
       <div
-        className="grid self-stretch"
-        style={{
-          gridTemplateColumns: "56px 1fr 160px 140px",
-          fontFamily: "Pretendard",
-          fontSize: "14px",
-          fontWeight: 700,
-          color: "rgba(255, 255, 255, 1)",
-        }}
+        className="grid self-stretch text-center items-center font-pretendard text-[14px] font-bold text-white [grid-template-columns:56px_1fr_160px_140px]"
       >
         <div>No</div>
         <div>정류장</div>
@@ -180,32 +113,26 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
       <Spacer height={8} />
 
       {/* 리스트 */}
-      <div
-        className="self-stretch"
-        style={{
-          borderTop: "1px solid #696A6A",
-          borderBottom: "1px solid #696A6A",
-          maxHeight: "360px",
-          overflowY: "auto",
-        }}
-      >
+      <div className="self-stretch border-t border-b border-[#696A6A] max-h-[300px] overflow-y-auto">
         {rows.map((r, idx) => (
           <div
             key={r.id}
-            className="grid items-center"
-            style={{
-              gridTemplateColumns: "56px 1fr 160px 140px",
-              height: "56px",
-              borderBottom:
-                idx === rows.length - 1 ? "none" : "1px solid #696A6A",
-            }}
+            className={`grid text-center items-center h-[56px] [grid-template-columns:56px_1fr_160px_140px] ${
+              idx === rows.length - 1 ? "" : "border-b border-[#696A6A]"
+            }`}
           >
-            <div style={{ ...textStyle, fontWeight: 600 }}>
+            <div className="font-pretendard text-[14px] font-semibold text-white">
               {String(r.id).padStart(2, "0")}
             </div>
-            <div style={textStyle}>{r.name}</div>
-            <div style={textStyle}>{r.time}</div>
-            <div style={{ ...textStyle, fontWeight: 700 }}>{r.pm10}</div>
+            <div className="font-pretendard text-[14px] font-normal text-white">
+              {r.name}
+            </div>
+            <div className="font-pretendard text-[14px] font-normal text-white">
+              {r.time}
+            </div>
+            <div className="font-pretendard text-[14px] font-bold text-white">
+              {r.pm10}
+            </div>
           </div>
         ))}
       </div>
@@ -217,15 +144,6 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
           variant="solid"
           showIcon={false}
           className="w-full"
-          style={{
-            background: "#CFFF40",
-            color: "#000000",
-            fontFamily: "Pretendard",
-            fontSize: "16px",
-            fontWeight: 700,
-            height: "48px",
-            border: "1px solid #C3C3C3",
-          }}
           onClick={() => simulationStore.setCurrentView("config")}
         >
           시뮬레이션 종료
