@@ -5,11 +5,10 @@ import SubTitle from "@/components/basic/SubTitle";
 import Divider from "@/components/basic/Divider";
 import Spacer from "@/components/basic/Spacer";
 import Button from "@/components/basic/Button";
-import type { SimulationView } from "../types";
+import { simulationStore } from "@/stores/SimulationStore";
 
 interface SimulationQuickResultProps {
   onCloseMicroApp?: () => void;
-  setCurrentView: (v: SimulationView) => void;
 }
 
 type StationRow = {
@@ -53,7 +52,6 @@ function InfoField({ label, value }: { label: string; value: string }) {
 }
 
 const SimulationQuickResult = observer(function SimulationQuickResult({
-  setCurrentView,
   onCloseMicroApp,
 }: SimulationQuickResultProps) {
   const nowText = useMemo(() => {
@@ -111,7 +109,7 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
 
   return (
     <>
-      <Title onClose={onCloseMicroApp} onBack={() => setCurrentView("config")}>
+      <Title onClose={onCloseMicroApp} onBack={() => simulationStore.setCurrentView("config")}>
         <span
           style={{
             fontFamily: "Pretendard",
@@ -228,7 +226,7 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
             height: "48px",
             border: "1px solid #C3C3C3",
           }}
-          onClick={() => setCurrentView("config")}
+          onClick={() => simulationStore.setCurrentView("config")}
         >
           시뮬레이션 종료
         </Button>

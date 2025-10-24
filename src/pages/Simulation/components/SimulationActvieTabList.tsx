@@ -1,15 +1,11 @@
+import { simulationStore } from "@/stores/SimulationStore";
 import { observer } from "mobx-react-lite";
+import type { SimulationActiveTab } from "../types";
 
-interface SimulationActiveTabProps {
-  activeList? : String;
-  setActiveList? : (selected: string) => void;
-}
 
-const SimulationActiveTabList = observer(function SimulationActiveTabList({ activeList, setActiveList }: SimulationActiveTabProps) {
-  const handleClick = (view: string) => {
-    if (setActiveList) {
-      setActiveList(view);
-    }
+const SimulationActiveTabList = observer(function SimulationActiveTabList() {
+  const handleClick = (view: SimulationActiveTab) => {
+  simulationStore.setActiveTab(view);
   }
 
   return (
@@ -18,7 +14,7 @@ const SimulationActiveTabList = observer(function SimulationActiveTabList({ acti
     <div
     className="flex-1 h-10 flex items-center justify-center gap-1 px-4 py-2.5 cursor-pointer"
     style={{
-        background: activeList === '상세설정' ? 'linear-gradient(180deg, #FDF106 0%, #FFD040 100%)' : '#696A6A',
+        background: simulationStore.activeTab === '상세설정' ? 'linear-gradient(180deg, #FDF106 0%, #FFD040 100%)' : '#696A6A',
         borderRadius: '19px'
     }}
     onClick={() => handleClick('상세설정')}
@@ -41,7 +37,7 @@ const SimulationActiveTabList = observer(function SimulationActiveTabList({ acti
     <div
         className="flex-1 h-10 flex items-center justify-center gap-1 px-4 py-2.5 cursor-pointer"
       style={{
-        background: activeList === '실행목록' ? 'linear-gradient(180deg, #FDF106 0%, #FFD040 100%)' : '#696A6A',
+        background: simulationStore.activeTab === '실행목록' ? 'linear-gradient(180deg, #FDF106 0%, #FFD040 100%)' : '#696A6A',
         borderRadius: '19px'
       }}
       onClick={() => handleClick('실행목록')}

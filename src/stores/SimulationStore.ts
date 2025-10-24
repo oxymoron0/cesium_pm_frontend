@@ -1,5 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import type { AddressSearchResult, SimulationConfig } from '../pages/Simulation/types';
+import type { AddressSearchResult, SimulationActiveTab, SimulationConfig, SimulationView } from '../pages/Simulation/types';
 import type {
   SimulationRequest,
   SimulationResponse,
@@ -263,7 +263,6 @@ const MOCK_ADDRESS_RESULTS: AddressSearchResult[] = [
 // ============================================================================
 // SimulationStore Class
 // ============================================================================
-
 class SimulationStore {
   // ============================================================================
   // Observable State
@@ -317,12 +316,26 @@ class SimulationStore {
   selectedDistrictCode: string = '26230'; // 부산진구 기본값
   isLoadingDistricts: boolean = false;
 
-
   // confirm modal active
   isModalOpen = false
 
+  // 시뮬레이션 Panel 상태 관리
+  
+  currentView: SimulationView = "config"
+  activeTab: SimulationActiveTab = "상세설정";
+
   constructor() {
     makeAutoObservable(this);
+  }
+
+  // ============================================================================
+  // 시뮬레이션 Panel 변경
+  // ============================================================================
+  setCurrentView(viewName: SimulationView) {
+    this.currentView = viewName
+  }
+  setActiveTab(tabName: SimulationActiveTab) {
+    this.activeTab = tabName
   }
 
   // ============================================================================

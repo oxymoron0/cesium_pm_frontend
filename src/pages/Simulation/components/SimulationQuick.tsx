@@ -3,15 +3,10 @@ import { observer } from "mobx-react-lite";
 import Icon from "@/components/basic/Icon";
 import DatePicker from "@/components/basic/DatePicker";
 import Button from "@/components/basic/Button";
-import type { SimulationView } from "../types";
+import { simulationStore } from "@/stores/SimulationStore";
 
-interface SimulationQuickProps {
-  setCurrentView: (v: SimulationView) => void;
-}
 
-const SimulationQuick = observer(function SimulationQuick({
-  setCurrentView,
-}: SimulationQuickProps) {
+const SimulationQuick = observer(function SimulationQuick() {
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [openStart, setOpenStart] = useState(false);
@@ -169,7 +164,7 @@ const SimulationQuick = observer(function SimulationQuick({
               <Button
                 variant="solid"
                 showIcon={false}
-                onClick={() => setCurrentView("result")}
+                onClick={() => simulationStore.setCurrentView("result")}
               >
                 시뮬레이션 실행 ▶
               </Button>

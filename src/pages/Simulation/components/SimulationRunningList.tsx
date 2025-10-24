@@ -4,10 +4,7 @@ import Spacer from '@/components/basic/Spacer';
 import Button from '@/components/basic/Button';
 import Icon from '@/components/basic/Icon';
 
-// 1. 기존 Basic 컴포넌트 import (가상 경로)
-
-
-// 2. API 명세 기반 Mock 데이터 (CLAUDE_API.md)
+// API 명세 기반 Mock 데이터
 const mockSimulationList = [
   { uuid: 'uuid-01', simulation_name: '250807 오전 테스트 1', pm_type: 'pm10', requested_at: '2024-08-07T10:24:00Z', status: '대기', is_private: true },
   { uuid: 'uuid-02', simulation_name: '250807 오전 테스트 2', pm_type: 'pm10', requested_at: '2024-08-07T09:30:00Z', status: '대기', is_private: true },
@@ -40,11 +37,7 @@ const formatDate = (isoString: string) => {
  * 시뮬레이션 패널 전체 컴포넌트
  * 이미지에 표시된 모든 UI 요소를 포함합니다.
  */
-const SimulationRunningList = observer(function SimulationRunningList({
-  onClose,
-}: {
-  onClose: () => void;
-}) {
+const SimulationRunningList = observer(function SimulationRunningList() {
   // '상세설정' / '실행목록' 탭 상태
   const [activeSubTab, setActiveSubTab] = useState<'config' | 'list'>('list');
   // 필터 상태

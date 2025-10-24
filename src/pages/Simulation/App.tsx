@@ -10,7 +10,6 @@ import DirectLocationGuide from "./components/DirectLocationGuide";
 import { simulationStore } from "@/stores/SimulationStore";
 import { flyToLocation } from "@/utils/cesiumControls";
 import SimulationQuickResult from "./components/SimulationQuickResult";
-import type { SimulationView } from "./types"; // ✅ 추가
 
 interface AppProps {
   onCloseMicroApp?: () => void;
@@ -23,9 +22,7 @@ const App = observer(function App(props: AppProps) {
   );
   const [showConfigInfo, setShowConfigInfo] = useState(false);
   const [showResultSummary, setShowResultSummary] = useState(false);
-  const [currentView, setCurrentView] = useState<SimulationView>("config");
 
-  console.log(currentView);
 
   useEffect(() => {
     const checkCesiumStatus = () => {
@@ -64,19 +61,16 @@ const App = observer(function App(props: AppProps) {
       )}
 
       {cesiumStatus === "ready" && (
-        <Panel position="left" width={"540px"} maxHeight="calc(100vh - 160px)">
-          {currentView === "config" || currentView === "detailConfig" ? (
+        <Panel position="left" width={simulationStore.activeTab === '실행목록' ? "720px" : "540px"} maxHeight="calc(100vh - 160px)">
+          {simulationStore.currentView === "config" || simulationStore.currentView === "detailConfig" ? (
             <SimulationMain
               onCloseMicroApp={props.onCloseMicroApp}
               dispatch={props.dispatch}
               setShowConfigInfo={setShowConfigInfo}
               setShowResultSummary={setShowResultSummary}
-              currentView={currentView}
-              setCurrentView={setCurrentView}
             />
           ) : (
             <SimulationQuickResult
-              setCurrentView={setCurrentView}
               onCloseMicroApp={props.onCloseMicroApp}
             />
           )}
