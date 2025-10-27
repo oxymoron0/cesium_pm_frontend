@@ -5,7 +5,7 @@ interface ButtonProps {
   children: ReactNode;
   onClick?: () => void;
   className?: string;
-  variant?: 'solid' | 'outline' | 'dark';
+  variant?: 'solid' | 'outline' | 'dark' | 'noStyle';
   showIcon?: boolean;
   iconName?: string | null;
   iconPos?: 'left' | 'right';
@@ -23,7 +23,8 @@ export default function Button({
   const variantStyles = {
     solid: "bg-[#CFFF40] text-black",
     outline: "bg-transparent border border-[#CFFF40] text-[#CFFF40]",
-    dark: "bg-black border border-[#696A6A] text-white"
+    dark: "bg-black border border-[#696A6A] text-white",
+    noStyle: "",
   };
 
   return (
