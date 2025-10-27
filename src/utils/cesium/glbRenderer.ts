@@ -5,7 +5,7 @@ import { type BusTrajectoryData } from '@/utils/api/busApi'
 const basePath = import.meta.env.VITE_BASE_PATH || '/';
 
 
-const GLB_MODEL_URL = `${basePath}CesiumMilkTruck.glb`
+const GLB_MODEL_URL = `${basePath}BusanBus_num10.glb`
 const DATASOURCE_NAME = 'bus_models'
 
 // 노선별 색상 매핑
@@ -56,8 +56,8 @@ export async function renderBusModels(busData: BusTrajectoryData[]): Promise<voi
       model: new ModelGraphics({
         uri: GLB_MODEL_URL,
         scale: 1,
-        minimumPixelSize: 32,
-        maximumScale: 64,
+        minimumPixelSize: 48,
+        maximumScale: 48,
         color: color,
         colorBlendMode: ColorBlendMode.HIGHLIGHT,
         heightReference: HeightReference.CLAMP_TO_GROUND,
