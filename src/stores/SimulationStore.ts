@@ -5,7 +5,8 @@ import type {
   SimulationResponse,
   SimulationListItem,
   SimulationListPagination,
-  SimulationDetail
+  SimulationDetail,
+  PMType
 } from '../types/simulation_request_types';
 import { submitSimulation, getSimulationList, getSimulationDetail } from '@/utils/api';
 import { userStore } from './UserStore';
@@ -320,9 +321,10 @@ class SimulationStore {
   isModalOpen = false
 
   // 시뮬레이션 Panel 상태 관리
-  
   currentView: SimulationView = "config"
   activeTab: SimulationActiveTab = "상세설정";
+  pollutantFilter: PMType | 'all' = 'all';
+  sortOrder: 'asc' | 'desc' = 'desc'; // 기본값 'desc'
 
   constructor() {
     makeAutoObservable(this);
@@ -623,6 +625,24 @@ class SimulationStore {
   }
 
   // ============================================================================
+  // Pagination 관리
+  // ============================================================================
+  
+  /**
+   * 현재 페이지 번호를 반환
+   */
+  get currentPage(): number {
+    return this.pagination?.page ?? 1;
+  }
+
+  /**
+   * 총 페이지 수를 반환
+   */
+  get totalPages(): number {
+    return this.pagination?.total_pages ?? 1;
+  }
+
+  // ============================================================================
   // 시뮬레이션 목록 관리
   // ============================================================================
 
@@ -655,6 +675,35 @@ class SimulationStore {
       this.pagination = null;
     } finally {
       this.isLoadingList = false;
+    }
+  }
+
+  /**
+   * 오염물질 필터 변경 액션
+   */
+  setPollutantFilter(filter: PMType | 'all') {
+    if (this.pollutantFilter === filter) return; // 변경 사항 없으면 중단
+    
+    this.pollutantFilter = filter;
+    // 필터 변경 시 1페이지로 이동하며, 현재 정렬 순서 유지
+    this.loadSimulationList(1);
+  }
+
+  /**
+   * 날짜 정렬 순서 변경 액션
+   */
+  toggleSortOrder() {
+    this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+    this.loadSimulationList(1);
+  }
+
+  /**
+   * 페이지 변경 액션
+   */
+  setPage(page: number) {
+    // 유효한 페이지 범위 내에서만 API 재호출
+    if (page > 0 && page !== this.currentPage && page <= this.totalPages) {
+      this.loadSimulationList(page);
     }
   }
 
@@ -707,6 +756,7 @@ class SimulationStore {
   get isDetailPanelOpen(): boolean {
     return this.selectedSimulationUuid !== null;
   }
+
 
   // ============================================================================
   // 지역 정보 관리

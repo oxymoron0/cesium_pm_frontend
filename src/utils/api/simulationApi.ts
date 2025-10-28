@@ -66,6 +66,8 @@ export async function getSimulationList(
   limit: number = 7,
   userId?: string,
   includePrivate: boolean = false
+  // pmType: PMType | 'all' = 'all',
+  // sortOrder: 'asc' | 'desc' = 'desc'
 ): Promise<SimulationListResponse> {
   try {
     const params = new URLSearchParams({
@@ -77,6 +79,10 @@ export async function getSimulationList(
     if (userId) {
       params.append('user_id', userId);
     }
+    // if (pmType !== 'all') {
+    //   params.append('pm_type', pmType);
+    // }
+    // params.append('sort_order', sortOrder);
 
     const url = `${API_PATHS.SIMULATION_LIST}?${params.toString()}`;
     const response = await get<SimulationListResponse>(url);

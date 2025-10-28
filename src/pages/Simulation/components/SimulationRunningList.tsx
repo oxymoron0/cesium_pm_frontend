@@ -1,145 +1,17 @@
-import { useState, Fragment } from 'react';
+import { useState, Fragment, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import Spacer from '@/components/basic/Spacer';
 import Button from '@/components/basic/Button';
 import Icon from '@/components/basic/Icon';
+import { simulationStore } from '@/stores/SimulationStore';
+import type { PMType } from '@/types/simulation_request_types';
 import SimulationDetailRow from '@/pages/Simulation/components/SimulationDetailRow';
 
-export interface Simulation {
-  index: number;
-  uuid: string;
-  simulation_name: string;
-  pm_type: 'pm10' | 'pm25' | 'vocs';
-  requested_at: string;
-  status: '대기' | '진행중' | '완료';
-  concentration: number;
-  station_name: string;
-  road_name: string;
-  lot: string;
-  weather: any;
-  
-  // --- UI 구현에 필요한 추가 필드 ---
-  is_private: boolean; 
-  height: number | null; 
-}
-
-// API 명세 기반 Mock 데이터
-const mockSimulationList: Simulation[] = [
-  { 
-    index: 1, 
-    uuid: 'uuid-01', 
-    simulation_name: '250807 오전 테스트 1', 
-    pm_type: 'pm10', 
-    requested_at: '2024-08-07T10:24:00Z', 
-    status: '대기', 
-    concentration: 56,
-    station_name: '부전동', 
-    road_name: '부산광역시 부산진구 중앙대로 지하730',
-    lot: '부산광역시 부산진구 부전동 573-1',
-    weather: {
-      wind_direction_10m: 200, 
-      wind_speed_10m: 3.41,
-    },
-    is_private: true, 
-    height: 1.5
-  },
-  { 
-    index: 2, 
-    uuid: 'uuid-02', 
-    simulation_name: '250807 오전 테스트 2', 
-    pm_type: 'pm10', 
-    requested_at: '2024-08-07T09:30:00Z', 
-    status: '대기', 
-    concentration: 45, 
-    station_name: '부전동', 
-    road_name: '', 
-    lot: '', 
-    weather: {},
-    is_private: true, 
-    height: null
-  },
-  { 
-    index: 3, 
-    uuid: 'uuid-03', 
-    simulation_name: '250807 오전 테스트 3', 
-    pm_type: 'pm25', 
-    requested_at: '2024-08-05T09:20:00Z', 
-    status: '진행중', 
-    concentration: 22, 
-    station_name: '연산동', 
-    road_name: '', 
-    lot: '', 
-    weather: {},
-    is_private: true, 
-    height: 10
-  },
-  { 
-    index: 4,
-    uuid: 'uuid-04', 
-    simulation_name: '부전동 미세먼지 테스트', 
-    pm_type: 'pm10', 
-    requested_at: '2024-08-05T10:24:00Z', 
-    status: '완료', 
-    concentration: 50, 
-    station_name: '부전동', 
-    road_name: '', 
-    lot: '', 
-    weather: {},
-    is_private: false, 
-    height: 10
-  },
-  { 
-    index: 5,
-    uuid: 'uuid-05', 
-    simulation_name: '부전동 초미세먼지 테스트', 
-    pm_type: 'pm25', 
-    requested_at: '2024-08-04T11:00:00Z', 
-    status: '완료', 
-    concentration: 25, 
-    station_name: '부전동', 
-    road_name: '', 
-    lot: '', 
-    weather: {},
-    is_private: false, 
-    height: 10 
-  },
-  { 
-    index: 6,
-    uuid: 'uuid-06', 
-    simulation_name: '부전동 VOCs 테스트', 
-    pm_type: 'vocs',
-    requested_at: '2024-08-03T15:00:00Z', 
-    status: '완료', 
-    concentration: 30, 
-    station_name: '부전동', 
-    road_name: '', 
-    lot: '', 
-    weather: {},
-    is_private: false, 
-    height: 10 
-  },
-  { 
-    index: 7,
-    uuid: 'uuid-07', 
-    simulation_name: '미세먼지 고농도 시나리오', 
-    pm_type: 'pm10', 
-    requested_at: '2024-08-02T16:50:00Z', 
-    status: '완료', 
-    concentration: 120, 
-    station_name: '문현동', 
-    road_name: '', 
-    lot: '', 
-    weather: {},
-    is_private: false, 
-    height: 10
-  },
-];
 
 // 3. 유틸리티 함수 (데이터 포맷팅)
-const formatPollutant = (pm_type: string) => {
+const formatPollutant = (pm_type: PMType) => {
   if (pm_type === 'pm10') return '미세먼지';
   if (pm_type === 'pm25') return '초미세먼지';
-  if (pm_type === 'vocs') return 'VOCs';
   return pm_type;
 };
 
@@ -158,13 +30,58 @@ const formatDate = (isoString: string) => {
  * 이미지에 표시된 모든 UI 요소를 포함합니다.
  */
 const SimulationRunningList = observer(function SimulationRunningList() {
+  const { simulationList, pagination, isLoadingList, currentPage, totalPages } = simulationStore;
   const [pollutantFilter, setPollutantFilter] = useState('all');
-  const [currentPage, setCurrentPage] = useState(1);
-  const simulations: Simulation[] = mockSimulationList;
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    simulationStore.loadSimulationList(1);
+    return () => simulationStore.clearSimulationList(); // 언마운트 시 목록 초기화
+  }, []);
 
   const handleToggleExpand = (uuid: string) => {
     setExpandedId(prevId => (prevId === uuid ? null : uuid));
+  };
+
+  const renderPagination = () => {
+    if (!pagination || isLoadingList) return <div className="h-[32px]" />; // 로딩 중 또는 데이터 없을 때 빈 공간
+
+    const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
+
+    return (
+      <div
+        className="flex justify-center items-center gap-4 self-stretch"
+        style={{ 
+          fontFamily: 'Pretendard',
+          lineHeight: 'normal', 
+          fontSize: '14px', 
+          fontWeight: '600' 
+        }}
+       >
+         <Icon 
+           name="chevron-left" 
+           className={`w-4 h-4 ${currentPage > 1 ? 'cursor-pointer' : 'opacity-50'}`}
+           onClick={() => simulationStore.setPage(currentPage - 1)}
+         />
+         
+         {pageNumbers.map(number => (
+           <span
+             key={number}
+             className="cursor-pointer"
+             style={{ color: number === currentPage ? '#FFD040' : 'white' }}
+             onClick={() => simulationStore.setPage(number)}
+           >
+             {number}
+           </span>
+         ))}
+
+         <Icon 
+           name="chevron-right" 
+           className={`w-4 h-4 ${currentPage < totalPages ? 'cursor-pointer' : 'opacity-50'}`}
+           onClick={() => simulationStore.setPage(currentPage + 1)}
+         />
+       </div>
+    );
   };
 
   return (
@@ -203,7 +120,6 @@ const SimulationRunningList = observer(function SimulationRunningList() {
               <option value="all">오염 물질 전체</option>
               <option value="pm10">미세먼지</option>
               <option value="pm25">초미세먼지</option>
-              <option value="vocs">VOCs</option>
             </select>
             <div className="absolute right-2 top-1/2 -translate-y-1/4 pointer-events-none">
               <Icon name="dropmenubtn" className="w-4 h-4" />
@@ -228,12 +144,12 @@ const SimulationRunningList = observer(function SimulationRunningList() {
       <div
         className="flex items-center self-stretch px-4 h-10 border-y border-[#696A6A]" //
         style={{
-                fontFamily: 'Pretendard',
-                lineHeight: 'normal',
-                fontSize: '14px', 
-                fontWeight: '400', 
-                color: '#FFFFFF'
-       }}
+          fontFamily: 'Pretendard',
+          lineHeight: 'normal',
+          fontSize: '14px', 
+          fontWeight: '400', 
+          color: '#FFFFFF'
+        }}
       >
         <div style={{ width: '40px' }}>#</div>
         <div style={{ flex: 2, textAlign: 'start' }}>시뮬레이션 제목</div>
@@ -248,7 +164,20 @@ const SimulationRunningList = observer(function SimulationRunningList() {
 
       {/* 7. List Body */}
       <div className="flex flex-col self-stretch">
-        {simulations.map((sim, index) => (
+        {isLoadingList && (
+          <div className="flex items-center justify-center h-full" 
+            style={{
+              fontFamily: 'Pretendard',
+              lineHeight: 'normal',
+              fontSize: '14px', 
+              fontWeight: '400', 
+              color: '#FFFFFF'
+            }}
+          >
+            데이터를 불러오는 중입니다...
+          </div>
+        )}
+        {!isLoadingList && simulationList.map((sim) => (
           <Fragment key={sim.uuid}>
           <div
             className="flex items-center self-stretch px-4 h-[56px] border-b border-[#696A6A]" //
@@ -262,12 +191,12 @@ const SimulationRunningList = observer(function SimulationRunningList() {
           >
             {/* # */}
             <div style={{ width: '40px', color: '#A6A6A6' }}>
-              {String(index + 1).padStart(2, '0')}
+              {String(sim.index + 1).padStart(2, '0')}
             </div>
 
             {/* 시뮬레이션 제목 */}
             <div style={{ flex: 2 }} className="flex items-center gap-2">
-              {sim.is_private ? (
+              {/* {sim.is_private ? (
                 <div className="flex flex-col items-start">
                   <span
                     className="px-2 py-0.5 rounded"
@@ -285,7 +214,8 @@ const SimulationRunningList = observer(function SimulationRunningList() {
                 </div>
               ) : 
                 <span>{sim.simulation_name}</span>
-              }
+              } */}
+              <span style={{ color: '#A6A6A6' }}>{sim.simulation_name}</span>
             </div>
 
             {/* 오염물질 */}
@@ -338,32 +268,7 @@ const SimulationRunningList = observer(function SimulationRunningList() {
       <Spacer height={16} />
 
       {/* 8. Pagination */}
-      <div
-        className="flex justify-center items-center gap-4 self-stretch"
-        style={{ 
-          fontFamily: 'Pretendard',
-          lineHeight: 'normal', 
-          fontSize: '14px', 
-          fontWeight: '600' 
-        }}
-      >
-        <Icon name="chevron-left" className="w-4 h-4 cursor-pointer" />
-        <span
-          className="cursor-pointer"
-          style={{ color: currentPage === 1 ? '#FFD040' : 'white' }} //
-          onClick={() => setCurrentPage(1)}
-        >
-          1
-        </span>
-        <span
-          className="cursor-pointer"
-          style={{ color: currentPage === 2 ? '#FFD040' : 'white' }}
-          onClick={() => setCurrentPage(2)}
-        >
-          2
-        </span>
-        <Icon name="chevron-right" className="w-4 h-4 cursor-pointer" />
-      </div>
+      {renderPagination()}
     </>
   );
 });
