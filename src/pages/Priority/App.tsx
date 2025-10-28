@@ -2,11 +2,15 @@ import { useEffect, useState } from 'react'
 import { observer } from 'mobx-react-lite'
 import CesiumViewer from '@/components/CesiumViewer'
 import Panel from '@/components/basic/Panel'
+import Icon from '@/components/basic/Icon'
 import PriorityConfig from './components/PriorityConfig'
 import PriorityCustomConfig from './components/PriorityCustomConfig'
 import PriorityResult from './components/PriorityResult'
 import NearbyRoadList from './components/NearbyRoadList'
+import PriorityLocationGuide from './components/PriorityLocationGuide'
+import PriorityStatistics from './components/PriorityStatistics'
 import { priorityStore } from '@/stores/PriorityStore'
+import { administrativeStore } from '@/stores/AdministrativeStore'
 import type { PriorityView, PriorityConfig as PriorityConfigData } from './types'
 
 interface AppProps {
@@ -18,6 +22,8 @@ const App = observer(function App(props: AppProps) {
   const [cesiumStatus, setCesiumStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [currentView, setCurrentView] = useState<PriorityView>('config')
   const [configData, setConfigData] = useState<PriorityConfigData | null>(null)
+  const [locationMode, setLocationMode] = useState<'address' | 'point'>('address')
+  const [isStatisticsPopupOpen, setIsStatisticsPopupOpen] = useState(false)
 
   useEffect(() => {
     // Cesium 초기화 및 상태 감지
@@ -39,15 +45,6 @@ const App = observer(function App(props: AppProps) {
           }
         }, 100)
 
-        // 10초 후 타임아웃
-        setTimeout(() => {
-          if (cesiumStatus === 'loading') {
-            console.error('[Priority] Cesium Viewer 초기화 타임아웃')
-            setCesiumStatus('error')
-            clearInterval(waitForViewer)
-          }
-        }, 10000)
-
         return () => clearInterval(waitForViewer)
       } else {
         console.error('[Priority] Qiankun 환경이지만 부모 Viewer를 찾을 수 없음')
@@ -56,6 +53,12 @@ const App = observer(function App(props: AppProps) {
     }
 
     checkCesiumStatus()
+
+    // Cleanup on unmount
+    return () => {
+      administrativeStore.clearSelection()
+      console.log('[Priority] Cleared administrative selection on unmount')
+    }
   }, [cesiumStatus])
 
   const isQiankun = window.__POWERED_BY_QIANKUN__
@@ -79,8 +82,16 @@ const App = observer(function App(props: AppProps) {
             />
           ) : currentView === 'customConfig' ? (
             <PriorityCustomConfig
-              onBack={() => setCurrentView('config')}
-              onSearch={() => setCurrentView('result')}
+              onBack={() => {
+                setLocationMode('address')
+                setCurrentView('config')
+              }}
+              onSearch={(config) => {
+                setConfigData(config)
+                setCurrentView('result')
+              }}
+              locationMode={locationMode}
+              setLocationMode={setLocationMode}
             />
           ) : (
             configData && (
@@ -97,6 +108,11 @@ const App = observer(function App(props: AppProps) {
         </Panel>
       )}
 
+      {/* Priority Location Guide - Top Center */}
+      {cesiumStatus === 'ready' && currentView === 'customConfig' && locationMode === 'point' && (
+        <PriorityLocationGuide />
+      )}
+
       {/* Nearby Road Panel - Right Top */}
       {cesiumStatus === 'ready' && currentView === 'result' && priorityStore.selectedRoads.length > 0 && (
         <Panel position="right" width="540px" maxHeight="calc(100vh - 160px)">
@@ -105,6 +121,35 @@ const App = observer(function App(props: AppProps) {
             onClose={() => priorityStore.clearFacilitySelection()}
           />
         </Panel>
+      )}
+
+      {/* Statistics Button - Right Bottom */}
+      {cesiumStatus === 'ready' && (
+        <div className="absolute bottom-26 right-26 z-[1000]">
+          <button
+            onClick={() => setIsStatisticsPopupOpen(!isStatisticsPopupOpen)}
+            className={`
+              flex flex-col items-center justify-center gap-1
+              w-[72px] h-[72px] rounded-lg border-2 border-white
+              font-pretendard text-[13px] font-bold
+              cursor-pointer transition-all duration-200
+              ${isStatisticsPopupOpen
+                ? 'bg-gradient-to-b from-[#FDF106] to-[#FFD040] text-black'
+                : 'bg-black/65 text-white'
+              }
+            `}
+          >
+            <div style={{ filter: isStatisticsPopupOpen ? 'invert(1)' : 'none' }}>
+              <Icon name="chart" className="w-8 h-8" />
+            </div>
+            통계
+          </button>
+        </div>
+      )}
+
+      {/* Priority Statistics Popup */}
+      {isStatisticsPopupOpen && (
+        <PriorityStatistics onClose={() => setIsStatisticsPopupOpen(false)} />
       )}
 
       {/* Loading State */}
