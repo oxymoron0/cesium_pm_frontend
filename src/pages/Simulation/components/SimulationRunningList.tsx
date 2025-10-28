@@ -30,7 +30,7 @@ const formatDate = (isoString: string) => {
  * 이미지에 표시된 모든 UI 요소를 포함합니다.
  */
 const SimulationRunningList = observer(function SimulationRunningList() {
-  const { simulationList, pagination, isLoadingList, currentPage, totalPages, pollutantFilter, sortOrder } = simulationStore;
+  const { simulationList, pagination, isLoadingList, currentPage, totalPages, pollutantFilter, sortOrder, openModal } = simulationStore;
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -153,7 +153,7 @@ const SimulationRunningList = observer(function SimulationRunningList() {
         <div style={{ width: '40px' }}>#</div>
         <div style={{ flex: 2, textAlign: 'start' }}>시뮬레이션 제목</div>
         <div style={{ flex: 1, textAlign: 'start' }}>오염물질</div>
-        <div style={{ flex: 2, textAlign: 'start' }} className="flex items-center gap-1">
+        <div style={{ flex: 2, textAlign: 'start' }} className="flex items-center gap-2">
           <span>요청일시</span>
           <Icon name="sortbtn" 
             className={`w-4 h-4 cursor-pointer transition-transform duration-200 ${
@@ -229,9 +229,7 @@ const SimulationRunningList = observer(function SimulationRunningList() {
 
             {/* 진행상태 */}
             <div style={{ flex: 1 }}>
-              {sim.status === '대기' && <span>대기</span>}
-              {sim.status === '진행중' && <span>진행중</span>}
-              {sim.status === '완료' && <span>완료</span>}
+              {sim.status}
             </div>
 
             {/* 상세 */}
@@ -246,7 +244,7 @@ const SimulationRunningList = observer(function SimulationRunningList() {
                   </div>
                 )}
                 {sim.status === '완료' && (
-                  <Button iconName={'excute'} iconPos='right' onClick={() => console.log('시뮬레이션 실행')}>
+                  <Button iconName={'excute'} iconPos='right' onClick={() => openModal()}>
                     실행
                   </Button>
                 )}

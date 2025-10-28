@@ -48,10 +48,6 @@ const SimulationConfirm = observer(function SimulationConfirm({}: SimulationConf
               </div>
           </div>
           <div className="flex py-2.5 px-2">
-              <div className="w-[40%] font-[700] text-[14px]">발생 고도</div>
-              <div className="w-[60%] font-[400] text-[14px]">1.5m</div>
-          </div>
-          <div className="flex py-2.5 px-2">
               <div className="w-[40%] font-[700] text-[14px]">기상 조건</div>
               <div className="w-[60%] font-[400] text-[14px]">(풍향) 200°  (풍속) 3.41 m/s </div>
           </div>
