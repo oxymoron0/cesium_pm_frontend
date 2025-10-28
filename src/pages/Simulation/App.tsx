@@ -61,7 +61,7 @@ const App = observer(function App(props: AppProps) {
       )}
 
       {cesiumStatus === "ready" && (
-        <Panel position="left" width={simulationStore.activeTab === '실행목록' ? "720px" : "540px"} maxHeight="calc(100vh - 160px)">
+        <Panel position="left" width={simulationStore.activeTab === '실행목록' ? "720px" : "540px"} maxHeight="calc(100vh - 50px)">
           {simulationStore.currentView === "config" || simulationStore.currentView === "detailConfig" ? (
             <SimulationMain
               onCloseMicroApp={props.onCloseMicroApp}

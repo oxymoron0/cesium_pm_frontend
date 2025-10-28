@@ -324,7 +324,7 @@ class SimulationStore {
   currentView: SimulationView = "config"
   activeTab: SimulationActiveTab = "상세설정";
   pollutantFilter: PMType | 'all' = 'all';
-  sortOrder: 'asc' | 'desc' = 'desc'; // 기본값 'desc'
+  sortOrder: 'latest' | 'oldest' = 'latest'; // 기본값 'latest'
 
   constructor() {
     makeAutoObservable(this);
@@ -665,7 +665,10 @@ class SimulationStore {
       // userId가 없으면 userStore의 현재 사용자 사용
       const effectiveUserId = userId || userStore.currentUser;
 
-      const response = await getSimulationList(page, limit, effectiveUserId, includePrivate);
+      const response = await getSimulationList(page, limit, effectiveUserId, includePrivate,
+        this.pollutantFilter,
+        this.sortOrder
+      );
       this.simulationList = response.simulations;
       this.pagination = response.pagination;
     } catch (error) {
@@ -693,7 +696,7 @@ class SimulationStore {
    * 날짜 정렬 순서 변경 액션
    */
   toggleSortOrder() {
-    this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+    this.sortOrder = this.sortOrder === 'latest' ? 'oldest' : 'latest';
     this.loadSimulationList(1);
   }
 

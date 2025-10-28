@@ -30,8 +30,7 @@ const formatDate = (isoString: string) => {
  * 이미지에 표시된 모든 UI 요소를 포함합니다.
  */
 const SimulationRunningList = observer(function SimulationRunningList() {
-  const { simulationList, pagination, isLoadingList, currentPage, totalPages } = simulationStore;
-  const [pollutantFilter, setPollutantFilter] = useState('all');
+  const { simulationList, pagination, isLoadingList, currentPage, totalPages, pollutantFilter, sortOrder } = simulationStore;
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -107,7 +106,7 @@ const SimulationRunningList = observer(function SimulationRunningList() {
           <div className="relative h-8">
             <select
               value={pollutantFilter}
-              onChange={(e) => setPollutantFilter(e.target.value)}
+              onChange={(e) => simulationStore.setPollutantFilter(e.target.value as PMType | 'all')}
               className="w-full h-10 pl-3 pr-10 py-1 bg-black rounded border border-[#696A6A] appearance-none" //
               style={{
                 fontFamily: 'Pretendard',
@@ -118,8 +117,8 @@ const SimulationRunningList = observer(function SimulationRunningList() {
               }}
             >
               <option value="all">오염 물질 전체</option>
-              <option value="pm10">미세먼지</option>
-              <option value="pm25">초미세먼지</option>
+              <option value="pm10">미세먼지 (PM-10)</option>
+              <option value="pm25">초미세먼지 (PM-2.5)</option>
             </select>
             <div className="absolute right-2 top-1/2 -translate-y-1/4 pointer-events-none">
               <Icon name="dropmenubtn" className="w-4 h-4" />
@@ -156,7 +155,11 @@ const SimulationRunningList = observer(function SimulationRunningList() {
         <div style={{ flex: 1, textAlign: 'start' }}>오염물질</div>
         <div style={{ flex: 2, textAlign: 'start' }} className="flex items-center gap-1">
           <span>요청일시</span>
-          <Icon name="sortbtn" className="w-4 h-4 cursor-pointer" onClick={() => {}}/>
+          <Icon name="sortbtn" 
+            className={`w-4 h-4 cursor-pointer transition-transform duration-200 ${
+              sortOrder === 'oldest' ? 'rotate-180' : ''
+            }`} 
+             onClick={() => {simulationStore.toggleSortOrder()}}/>
         </div>
         <div style={{ flex: 1, textAlign: 'start' }}>진행상태</div>
         <div style={{ flex: 2, textAlign: 'center' }}>상세</div>
@@ -191,7 +194,7 @@ const SimulationRunningList = observer(function SimulationRunningList() {
           >
             {/* # */}
             <div style={{ width: '40px', color: '#A6A6A6' }}>
-              {String(sim.index + 1).padStart(2, '0')}
+              {String(sim.index).padStart(2, '0')}
             </div>
 
             {/* 시뮬레이션 제목 */}

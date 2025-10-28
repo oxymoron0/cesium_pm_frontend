@@ -10,6 +10,7 @@ import type {
   SimulationResponse,
   SimulationListResponse,
   SimulationDetail,
+  PMType,
 } from '../../types/simulation_request_types';
 
 /**
@@ -65,9 +66,9 @@ export async function getSimulationList(
   page: number = 1,
   limit: number = 7,
   userId?: string,
-  includePrivate: boolean = false
-  // pmType: PMType | 'all' = 'all',
-  // sortOrder: 'asc' | 'desc' = 'desc'
+  includePrivate: boolean = false,
+  pmType: PMType | 'all' = 'all',
+  sortOrder: 'latest' | 'oldest' = 'latest'
 ): Promise<SimulationListResponse> {
   try {
     const params = new URLSearchParams({
@@ -79,10 +80,10 @@ export async function getSimulationList(
     if (userId) {
       params.append('user_id', userId);
     }
-    // if (pmType !== 'all') {
-    //   params.append('pm_type', pmType);
-    // }
-    // params.append('sort_order', sortOrder);
+    if (pmType !== 'all') {
+      params.append('pm_type', pmType);
+    }
+    params.append('sort_order', sortOrder);
 
     const url = `${API_PATHS.SIMULATION_LIST}?${params.toString()}`;
     const response = await get<SimulationListResponse>(url);
