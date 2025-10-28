@@ -852,11 +852,6 @@ class SimulationStore {
    */
   openModal = (uuid? : string) => {
     const foundItem = this.simulationList.find(item => item.uuid === uuid);
-
-    if (uuid) {
-
-    }
-
     if (foundItem) {
       this.selectedStartSimulation = foundItem;
 
@@ -864,7 +859,6 @@ class SimulationStore {
     } else {
       console.warn('해당 uuid의 시뮬레이션을 찾을 수 없습니다:', uuid);
     }
-    console.log('저장 item : ' , this.selectedStartSimulation);
   }
 
   /**
