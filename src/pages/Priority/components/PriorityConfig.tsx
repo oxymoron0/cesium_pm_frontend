@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
+import { runInAction } from 'mobx';
 import Title from '@/components/basic/Title';
 import SubTitle from '@/components/basic/SubTitle';
 import Spacer from '@/components/basic/Spacer';
@@ -10,6 +11,8 @@ import Info from '@/components/basic/Info';
 import Divider from '@/components/basic/Divider';
 import { priorityStore } from '@/stores/PriorityStore';
 import { administrativeStore } from '@/stores/AdministrativeStore';
+import { renderAdministrativeBoundary, clearAdministrativeBoundary } from '@/utils/cesium/administrativeRenderer';
+import { isGeometrySuccess } from '@/types/administrative';
 import type { PriorityConfig as PriorityConfigData } from '../types';
 
 interface PriorityConfigProps {
@@ -25,52 +28,104 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
   const timeStr = `${String(now.getHours()).padStart(2, '0')}시 ~ ${String(now.getHours() + 1).padStart(2, '0')}시`;
   const currentTimeText = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}. ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-  // 상태 관리 - 부산광역시(26) 기본 선택
-  const [provinceCode, setProvinceCode] = useState('26');
-  const [districtCode, setDistrictCode] = useState('');
-  const [neighborhoodCode, setNeighborhoodCode] = useState('');
+  // 행정구역 상태는 administrativeStore에서 관리 (PriorityCustomConfig와 공유)
+  const provinceCode = administrativeStore.selectedProvinceCode || '26';
+  const districtCode = administrativeStore.selectedDistrictCode || '';
+  const neighborhoodCode = administrativeStore.selectedNeighborhoodCode || '';
 
-  // Load provinces on mount
+  // Load provinces on mount and cleanup on unmount
   useEffect(() => {
     if (administrativeStore.provinces.length === 0) {
       administrativeStore.loadProvinces();
     }
+
+    // Cleanup: clear boundary when component unmounts
+    return () => {
+      clearAdministrativeBoundary();
+    };
   }, []);
 
-  // Auto-select Busan (26) when provinces loaded
+  // Auto-select Busan (26) when provinces loaded and select Busanjin-gu (230)
   useEffect(() => {
     if (administrativeStore.provinces.length > 0 && !administrativeStore.selectedProvinceCode) {
       administrativeStore.selectProvince('26');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [administrativeStore.provinces.length]);
 
-  // Auto-select first district when loaded
+  // Auto-select Busanjin-gu (230) when districts loaded
   useEffect(() => {
     if (administrativeStore.districts.length > 0 && !districtCode && provinceCode) {
-      const firstDistrict = administrativeStore.districts[0];
-      const shortCode = firstDistrict.code.substring(2);
-      setDistrictCode(shortCode);
-      administrativeStore.selectDistrict(shortCode);
+      // 부산진구 코드: 230
+      administrativeStore.selectDistrict('230');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [administrativeStore.districts.length, districtCode, provinceCode]);
 
   // Auto-select '전체' for neighborhoods
   useEffect(() => {
     if (administrativeStore.neighborhoods.length > 0 && !neighborhoodCode && districtCode) {
-      setNeighborhoodCode('all');
+      runInAction(() => {
+        administrativeStore.selectedNeighborhoodCode = 'all';
+      });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [administrativeStore.neighborhoods.length, neighborhoodCode, districtCode]);
 
-  // 옵션 데이터 (Administrative API 기반)
-  const cityOptions = administrativeStore.provinces.map(p => ({
-    value: p.code,
-    label: p.name
-  }));
+  // Render administrative boundary when district or neighborhood changes
+  useEffect(() => {
+    const renderBoundary = async () => {
+      // Skip if no district selected
+      if (!districtCode) {
+        clearAdministrativeBoundary();
+        return;
+      }
 
-  const districtOptions = administrativeStore.districts.map(d => ({
-    value: d.code.substring(2), // Full code to short code (e.g., "26440" → "440")
-    label: d.name
-  }));
+      const params = administrativeStore.currentGeometryParams;
+      if (!params) return;
+
+      // If '전체' is selected, render district boundary only
+      if (neighborhoodCode === 'all') {
+        // Remove neighborhood code from params for district-level rendering
+        const districtParams = {
+          province_code: params.province_code,
+          district_code: params.district_code
+        };
+
+        try {
+          const response = await administrativeStore.loadGeometry(districtParams);
+          if (isGeometrySuccess(response)) {
+            renderAdministrativeBoundary(response.geom, response.full_name);
+          }
+        } catch (error) {
+          console.error('[PriorityConfig] Failed to render district boundary:', error);
+        }
+      } else if (neighborhoodCode && neighborhoodCode !== 'all') {
+        // Render neighborhood boundary
+        try {
+          const response = await administrativeStore.loadGeometry(params);
+          if (isGeometrySuccess(response)) {
+            renderAdministrativeBoundary(response.geom, response.full_name);
+          }
+        } catch (error) {
+          console.error('[PriorityConfig] Failed to render neighborhood boundary:', error);
+        }
+      }
+    };
+
+    renderBoundary();
+  }, [districtCode, neighborhoodCode]);
+
+  // 옵션 데이터 (Administrative API 기반)
+  // 시/도는 부산광역시로 고정
+  const cityOptions = [
+    { value: '26', label: '부산광역시' }
+  ];
+
+  // 시군구는 부산진구로 고정
+  const districtOptions = [
+    { value: '230', label: '부산진구' }
+  ];
 
   const dongOptions = [
     { value: 'all', label: '전체' },
@@ -81,14 +136,12 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
   ];
 
   // Helper functions to get names from codes
-  const getProvinceName = (code: string) => {
-    const province = administrativeStore.provinces.find(p => p.code === code);
-    return province?.name || '';
+  const getProvinceName = () => {
+    return '부산광역시'; // 부산광역시로 고정
   };
 
-  const getDistrictName = (shortCode: string) => {
-    const district = administrativeStore.districts.find(d => d.code.substring(2) === shortCode);
-    return district?.name || '';
+  const getDistrictName = () => {
+    return '부산진구'; // 부산진구로 고정
   };
 
   const getNeighborhoodName = (shortCode: string) => {
@@ -203,9 +256,6 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
             value={provinceCode}
             options={cityOptions}
             onChange={(code) => {
-              setProvinceCode(code);
-              setDistrictCode('');
-              setNeighborhoodCode('');
               administrativeStore.selectProvince(code);
             }}
             className="flex-1"
@@ -216,12 +266,10 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
             value={districtCode}
             options={districtOptions}
             onChange={(code) => {
-              setDistrictCode(code);
-              setNeighborhoodCode('');
               administrativeStore.selectDistrict(code);
             }}
             className="flex-1"
-            disabled={!provinceCode}
+            disabled={true}
           />
         </div>
 
@@ -232,13 +280,15 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
             value={neighborhoodCode}
             options={dongOptions}
             onChange={(code) => {
-              setNeighborhoodCode(code);
-              if (code !== 'all') {
+              if (code === 'all') {
+                runInAction(() => {
+                  administrativeStore.selectedNeighborhoodCode = 'all';
+                });
+              } else {
                 administrativeStore.selectNeighborhood(code);
               }
             }}
             className="flex-1"
-            disabled={!districtCode}
           />
           {/* 빈 공간 (레이아웃 정렬을 위한 placeholder) */}
           <div className="flex-1" />
@@ -257,8 +307,8 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
             priorityStore.setConfig({
               date: dateStr,
               time: timeStr,
-              city: getProvinceName(provinceCode),
-              district: getDistrictName(districtCode),
+              city: getProvinceName(),
+              district: getDistrictName(),
               dong: getNeighborhoodName(neighborhoodCode)
             });
             if (onCustomConfig) {
@@ -276,8 +326,8 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
               onSearch({
                 date: dateStr,
                 time: timeStr,
-                city: getProvinceName(provinceCode),
-                district: getDistrictName(districtCode),
+                city: getProvinceName(),
+                district: getDistrictName(),
                 dong: getNeighborhoodName(neighborhoodCode)
               });
             }
