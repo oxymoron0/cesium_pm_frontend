@@ -20,6 +20,12 @@ export interface GeoJSONPolygon {
   coordinates: PostGISCoordinate[][]; // Array of linear rings
 }
 
+// GeoJSON MultiPolygon (행정구역 경계 등)
+export interface GeoJSONMultiPolygon {
+  type: 'MultiPolygon';
+  coordinates: PostGISCoordinate[][][]; // Array of Polygons (each is an array of linear rings)
+}
+
 // Route Geometry API 응답 (실제 구조)
 export interface RouteGeometry {
   route_name: string;

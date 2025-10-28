@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { observer } from 'mobx-react-lite';
 import Title from '@/components/basic/Title';
 import SubTitle from '@/components/basic/SubTitle';
 import Spacer from '@/components/basic/Spacer';
@@ -8,6 +9,7 @@ import Select from '@/components/basic/Select';
 import Info from '@/components/basic/Info';
 import Divider from '@/components/basic/Divider';
 import { priorityStore } from '@/stores/PriorityStore';
+import { administrativeStore } from '@/stores/AdministrativeStore';
 import type { PriorityConfig as PriorityConfigData } from '../types';
 
 interface PriorityConfigProps {
@@ -16,34 +18,84 @@ interface PriorityConfigProps {
   onSearch?: (config: PriorityConfigData) => void;
 }
 
-export default function PriorityConfig({ onClose, onCustomConfig, onSearch }: PriorityConfigProps) {
+const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfig, onSearch }: PriorityConfigProps) {
   // 현재 날짜와 시간
   const now = new Date();
   const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
   const timeStr = `${String(now.getHours()).padStart(2, '0')}시 ~ ${String(now.getHours() + 1).padStart(2, '0')}시`;
   const currentTimeText = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}. ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-  // 상태 관리
-  const [city, setCity] = useState('부산시');
-  const [district, setDistrict] = useState('부산진구');
-  const [dong, setDong] = useState('전체');
+  // 상태 관리 - 부산광역시(26) 기본 선택
+  const [provinceCode, setProvinceCode] = useState('26');
+  const [districtCode, setDistrictCode] = useState('');
+  const [neighborhoodCode, setNeighborhoodCode] = useState('');
 
-  // 옵션 데이터
-  const cityOptions = [
-    { value: '부산시', label: '부산시' }
-  ];
+  // Load provinces on mount
+  useEffect(() => {
+    if (administrativeStore.provinces.length === 0) {
+      administrativeStore.loadProvinces();
+    }
+  }, []);
 
-  const districtOptions = [
-    { value: '부산진구', label: '부산진구' },
-    { value: '해운대구', label: '해운대구' },
-    { value: '동래구', label: '동래구' }
-  ];
+  // Auto-select Busan (26) when provinces loaded
+  useEffect(() => {
+    if (administrativeStore.provinces.length > 0 && !administrativeStore.selectedProvinceCode) {
+      administrativeStore.selectProvince('26');
+    }
+  }, [administrativeStore.provinces.length]);
+
+  // Auto-select first district when loaded
+  useEffect(() => {
+    if (administrativeStore.districts.length > 0 && !districtCode && provinceCode) {
+      const firstDistrict = administrativeStore.districts[0];
+      const shortCode = firstDistrict.code.substring(2);
+      setDistrictCode(shortCode);
+      administrativeStore.selectDistrict(shortCode);
+    }
+  }, [administrativeStore.districts.length, districtCode, provinceCode]);
+
+  // Auto-select '전체' for neighborhoods
+  useEffect(() => {
+    if (administrativeStore.neighborhoods.length > 0 && !neighborhoodCode && districtCode) {
+      setNeighborhoodCode('all');
+    }
+  }, [administrativeStore.neighborhoods.length, neighborhoodCode, districtCode]);
+
+  // 옵션 데이터 (Administrative API 기반)
+  const cityOptions = administrativeStore.provinces.map(p => ({
+    value: p.code,
+    label: p.name
+  }));
+
+  const districtOptions = administrativeStore.districts.map(d => ({
+    value: d.code.substring(2), // Full code to short code (e.g., "26440" → "440")
+    label: d.name
+  }));
 
   const dongOptions = [
-    { value: '전체', label: '전체' },
-    { value: '부전동', label: '부전동' },
-    { value: '전포동', label: '전포동' }
+    { value: 'all', label: '전체' },
+    ...administrativeStore.neighborhoods.map(n => ({
+      value: n.code.substring(5), // Full code to short code (e.g., "26440101" → "101")
+      label: n.name
+    }))
   ];
+
+  // Helper functions to get names from codes
+  const getProvinceName = (code: string) => {
+    const province = administrativeStore.provinces.find(p => p.code === code);
+    return province?.name || '';
+  };
+
+  const getDistrictName = (shortCode: string) => {
+    const district = administrativeStore.districts.find(d => d.code.substring(2) === shortCode);
+    return district?.name || '';
+  };
+
+  const getNeighborhoodName = (shortCode: string) => {
+    if (shortCode === 'all') return '전체';
+    const neighborhood = administrativeStore.neighborhoods.find(n => n.code.substring(5) === shortCode);
+    return neighborhood?.name || '';
+  };
 
   return (
     <>
@@ -148,17 +200,28 @@ export default function PriorityConfig({ onClose, onCustomConfig, onSearch }: Pr
         <div className="flex w-full gap-4">
           <Select
             label="시/도"
-            value={city}
+            value={provinceCode}
             options={cityOptions}
-            onChange={setCity}
+            onChange={(code) => {
+              setProvinceCode(code);
+              setDistrictCode('');
+              setNeighborhoodCode('');
+              administrativeStore.selectProvince(code);
+            }}
             className="flex-1"
+            disabled={true}
           />
           <Select
             label="군/구"
-            value={district}
+            value={districtCode}
             options={districtOptions}
-            onChange={setDistrict}
+            onChange={(code) => {
+              setDistrictCode(code);
+              setNeighborhoodCode('');
+              administrativeStore.selectDistrict(code);
+            }}
             className="flex-1"
+            disabled={!provinceCode}
           />
         </div>
 
@@ -166,10 +229,16 @@ export default function PriorityConfig({ onClose, onCustomConfig, onSearch }: Pr
         <div className="flex w-full gap-4">
           <Select
             label="읍/면/동"
-            value={dong}
+            value={neighborhoodCode}
             options={dongOptions}
-            onChange={setDong}
+            onChange={(code) => {
+              setNeighborhoodCode(code);
+              if (code !== 'all') {
+                administrativeStore.selectNeighborhood(code);
+              }
+            }}
             className="flex-1"
+            disabled={!districtCode}
           />
           {/* 빈 공간 (레이아웃 정렬을 위한 placeholder) */}
           <div className="flex-1" />
@@ -188,9 +257,9 @@ export default function PriorityConfig({ onClose, onCustomConfig, onSearch }: Pr
             priorityStore.setConfig({
               date: dateStr,
               time: timeStr,
-              city,
-              district,
-              dong
+              city: getProvinceName(provinceCode),
+              district: getDistrictName(districtCode),
+              dong: getNeighborhoodName(neighborhoodCode)
             });
             if (onCustomConfig) {
               onCustomConfig();
@@ -207,9 +276,9 @@ export default function PriorityConfig({ onClose, onCustomConfig, onSearch }: Pr
               onSearch({
                 date: dateStr,
                 time: timeStr,
-                city,
-                district,
-                dong
+                city: getProvinceName(provinceCode),
+                district: getDistrictName(districtCode),
+                dong: getNeighborhoodName(neighborhoodCode)
               });
             }
           }}
@@ -219,4 +288,6 @@ export default function PriorityConfig({ onClose, onCustomConfig, onSearch }: Pr
       </div>
     </>
   );
-}
+});
+
+export default PriorityConfig;
