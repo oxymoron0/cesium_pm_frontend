@@ -199,7 +199,7 @@ const SimulationRunningList = observer(function SimulationRunningList() {
 
             {/* 시뮬레이션 제목 */}
             <div style={{ flex: 2 }} className="flex items-center gap-2">
-              {/* {sim.is_private ? (
+              {sim.is_private ? (
                 <div className="flex flex-col items-start">
                   <span
                     className="px-2 py-0.5 rounded"
@@ -216,9 +216,9 @@ const SimulationRunningList = observer(function SimulationRunningList() {
                   <span>{sim.simulation_name}</span>
                 </div>
               ) : 
-                <span>{sim.simulation_name}</span>
-              } */}
-              <span style={{ color: '#A6A6A6' }}>{sim.simulation_name}</span>
+                <span style={{ color: '#A6A6A6' }}>{sim.simulation_name}</span>
+              }
+              {/* <span style={{ color: '#A6A6A6' }}>{sim.simulation_name}</span> */}
             </div>
 
             {/* 오염물질 */}
@@ -244,7 +244,7 @@ const SimulationRunningList = observer(function SimulationRunningList() {
                   </div>
                 )}
                 {sim.status === '완료' && (
-                  <Button iconName={'excute'} iconPos='right' onClick={() => openModal()}>
+                  <Button iconName={'excute'} iconPos='right' onClick={() => openModal(sim.uuid)}>
                     실행
                   </Button>
                 )}

@@ -98,6 +98,7 @@ export interface SimulationListItem {
   lot: string;                       // 지번 주소
   road_name: string;                 // 도로명 주소
   weather: Weather;                  // Weather data
+  is_private: boolean;
 }
 
 /**

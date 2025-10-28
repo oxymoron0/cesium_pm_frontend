@@ -739,7 +739,6 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
             };
 
             console.log('시뮬레이션 실행:', executionData);
-            simulationStore.openModal();
             onExecute?.();
           }}
         >

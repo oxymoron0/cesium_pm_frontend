@@ -301,6 +301,7 @@ class SimulationStore {
   isLoadingList: boolean = false;
   listError: string | null = null;
   pagination: SimulationListPagination | null = null;
+  selectedStartSimulation: SimulationListItem | null = null;
 
   // 시뮬레이션 상세 정보
   selectedSimulationUuid: string | null = null;
@@ -656,7 +657,6 @@ class SimulationStore {
     page: number = 1,
     limit: number = 7,
     userId?: string,
-    includePrivate: boolean = true
   ): Promise<void> {
     this.isLoadingList = true;
     this.listError = null;
@@ -665,7 +665,7 @@ class SimulationStore {
       // userId가 없으면 userStore의 현재 사용자 사용
       const effectiveUserId = userId || userStore.currentUser;
 
-      const response = await getSimulationList(page, limit, effectiveUserId, includePrivate,
+      const response = await getSimulationList(page, limit, effectiveUserId,
         this.pollutantFilter,
         this.sortOrder
       );
@@ -850,14 +850,30 @@ class SimulationStore {
     /**
    * 모달 열기
    */
-  openModal = () => {
-    this.isModalOpen = true
+  openModal = (uuid? : string) => {
+    const foundItem = this.simulationList.find(item => item.uuid === uuid);
+
+    if (uuid) {
+
+    }
+
+    if (foundItem) {
+      this.selectedStartSimulation = foundItem;
+
+      this.isModalOpen = true;
+    } else {
+      console.warn('해당 uuid의 시뮬레이션을 찾을 수 없습니다:', uuid);
+    }
+    console.log('저장 item : ' , this.selectedStartSimulation);
   }
 
   /**
    * 모달 닫기
    */
   closeModal = () => {
+    //데이터 클리어
+    this.selectedStartSimulation = null;
+    //모달 닫기
     this.isModalOpen = false
   }
 

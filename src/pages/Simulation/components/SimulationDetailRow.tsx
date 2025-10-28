@@ -63,7 +63,7 @@ const SimulationDetailRow: React.FC<{ sim: SimulationListItem }> = ({ sim }) => 
           (풍향) {sim.weather?.wind_direction_10m ?? 'N/A'}° (풍속) {sim.weather?.wind_speed_10m ?? 'N/A'} m/s
         </DetailItem>
         
-        {/* <DetailItem label="공개 설정">
+        <DetailItem label="공개 설정">
           <div className="flex items-center gap-2">
             <span>{sim.is_private ? '비공개' : '공개'}</span>
             <span className="flex items-center justify-center w-auto h-6 cursor-pointer py-1 px-3 rounded-[4px] text-[#FFD040] border border-[#FFD040] bg-black"
@@ -71,7 +71,7 @@ const SimulationDetailRow: React.FC<{ sim: SimulationListItem }> = ({ sim }) => 
               수정하기
             </span>
           </div>
-        </DetailItem> */}
+        </DetailItem>
       </div>
     </div>
   );

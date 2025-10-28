@@ -59,14 +59,12 @@ export async function submitSimulation(
  * @param page - 페이지 번호 (기본값: 1)
  * @param limit - 페이지당 항목 수 (기본값: 7, 최대: 100)
  * @param userId - 사용자 ID (선택)
- * @param includePrivate - 비공개 시뮬레이션 포함 여부 (기본값: false)
  * @returns 시뮬레이션 목록과 페이지네이션 정보
  */
 export async function getSimulationList(
   page: number = 1,
   limit: number = 7,
   userId?: string,
-  includePrivate: boolean = false,
   pmType: PMType | 'all' = 'all',
   sortOrder: 'latest' | 'oldest' = 'latest'
 ): Promise<SimulationListResponse> {
@@ -74,7 +72,6 @@ export async function getSimulationList(
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
-      include_private: includePrivate.toString(),
     });
 
     if (userId) {
