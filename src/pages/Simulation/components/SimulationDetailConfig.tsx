@@ -11,7 +11,6 @@ import Info from '@/components/basic/Info';
 import Checkbox from './Checkbox';
 import { simulationStore } from '@/stores/SimulationStore';
 import { renderLocationMarker } from '@/utils/cesium/locationMarker';
-import { renderAdministrativeBoundary } from '@/utils/cesium/districtRenderer';
 
 interface SimulationDetailConfigProps {
   onBack?: () => void;
@@ -62,22 +61,6 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
     };
   }, []);
 
-  // 선택된 시군구의 경계 렌더링
-  useEffect(() => {
-    const dispose = reaction(
-      () => simulationStore.selectedDistrict,
-      (selectedDistrict) => {
-        if (selectedDistrict?.geometry) {
-          renderAdministrativeBoundary(selectedDistrict.geometry, selectedDistrict.code);
-        }
-      },
-      { fireImmediately: true }
-    );
-
-    return () => {
-      dispose();
-    };
-  }, []);
 
   return (
     <>

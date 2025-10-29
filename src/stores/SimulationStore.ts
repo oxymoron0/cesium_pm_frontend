@@ -1,4 +1,4 @@
-import { makeAutoObservable, runInAction } from 'mobx';
+import { makeAutoObservable } from 'mobx';
 import type { AddressSearchResult, SimulationActiveTab, SimulationConfig, SimulationView } from '../pages/Simulation/types';
 import type {
   SimulationRequest,
@@ -283,7 +283,7 @@ class SimulationStore {
   selectedAddressId: string | null = null;
 
   // 모드 전환 시 이전 선택 상태 임시 저장
-  private previousSelectedAddressId: string | null = null;
+  //private previousSelectedAddressId: string | null = null;
 
   // 시뮬레이션 설정
   config: SimulationConfig | null = null;
@@ -310,12 +310,6 @@ class SimulationStore {
   detailError: string | null = null;
 
   // 지역 정보
-  districtList: Array<{
-    code: string;
-    name: string;
-    geometry?: string; // GeoJSON string
-  }> = [];
-  selectedDistrictCode: string = '26230'; // 부산진구 기본값
   isLoadingDistricts: boolean = false;
 
   // confirm modal active
@@ -337,8 +331,14 @@ class SimulationStore {
   setCurrentView(viewName: SimulationView) {
     this.currentView = viewName
   }
+
   setActiveTab(tabName: SimulationActiveTab) {
     this.activeTab = tabName
+
+    // 탭 전환 시 직접 위치 지정 모드 해제
+    if (this.isDirectLocationMode) {
+      this.disableDirectLocationMode();
+    }
   }
 
   // ============================================================================
@@ -419,7 +419,7 @@ class SimulationStore {
     this.searchQuery = '';
     this.directLocationResults = [];
     this.isDirectLocationMode = false;
-    this.previousSelectedAddressId = null;
+    //this.previousSelectedAddressId = null;
   }
 
   isAddressSelected(addressId: string): boolean {
@@ -427,11 +427,17 @@ class SimulationStore {
   }
 
   /**
-   * 선택된 주소 (현재 모드의 리스트에서 검색)
+   * 선택된 주소 (양쪽 리스트에서 검색)
    */
   get selectedAddress(): AddressSearchResult | null {
     if (!this.selectedAddressId) return null;
-    return this.currentResults.find(result => result.id === this.selectedAddressId) || null;
+
+    // 직접 위치 지정 리스트에서 먼저 검색
+    const directResult = this.directLocationResults.find(result => result.id === this.selectedAddressId);
+    if (directResult) return directResult;
+
+    // 검색 결과 리스트에서 검색
+    return this.searchResults.find(result => result.id === this.selectedAddressId) || null;
   }
 
   // ============================================================================
@@ -454,7 +460,7 @@ class SimulationStore {
     this.isDirectLocationMode = true;
 
     // 현재 선택 상태를 임시 저장 후 초기화 (위치 설정 완료 버튼 숨김)
-    this.previousSelectedAddressId = this.selectedAddressId;
+    //this.previousSelectedAddressId = this.selectedAddressId;
     this.selectedAddressId = null;
 
     // 위치 정보 초기화 (마커 제거)
@@ -466,7 +472,6 @@ class SimulationStore {
 
   disableDirectLocationMode() {
     this.isDirectLocationMode = false;
-    this.selectedLocation = null;
 
   }
 
@@ -758,90 +763,6 @@ class SimulationStore {
    */
   get isDetailPanelOpen(): boolean {
     return this.selectedSimulationUuid !== null;
-  }
-
-
-  // ============================================================================
-  // 지역 정보 관리
-  // ============================================================================
-
-  /**
-   * 시군구 목록 불러오기
-   * 실제로는 API 호출: GET /api/v1/region/districts?cityCode=26
-   */
-  async loadDistrictList(): Promise<void> {
-    runInAction(() => {
-      this.isLoadingDistricts = true;
-    });
-
-    try {
-      // TODO: 실제 API 호출
-      // import { getDistrictList } from '@/utils/api';
-      // const response = await getDistrictList('26'); // 부산광역시
-      // this.districtList = response.districts;
-
-      // Mock 데이터 (임시)
-      await new Promise(resolve => setTimeout(resolve, 100)); // 네트워크 지연 시뮬레이션
-
-      runInAction(() => {
-        this.districtList = [
-          { code: '26110', name: '부산광역시 중구' },
-          { code: '26140', name: '부산광역시 동구' },
-          { code: '26170', name: '부산광역시 서구' },
-          { code: '26200', name: '부산광역시 남구' },
-          {
-            code: '26230',
-            name: '부산광역시 부산진구',
-            geometry: JSON.stringify({
-              type: 'Polygon',
-              coordinates: [[
-                [129.0150, 35.1390], // 남서쪽 (개금동)
-                [129.0150, 35.1750], // 북서쪽 (범천동)
-                [129.0830, 35.1750], // 북동쪽 (초읍동)
-                [129.0830, 35.1390], // 남동쪽 (당감동)
-                [129.0150, 35.1390]  // 시작점으로 닫기
-              ]]
-            })
-          },
-          { code: '26260', name: '부산광역시 동래구' },
-          { code: '26290', name: '부산광역시 남구' },
-          { code: '26320', name: '부산광역시 북구' },
-          { code: '26350', name: '부산광역시 해운대구' },
-          { code: '26380', name: '부산광역시 사하구' },
-          { code: '26410', name: '부산광역시 금정구' },
-          { code: '26440', name: '부산광역시 강서구' },
-          { code: '26470', name: '부산광역시 연제구' },
-          { code: '26500', name: '부산광역시 수영구' },
-          { code: '26530', name: '부산광역시 사상구' },
-          { code: '26710', name: '부산광역시 기장군' }
-        ];
-      });
-    } catch (error) {
-      console.error('[SimulationStore] Failed to load district list:', error);
-      runInAction(() => {
-        this.districtList = [];
-      });
-    } finally {
-      runInAction(() => {
-        this.isLoadingDistricts = false;
-      });
-    }
-  }
-
-  /**
-   * 시군구 선택
-   */
-  setDistrictCode(code: string) {
-    this.selectedDistrictCode = code;
-    // 지역 변경 시 검색 결과 초기화
-    this.clearSearchResults();
-  }
-
-  /**
-   * 선택된 시군구 정보 조회
-   */
-  get selectedDistrict() {
-    return this.districtList.find(d => d.code === this.selectedDistrictCode) || null;
   }
 
   // ============================================================================

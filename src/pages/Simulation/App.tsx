@@ -10,6 +10,8 @@ import DirectLocationGuide from "./components/DirectLocationGuide";
 import { simulationStore } from "@/stores/SimulationStore";
 import { flyToLocation } from "@/utils/cesiumControls";
 import SimulationQuickResult from "./components/SimulationQuickResult";
+import { clearLocationMarker } from "@/utils/cesium/locationMarker";
+import { disableDirectLocationClickHandler } from "@/utils/cesium/directLocationRenderer";
 
 interface AppProps {
   onCloseMicroApp?: () => void;
@@ -50,13 +52,25 @@ const App = observer(function App(props: AppProps) {
     checkCesiumStatus();
   }, [cesiumStatus]);
 
+  // Clear location marker and disable handlers when leaving config/detailConfig views or switching tabs
+  useEffect(() => {
+    const isConfigView = simulationStore.currentView === "config" || simulationStore.currentView === "detailConfig";
+    const isDetailTab = simulationStore.activeTab === "상세설정";
+
+    if (!isConfigView || !isDetailTab) {
+      clearLocationMarker();
+      disableDirectLocationClickHandler();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [simulationStore.currentView, simulationStore.activeTab]);
+
   const isQiankun = window.__POWERED_BY_QIANKUN__;
 
   return (
     <div className="relative w-full h-screen overflow-hidden pm-frontend-scope">
       {!isQiankun && <CesiumViewer />}
 
-      {cesiumStatus === "ready" && simulationStore.isDirectLocationMode && (
+      {cesiumStatus === "ready" && simulationStore.isDirectLocationMode && simulationStore.activeTab === "상세설정" && (
         <DirectLocationGuide />
       )}
 

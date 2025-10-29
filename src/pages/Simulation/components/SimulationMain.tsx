@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { observer } from "mobx-react-lite";
 import SimulationConfig from "./SimulationConfig";
 import SimulationDetailConfig from "./SimulationDetailConfig";
@@ -19,6 +19,13 @@ interface SimulationMainProps {
 
 const SimulationMain = observer(function App(props: SimulationMainProps) {
   const [activeTab, setActiveTab] = useState(0);
+
+  // 빠른실행으로 전환 시 직접 위치 지정 모드 해제
+  useEffect(() => {
+    if (activeTab === 1 && simulationStore.isDirectLocationMode) {
+      simulationStore.disableDirectLocationMode();
+    }
+  }, [activeTab]);
 
   return (
     <>
@@ -45,7 +52,10 @@ const SimulationMain = observer(function App(props: SimulationMainProps) {
               {simulationStore.currentView === "config" ? (
                 <SimulationConfig
                   onClose={props.onCloseMicroApp}
-                  onLocationComplete={() => simulationStore.setCurrentView("detailConfig")}
+                  onLocationComplete={() => {
+                    simulationStore.disableDirectLocationMode();
+                    simulationStore.setCurrentView("detailConfig");
+                  }}
                 />
               ) : simulationStore.currentView === "detailConfig" ? (
                 <SimulationDetailConfig
