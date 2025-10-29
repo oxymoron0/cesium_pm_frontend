@@ -48,6 +48,29 @@ export const API_PATHS = {
   REGION_CITIES: getApiPath('api/v1/region/cities'),
   REGION_DISTRICTS: (cityCode: string) => getApiPath(`api/v1/region/districts?cityCode=${cityCode}`),
   REGION_DONGS: (districtCode: string) => getApiPath(`api/v1/region/dongs?districtCode=${districtCode}`),
+
+  // 북마크 API (PM Backend)
+  BOOKMARKS_ROUTES: (user: string) => getApiPath(`api/v1/bookmarks/routes?user=${user}`),
+  BOOKMARKS_ROUTES_CREATE: getApiPath('api/v1/bookmarks/routes'),
+  BOOKMARKS_ROUTES_DELETE: (routeName: string, user: string) => getApiPath(`api/v1/bookmarks/routes/${routeName}?user=${user}`),
+  BOOKMARKS_STATIONS: (user: string) => getApiPath(`api/v1/bookmarks/stations?user=${user}`),
+  BOOKMARKS_STATIONS_CREATE: getApiPath('api/v1/bookmarks/stations'),
+  BOOKMARKS_STATIONS_DELETE: (stationId: string, user: string) => getApiPath(`api/v1/bookmarks/stations/${stationId}?user=${user}`),
+
+  // 행정구역 API (PM Backend)
+  ADMINISTRATIVE: getApiPath('api/v1/administrative'),
+  ADMINISTRATIVE_PROVINCES: getApiPath('api/v1/administrative'),
+  ADMINISTRATIVE_DISTRICTS: (provinceCode: string) => getApiPath(`api/v1/administrative?province_code=${provinceCode}`),
+  ADMINISTRATIVE_NEIGHBORHOODS: (provinceCode: string, districtCode: string) => getApiPath(`api/v1/administrative?province_code=${provinceCode}&district_code=${districtCode}`),
+  ADMINISTRATIVE_VILLAGES: (provinceCode: string, districtCode: string, neighborhoodCode: string) => getApiPath(`api/v1/administrative?province_code=${provinceCode}&district_code=${districtCode}&neighborhood_code=${neighborhoodCode}`),
+  ADMINISTRATIVE_GEOMETRY: (params: { province_code: string; district_code?: string; neighborhood_code?: string; village_code?: string }) => {
+    const queryParams = new URLSearchParams();
+    queryParams.set('province_code', params.province_code);
+    if (params.district_code) queryParams.set('district_code', params.district_code);
+    if (params.neighborhood_code) queryParams.set('neighborhood_code', params.neighborhood_code);
+    if (params.village_code) queryParams.set('village_code', params.village_code);
+    return getApiPath(`api/v1/administrative/geometry?${queryParams.toString()}`);
+  },
 } as const;
 
 /**

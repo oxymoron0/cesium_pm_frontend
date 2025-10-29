@@ -194,6 +194,74 @@ export interface AirQualitySensorProps {
 }
 
 // =============================================================================
+// Bookmark API Types
+// =============================================================================
+
+/**
+ * User Entity (snake_case as per Go backend)
+ */
+export interface User {
+  user_id: string;
+  username: string;
+  email: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Route Bookmark (snake_case as per Go backend)
+ */
+export interface RouteBookmark {
+  user_id: string;
+  route_name: string;
+}
+
+/**
+ * Route Bookmarks GET response
+ * GET /api/v1/bookmarks/routes?user={user}
+ */
+export interface RouteBookmarksResponse {
+  bookmarks: RouteBookmark[];
+  total: number;
+}
+
+/**
+ * Route Bookmark POST request
+ * POST /api/v1/bookmarks/routes
+ */
+export interface CreateRouteBookmarkRequest {
+  user: string;
+  route_name: string;
+}
+
+/**
+ * Station Bookmark (snake_case as per Go backend)
+ */
+export interface StationBookmark {
+  user_id: string;
+  station_id: string;
+}
+
+/**
+ * Station Bookmarks GET response
+ * GET /api/v1/bookmarks/stations?user={user}
+ */
+export interface StationBookmarksResponse {
+  bookmarks: StationBookmark[];
+  total: number;
+}
+
+/**
+ * Station Bookmark POST request
+ * POST /api/v1/bookmarks/stations
+ */
+export interface CreateStationBookmarkRequest {
+  user: string;
+  station_id: string;
+}
+
+// =============================================================================
 // Station Sensor Data Types (실제 API 연동용)
 // =============================================================================
 

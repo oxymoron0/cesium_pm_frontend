@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import Title from "@/components/basic/Title";
 import TabNavigation from "@/components/basic/TabNavigation";
@@ -11,11 +11,14 @@ import Icon from "@/components/basic/Icon";
 import RouteCard from "@/components/service/RouteCard";
 import StationCard from "@/components/service/StationCard";
 import { routeStore } from '@/stores/RouteStore';
+import { stationStore } from '@/stores/StationStore';
 import { stationDetailStore } from '@/stores/StationDetailStore';
+import { bookmarkStore } from '@/stores/BookmarkStore';
+import { userStore } from '@/stores/UserStore';
 import { searchStations } from '@/utils/api/routeApi';
 import { renderSearchStations, updateSearchStationSelection, clearSearchStations } from '@/utils/cesium/searchStationRenderer';
 import { flyToSearchStation } from '@/utils/cesium/cameraUtils';
-import type { StationSearchResponse } from '@/utils/api/types';
+import type { StationSearchResponse, RouteStationFeature } from '@/utils/api/types';
 
 interface MonitoringProps {
   onRouteSelect: (routeNumber: string) => void;
@@ -35,11 +38,66 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
   // 선택된 정류장 상태 관리
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
 
-  // 임시 저장된 정류장 데이터 (추후 실제 API로 교체)
-  const savedStations: { name: string; description: string; isBookmarked: boolean }[] = [];
+  // 정류장 북마크 토글 핸들러
+  const handleStationBookmarkToggle = async (stationId: string) => {
+    try {
+      await bookmarkStore.toggleStationBookmark(userStore.currentUser, stationId);
+    } catch (error) {
+      console.error('[Monitoring] Failed to toggle station bookmark:', error);
+    }
+  };
+
+  // 북마크된 정류장 정보 가져오기 (stationDataMap에서 검색)
+  const getBookmarkedStations = () => {
+    const bookmarkedStations: Array<{
+      stationId: string;
+      name: string;
+      description: string;
+      isBookmarked: boolean;
+    }> = [];
+
+    bookmarkStore.bookmarkedStations.forEach(stationId => {
+      // StationStore의 모든 stationDataMap을 순회하여 정류장 정보 찾기
+      for (const [, stationData] of stationStore.stationDataMap.entries()) {
+        const feature = stationData.features.find(f => f.properties.station_id === stationId);
+        if (feature) {
+          bookmarkedStations.push({
+            stationId: feature.properties.station_id,
+            name: feature.properties.station_name,
+            description: `${feature.properties.ars_id} (${feature.properties.city})`,
+            isBookmarked: true
+          });
+          break; // 찾았으면 다음 stationId로
+        }
+      }
+    });
+
+    return bookmarkedStations;
+  };
 
   const itemsPerPage = 4;
   const isSearchMode = searchQuery.trim().length > 0;
+
+  // 북마크된 정류장의 GeoJSON Features 추출 (Cesium 렌더링용)
+  const bookmarkFeatures = useMemo(() => {
+    if (isSearchMode) return null;
+
+    const features: RouteStationFeature[] = [];
+    bookmarkStore.bookmarkedStations.forEach(stationId => {
+      // StationStore의 모든 stationDataMap을 순회하여 Feature 추출
+      for (const [, stationData] of stationStore.stationDataMap.entries()) {
+        const feature = stationData.features.find(f => f.properties.station_id === stationId);
+        if (feature) {
+          features.push(feature);
+          break; // 찾았으면 다음 stationId로
+        }
+      }
+    });
+
+    return features.length > 0 ? features : null;
+    // MobX observer는 observable 변경 시 자동으로 재렌더링하므로 의존성 필요
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSearchMode, bookmarkStore.bookmarkedStations, stationStore.stationDataMap]);
 
   // 현재 표시할 데이터 계산
   const getCurrentData = () => {
@@ -49,7 +107,7 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
         stationId: feature.properties.station_id,
         name: feature.properties.station_name,
         description: `${feature.properties.ars_id} (${feature.properties.city})`,
-        isBookmarked: false,
+        isBookmarked: bookmarkStore.isStationBookmarked(feature.properties.station_id),
         isSelected: selectedStationId === feature.properties.station_id
       }));
 
@@ -60,16 +118,17 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
 
       return { items, totalItems, totalPages };
     } else {
-      // 저장된 정류장 (클라이언트 사이드 페이징) - 임시 station_id 생성
-      const totalItems = savedStations.length;
+      // 저장된 정류장 (북마크된 정류장 표시)
+      const bookmarkedStations = getBookmarkedStations();
+      const totalItems = bookmarkedStations.length;
       const totalPages = Math.ceil(totalItems / itemsPerPage);
       const startIndex = (currentPage - 1) * itemsPerPage;
-      const items = savedStations.slice(startIndex, startIndex + itemsPerPage).map((station, index) => ({
-        stationId: `saved_${startIndex + index}`, // 임시 ID (페이지 고려)
+      const items = bookmarkedStations.slice(startIndex, startIndex + itemsPerPage).map(station => ({
+        stationId: station.stationId,
         name: station.name,
         description: station.description,
         isBookmarked: station.isBookmarked,
-        isSelected: selectedStationId === `saved_${startIndex + index}`
+        isSelected: selectedStationId === station.stationId
       }));
 
       return { items, totalItems, totalPages };
@@ -78,31 +137,36 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
 
   const { items: currentItems, totalItems, totalPages } = getCurrentData();
 
-  // 검색 결과 Cesium 렌더링 (선택 상태 제외)
+  // 검색 결과 및 북마크 정류장 Cesium 렌더링 (통합)
   useEffect(() => {
-    const renderSearchResults = async () => {
-      if (isSearchMode && searchResults?.features) {
-        console.log('[Monitoring] Rendering search results to Cesium:', searchResults.features.length);
-        await renderSearchStations(searchResults.features, null); // 선택 상태 없이 렌더링
+    const renderStations = async () => {
+      // 렌더링할 Features 결정: 검색 모드면 searchResults, 북마크 모드면 bookmarkFeatures
+      const featuresToRender = isSearchMode ? searchResults?.features : bookmarkFeatures;
+
+      if (featuresToRender && featuresToRender.length > 0) {
+        console.log(`[Monitoring] Rendering ${isSearchMode ? 'search' : 'bookmark'} stations to Cesium:`, featuresToRender.length);
+        await renderSearchStations(featuresToRender, null); // 선택 상태 없이 렌더링
         // 렌더링 후 현재 선택 상태 적용
         updateSearchStationSelection(selectedStationId);
       } else {
-        console.log('[Monitoring] Clearing search results from Cesium');
+        console.log('[Monitoring] Clearing station rendering from Cesium');
         await clearSearchStations();
       }
     };
 
-    renderSearchResults();
+    renderStations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchResults, isSearchMode]); // selectedStationId 의도적으로 제외 (깜빡임 방지)
+  }, [searchResults, bookmarkFeatures, isSearchMode]); // selectedStationId 의도적으로 제외 (깜빡임 방지)
 
   // 선택 상태만 업데이트 (깜빡임 방지)
   useEffect(() => {
-    if (isSearchMode && searchResults?.features) {
+    const featuresToRender = isSearchMode ? searchResults?.features : bookmarkFeatures;
+
+    if (featuresToRender && featuresToRender.length > 0) {
       updateSearchStationSelection(selectedStationId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedStationId]); // isSearchMode, searchResults 의도적으로 제외 (깜빡임 방지)
+  }, [selectedStationId]); // isSearchMode, searchResults, bookmarkFeatures 의도적으로 제외 (깜빡임 방지)
 
   // 검색 API 호출 (검색어 변경시에만)
   useEffect(() => {
@@ -165,14 +229,12 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
     updateSearchStationSelection(stationId);
 
     // 선택된 정류장으로 카메라 이동 (500m 높이, 즉시 이동)
-    if (searchResults?.features) {
-      flyToSearchStation(searchResults.features, stationId, 500);
-    }
-  };
+    // 검색 모드면 searchResults.features, 북마크 모드면 bookmarkFeatures 사용
+    const featuresToUse = isSearchMode ? searchResults?.features : bookmarkFeatures;
 
-  const handleBookmarkToggle = (stationName: string) => {
-    console.log('Bookmark toggle:', stationName);
-    // TODO: 북마크 토글 로직 구현
+    if (featuresToUse) {
+      flyToSearchStation(featuresToUse, stationId, 500);
+    }
   };
 
   const getSubTitleText = () => {
@@ -182,13 +244,44 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
     return '저장한 정류장';
   };
 
+  // 노선 북마크 토글 핸들러
+  const handleRouteBookmarkToggle = async (routeName: string) => {
+    try {
+      await bookmarkStore.toggleRouteBookmark(userStore.currentUser, routeName);
+    } catch (error) {
+      console.error('[Monitoring] Failed to toggle route bookmark:', error);
+    }
+  };
+
   const renderBusTab = () => (
     <>
       <SubTitle> 저장한 버스 </SubTitle>
       <Divider></Divider>
       <Spacer height={16} />
       <div className="flex flex-col items-start self-stretch gap-2">
-        {/* <RouteCard routeNumber="10" isExpress={false} description="송정 ←> 모라주공" /> */}
+        {bookmarkStore.bookmarkedRoutes.length > 0 ? (
+          bookmarkStore.bookmarkedRoutes.map((routeName) => {
+            const routeInfo = routeStore.getRouteInfo(routeName);
+            if (!routeInfo) return null;
+
+            return (
+              <RouteCard
+                key={`bookmark-${routeName}`}
+                routeNumber={routeInfo.route_name}
+                description={`${routeInfo.origin} ↔ ${routeInfo.destination}`}
+                isExpress={false}
+                isBookmarked={true} // 저장한 버스 섹션이므로 항상 true
+                isSelected={routeStore.isRouteSelected(routeInfo.route_name)}
+                onBookmarkToggle={() => handleRouteBookmarkToggle(routeName)}
+                onSelect={onRouteSelect}
+              />
+            );
+          })
+        ) : (
+          <div className="text-gray-400 text-center p-4 bg-[#1A1A1A] rounded-lg w-full">
+            저장한 버스가 없습니다.
+          </div>
+        )}
       </div>
       <Spacer height={16}/>
       <SubTitle> 노선도 </SubTitle>
@@ -224,11 +317,9 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
                   routeNumber={routeInfo.route_name}
                   description={`${routeInfo.origin} ↔ ${routeInfo.destination}`}
                   isExpress={false} // 모든 노선을 일반버스로 설정 (필요시 추후 변경)
-                  isBookmarked={false} // 북마크 기능은 추후 구현
+                  isBookmarked={bookmarkStore.isRouteBookmarked(routeInfo.route_name)}
                   isSelected={routeStore.isRouteSelected(routeInfo.route_name)}
-                  onBookmarkToggle={() => {
-                    // TODO: 북마크 기능 구현 예정
-                  }}
+                  onBookmarkToggle={() => handleRouteBookmarkToggle(routeInfo.route_name)}
                   onSelect={onRouteSelect}
                 />
               ))
@@ -355,7 +446,7 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
               description={station.description}
               isBookmarked={station.isBookmarked}
               isSelected={station.isSelected}
-              onBookmarkToggle={() => handleBookmarkToggle(station.name)}
+              onBookmarkToggle={() => handleStationBookmarkToggle(station.stationId)}
               onSelect={handleStationSelect}
             />
           ))

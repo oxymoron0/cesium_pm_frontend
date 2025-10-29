@@ -1,7 +1,7 @@
 import { createRoot, type Root } from 'react-dom/client'
 import App from './App'
 import '@/index.css'
-import { userStore } from '@/stores/UserStore'
+import { userStore, type User } from '@/stores/UserStore'
 
 let root: Root | null = null;
 
@@ -9,7 +9,7 @@ interface MountProps {
   container?: Element;
   onCloseMicroApp?: () => void;
   dispatch?: (action: unknown) => void;
-  user?: string;
+  user?: User | string;
 }
 
 export async function bootstrap() {

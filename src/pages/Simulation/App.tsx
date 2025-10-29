@@ -26,8 +26,8 @@ const App = observer(function App(props: AppProps) {
 
   useEffect(() => {
     const checkCesiumStatus = () => {
-      const isQiankun = (window as any).__POWERED_BY_QIANKUN__;
-      const parentViewer = (window as any).cviewer;
+      const isQiankun = window.__POWERED_BY_QIANKUN__;
+      const parentViewer = window.cviewer;
 
       if (isQiankun && parentViewer) {
         setCesiumStatus("ready");
@@ -36,11 +36,11 @@ const App = observer(function App(props: AppProps) {
         }, 500);
       } else if (!isQiankun) {
         const waitForViewer = setInterval(() => {
-          if ((window as any).cviewer) {
+          if (window.cviewer) {
             setCesiumStatus("ready");
             clearInterval(waitForViewer);
             setTimeout(() => {
-              flyToLocation((window as any).cviewer!, 129.0545, 35.1598, 3000);
+              flyToLocation(window.cviewer!, 129.0545, 35.1598, 3000);
             }, 500);
           }
         }, 100);
@@ -50,7 +50,7 @@ const App = observer(function App(props: AppProps) {
     checkCesiumStatus();
   }, [cesiumStatus]);
 
-  const isQiankun = (window as any).__POWERED_BY_QIANKUN__;
+  const isQiankun = window.__POWERED_BY_QIANKUN__;
 
   return (
     <div className="relative w-full h-screen overflow-hidden pm-frontend-scope">
@@ -74,6 +74,7 @@ const App = observer(function App(props: AppProps) {
               onCloseMicroApp={props.onCloseMicroApp}
             />
           )}
+
         </Panel>
       )}
 

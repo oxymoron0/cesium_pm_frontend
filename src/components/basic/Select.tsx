@@ -10,6 +10,7 @@ interface SelectProps {
   onChange?: (value: string) => void;
   className?: string;
   hideLabel?: boolean;
+  disabled?: boolean;
 }
 
 export default function Select({
@@ -18,7 +19,8 @@ export default function Select({
   options,
   onChange,
   className = "",
-  hideLabel = false
+  hideLabel = false,
+  disabled = false
 }: SelectProps) {
   return (
     <div
@@ -48,6 +50,7 @@ export default function Select({
         <select
           value={value}
           onChange={(e) => onChange?.(e.target.value)}
+          disabled={disabled}
           className="w-full h-8 px-3 py-1 bg-black rounded border border-[#696A6A] text-white text-sm outline-none cursor-pointer appearance-none"
           style={{
             fontFamily: 'Pretendard',

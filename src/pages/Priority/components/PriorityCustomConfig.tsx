@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
+import { runInAction } from 'mobx';
 import Title from '@/components/basic/Title';
 import SubTitle from '@/components/basic/SubTitle';
 import Spacer from '@/components/basic/Spacer';
@@ -10,21 +11,54 @@ import Divider from '@/components/basic/Divider';
 import DatePicker from '@/components/basic/DatePicker';
 import TimePicker from '@/components/basic/TimePicker';
 import { priorityStore } from '@/stores/PriorityStore';
+import { administrativeStore } from '@/stores/AdministrativeStore';
+import { renderAdministrativeBoundary, clearAdministrativeBoundary, renderMultipleAdministrativeBoundaries, setupAdministrativeBoundaryClickHandler, removeAdministrativeBoundaryClickHandler } from '@/utils/cesium/administrativeRenderer';
+import { isGeometrySuccess } from '@/types/administrative';
+import { Cartesian3 } from 'cesium';
 
 interface PriorityCustomConfigProps {
   onBack: () => void;
-  onSearch: () => void;
+  onSearch: (config: { date: string; time: string; city: string; district: string; dong: string }) => void;
+  locationMode: 'address' | 'point';
+  setLocationMode: (mode: 'address' | 'point') => void;
 }
 
-const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, onSearch }: PriorityCustomConfigProps) {
+const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, onSearch, locationMode, setLocationMode }: PriorityCustomConfigProps) {
   const config = priorityStore.config;
-  const [locationMode, setLocationMode] = useState<'address' | 'point'>('address');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
-  if (!config) {
-    return null;
-  }
+  // Ensure administrative data is loaded
+  useEffect(() => {
+    const initAdministrativeData = async () => {
+      console.log('[PriorityCustomConfig] Checking administrative data...', {
+        provinces: administrativeStore.provinces.length,
+        selectedProvince: administrativeStore.selectedProvinceCode,
+        selectedDistrict: administrativeStore.selectedDistrictCode,
+        neighborhoods: administrativeStore.neighborhoods.length
+      });
+
+      // Load provinces if not loaded
+      if (administrativeStore.provinces.length === 0) {
+        console.log('[PriorityCustomConfig] Loading provinces...');
+        await administrativeStore.loadProvinces();
+      }
+
+      // Select Busan if not selected
+      if (!administrativeStore.selectedProvinceCode) {
+        console.log('[PriorityCustomConfig] Selecting Busan...');
+        await administrativeStore.selectProvince('26');
+      }
+
+      // Select Busanjin-gu if not selected
+      if (administrativeStore.selectedProvinceCode && !administrativeStore.selectedDistrictCode && administrativeStore.districts.length > 0) {
+        console.log('[PriorityCustomConfig] Selecting Busanjin-gu...');
+        await administrativeStore.selectDistrict('230');
+      }
+    };
+
+    initAdministrativeData();
+  }, []);
 
   // config.date 문자열을 Date 객체로 변환
   const parseDate = (dateStr: string): Date => {
@@ -44,18 +78,214 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
     priorityStore.updateTime(time);
   };
 
-  // 옵션 데이터
+  // 옵션 데이터 (Administrative API 기반)
+  // 시/도는 부산광역시로 고정
   const cityOptions = [
-    { value: '부산시', label: '부산시' }
+    { value: '26', label: '부산광역시' }
   ];
 
+  // 시군구는 부산진구로 고정
   const districtOptions = [
-    { value: '부산진구', label: '부산진구' },
-    { value: '해운대구', label: '해운대구' },
-    { value: '동래구', label: '동래구' }
+    { value: '230', label: '부산진구' }
   ];
 
-  const dongOptions = priorityStore.getDongOptions();
+  const dongOptions = [
+    { value: 'all', label: '전체' },
+    ...administrativeStore.neighborhoods.map(n => ({
+      value: n.code.substring(5),
+      label: n.name
+    }))
+  ];
+
+  // Helper functions to get names from codes
+  const getProvinceName = () => {
+    return '부산광역시'; // 부산광역시로 고정
+  };
+
+  const getDistrictName = () => {
+    return '부산진구'; // 부산진구로 고정
+  };
+
+  const getNeighborhoodName = (shortCode: string) => {
+    if (shortCode === 'all') return '전체';
+    const neighborhood = administrativeStore.neighborhoods.find(n => n.code.substring(5) === shortCode);
+    return neighborhood?.name || '';
+  };
+
+  // Render administrative boundary when district or neighborhood changes (주소 조회 모드)
+  useEffect(() => {
+    // Skip if in point mode
+    if (locationMode === 'point') {
+      console.log('[PriorityCustomConfig] Skipping address mode rendering (point mode active)');
+      return;
+    }
+
+    const renderBoundary = async () => {
+      console.log('[PriorityCustomConfig] Address mode: rendering boundary');
+
+      // Clear all existing boundaries first (including multiple boundaries from point mode)
+      clearAdministrativeBoundary();
+
+      const districtCode = administrativeStore.selectedDistrictCode;
+      const neighborhoodCode = administrativeStore.selectedNeighborhoodCode;
+
+      // Skip if no district selected
+      if (!districtCode) {
+        return;
+      }
+
+      const params = administrativeStore.currentGeometryParams;
+      if (!params) return;
+
+      // If '전체' is selected, render district boundary only
+      if (neighborhoodCode === 'all') {
+        // Remove neighborhood code from params for district-level rendering
+        const districtParams = {
+          province_code: params.province_code,
+          district_code: params.district_code
+        };
+
+        try {
+          const response = await administrativeStore.loadGeometry(districtParams);
+          if (isGeometrySuccess(response)) {
+            renderAdministrativeBoundary(response.geom, response.full_name);
+          }
+        } catch (error) {
+          console.error('[PriorityCustomConfig] Failed to render district boundary:', error);
+        }
+      } else if (neighborhoodCode && neighborhoodCode !== 'all') {
+        // Render neighborhood boundary
+        try {
+          const response = await administrativeStore.loadGeometry(params);
+          if (isGeometrySuccess(response)) {
+            renderAdministrativeBoundary(response.geom, response.full_name);
+          }
+        } catch (error) {
+          console.error('[PriorityCustomConfig] Failed to render neighborhood boundary:', error);
+        }
+      }
+    };
+
+    renderBoundary();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [administrativeStore.selectedDistrictCode, administrativeStore.selectedNeighborhoodCode, locationMode]);
+
+
+  // Handle click events in point mode
+  useEffect(() => {
+    if (locationMode !== 'point') {
+      // Remove click handler when exiting point mode
+      removeAdministrativeBoundaryClickHandler();
+      return;
+    }
+
+    // Clear selected neighborhood code when entering point mode
+    administrativeStore.selectedNeighborhoodCode = null;
+
+    console.log("포인트 선택!!")
+    const viewer = window.cviewer;
+    if (!viewer) return;
+
+    const renderAllNeighborhoods = async () => {
+      // Clear existing boundaries from address mode first
+      clearAdministrativeBoundary();
+
+      // 부산진구의 모든 읍면동 경계 표시
+      const neighborhoods = administrativeStore.neighborhoods;
+
+      if (neighborhoods.length === 0) {
+        console.warn('[PriorityCustomConfig] No neighborhoods loaded, attempting to load...');
+        // Try to load neighborhoods if not loaded
+        if (administrativeStore.selectedDistrictCode) {
+          console.log('[PriorityCustomConfig] Loading neighborhoods for district:', administrativeStore.selectedDistrictCode);
+          return; // Will re-trigger when neighborhoods are loaded
+        }
+        return;
+      }
+
+      console.log('[PriorityCustomConfig] Rendering neighborhoods:', neighborhoods.length);
+
+      const boundaries = [];
+
+      // Load geometry for each neighborhood
+      for (const neighborhood of neighborhoods) {
+        try {
+          const response = await administrativeStore.loadGeometry({
+            province_code: '26',
+            district_code: '230',
+            neighborhood_code: neighborhood.code.substring(5)
+          });
+
+          if (isGeometrySuccess(response)) {
+            boundaries.push({
+              geometry: response.geom,
+              fullName: neighborhood.name, // 읍면동 이름만 표시
+              neighborhoodCode: neighborhood.code.substring(5)
+            });
+          }
+        } catch (error) {
+          console.error(`[PriorityCustomConfig] Failed to load ${neighborhood.name}:`, error);
+        }
+      }
+
+      // Render all boundaries with labels
+      if (boundaries.length > 0) {
+        renderMultipleAdministrativeBoundaries(boundaries);
+        // Setup click handler after rendering
+        setupAdministrativeBoundaryClickHandler();
+      }
+
+      // Move camera to show entire Busanjin-gu
+      try {
+        const districtResponse = await administrativeStore.loadGeometry({
+          province_code: '26',
+          district_code: '230'
+        });
+
+        if (isGeometrySuccess(districtResponse)) {
+          // Calculate center and fly to it
+          const viewer = window.cviewer;
+          if (viewer && viewer.camera) {
+            const [lng, lat] = calculateCenter(districtResponse.geom);
+            const destination = Cartesian3.fromDegrees(lng, lat, 8000); // 8km height for district view
+            viewer.camera.flyTo({
+              destination: destination,
+              duration: 0
+            });
+          }
+        }
+      } catch (error) {
+        console.error('[PriorityCustomConfig] Failed to move camera:', error);
+      }
+    };
+
+    renderAllNeighborhoods();
+
+    // Cleanup: remove click handler on unmount or mode change
+    return () => {
+      removeAdministrativeBoundaryClickHandler();
+    };
+  }, [locationMode]);
+
+  // Helper to calculate center of MultiPolygon
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const calculateCenter = (geometry: any) => {
+    let totalLng = 0;
+    let totalLat = 0;
+    let totalPoints = 0;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    geometry.coordinates.forEach((polygon: any) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      polygon[0].forEach((coord: any) => {
+        totalLng += coord[0];
+        totalLat += coord[1];
+        totalPoints++;
+      });
+    });
+
+    return [totalLng / totalPoints, totalLat / totalPoints];
+  };
 
   return (
     <>
@@ -137,15 +367,15 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
                     fontSize: '14px',
                     fontWeight: '400',
                     lineHeight: 'normal',
-                    color: config.date ? '#FFFFFF' : '#A6A6A6'
+                    color: config?.date ? '#FFFFFF' : '#A6A6A6'
                   }}
                 >
-                  {config.date || '날짜 선택'}
+                  {config?.date || '날짜 선택'}
                 </p>
               </div>
               {showDatePicker && (
                 <DatePicker
-                  value={parseDate(config.date || '')}
+                  value={parseDate(config?.date || '')}
                   onChange={handleDateChange}
                   onClose={() => setShowDatePicker(false)}
                 />
@@ -179,15 +409,15 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
                     fontSize: '14px',
                     fontWeight: '400',
                     lineHeight: 'normal',
-                    color: config.time ? '#FFFFFF' : '#A6A6A6'
+                    color: config?.time ? '#FFFFFF' : '#A6A6A6'
                   }}
                 >
-                  {config.time || '시간 선택'}
+                  {config?.time || '시간 선택'}
                 </p>
               </div>
               {showTimePicker && (
                 <TimePicker
-                  value={config.time || '00시 ~ 01시'}
+                  value={config?.time || '00시 ~ 01시'}
                   onChange={handleTimeChange}
                   onClose={() => setShowTimePicker(false)}
                 />
@@ -266,7 +496,8 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
           </button>
         </div>
 
-        {/* 행정구역 Select - 한 줄에 3개 */}
+        {/* 행정구역 Select - 주소 조회 모드일 때만 표시 */}
+        {locationMode === 'address' && (
         <div className="flex gap-3 items-center self-stretch">
           <div className="flex flex-1 gap-2 h-8 items-center">
             <p
@@ -281,11 +512,15 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
               시/도
             </p>
             <Select
-              value={config.city}
+              value={administrativeStore.selectedProvinceCode || '26'}
               options={cityOptions}
-              onChange={(value) => priorityStore.updateCity(value)}
+              onChange={(code) => {
+                administrativeStore.selectProvince(code);
+                priorityStore.updateCity(getProvinceName());
+              }}
               className="flex-1"
               hideLabel
+              disabled={true}
             />
           </div>
           <div className="flex flex-1 gap-[7px] h-8 items-center">
@@ -301,11 +536,15 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
               군/구
             </p>
             <Select
-              value={config.district}
+              value={administrativeStore.selectedDistrictCode || '230'}
               options={districtOptions}
-              onChange={(value) => priorityStore.updateDistrict(value)}
+              onChange={(code) => {
+                administrativeStore.selectDistrict(code);
+                priorityStore.updateDistrict(getDistrictName());
+              }}
               className="flex-1"
               hideLabel
+              disabled={true}
             />
           </div>
           <div className="flex gap-[7px] h-8 items-center" style={{ width: '170px' }}>
@@ -321,23 +560,68 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
               읍/면/동
             </p>
             <Select
-              value={config.dong}
+              value={administrativeStore.selectedNeighborhoodCode || 'all'}
               options={dongOptions}
-              onChange={(value) => priorityStore.updateDong(value)}
+              onChange={(code) => {
+                if (code === 'all') {
+                  runInAction(() => {
+                    administrativeStore.selectedNeighborhoodCode = 'all';
+                  });
+                } else {
+                  administrativeStore.selectNeighborhood(code);
+                }
+                priorityStore.updateDong(getNeighborhoodName(code));
+              }}
               className="flex-1"
               hideLabel
             />
           </div>
         </div>
+        )}
       </div>
 
       <Spacer height={36} />
 
+      {/* 로딩 표시 - 위치 지정 모드에서만 임시사용 */}
+      {locationMode === 'point' && administrativeStore.loading && (
+        <div className="flex items-center justify-center p-4 bg-[#1A1A1A] rounded-lg">
+          <div className="animate-pulse text-white text-sm">
+            읍면동 경계를 불러오는 중...
+          </div>
+        </div>
+      )}
+
       {/* 버튼 영역 */}
       <div className="flex flex-col pt-9 border-t border-[#696A6A] self-stretch">
         <button
-          className="bg-[#696A6A] h-10 rounded flex items-center justify-center px-4 py-[10px] cursor-pointer w-full"
-          onClick={onSearch}
+          className={`h-10 rounded flex items-center justify-center px-4 py-[10px] w-full transition-colors ${
+            locationMode === 'address' || (locationMode === 'point' && administrativeStore.selectedNeighborhoodCode)
+              ? 'bg-[#CFFF40] cursor-pointer'
+              : 'bg-[#696A6A] cursor-not-allowed'
+          }`}
+          disabled={locationMode === 'point' && !administrativeStore.selectedNeighborhoodCode}
+          onClick={() => {
+            if (!config) return;
+
+            // 위치 지정 모드일 때는 선택된 읍면동으로 업데이트
+            if (locationMode === 'point' && administrativeStore.selectedNeighborhoodCode) {
+              const selectedNeighborhood = administrativeStore.neighborhoods.find(
+                n => n.code.substring(5) === administrativeStore.selectedNeighborhoodCode
+              );
+              if (selectedNeighborhood) {
+                priorityStore.updateDong(selectedNeighborhood.name);
+              }
+            }
+
+            // config 데이터 전달
+            onSearch({
+              date: config.date,
+              time: config.time,
+              city: config.city,
+              district: config.district,
+              dong: config.dong
+            });
+          }}
         >
           <p
             style={{
