@@ -283,7 +283,7 @@ class SimulationStore {
   selectedAddressId: string | null = null;
 
   // 모드 전환 시 이전 선택 상태 임시 저장
-  //private previousSelectedAddressId: string | null = null;
+  // private previousSelectedAddressId: string | null = null;
 
   // 시뮬레이션 설정
   config: SimulationConfig | null = null;
@@ -302,6 +302,7 @@ class SimulationStore {
   listError: string | null = null;
   pagination: SimulationListPagination | null = null;
   selectedStartSimulation: SimulationListItem | null = null;
+  pendingSimulationData: SimulationRequest | null = null;
 
   // 시뮬레이션 상세 정보
   selectedSimulationUuid: string | null = null;
@@ -419,7 +420,7 @@ class SimulationStore {
     this.searchQuery = '';
     this.directLocationResults = [];
     this.isDirectLocationMode = false;
-    //this.previousSelectedAddressId = null;
+    // this.previousSelectedAddressId = null;
   }
 
   isAddressSelected(addressId: string): boolean {
@@ -460,7 +461,7 @@ class SimulationStore {
     this.isDirectLocationMode = true;
 
     // 현재 선택 상태를 임시 저장 후 초기화 (위치 설정 완료 버튼 숨김)
-    //this.previousSelectedAddressId = this.selectedAddressId;
+    // this.previousSelectedAddressId = this.selectedAddressId;
     this.selectedAddressId = null;
 
     // 위치 정보 초기화 (마커 제거)
@@ -768,28 +769,49 @@ class SimulationStore {
   // ============================================================================
   //confirm
   // ============================================================================
-    /**
-   * 모달 열기
+  /**
+   * '상세설정' 데이터 임시 저장 
    */
-  openModal = (uuid? : string) => {
-    const foundItem = this.simulationList.find(item => item.uuid === uuid);
-    if (foundItem) {
-      this.selectedStartSimulation = foundItem;
-
-      this.isModalOpen = true;
-    } else {
-      console.warn('해당 uuid의 시뮬레이션을 찾을 수 없습니다:', uuid);
-    }
+  setPendingData(data: SimulationRequest) {
+    this.pendingSimulationData = data;
+    this.selectedStartSimulation = null; // 다른 컨텍스트 데이터 초기화
   }
 
+  /**
+   * '실행목록' 항목 선택 저장 
+   */
+  setSelectedStartSimulation(item: SimulationListItem) {
+    this.selectedStartSimulation = item;
+    this.pendingSimulationData = null; // 다른 컨텍스트 데이터 초기화
+  }
+
+  /** 
+   * Confirm 모달에 표시할 데이터 반환 
+   */
+  get dataForConfirm(): SimulationRequest | SimulationListItem | null{
+    if (this.activeTab === '상세설정') {
+      return this.pendingSimulationData;
+    } else {
+      return this.selectedStartSimulation;
+    }
+  }
+  
+  /**
+   * 모달 열기
+   */
+  openModal = () => {
+    this.isModalOpen = true;
+  } 
+  
   /**
    * 모달 닫기
    */
   closeModal = () => {
-    //데이터 클리어
-    this.selectedStartSimulation = null;
     //모달 닫기
     this.isModalOpen = false
+    //데이터 클리어
+    this.pendingSimulationData = null;
+    this.selectedStartSimulation = null;
   }
 
 }

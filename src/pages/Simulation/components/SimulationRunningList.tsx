@@ -244,7 +244,12 @@ const SimulationRunningList = observer(function SimulationRunningList() {
                   </div>
                 )}
                 {sim.status === '완료' && (
-                  <Button iconName={'excute'} iconPos='right' onClick={() => openModal(sim.uuid)}>
+                  <Button iconName={'excute'} iconPos='right' 
+                    onClick={() => {
+                      simulationStore.setSelectedStartSimulation(sim)
+                      openModal()
+                    }}
+                  >
                     실행
                   </Button>
                 )}

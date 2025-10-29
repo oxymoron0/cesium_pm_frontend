@@ -11,6 +11,8 @@ import Info from '@/components/basic/Info';
 import Checkbox from './Checkbox';
 import { simulationStore } from '@/stores/SimulationStore';
 import { renderLocationMarker } from '@/utils/cesium/locationMarker';
+import type { PMType, SimulationRequest } from '@/types/simulation_request_types';
+import { userStore } from '@/stores/UserStore';
 
 interface SimulationDetailConfigProps {
   onBack?: () => void;
@@ -60,7 +62,6 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
       dispose();
     };
   }, []);
-
 
   return (
     <>
@@ -711,17 +712,55 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
           onClick={() => {
             if (!isFormValid) return;
 
-            const executionData = {
-              title,
-              pollutant,
-              concentration,
-              //altitude,
-              windDirection,
-              windSpeed,
-              isPublic
+            const selectedPmType: PMType | undefined =
+              pollutant === 'PM10' ? 'pm10' :
+              pollutant === 'PM25' ? 'pm25' :
+              undefined;
+            if (!selectedPmType) return alert('오염 물질 타입 유효하지 않음')// 오염물질 타입 유효성 검사
+
+            const concentrationValue = parseFloat(concentration);
+            if (isNaN(concentrationValue)) return alert('농도 값 유효하지 않음') // 농도 값 유효성 검사
+
+            const executionData: SimulationRequest = {
+              simulation_name: title,
+              user: userStore.currentUser || '',
+              is_private: !isPublic,
+              timestamp: new Date().toISOString(),
+              lot: selectedLocation?.jibunAddress ?? '',
+              road_name: selectedLocation?.roadAddress ?? '',
+              // location: simulationStore.selectedDistrict?.name ?? '부산진구',
+              location: '부산진구', // 임시값
+
+              // weather 객체
+              weather: {
+                wind_direction_10m: parseFloat(windDirection) || 0,
+                wind_speed_10m: parseFloat(windSpeed) || 0,
+                wind_direction_1m: parseFloat(windDirection) || 0, // 임시로 10m값 사용
+                wind_speed_1m: parseFloat(windSpeed) || 0, // 임시로 10m값 사용
+                humidity: 60, // 임시값
+                sea_level_pressure: 1013, // 임시값
+                temperature: 20, // 임시값
+              },
+
+              // air_quality 객체
+              air_quality: {
+                pm_type: selectedPmType,
+                stations: [
+                  {
+                    station_name: selectedLocation?.detailAddress || selectedLocation?.jibunAddress || '',
+                    location: {
+                      longitude: selectedLocation?.geometry?.coordinates[0] ?? 0,
+                      latitude: selectedLocation?.geometry?.coordinates[1] ?? 0,
+                    },
+                    concentration: concentrationValue, // 숫자 값 사용
+                  },
+                ],
+              },
             };
 
             console.log('시뮬레이션 실행:', executionData);
+            simulationStore.setPendingData(executionData);
+            simulationStore.openModal();
             onExecute?.();
           }}
         >
