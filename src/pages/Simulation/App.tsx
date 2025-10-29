@@ -12,6 +12,7 @@ import { flyToLocation } from "@/utils/cesiumControls";
 import SimulationQuickResult from "./components/SimulationQuickResult";
 import { clearLocationMarker } from "@/utils/cesium/locationMarker";
 import { disableDirectLocationClickHandler } from "@/utils/cesium/directLocationRenderer";
+import SimulationStationHtmlRenderer from "@/components/service/SimulationStationHtmlRenderer";
 
 interface AppProps {
   onCloseMicroApp?: () => void;
@@ -72,6 +73,12 @@ const App = observer(function App(props: AppProps) {
 
       {cesiumStatus === "ready" && simulationStore.isDirectLocationMode && simulationStore.activeTab === "상세설정" && (
         <DirectLocationGuide />
+      )}
+
+      {cesiumStatus === "ready" &&
+       simulationStore.currentView !== "config" &&
+       simulationStore.currentView !== "detailConfig" && (
+        <SimulationStationHtmlRenderer />
       )}
 
       {cesiumStatus === "ready" && (
