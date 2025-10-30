@@ -1,4 +1,4 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, observable, runInAction } from 'mobx';
 import type { AddressSearchResult, SimulationActiveTab, SimulationConfig, SimulationView } from '../pages/Simulation/types';
 import type {
   SimulationRequest,
@@ -321,9 +321,13 @@ class SimulationStore {
   activeTab: SimulationActiveTab = "상세설정";
   pollutantFilter: PMType | 'all' = 'all';
   sortOrder: 'latest' | 'oldest' = 'latest'; // 기본값 'latest'
+  isDeleteMode: boolean = false;
+  itemsToDelete = new Set<string>();
 
   constructor() {
-    makeAutoObservable(this);
+    makeAutoObservable(this, {
+      itemsToDelete: observable // itemDelete 체크박스 이벤트 추적용
+    });
   }
 
   // ============================================================================
@@ -764,6 +768,86 @@ class SimulationStore {
    */
   get isDetailPanelOpen(): boolean {
     return this.selectedSimulationUuid !== null;
+  }
+
+  // ============================================================================
+  // 삭제 관련 Actions
+  // ============================================================================
+
+  get isAllSelectedOnPage(): boolean {
+    if (this.simulationList.length === 0) return false;
+    return this.simulationList.every(sim => this.itemsToDelete.has(sim.uuid));
+  }
+
+  /**
+   * 삭제 모드 활성화/비활성화
+   */
+  toggleDeleteMode() {
+    runInAction(() => {
+      this.isDeleteMode = !this.isDeleteMode;
+      // 삭제 모드 종료 시 선택 항목 초기화
+      if(!this.isDeleteMode) {
+        this.itemsToDelete.clear()
+      }
+    });
+  }
+
+  /**
+   * 개별 아이템 선택 토글
+   */
+  toggleItemForDelete(uuid: string) {
+    if (this.itemsToDelete.has(uuid)) {
+      this.itemsToDelete.delete(uuid);
+    } else {
+      this.itemsToDelete.add(uuid);
+    }
+  }
+
+  /**
+   * 현재 페이지 전체 선택/해제
+   */
+  toggleSelectAllOnPage() {
+    if (this.isAllSelectedOnPage) {
+      // 모든 항목이 선택된 경우 -> 현재 페이지 항목 모두 선택 해제
+      this.simulationList.forEach(sim => this.itemsToDelete.delete(sim.uuid));
+    } else {
+      // 모든 항목이 선택되지 않은 경우 -> 현재 페이지 항목 모두 선택
+      this.simulationList.forEach(sim => this.itemsToDelete.add(sim.uuid));
+    }
+  }
+
+  /**
+   * 선택된 시뮬레이션 삭제 API 호출
+   */
+  async deleteSelectedSimulations() {
+    if (this.itemsToDelete.size === 0) {
+      // 선택된 항목이 없으면 삭제 모드만 토글
+      this.toggleDeleteMode();
+      return;
+    }
+
+    const uuidsToDelete = Array.from(this.itemsToDelete);
+    console.log("[Store] Deleting UUIDs:", uuidsToDelete);
+
+    try {
+      // TODO: (API) 'api.ts'에 deleteSimulations(uuids: string[]) 함수 구현 필요
+      // 예: await deleteSimulations(uuidsToDelete); 
+      
+      // --- (API 성공 가정) Mock 동작 ---
+      runInAction(() => {
+        // 성공 시 목록에서 제거, 삭제 모드 종료
+        this.simulationList = this.simulationList.filter(
+          sim => !uuidsToDelete.includes(sim.uuid)
+        );
+        this.itemsToDelete.clear();
+        this.isDeleteMode = false;
+      });
+      // --- 목록 새로고침 ---
+      await this.loadSimulationList(this.currentPage); 
+
+    } catch (error) {
+      console.error("Failed to delete simulations", error);
+    }
   }
 
   // ============================================================================

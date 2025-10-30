@@ -6,6 +6,7 @@ import Icon from '@/components/basic/Icon';
 import { simulationStore } from '@/stores/SimulationStore';
 import type { PMType } from '@/types/simulation_request_types';
 import SimulationDetailRow from '@/pages/Simulation/components/SimulationDetailRow';
+import Checkbox from './Checkbox';
 
 
 // 3. 유틸리티 함수 (데이터 포맷팅)
@@ -30,7 +31,18 @@ const formatDate = (isoString: string) => {
  * 이미지에 표시된 모든 UI 요소를 포함합니다.
  */
 const SimulationRunningList = observer(function SimulationRunningList() {
-  const { simulationList, pagination, isLoadingList, currentPage, totalPages, pollutantFilter, sortOrder, openModal } = simulationStore;
+  const { 
+    simulationList, 
+    pagination, 
+    isLoadingList, 
+    currentPage, 
+    totalPages, 
+    pollutantFilter, 
+    sortOrder, 
+    openModal,
+    isDeleteMode,
+    itemsToDelete,
+    isAddressSelected, } = simulationStore;
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -132,7 +144,14 @@ const SimulationRunningList = observer(function SimulationRunningList() {
           variant="noStyle"
           showIcon={true} 
           iconName="delete"
-          onClick={() => console.log('삭제')}
+          onClick={() => {
+            if (isDeleteMode && itemsToDelete.size > 0) {
+              alert('삭제 하시겠습니까?') 
+              simulationStore.deleteSelectedSimulations();
+            } else {
+              simulationStore.toggleDeleteMode();
+            }
+          }}
         >
           삭제
         </Button>
@@ -150,6 +169,11 @@ const SimulationRunningList = observer(function SimulationRunningList() {
           color: '#FFFFFF'
         }}
       >
+        {isDeleteMode && (
+          <div style={{ width: '40px' }}>
+            <Checkbox checked={simulationStore.isAllSelectedOnPage} onChange={() => simulationStore.toggleSelectAllOnPage()} />
+          </div>
+        )}
         <div style={{ width: '40px' }}>#</div>
         <div style={{ flex: 2, textAlign: 'start' }}>시뮬레이션 제목</div>
         <div style={{ flex: 1, textAlign: 'start' }}>오염물질</div>
@@ -192,6 +216,11 @@ const SimulationRunningList = observer(function SimulationRunningList() {
                 color: '#A6A6A6'
             }}
           >
+            {isDeleteMode && (
+              <div style={{ width: '40px' }}>
+                <Checkbox checked={itemsToDelete.has(sim.uuid)} onChange={() => simulationStore.toggleItemForDelete(sim.uuid)} />
+              </div>
+            )}
             {/* # */}
             <div style={{ width: '40px', color: '#A6A6A6' }}>
               {String(sim.index).padStart(2, '0')}
