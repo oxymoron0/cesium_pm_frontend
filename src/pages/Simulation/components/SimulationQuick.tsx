@@ -200,7 +200,7 @@ const SimulationQuick = observer(function SimulationQuick() {
                           iconName={"excute"}
                           iconPos="right"
                           onClick={() => {
-                            simulationStore.setCurrentView("result");
+                            simulationStore.setCurrentView("quickResult");
                             simulationStore.setSelectedSimulationQuick(s);
                           }}
                         >

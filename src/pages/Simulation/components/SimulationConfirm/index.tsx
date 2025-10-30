@@ -24,16 +24,15 @@ const SimulationConfirm = observer( //맞춤실행 (시뮬레이션 요청, 시�
 
     // 실행 핸들러
     const handleExecute = async () => {
-      if (simulationStore.activeTab === '상세설정' && simulationStore.pendingSimulationData) {
+      if (simulationStore.currentView === 'detailConfig' && simulationStore.pendingSimulationData) {
         console.log('상세설정 실행:', simulationStore.pendingSimulationData);
         await simulationStore.submitSimulationRequest(simulationStore.pendingSimulationData);
-      } else if (simulationStore.activeTab === '실행목록' && simulationStore.selectedStartSimulation) {
+      } else if (simulationStore.currentView === 'running' && simulationStore.selectedStartSimulation) {
         console.log('실행목록 실행:', simulationStore.selectedStartSimulation.uuid);
         await simulationStore.selectSimulation(simulationStore.selectedStartSimulation.uuid);
 
         if (!simulationStore.detailError && simulationStore.simulationDetail) {
-          simulationStore.openResultPopup();
-          simulationStore.openConfigPopup();
+          simulationStore.setCurrentView('result')
           console.log("simulationStore.simulationDetail : ", simulationStore.simulationDetail)
         }
 
@@ -41,13 +40,13 @@ const SimulationConfirm = observer( //맞춤실행 (시뮬레이션 요청, 시�
       simulationStore.closeModal();
     };
 
-    const confirmButtonText = simulationStore.activeTab === '상세설정' ? '시뮬레이션 실행' : '바로 실행';
+    const confirmButtonText = simulationStore.currentView === 'detailConfig' ? '시뮬레이션 실행' : '바로 실행';
 
-    const pmTypeToDisplay = simulationStore.activeTab === '상세설정'
+    const pmTypeToDisplay = simulationStore.currentView === 'detailConfig'
       ? (dataForConfirm as SimulationRequest)?.air_quality?.pm_type
       : (dataForConfirm as SimulationListItem)?.pm_type;
 
-    const concentrationToDisplay = simulationStore.activeTab === '상세설정'
+    const concentrationToDisplay = simulationStore.currentView === 'detailConfig'
       ? (dataForConfirm as SimulationRequest)?.air_quality?.points?.[0]?.concentration
       : (dataForConfirm as SimulationListItem)?.concentration;
 
@@ -80,11 +79,11 @@ const SimulationConfirm = observer( //맞춤실행 (시뮬레이션 요청, 시�
           {/* ===== 헤더 메시지 ===== */}
           <div className="text-center">
             <div className="font-bold text-lg">
-              {simulationStore.activeTab === '상세설정' ?
+              {simulationStore.currentView === 'detailConfig' ?
               '작성하신 내용으로 시뮬레이션을 실행하시겠습니까?' : '해당 시뮬레이션을 실행하시겠습니까?'}
             </div>
           </div>
-          {simulationStore.activeTab === '상세설정' ?
+          {simulationStore.currentView === 'detailConfig' ?
             (
             <>
               {/* 안내 문구 (맞춤실행 > 실행목록) */}

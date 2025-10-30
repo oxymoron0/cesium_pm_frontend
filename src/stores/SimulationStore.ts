@@ -1,5 +1,5 @@
 import { makeAutoObservable, observable, runInAction } from 'mobx';
-import type { AddressSearchResult, SimulationActiveTab, SimulationConfig, SimulationView, SimulationConfirmType } from '../pages/Simulation/types';
+import type { AddressSearchResult, SimulationConfig, SimulationView, SimulationConfirmType } from '../pages/Simulation/types';
 import type {
   SimulationRequest,
   SimulationResponse,
@@ -330,7 +330,6 @@ class SimulationStore {
 
   // 시뮬레이션 Panel 상태 관리
   currentView: SimulationView = "config"
-  activeTab: SimulationActiveTab = "상세설정";
   pollutantFilter: PMType | 'all' = 'all';
   sortOrder: 'latest' | 'oldest' = 'latest'; // 기본값 'latest'
   isDeleteMode: boolean = false;
@@ -347,16 +346,20 @@ class SimulationStore {
   // ============================================================================
   setCurrentView(viewName: SimulationView) {
     this.currentView = viewName
-  }
 
-  setActiveTab(tabName: SimulationActiveTab) {
-    this.activeTab = tabName
-
-    // 탭 전환 시 직접 위치 지정 모드 해제
-    if (this.isDirectLocationMode) {
+    if (viewName !== 'config' && this.isDirectLocationMode) {
       this.disableDirectLocationMode();
     }
+
+    if (viewName === 'result') {
+      simulationStore.openResultPopup();
+      simulationStore.openConfigPopup();
+    } else {
+      simulationStore.closeResultPopup();
+      simulationStore.closeConfigPopup();
+    }
   }
+    
 
   // ============================================================================
   // 주소 검색
@@ -937,7 +940,7 @@ class SimulationStore {
    * Confirm 모달에 표시할 데이터 반환 
    */
   get dataForConfirm(): SimulationRequest | SimulationListItem | null{
-    if (this.activeTab === '상세설정') {
+    if (this.currentView === 'detailConfig') {
       return this.pendingSimulationData;
     } else {
       return this.selectedStartSimulation;

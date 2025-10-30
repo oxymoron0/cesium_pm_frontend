@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { observer } from "mobx-react-lite";
 import SimulationConfig from "./SimulationConfig";
 import SimulationDetailConfig from "./SimulationDetailConfig";
@@ -16,19 +15,8 @@ interface SimulationMainProps {
 }
 
 const SimulationMain = observer(function App(props: SimulationMainProps) {
-  const [activeTab, setActiveTab] = useState(0);
 
-  // 빠른실행으로 전환 시 직접 위치 지정 모드 해제
-  useEffect(() => {
-    if (activeTab === 1 && simulationStore.isDirectLocationMode) {
-      simulationStore.disableDirectLocationMode();
-    }
-    if (activeTab === 1) {
-      simulationStore.setActiveTab('빠른실행');
-    } else {
-      simulationStore.setActiveTab('상세설정');
-    }
-  }, [activeTab]);
+  const isQuickView = simulationStore.currentView === "quick";
 
   return (
     <>
@@ -41,17 +29,23 @@ const SimulationMain = observer(function App(props: SimulationMainProps) {
 
       <TabNavigation
         tabs={["맞춤실행", "빠른실행"]}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
+        activeTab={isQuickView ? 1 : 0}
+        onTabChange={(index) => {
+          if (index === 0) {
+            simulationStore.setCurrentView("config");
+          } else {
+            simulationStore.setCurrentView("quick");
+          }
+        }}
       />
 
       <Spacer height={16} />
 
-      {activeTab === 0 ? (
+      {isQuickView ? (
+        <SimulationQuick />
+      ) : (
         <>
           <SimulationActiveTabList />
-          {simulationStore.activeTab === "상세설정" ? (
-            <>
               {simulationStore.currentView === "config" ? (
                 <SimulationConfig
                   onClose={props.onCloseMicroApp}
@@ -65,14 +59,13 @@ const SimulationMain = observer(function App(props: SimulationMainProps) {
                   onBack={() => simulationStore.setCurrentView("config")}
                   onExecute={() => console.log("시뮬레이션 실행")}
                 />
+              ) : simulationStore.currentView === "running" ? (
+                <SimulationRunningList />
               ) : null}
             </>
-          ) : simulationStore.activeTab === "실행목록" ? (
-            <SimulationRunningList />
-          ) : null}
-        </>
-      ) : (
-        <SimulationQuick />
+      
+
+
       )}
     </>
   );

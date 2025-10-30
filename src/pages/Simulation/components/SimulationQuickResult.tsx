@@ -190,7 +190,7 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
 
   // Cesium 엔티티 렌더링: 실제 rows로 그리기
   useEffect(() => {
-    const viewer = (window as any).cviewer;
+    const viewer = window.cviewer;
     if (!viewer) {
       console.warn("[SimulationQuickResult] Cesium viewer not available");
       return;
@@ -208,7 +208,7 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
     <>
       <Title
         onClose={onCloseMicroApp}
-        onBack={() => simulationStore.setCurrentView("config")}
+        onBack={() => simulationStore.setCurrentView("quick")}
       >
         <span className="font-pretendard text-[24px] font-bold text-white">
           시뮬레이션 설정 정보
@@ -318,7 +318,7 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
           variant="solid"
           showIcon={false}
           className="w-full"
-          onClick={() => simulationStore.setCurrentView("config")}
+          onClick={() => simulationStore.setCurrentView("quick")}
         >
           시뮬레이션 종료
         </Button>

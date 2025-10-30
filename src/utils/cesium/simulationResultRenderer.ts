@@ -48,8 +48,7 @@ async function sampleTerrainForSimulationStations(rows: StationRow[]): Promise<v
 
 export async function renderSimulationResultStations(rows: StationRow[]): Promise<void> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const viewer = (window as any).cviewer;
+    const viewer = window.cviewer;
     if (!viewer) return;
 
     await sampleTerrainForSimulationStations(rows);
@@ -110,8 +109,7 @@ export async function renderSimulationResultStations(rows: StationRow[]): Promis
 
 export function clearSimulationResultStations(): void {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const viewer = (window as any).cviewer;
+    const viewer = window.cviewer;
     if (!viewer) return;
 
     const dataSource = findDataSource(DATASOURCE_NAME);

@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Panel from '@/components/basic/Panel';
 import Title from '@/components/basic/Title';
 import Spacer from '@/components/basic/Spacer';
@@ -13,6 +13,16 @@ import {
   Cell
 } from 'recharts';
 import { simulationStore } from '@/stores/SimulationStore';
+import {
+  generateHardcodedGlbData,
+  renderSimulationGlbsSequentially,
+  clearSimulationGlbs,
+  getSimulationGlbCount
+} from '@/utils/cesium/simulationGlbRenderer';
+import {
+  renderLocationMarker,
+  clearLocationMarker
+} from '@/utils/cesium/locationMarker';
 
 interface SimulationResultSummaryProps {
   onClose?: () => void;
@@ -22,6 +32,24 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
   const { simulationDetail } = simulationStore;
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(true);
   const [isImpactExpanded, setIsImpactExpanded] = useState(true);
+  const [isRenderingGlb, setIsRenderingGlb] = useState(false);
+  const [renderProgress, setRenderProgress] = useState<{ current: number; total: number } | null>(null);
+
+  // 시뮬레이션 발생 위치 좌표 (첫 번째 측정소 위치)
+  const firstPoint = simulationDetail?.airQualityData?.points[0];
+  const centerLng = firstPoint?.location.longitude || 129.0634; // fallback
+  const centerLat = firstPoint?.location.latitude || 35.1598;
+
+  // 팝업 열릴 때 마커 렌더링, 닫힐 때 제거
+  useEffect(() => {
+    if (!simulationDetail) return;
+
+    renderLocationMarker(centerLng, centerLat);
+
+    return () => {
+      clearLocationMarker();
+    };
+  }, [simulationDetail, centerLng, centerLat]);
 
   if (!simulationDetail) {
     return null;
@@ -45,11 +73,67 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
     { level: '매우나쁨', count: 35, color: '#FFD040' }
   ];
 
+  // GLB 렌더링 핸들러
+  const handleRenderGlb = async () => {
+    setIsRenderingGlb(true);
+    setRenderProgress({ current: 0, total: 666 });
+
+    try {
+      // GLB 데이터 생성
+      const glbDataList = generateHardcodedGlbData(centerLng, centerLat, 666);
+
+      // 순차적으로 렌더링 (10ms 간격)
+      await renderSimulationGlbsSequentially(glbDataList, {
+        delayMs: 10,
+        onProgress: (current, total) => {
+          setRenderProgress({ current, total });
+        },
+        onComplete: () => {
+          console.log('[SimulationResultSummary] GLB rendering completed');
+          setRenderProgress(null);
+        }
+      });
+    } catch (error) {
+      console.error('[SimulationResultSummary] GLB rendering failed:', error);
+    } finally {
+      setIsRenderingGlb(false);
+    }
+  };
+
+  // GLB 제거 핸들러
+  const handleClearGlb = () => {
+    clearSimulationGlbs();
+    setRenderProgress(null);
+    console.log('[SimulationResultSummary] GLB models cleared');
+  };
+
   return (
-    <Panel position="right" width="540px" maxHeight="calc(100vh - 160px)" offset={652}>
+    <Panel width="540px" maxHeight="calc(100vh - 160px)" >
       <Title onClose={onClose}>
         시뮬레이션 결과 요약
       </Title>
+
+      <Spacer height={16} />
+
+      {/* GLB Rendering Controls */}
+      <div className="flex gap-2 self-stretch">
+        <button
+          onClick={handleRenderGlb}
+          disabled={isRenderingGlb}
+          className="flex-1 h-10 px-4 py-2 bg-[#FFD040] text-black rounded font-pretendard text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#FFC020] transition-colors"
+        >
+          {isRenderingGlb
+            ? `렌더링 중... (${renderProgress?.current || 0}/${renderProgress?.total || 0})`
+            : `GLB 렌더링 (${getSimulationGlbCount()}개)`}
+        </button>
+        <button
+          onClick={handleClearGlb}
+          disabled={isRenderingGlb}
+          className="h-10 px-4 py-2 bg-[#696A6A] text-white rounded font-pretendard text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#555] transition-colors"
+        >
+          제거
+        </button>
+      </div>
 
       <Spacer height={16} />
 

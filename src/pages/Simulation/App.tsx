@@ -53,15 +53,14 @@ const App = observer(function App(props: AppProps) {
 
   // Clear location marker and disable handlers when leaving config/detailConfig views or switching tabs
   useEffect(() => {
-    const isConfigView = simulationStore.currentView === "config" || simulationStore.currentView === "detailConfig";
-    const isDetailTab = simulationStore.activeTab === "상세설정";
+    const isConfigView = simulationStore.currentView === "config"
 
-    if (!isConfigView || !isDetailTab) {
+    if (!isConfigView) {
       clearLocationMarker();
       disableDirectLocationClickHandler();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [simulationStore.currentView, simulationStore.activeTab]);
+  }, [simulationStore.currentView]);
 
   const isQiankun = window.__POWERED_BY_QIANKUN__;
 
@@ -69,31 +68,43 @@ const App = observer(function App(props: AppProps) {
     <div className="relative w-full h-screen overflow-hidden pm-frontend-scope">
       {!isQiankun && <CesiumViewer />}
 
-      {cesiumStatus === "ready" && simulationStore.isDirectLocationMode && simulationStore.activeTab === "상세설정" && (
+      {cesiumStatus === "ready" && simulationStore.isDirectLocationMode && (
         <DirectLocationGuide />
       )}
 
       {cesiumStatus === "ready" &&
-        simulationStore.currentView !== "config" &&
-        simulationStore.currentView !== "detailConfig" && (
+        simulationStore.currentView == "quickResult" && (
         <SimulationStationHtmlRenderer />
       )}
 
-      {cesiumStatus === "ready" && (
-        <Panel position="left" width={simulationStore.activeTab === "실행목록" || simulationStore.activeTab === "빠른실행"? "720px": "540px"} maxHeight="calc(100vh - 50px)">
-          {simulationStore.currentView === "config" || simulationStore.currentView === "detailConfig" ? (
-            <SimulationMain
-              onCloseMicroApp={props.onCloseMicroApp}
-              dispatch={props.dispatch}
-            />
-          ) : (
-            <SimulationQuickResult
-              onCloseMicroApp={props.onCloseMicroApp}
-            />
-          )}
+      {cesiumStatus === "ready" && 
+        simulationStore.currentView !== "result" && (
+          <Panel
+            position="left"
+            width={
+              simulationStore.currentView === "quick" ||
+              simulationStore.currentView === "quickResult" ||
+              simulationStore.currentView === "running" 
+                ? "720px"
+                : "540px"
+            }
+            maxHeight="calc(100vh - 50px)"
+          >
+            {simulationStore.currentView === "quickResult" ? (
+              <SimulationQuickResult
+                onCloseMicroApp={props.onCloseMicroApp}
+              />
+            ) : (
+              <SimulationMain
+                onCloseMicroApp={props.onCloseMicroApp}
+                dispatch={props.dispatch}
+              />
+            )}
+  
+          </Panel>
 
-        </Panel>
-      )}
+        )}
+      
 
       {cesiumStatus === "loading" && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
@@ -109,7 +120,7 @@ const App = observer(function App(props: AppProps) {
         <SimulationConfigInfo onClose={() => simulationStore.closeConfigPopup()} />
       )}
       {simulationStore.isResultPopupOpen && (
-        <SimulationResultSummary onClose={() => simulationStore.closeResultPopup()} />
+        <SimulationResultSummary onClose={() => simulationStore.setCurrentView('running')} />
       )}
     </div>
   );
