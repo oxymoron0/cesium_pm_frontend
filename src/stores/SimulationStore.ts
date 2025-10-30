@@ -639,6 +639,35 @@ class SimulationStore {
     }
   }
 
+  /**
+   * 시뮬레이션 공개/비공개 상태 업데이트
+   */
+  async updateSimulationPrivacy(uuid: string, isPrivate: boolean): Promise<void> {    
+    try {
+      // API 엔드포인트는 PUT /api/v1/simulation/{uuid} 또는 유사 형태를 가정
+      // await updateSimulationPrivacyAPI(uuid, isPrivate); 
+
+      // API 성공 시 로컬 목록 업데이트
+      runInAction(() => {
+        const index = this.simulationList.findIndex(sim => sim.uuid === uuid);
+        if (index !== -1) {
+          // mobx observable 배열의 요소를 직접 수정하여 UI 업데이트 트리거
+          this.simulationList[index] = { 
+            ...this.simulationList[index], 
+            is_private: isPrivate 
+          };
+          console.log("[Store] Local list updated.");
+        }
+      });
+      // --- 목록 전체 새로고침 ---
+      await this.loadSimulationList(this.currentPage);
+
+    } catch (error) {
+      console.error(`[Store] Failed to update privacy for ${uuid}:`, error);
+      throw error; 
+    }
+  }
+
   // ============================================================================
   // Pagination 관리
   // ============================================================================

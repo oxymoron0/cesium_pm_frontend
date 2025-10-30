@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import type { SimulationListItem, PMType } from '@/types/simulation_request_types';
+import Icon from '@/components/basic/Icon';
+import { simulationStore } from '@/stores/SimulationStore';
 
 /**
  * 상세 정보 항목 렌더링 컴포넌트
@@ -33,12 +35,42 @@ const DetailItem: React.FC<{ label: string; children: React.ReactNode }> = ({ la
  * 시뮬레이션 상세 정보 패널
  */
 const SimulationDetailRow: React.FC<{ sim: SimulationListItem }> = ({ sim }) => {
+  const [isPrivateSelected, setIsPrivateSelected] = useState<boolean>(sim.is_private);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  useEffect(() => {
+    setIsPrivateSelected(sim.is_private);
+  }, [sim.is_private]);
 
   // formatPollutant 유틸리티 함수
   const formatPollutant = (pm_type: PMType) => {
     if (pm_type === 'pm10') return '미세먼지(PM-10)';
     if (pm_type === 'pm25') return '초미세먼지(PM-2.5)';
     return pm_type;
+  };
+
+  // Select 값 변경 핸들러
+  const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setIsPrivateSelected(event.target.value === 'true');
+  };
+
+  // 저장 버튼 핸들러
+  const handleSavePrivacy = async () => {
+    // 이미 저장 중이면 중복 실행 방지
+    if (isSaving) return; 
+    
+    setIsSaving(true);
+    try {
+      // 스토어 액션 호출 (uuid와 새로운 isPrivate 값 전달)
+      await simulationStore.updateSimulationPrivacy(sim.uuid, isPrivateSelected);
+      console.log(`[DetailRow] Privacy updated for ${sim.uuid}`);
+    } catch (error) {
+      console.error("Failed to save privacy setting", error);
+      // 실패 시 private 상태 복구
+      setIsPrivateSelected(sim.is_private); 
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -65,10 +97,27 @@ const SimulationDetailRow: React.FC<{ sim: SimulationListItem }> = ({ sim }) => 
         
         <DetailItem label="공개 설정">
           <div className="flex items-center gap-2">
-            <span>{sim.is_private ? '비공개' : '공개'}</span>
-            <span className="flex items-center justify-center w-auto h-6 cursor-pointer py-1 px-3 rounded-[4px] text-[#FFD040] border border-[#FFD040] bg-black"
-              onClick={() => console.log('수정하기')}>
-              수정하기
+            <select
+              value={String(isPrivateSelected)}
+              onChange={handleSelectChange}
+              className="h-7 pl-3 pr-6 bg-black rounded border border-[#696A6A] appearance-none cursor-pointer" //
+              style={{
+                fontFamily: 'Pretendard',
+                lineHeight: 'normal',
+                fontSize: '14px', 
+                fontWeight: '400', 
+                color: '#FFFFFF'
+              }}
+            >
+              <option value="false">공개</option>
+              <option value="true">비공개</option>
+            </select>
+            <div className="absolute left-51">
+              <Icon name="dropmenubtn" className="w-4 h-4" />
+            </div>
+            <span className="flex items-center justify-center w-auto h-7 cursor-pointer py-1 px-3 rounded-[4px] text-[#FFD040] border border-[#FFD040] bg-[#FFD040] text-black font-bold"
+              onClick={handleSavePrivacy}>
+              저장하기
             </span>
           </div>
         </DetailItem>
