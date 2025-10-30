@@ -3,22 +3,25 @@ import Panel from '@/components/basic/Panel';
 import Title from '@/components/basic/Title';
 import Spacer from '@/components/basic/Spacer';
 import Divider from '@/components/basic/Divider';
+import { simulationStore } from '@/stores/SimulationStore';
+import type { PMType } from '@/types/simulation_request_types';
 
 interface SimulationConfigInfoProps {
   onClose?: () => void;
 }
 
 const SimulationConfigInfo = observer(function SimulationConfigInfo({ onClose }: SimulationConfigInfoProps) {
-  // TODO: Replace with actual data from simulationStore
-  const configData = {
-    title: '부전동 미세먼지 테스트',
-    pollutant: '미세먼지 (PM-10)',
-    concentration: '151 μg/m³',
-    roadAddress: '(도로명) 부산광역시 부산진구 중앙대로 지하 730',
-    jibunAddress: '(지번) 부산광역시 부산진구 부전동 573-1',
-    emissionHeight: '1.5m',
-    windDirection: '200°',
-    windSpeed: '3.41 m/s'
+  const { simulationDetail } = simulationStore;
+
+  if (!simulationDetail) {
+    return null;
+  }
+
+  // PMType 포맷 변환
+  const formatPollutant = (pmType?: PMType) => {
+    if (pmType === 'pm10') return '미세먼지 (PM-10)';
+    if (pmType === 'pm25') return '초미세먼지 (PM-2.5)';
+    return '-';
   };
 
   return (
@@ -40,7 +43,7 @@ const SimulationConfigInfo = observer(function SimulationConfigInfo({ onClose }:
           lineHeight: 'normal'
         }}
       >
-        {configData.title}
+        {simulationDetail.simulationName || '-'}
       </div>
 
       <Spacer height={8} />
@@ -48,8 +51,12 @@ const SimulationConfigInfo = observer(function SimulationConfigInfo({ onClose }:
 
       {/* Configuration Details Table */}
       <div className="flex flex-col self-stretch">
-        <ConfigRow label="오염물질" value={configData.pollutant} />
-        <ConfigRow label="농도" value={configData.concentration} />
+        <ConfigRow label="오염물질" value={formatPollutant(simulationDetail.pmtype)} />
+        <ConfigRow label="농도" value={
+          simulationDetail.firstStationConcentration
+            ? `${simulationDetail.firstStationConcentration} μg/m³`
+            : '-'
+        } />
         <ConfigRow label="발생 위치">
           <div className="flex flex-col">
             <div
@@ -61,7 +68,7 @@ const SimulationConfigInfo = observer(function SimulationConfigInfo({ onClose }:
                 lineHeight: 'normal'
               }}
             >
-              {configData.roadAddress}
+              {simulationDetail.roadName ? `(도로명) ${simulationDetail.roadName}` : '-'}
             </div>
             <div
               style={{
@@ -72,12 +79,13 @@ const SimulationConfigInfo = observer(function SimulationConfigInfo({ onClose }:
                 lineHeight: 'normal'
               }}
             >
-              {configData.jibunAddress}
+              {simulationDetail.lot ? `(지번) ${simulationDetail.lot}` : '-'}
             </div>
           </div>
         </ConfigRow>
-        <ConfigRow label="발생 고도" value={configData.emissionHeight} />
-        <ConfigRow label="기상조건" value={`(풍향) ${configData.windDirection} (풍속) ${configData.windSpeed}`} />
+        <ConfigRow label="기상조건" value={
+          `(풍향) ${simulationDetail.weatherData?.wind_direction_10m ?? '-'}° (풍속) ${simulationDetail.weatherData?.wind_speed_10m ?? '-'} m/s`
+        } />
       </div>
     </Panel>
   );

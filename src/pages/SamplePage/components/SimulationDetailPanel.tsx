@@ -117,7 +117,7 @@ const SimulationDetailPanel = observer(function SimulationDetailPanel() {
                   <DetailRow label="측정소" value={detail.firstStationName ?? '-'} />
                   <DetailRow label="농도" value={detail.firstStationConcentration !== undefined ? `${detail.firstStationConcentration} μg/m³` : '-'} />
                   <div className="pt-2 text-xs text-gray-500">
-                    총 {detail.airQualityData.stations.length}개 측정소
+                    총 {detail.airQualityData.points.length}개 측정소
                   </div>
                 </div>
               )}

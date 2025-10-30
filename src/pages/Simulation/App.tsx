@@ -23,8 +23,6 @@ const App = observer(function App(props: AppProps) {
   const [cesiumStatus, setCesiumStatus] = useState<"loading" | "ready">(
     "loading"
   );
-  const [showConfigInfo, setShowConfigInfo] = useState(false);
-  const [showResultSummary, setShowResultSummary] = useState(false);
 
 
   useEffect(() => {
@@ -76,8 +74,8 @@ const App = observer(function App(props: AppProps) {
       )}
 
       {cesiumStatus === "ready" &&
-       simulationStore.currentView !== "config" &&
-       simulationStore.currentView !== "detailConfig" && (
+        simulationStore.currentView !== "config" &&
+        simulationStore.currentView !== "detailConfig" && (
         <SimulationStationHtmlRenderer />
       )}
 
@@ -87,8 +85,6 @@ const App = observer(function App(props: AppProps) {
             <SimulationMain
               onCloseMicroApp={props.onCloseMicroApp}
               dispatch={props.dispatch}
-              setShowConfigInfo={setShowConfigInfo}
-              setShowResultSummary={setShowResultSummary}
             />
           ) : (
             <SimulationQuickResult
@@ -106,14 +102,14 @@ const App = observer(function App(props: AppProps) {
       )}
 
       {simulationStore.isModalOpen && (
-        <SimulationConfirm onClose={() => simulationStore.closeModal()} />
+        <SimulationConfirm />
       )}
 
-      {showConfigInfo && (
-        <SimulationConfigInfo onClose={() => setShowConfigInfo(false)} />
+      {simulationStore.isConfigPopupOpen && (
+        <SimulationConfigInfo onClose={() => simulationStore.closeConfigPopup()} />
       )}
-      {showResultSummary && (
-        <SimulationResultSummary onClose={() => setShowResultSummary(false)} />
+      {simulationStore.isResultPopupOpen && (
+        <SimulationResultSummary onClose={() => simulationStore.closeResultPopup()} />
       )}
     </div>
   );

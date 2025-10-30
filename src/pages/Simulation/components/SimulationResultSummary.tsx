@@ -12,14 +12,31 @@ import {
   CartesianGrid,
   Cell
 } from 'recharts';
+import { simulationStore } from '@/stores/SimulationStore';
 
 interface SimulationResultSummaryProps {
   onClose?: () => void;
 }
 
 const SimulationResultSummary = observer(function SimulationResultSummary({ onClose }: SimulationResultSummaryProps) {
+  const { simulationDetail } = simulationStore;
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(true);
   const [isImpactExpanded, setIsImpactExpanded] = useState(true);
+
+  if (!simulationDetail) {
+    return null;
+  }
+
+  // ISO 8601 날짜를 "YYYY.MM.DD HH:mm" 형식으로 변환
+  const formatDateTime = (isoString: string) => {
+    const date = new Date(isoString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}.${month}.${day} ${hours}:${minutes}`;
+  };
 
   const mockImpactData = [
     { level: '좋음', count: 18, color: '#FFD040' },
@@ -43,7 +60,7 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
           className="flex items-center justify-between h-[42px] py-[10px] pr-4 border-b border-[#696A6A] cursor-pointer"
         >
           <p className="text-white font-pretendard text-[14px] font-bold">
-            250807 오전 테스트
+            {simulationDetail.simulationName}
           </p>
           <div
             className="text-white transform transition-transform"
@@ -87,7 +104,7 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
                     color: '#FFF'
                   }}
                 >
-                  2025.08.05 09:30
+                  {formatDateTime(simulationDetail.requestedAt)}
                 </div>
               </div>
 

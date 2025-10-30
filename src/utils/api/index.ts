@@ -9,7 +9,6 @@ export * from './types';
 export * from './routeApi';
 export * from './busApi';
 export * from './simulationApi';
-export * from './regionApi';
 export * from './bookmarkApi';
 
 // 사용 예시:

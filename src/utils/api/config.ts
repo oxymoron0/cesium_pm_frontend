@@ -44,11 +44,6 @@ export const API_PATHS = {
   SIMULATION_LIST: getApiPath('api/v1/simulation/list'),
   SIMULATION_DETAIL: (uuid: string) => getApiPath(`api/v1/simulation/${uuid}`),
 
-  // 지역 정보 API (PM Backend)
-  REGION_CITIES: getApiPath('api/v1/region/cities'),
-  REGION_DISTRICTS: (cityCode: string) => getApiPath(`api/v1/region/districts?cityCode=${cityCode}`),
-  REGION_DONGS: (districtCode: string) => getApiPath(`api/v1/region/dongs?districtCode=${districtCode}`),
-
   // 북마크 API (PM Backend)
   BOOKMARKS_ROUTES: (user: string) => getApiPath(`api/v1/bookmarks/routes?user=${user}`),
   BOOKMARKS_ROUTES_CREATE: getApiPath('api/v1/bookmarks/routes'),

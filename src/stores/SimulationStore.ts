@@ -316,6 +316,10 @@ class SimulationStore {
   // confirm modal active
   isModalOpen = false
 
+  // 팝업 상태 관리
+  isConfigPopupOpen = false
+  isResultPopupOpen = false
+
   // 시뮬레이션 Panel 상태 관리
   currentView: SimulationView = "config"
   activeTab: SimulationActiveTab = "상세설정";
@@ -896,6 +900,38 @@ class SimulationStore {
     //데이터 클리어
     this.pendingSimulationData = null;
     this.selectedStartSimulation = null;
+  }
+
+  // ============================================================================
+  // 팝업 관리
+  // ============================================================================
+
+  /**
+   * 설정 정보 팝업 열기
+   */
+  openConfigPopup = () => {
+    this.isConfigPopupOpen = true;
+  }
+
+  /**
+   * 설정 정보 팝업 닫기
+   */
+  closeConfigPopup = () => {
+    this.isConfigPopupOpen = false;
+  }
+
+  /**
+   * 결과 요약 팝업 열기
+   */
+  openResultPopup = () => {
+    this.isResultPopupOpen = true;
+  }
+
+  /**
+   * 결과 요약 팝업 닫기
+   */
+  closeResultPopup = () => {
+    this.isResultPopupOpen = false;
   }
 
 }

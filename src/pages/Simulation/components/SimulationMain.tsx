@@ -13,8 +13,6 @@ import { simulationStore } from "@/stores/SimulationStore";
 interface SimulationMainProps {
   onCloseMicroApp?: () => void;
   dispatch?: (action: unknown) => void;
-  setShowConfigInfo: (value: boolean) => void;
-  setShowResultSummary: (value: boolean) => void;
 }
 
 const SimulationMain = observer(function App(props: SimulationMainProps) {
@@ -61,10 +59,6 @@ const SimulationMain = observer(function App(props: SimulationMainProps) {
                 <SimulationDetailConfig
                   onBack={() => simulationStore.setCurrentView("config")}
                   onExecute={() => console.log("시뮬레이션 실행")}
-                  onShowPanels={() => {
-                    props.setShowConfigInfo(true);
-                    props.setShowResultSummary(true);
-                  }}
                 />
               ) : null}
             </>

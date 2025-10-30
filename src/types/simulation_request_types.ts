@@ -39,14 +39,14 @@ export interface Weather {
  */
 export interface AirQuality {
   pm_type: PMType;                   // Particulate matter type
-  stations: StationMeasurement[];    // Array of station measurements (min 1)
+  points: StationMeasurement[];    // Array of station measurements (min 1)
 }
 
 /**
  * Single station measurement
  */
 export interface StationMeasurement {
-  station_name: string;              // Station name (max 200 chars)
+  name: string;              // Station name (max 200 chars)
   location: CoordinateLocation;      // Station coordinates
   concentration: number;             // PM concentration (μg/m³, 0-10000)
 }

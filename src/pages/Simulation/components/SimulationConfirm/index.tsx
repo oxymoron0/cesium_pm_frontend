@@ -9,16 +9,37 @@ import Spacer from "@/components/basic/Spacer";
 //   onClose?: () => void;
 // }
 
-const SimulationConfirm = observer(
+const SimulationConfirm = observer( //맞춤실행 (시뮬레이션 요청, 시뮬레이션 결과)
   function SimulationConfirm(/*{}: SimulationConfirmProps*/) {
-    const { dataForConfirm} = simulationStore;
+    const { dataForConfirm } = simulationStore;
 
     useEffect(() => {
       if (!dataForConfirm) {
         simulationStore.closeModal();
       }
-    }, [dataForConfirm, simulationStore.closeModal]); 
-    if (!dataForConfirm) return null; // 데이터가 준비되지 않았으면 아무것도 렌더링하지 않음
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dataForConfirm, simulationStore.closeModal]);
+
+    if (!dataForConfirm) return null;
+
+    // 실행 핸들러
+    const handleExecute = async () => {
+      if (simulationStore.activeTab === '상세설정' && simulationStore.pendingSimulationData) {
+        console.log('상세설정 실행:', simulationStore.pendingSimulationData);
+        await simulationStore.submitSimulationRequest(simulationStore.pendingSimulationData);
+      } else if (simulationStore.activeTab === '실행목록' && simulationStore.selectedStartSimulation) {
+        console.log('실행목록 실행:', simulationStore.selectedStartSimulation.uuid);
+        await simulationStore.selectSimulation(simulationStore.selectedStartSimulation.uuid);
+
+        if (!simulationStore.detailError && simulationStore.simulationDetail) {
+          simulationStore.openResultPopup();
+          simulationStore.openConfigPopup();
+          console.log("simulationStore.simulationDetail : ", simulationStore.simulationDetail)
+        }
+
+      }
+      simulationStore.closeModal();
+    };
 
     const confirmButtonText = simulationStore.activeTab === '상세설정' ? '시뮬레이션 실행' : '바로 실행';
 
@@ -27,7 +48,7 @@ const SimulationConfirm = observer(
       : (dataForConfirm as SimulationListItem)?.pm_type;
 
     const concentrationToDisplay = simulationStore.activeTab === '상세설정'
-      ? (dataForConfirm as SimulationRequest)?.air_quality?.stations?.[0]?.concentration
+      ? (dataForConfirm as SimulationRequest)?.air_quality?.points?.[0]?.concentration
       : (dataForConfirm as SimulationListItem)?.concentration;
 
     const jibunAddressToDisplay = 'lot' in dataForConfirm ? dataForConfirm.lot : '-';
@@ -59,7 +80,7 @@ const SimulationConfirm = observer(
           {/* ===== 헤더 메시지 ===== */}
           <div className="text-center">
             <div className="font-bold text-lg">
-              {simulationStore.activeTab === '상세설정' ? 
+              {simulationStore.activeTab === '상세설정' ?
               '작성하신 내용으로 시뮬레이션을 실행하시겠습니까?' : '해당 시뮬레이션을 실행하시겠습니까?'}
             </div>
           </div>
@@ -154,14 +175,7 @@ const SimulationConfirm = observer(
             {/* 시뮬레이션 실행 */}
             <div
               className="ml-2.5 cursor-pointer font-[700] text-[16px] py-[10px] px-[19px] rounded-[4px] border border-[rgba(207,255,64,1)] text-black bg-[rgba(207,255,64,1)]"
-              onClick={() => {
-                if (simulationStore.activeTab === '상세설정' && simulationStore.pendingSimulationData) {
-                  console.log('상세설정 실행:', simulationStore.pendingSimulationData);
-                } else if (simulationStore.activeTab === '실행목록' && simulationStore.selectedStartSimulation) {
-                  console.log('실행목록 실행:', simulationStore.selectedStartSimulation.uuid);
-                }
-                simulationStore.closeModal();
-              }}
+              onClick={handleExecute}
             >
               {confirmButtonText}
             </div>

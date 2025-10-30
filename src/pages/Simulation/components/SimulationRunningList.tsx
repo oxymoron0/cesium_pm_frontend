@@ -41,8 +41,7 @@ const SimulationRunningList = observer(function SimulationRunningList() {
     sortOrder, 
     openModal,
     isDeleteMode,
-    itemsToDelete,
-    isAddressSelected, } = simulationStore;
+    itemsToDelete, } = simulationStore;
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {

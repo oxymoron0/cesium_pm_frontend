@@ -94,6 +94,7 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
     return () => {
       clearSimulationResultStations();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
