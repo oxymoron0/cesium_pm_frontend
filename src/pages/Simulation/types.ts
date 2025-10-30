@@ -48,4 +48,4 @@ export interface SimulationDetailConfig {
 // ============================================================================
 
 export type SimulationView = 'config' | 'detailConfig' | 'running' | 'result' | 'quick' | 'quickResult';
-export type SimulationActiveTab = '상세설정' | '실행목록';
+export type SimulationActiveTab = '상세설정' | '실행목록' | '빠른실행';

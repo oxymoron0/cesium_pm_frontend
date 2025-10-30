@@ -1,14 +1,15 @@
 import { makeAutoObservable, observable, runInAction } from 'mobx';
-import type { AddressSearchResult, SimulationActiveTab, SimulationConfig, SimulationView } from '../pages/Simulation/types';
+import type { AddressSearchResult, SimulationActiveTab, SimulationConfig, SimulationView, SimulationConfirmType } from '../pages/Simulation/types';
 import type {
   SimulationRequest,
   SimulationResponse,
   SimulationListItem,
   SimulationListPagination,
   SimulationDetail,
+  SimulationQuckData,
   PMType
 } from '../types/simulation_request_types';
-import { submitSimulation, getSimulationList, getSimulationDetail } from '@/utils/api';
+import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList } from '@/utils/api';
 import { userStore } from './UserStore';
 
 // ============================================================================
@@ -304,6 +305,12 @@ class SimulationStore {
   selectedStartSimulation: SimulationListItem | null = null;
   pendingSimulationData: SimulationRequest | null = null;
 
+  // 시뮬레이션auto(quick) 목록 (API 기반)
+  simulationQuickList: SimulationQuckData[] = [];
+  paginationQuick: SimulationListPagination | null = null;
+  selectedsimulationQuick: SimulationQuckData | null = null;
+  isLoadingQuickList: boolean = false;
+
   // 시뮬레이션 상세 정보
   selectedSimulationUuid: string | null = null;
   simulationDetail: SimulationDetail | null = null;
@@ -315,6 +322,7 @@ class SimulationStore {
 
   // confirm modal active
   isModalOpen = false
+  isModalConfirmType: SimulationConfirmType | null = null;
 
   // 팝업 상태 관리
   isConfigPopupOpen = false
@@ -724,6 +732,29 @@ class SimulationStore {
     }
   }
 
+  async loadSimulationQuickList(
+    startDate : Date,
+    endDate : Date,
+    page: number = 1,
+    limit: number = 7,
+  ): Promise<void> {
+    this.isLoadingQuickList = true;
+
+    try {
+      const response = await getSimulationQuickList(startDate, endDate, page, limit);
+      
+      this.simulationQuickList = response.simulations;
+      this.paginationQuick = response.pagination;
+
+    } catch (error) {
+      console.error('[SimulationStore] Failed to load simulation list:', error);
+      this.simulationQuickList = [];
+      this.paginationQuick = null;
+    } finally {
+      this.isLoadingQuickList = false;
+    }
+  }
+
   /**
    * 오염물질 필터 변경 액션
    */
@@ -914,6 +945,13 @@ class SimulationStore {
   }
   
   /**
+   * 빠른실행 분석시작시 객체 저장
+   */
+  setSelectedSimulationQuick(item: SimulationQuckData) {
+    this.selectedsimulationQuick = null;
+    this.selectedsimulationQuick = item;
+  }
+  /**
    * 모달 열기
    */
   openModal = () => {
@@ -929,6 +967,7 @@ class SimulationStore {
     //데이터 클리어
     this.pendingSimulationData = null;
     this.selectedStartSimulation = null;
+    this.isModalConfirmType = null;
   }
 
   // ============================================================================

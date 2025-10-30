@@ -23,6 +23,11 @@ const SimulationMain = observer(function App(props: SimulationMainProps) {
     if (activeTab === 1 && simulationStore.isDirectLocationMode) {
       simulationStore.disableDirectLocationMode();
     }
+    if (activeTab === 1) {
+      simulationStore.setActiveTab('빠른실행');
+    } else {
+      simulationStore.setActiveTab('상세설정');
+    }
   }, [activeTab]);
 
   return (
