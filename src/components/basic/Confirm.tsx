@@ -35,7 +35,8 @@ function Confirm({
             transform: "translate(-50%, -50%)",
         }}>
             <div style={{
-                backgroundColor: "rgba(0, 0, 0, 0.65)"
+                backgroundColor: "rgba(0, 0, 0, 0.65)",
+                borderRadius: "8px"
             }} >
             {children}
             </div>
