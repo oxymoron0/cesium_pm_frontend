@@ -69,6 +69,18 @@ export const API_PATHS = {
     if (params.village_code) queryParams.set('village_code', params.village_code);
     return getApiPath(`api/v1/administrative/geometry?${queryParams.toString()}`);
   },
+
+  // 통계 API (PM Backend) - 정류장 실측 농도
+  STATISTICS_STATION_CONCENTRATION_REALTIME: getApiPath('api/v1/statistics/station-concentration/realtime'),
+  STATISTICS_STATION_CONCENTRATION_TODAY: getApiPath('api/v1/statistics/station-concentration/today'),
+  STATISTICS_STATION_CONCENTRATION_WEEK: getApiPath('api/v1/statistics/station-concentration/week'),
+  STATISTICS_STATION_CONCENTRATION_MONTH: getApiPath('api/v1/statistics/station-concentration/month'),
+
+  // 통계 API (PM Backend) - 취약시설별 시뮬레이션
+  STATISTICS_FACILITY_REALTIME: getApiPath('api/v1/statistics/facility/realtime'),
+  STATISTICS_FACILITY_TODAY: getApiPath('api/v1/statistics/facility/today'),
+  STATISTICS_FACILITY_WEEK: getApiPath('api/v1/statistics/facility/week'),
+  STATISTICS_FACILITY_MONTH: getApiPath('api/v1/statistics/facility/month'),
 } as const;
 
 /**

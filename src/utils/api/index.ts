@@ -10,6 +10,7 @@ export * from './routeApi';
 export * from './busApi';
 export * from './simulationApi';
 export * from './bookmarkApi';
+export * from './statisticsApi';
 
 // 사용 예시:
-// import { get, post, getApiPath, API_PATHS, getRouteInfo, getRouteGeometry, submitSimulation, getRouteBookmarks } from '@/utils/api';
+// import { get, post, getApiPath, API_PATHS, getRouteInfo, getRouteGeometry, submitSimulation, getRouteBookmarks, getStationConcentration } from '@/utils/api';
