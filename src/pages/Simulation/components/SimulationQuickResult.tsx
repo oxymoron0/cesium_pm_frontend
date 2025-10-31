@@ -255,12 +255,6 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
         <div>측정시간</div>
         <div>
           {formatPollutant(sim?.pm_type)}
-          <br />
-          {sim?.pm_type === "pm10"
-            ? "(PM-10)"
-            : sim?.pm_type === "pm25"
-            ? "(PM-2.5)"
-            : ""}
         </div>
       </div>
 

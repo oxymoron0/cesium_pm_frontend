@@ -340,7 +340,13 @@ const SimulationConfig = observer(function SimulationConfig({ onLocationComplete
             }}
             onClick={() => simulationStore.enableDirectLocationMode()}
           >
-            <Icon name="saas" className="w-4 h-4 text-[#CFFF40]" />
+            <div
+              style={{
+                filter: 'brightness(0) saturate(100%) invert(89%) sepia(97%) saturate(447%) hue-rotate(24deg) brightness(104%) contrast(102%)'
+              }}
+            >
+              <Icon name="saas" className="w-4 h-4" />
+            </div>
             <div
               style={{
                 fontFamily: 'Pretendard',

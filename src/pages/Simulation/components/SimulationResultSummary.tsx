@@ -14,7 +14,7 @@ import {
 } from 'recharts';
 import { simulationStore } from '@/stores/SimulationStore';
 import {
-  generateHardcodedGlbData,
+  generateGlbData,
   renderSimulationGlbsSequentially,
   clearSimulationGlbs,
   getSimulationGlbCount
@@ -45,9 +45,10 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
     if (!simulationDetail) return;
 
     renderLocationMarker(centerLng, centerLat);
-
+    //handleRenderGlb();
     return () => {
       clearLocationMarker();
+      clearSimulationGlbs();
     };
   }, [simulationDetail, centerLng, centerLat]);
 
@@ -80,7 +81,7 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
 
     try {
       // GLB 데이터 생성
-      const glbDataList = generateHardcodedGlbData(centerLng, centerLat, 666);
+      const glbDataList = generateGlbData(centerLng, centerLat);
 
       // 순차적으로 렌더링 (10ms 간격)
       await renderSimulationGlbsSequentially(glbDataList, {
@@ -100,13 +101,6 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
     }
   };
 
-  // GLB 제거 핸들러
-  const handleClearGlb = () => {
-    clearSimulationGlbs();
-    setRenderProgress(null);
-    console.log('[SimulationResultSummary] GLB models cleared');
-  };
-
   return (
     <Panel width="540px" maxHeight="calc(100vh - 160px)" >
       <Title onClose={onClose}>
@@ -124,14 +118,7 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
         >
           {isRenderingGlb
             ? `렌더링 중... (${renderProgress?.current || 0}/${renderProgress?.total || 0})`
-            : `GLB 렌더링 (${getSimulationGlbCount()}개)`}
-        </button>
-        <button
-          onClick={handleClearGlb}
-          disabled={isRenderingGlb}
-          className="h-10 px-4 py-2 bg-[#696A6A] text-white rounded font-pretendard text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#555] transition-colors"
-        >
-          제거
+            : `GLB 렌더링 테스트(${getSimulationGlbCount()}개)`}
         </button>
       </div>
 

@@ -1,21 +1,18 @@
 import { simulationStore } from "@/stores/SimulationStore";
 import { observer } from "mobx-react-lite";
-import { useEffect, useState } from "react";
 
 
 const SimulationActiveTabList = observer(function SimulationActiveTabList() {
-  const [customTab, setCustomTab] = useState('0');
-  const handleClick = (tab: string) => {
-    setCustomTab(tab);
-  }
+  // currentView를 기반으로 활성 탭 계산 (단방향 데이터 플로우)
+  const customTab = (simulationStore.currentView === 'config' || simulationStore.currentView === 'detailConfig') ? '0' : '1';
 
-  useEffect(() => {
-    if (customTab === '0') {
+  const handleClick = (tab: string) => {
+    if (tab === '0') {
       simulationStore.setCurrentView('config')
     } else {
       simulationStore.setCurrentView('running')
     }
-  },[customTab])
+  }
 
   return (
   <div className="flex self-stretch gap-4">

@@ -638,6 +638,7 @@ class SimulationStore {
       if (response.success && response.data) {
         // 성공 시 목록 갱신
         await this.loadSimulationList();
+        this.setCurrentView('running')
       }
 
       return response;

@@ -1,4 +1,4 @@
-import { Entity, ModelGraphics, Cartesian3, Color, ColorBlendMode, HeightReference, ConstantPositionProperty, Cartographic, sampleTerrainMostDetailed } from 'cesium'
+import { Entity, ModelGraphics, Cartesian3, ColorBlendMode, HeightReference, ConstantPositionProperty, Cartographic, sampleTerrainMostDetailed } from 'cesium'
 import { createDataSource, findDataSource, removeDataSource } from './datasources'
 
 const DATASOURCE_NAME = 'simulation_glb_result'
@@ -98,45 +98,23 @@ function createGlbEntity(data: SimulationGlbData): Entity {
     glbUrl,
     longitude,
     latitude,
-    height = 0,
-    scale = 1,
-    color = '#FFFFFF',
+    height,
   } = data
 
+  //샘플 바람길이 잘안보여서 스타일 조정
   return new Entity({
     id: `simulation_glb_${id}`,
     name: `Simulation GLB ${id}`,
     position: new ConstantPositionProperty(Cartesian3.fromDegrees(longitude, latitude, height)),
     model: new ModelGraphics({
       uri: glbUrl,
-      scale: scale,
-      minimumPixelSize: 16,
-      maximumScale: 128,
-      color: Color.fromCssColorString(color),
+      scale: 10.0,
+      minimumPixelSize: 128,
+      maximumScale: 256,
       colorBlendMode: ColorBlendMode.HIGHLIGHT,
-      heightReference: HeightReference.NONE
+      heightReference: HeightReference.NONE,
     })
   })
-}
-
-/**
- * 모든 GLB 모델을 한번에 렌더링
- */
-export async function renderSimulationGlbs(glbDataList: SimulationGlbData[]): Promise<void> {
-  const viewer = getViewer()
-  if (!viewer) return
-
-  // 기존 DataSource 제거 후 새로 생성
-  removeDataSource(DATASOURCE_NAME)
-  const dataSource = createDataSource(DATASOURCE_NAME)
-
-  // 모든 GLB Entity 생성
-  glbDataList.forEach((data) => {
-    const entity = createGlbEntity(data)
-    dataSource.entities.add(entity)
-  })
-
-  console.log(`[simulationGlbRenderer] Rendered ${glbDataList.length} GLB models`)
 }
 
 /**
@@ -201,26 +179,6 @@ export function clearSimulationGlbs(): void {
 }
 
 /**
- * 특정 GLB Entity 검색
- */
-export function getSimulationGlbEntity(id: string): Entity | undefined {
-  const dataSource = findDataSource(DATASOURCE_NAME)
-  if (!dataSource) return undefined
-
-  return dataSource.entities.getById(`simulation_glb_${id}`)
-}
-
-/**
- * 시뮬레이션 GLB DataSource 가시성 토글
- */
-export function toggleSimulationGlbs(visible?: boolean): void {
-  const dataSource = findDataSource(DATASOURCE_NAME)
-  if (dataSource) {
-    dataSource.show = visible !== undefined ? visible : !dataSource.show
-  }
-}
-
-/**
  * 렌더링된 GLB 모델 수 반환
  */
 export function getSimulationGlbCount(): number {
@@ -228,25 +186,6 @@ export function getSimulationGlbCount(): number {
   return dataSource ? dataSource.entities.values.length : 0
 }
 
-/**
- * 특정 GLB 모델에 카메라 이동
- */
-export function flyToSimulationGlb(id: string): void {
-  const viewer = getViewer()
-  if (!viewer) return
-
-  const entity = getSimulationGlbEntity(id)
-  if (entity) {
-    viewer.flyTo(entity, {
-      duration: 1.5,
-      offset: {
-        heading: 0,
-        pitch: -0.5,
-        range: 100
-      }
-    })
-  }
-}
 
 /**
  * 하드코딩된 GLB 데이터 생성 (백엔드 작업 전 임시)
@@ -254,27 +193,23 @@ export function flyToSimulationGlb(id: string): void {
  *
  * @param centerLongitude - 중심 경도 (기본값: 129.0634)
  * @param centerLatitude - 중심 위도 (기본값: 35.1598)
- * @param totalCount - 생성할 GLB 개수 (기본값: 666)
- * @param heightAboveGround - 지형으로부터의 추가 높이 (기본값: 10m)
  */
-export function generateHardcodedGlbData(
+export function generateGlbData(
   centerLongitude: number = 129.0634,
   centerLatitude: number = 35.1598,
-  totalCount: number = 666,
 ): SimulationGlbData[] {
   const basePath = import.meta.env.VITE_BASE_PATH || '/'
   const glbDataList: SimulationGlbData[] = []
-
+  const resultPath = 'openfoam'//simulationStore.simulationDetail?.resultPath;
+  const totalCount = 666; //simulationStore.simulationDetail?.glbCount ?
   for (let i = 1; i <= totalCount; i++) {
     const paddedNumber = String(i).padStart(4, '0')
 
     glbDataList.push({
       id: `windroad_${paddedNumber}`,
-      glbUrl: `${basePath}openfoam/Windroad_${paddedNumber}.glb`,
+      glbUrl: `${basePath}${resultPath}/Windroad_${paddedNumber}.glb`,
       longitude: centerLongitude,
       latitude: centerLatitude,
-      scale: 1.0,
-      color: '#FFFFFF'
     })
   }
 
