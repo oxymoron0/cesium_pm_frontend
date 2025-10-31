@@ -42,7 +42,10 @@ export const API_PATHS = {
   // 시뮬레이션 API (PM Backend)
   SIMULATION_PROCESS: getApiPath('api/v1/simulation/process'),
   SIMULATION_LIST: getApiPath('api/v1/simulation/list'),
+  SIMULATION_QUICK_LIST: getApiPath('api/v1/simulation_auto/list'),
   SIMULATION_DETAIL: (uuid: string) => getApiPath(`api/v1/simulation/${uuid}`),
+  SIMULATION_DELETE: getApiPath(`/api/v1/simulation`),
+  SIMULATION_UPDATE_PRIVACY: (uuid: string) => getApiPath(`/api/v1/simulation/${uuid}/privacy`),
 
   // 북마크 API (PM Backend)
   BOOKMARKS_ROUTES: (user: string) => getApiPath(`api/v1/bookmarks/routes?user=${user}`),

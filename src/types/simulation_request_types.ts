@@ -39,14 +39,14 @@ export interface Weather {
  */
 export interface AirQuality {
   pm_type: PMType;                   // Particulate matter type
-  stations: StationMeasurement[];    // Array of station measurements (min 1)
+  points: StationMeasurement[];    // Array of station measurements (min 1)
 }
 
 /**
  * Single station measurement
  */
 export interface StationMeasurement {
-  station_name: string;              // Station name (max 200 chars)
+  name: string;              // Station name (max 200 chars)
   location: CoordinateLocation;      // Station coordinates
   concentration: number;             // PM concentration (μg/m³, 0-10000)
 }
@@ -98,6 +98,7 @@ export interface SimulationListItem {
   lot: string;                       // 지번 주소
   road_name: string;                 // 도로명 주소
   weather: Weather;                  // Weather data
+  is_private: boolean;
 }
 
 /**
@@ -143,4 +144,45 @@ export interface SimulationDetail {
   resultPath?: string;               // Result file path (GLB, optional)
   createdAt: string;                 // Creation timestamp (ISO 8601)
   updatedAt: string;                 // Update timestamp (ISO 8601)
+}
+
+/**
+ * Simulation auto response from GET /api/v1/simulation_auto/list
+ */
+export interface SimulationQuckData {
+  index: number;
+  measured_at: string;
+  pm_type: "pm10" | "pm25";
+  result_path: string;
+  weather: WeatherData;
+  station_data: StationData[];
+}
+
+export interface LocationPoint {
+  type: "Point";
+  coordinates: [number, number];
+}
+
+export interface StationData {
+  index: number;
+  station_name: string;
+  station_id: string;
+  measured_at: string;
+  concentration: number;
+  location: LocationPoint;
+}
+
+export interface WeatherData {
+  wind_direction_1m: number;
+  wind_speed_1m: number;
+  wind_direction_10m: number;
+  wind_speed_10m: number;
+  humidity: number;
+  sea_level_pressure: number;
+  temperature: number;
+}
+
+export interface SimulationQuckDataResponse {
+  simulations: SimulationQuckData[]; // Simulation items
+  pagination: SimulationListPagination; // Pagination info
 }
