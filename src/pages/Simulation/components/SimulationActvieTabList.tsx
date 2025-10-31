@@ -1,14 +1,16 @@
+import { simulationStore } from "@/stores/SimulationStore";
 import { observer } from "mobx-react-lite";
 
-interface SimulationActiveTabProps {
-  activeList? : String;
-  setActiveList? : (selected: string) => void;
-}
 
-const SimulationActiveTabList = observer(function SimulationActiveTabList({ activeList, setActiveList }: SimulationActiveTabProps) {
-  const handleClick = (view: string) => {
-    if (setActiveList) {
-      setActiveList(view);
+const SimulationActiveTabList = observer(function SimulationActiveTabList() {
+  // currentView를 기반으로 활성 탭 계산 (단방향 데이터 플로우)
+  const customTab = (simulationStore.currentView === 'config' || simulationStore.currentView === 'detailConfig') ? '0' : '1';
+
+  const handleClick = (tab: string) => {
+    if (tab === '0') {
+      simulationStore.setCurrentView('config')
+    } else {
+      simulationStore.setCurrentView('running')
     }
   }
 
@@ -18,10 +20,10 @@ const SimulationActiveTabList = observer(function SimulationActiveTabList({ acti
     <div
     className="flex-1 h-10 flex items-center justify-center gap-1 px-4 py-2.5 cursor-pointer"
     style={{
-        background: activeList === '상세설정' ? 'linear-gradient(180deg, #FDF106 0%, #FFD040 100%)' : '#696A6A',
+        background: customTab === '0' ? 'linear-gradient(180deg, #FDF106 0%, #FFD040 100%)' : '#696A6A',
         borderRadius: '19px'
     }}
-    onClick={() => handleClick('상세설정')}
+    onClick={() => handleClick('0')}
     >
       <div
           style={{
@@ -41,10 +43,10 @@ const SimulationActiveTabList = observer(function SimulationActiveTabList({ acti
     <div
         className="flex-1 h-10 flex items-center justify-center gap-1 px-4 py-2.5 cursor-pointer"
       style={{
-        background: activeList === '실행목록' ? 'linear-gradient(180deg, #FDF106 0%, #FFD040 100%)' : '#696A6A',
+        background: customTab === '1' ? 'linear-gradient(180deg, #FDF106 0%, #FFD040 100%)' : '#696A6A',
         borderRadius: '19px'
       }}
-      onClick={() => handleClick('실행목록')}
+      onClick={() => handleClick('1')}
     >
       <div
         style={{
