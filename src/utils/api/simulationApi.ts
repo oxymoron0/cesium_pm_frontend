@@ -211,12 +211,12 @@ export async function updateSimulationPrivacyAPI(
     
     const url = API_PATHS.SIMULATION_UPDATE_PRIVACY(uuid); 
 
-    const response = await put<any>(url, payload);
+    const response = await put(url, payload);
 
     if (!response.ok) {
-      const errorData = response.data; 
-      const errorMessage = errorData?.message || `API failed with status ${response.status}`;
-      throw new Error(errorMessage);
+      throw new Error(
+        `API failed with status ${response.status}`
+      );
     }
 
     console.log(`[API] Privacy updated successfully for ${uuid}`);
@@ -238,17 +238,19 @@ export async function updateSimulationPrivacyAPI(
 export async function deleteSimulationsAPI(
   userId: string, 
   uuids: string[]
-): Promise<any> { 
+): Promise<SimulationResponse> { 
   try {
     const payload = {
       user_id: userId,
       uuids: uuids
     };
     
-    const response = await del<any>(API_PATHS.SIMULATION_DELETE, { body: payload }); 
+    const response = await del<SimulationResponse>(API_PATHS.SIMULATION_DELETE, { body: payload }); 
 
     if (!response.ok) {
-      throw new Error(`API failed with status ${response.status}`);
+      throw new Error(
+        `API failed with status ${response.status}`
+      );
     }
     return response.data;
 
