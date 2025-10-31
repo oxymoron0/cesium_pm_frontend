@@ -1,11 +1,13 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { runInAction } from 'mobx';
+import DatePicker from '@/components/basic/DatePicker';
+import TimePicker from '@/components/basic/TimePicker';
+import Icon from '@/components/basic/Icon';
 import Title from '@/components/basic/Title';
 import SubTitle from '@/components/basic/SubTitle';
 import Spacer from '@/components/basic/Spacer';
 import Button from '@/components/basic/Button';
-import InputField from '@/components/basic/InputField';
 import Select from '@/components/basic/Select';
 import Info from '@/components/basic/Info';
 import Divider from '@/components/basic/Divider';
@@ -24,10 +26,16 @@ interface PriorityConfigProps {
 const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfig, onSearch }: PriorityConfigProps) {
   // 현재 날짜와 시간
   const now = new Date();
-  const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
-  const timeStr = `${String(now.getHours()).padStart(2, '0')}시 ~ ${String(now.getHours() + 1).padStart(2, '0')}시`;
+  const [dateStr, setDateStr] = useState(
+    `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`
+  );
+  const [timeStr, setTimeStr] = useState(
+    `${String(now.getHours()).padStart(2, '0')}시 ~ ${String(now.getHours() + 1).padStart(2, '0')}시`
+  );
   const currentTimeText = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}. ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   // 행정구역 상태는 administrativeStore에서 관리 (PriorityCustomConfig와 공유)
   const provinceCode = administrativeStore.selectedProvinceCode || '26';
   const districtCode = administrativeStore.selectedDistrictCode || '';
@@ -150,6 +158,26 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
     return neighborhood?.name || '';
   };
 
+    // config.date 문자열을 Date 객체로 변환
+  const parseDate = (dateStr: string): Date => {
+    const parts = dateStr.split('.');
+    if (parts.length === 3) {
+      return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    }
+    return new Date();
+  };
+
+  const handleDateChange = (date: Date) => {
+    const dateStr = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+    setDateStr(dateStr);
+    priorityStore.updateDate(dateStr);
+  };
+
+  const handleTimeChange = (time: string) => {
+    setTimeStr(time);
+    priorityStore.updateTime(time);
+  };
+
   return (
     <>
       <Title
@@ -204,23 +232,91 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
         </div>
 
         {/* 날짜와 시간 입력 */}
-        <div className="flex w-full gap-4">
-          <InputField
-            label="날짜"
-            value={dateStr}
-            icon="calendar"
-            readOnly
-            onClick={() => console.log('날짜 선택')}
-            className="flex-1"
-          />
-          <InputField
-            label="시간"
-            value={timeStr}
-            icon="time"
-            readOnly
-            onClick={() => console.log('시간 선택')}
-            className="flex-1"
-          />
+        <div className="flex w-full gap-3" style={{ overflow: 'visible' }}>
+          <div className="flex flex-1 gap-[7px] h-8 items-center">
+            <p
+              style={{
+                fontFamily: 'Pretendard',
+                fontSize: '14px',
+                fontWeight: '700',
+                lineHeight: 'normal',
+                color: '#FFFFFF',
+                width: '48px',
+                flexShrink: 0
+              }}
+            >
+              날짜
+            </p>
+            <div className="flex-1 relative">
+              <div
+                className="flex items-center gap-1 px-3 py-1 bg-black rounded border border-[#696A6A] cursor-pointer"
+                onClick={() => setShowDatePicker(!showDatePicker)}
+                style={{ height: '32px' }}
+              >
+                <Icon name="calendar" className="w-4 h-4" />
+                <p
+                  style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '14px',
+                    fontWeight: '400',
+                    lineHeight: 'normal',
+                    color: dateStr ? '#FFFFFF' : '#A6A6A6'
+                  }}
+                >
+                  {dateStr || '날짜 선택'}
+                </p>
+              </div>
+              {showDatePicker && (
+                <DatePicker
+                  value={parseDate(dateStr || '')}
+                  onChange={handleDateChange}
+                  onClose={() => setShowDatePicker(false)}
+                />
+              )}
+            </div>
+          </div>
+          <div className="flex flex-1 gap-[7px] h-8 items-center">
+            <p
+              style={{
+                fontFamily: 'Pretendard',
+                fontSize: '13px',
+                fontWeight: '700',
+                lineHeight: 'normal',
+                color: '#FFFFFF',
+                width: '48px',
+                flexShrink: 0
+              }}
+            >
+              시간
+            </p>
+            <div className="flex-1 relative">
+              <div
+                className="flex items-center gap-1 px-3 py-1 bg-black rounded border border-[#696A6A] cursor-pointer"
+                onClick={() => setShowTimePicker(!showTimePicker)}
+                style={{ height: '32px' }}
+              >
+                <Icon name="time" className="w-4 h-4" />
+                <p
+                  style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '14px',
+                    fontWeight: '400',
+                    lineHeight: 'normal',
+                    color: timeStr ? '#FFFFFF' : '#A6A6A6'
+                  }}
+                >
+                  {timeStr || '시간 선택'}
+                </p>
+              </div>
+              {showTimePicker && (
+                <TimePicker
+                  value={timeStr || '00시 ~ 01시'}
+                  onChange={handleTimeChange}
+                  onClose={() => setShowTimePicker(false)}
+                />
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
