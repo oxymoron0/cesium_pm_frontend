@@ -40,7 +40,6 @@ const SimulationRunningList = observer(function SimulationRunningList() {
     totalPages, 
     pollutantFilter, 
     sortOrder, 
-    openModal,
     isDeleteMode,
     itemsToDelete,
     isDateModalOpen, } = simulationStore;
