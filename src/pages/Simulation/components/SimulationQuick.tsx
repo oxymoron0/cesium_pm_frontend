@@ -4,7 +4,7 @@ import Icon from "@/components/basic/Icon";
 import DatePicker from "@/components/basic/DatePicker";
 import Button from "@/components/basic/Button";
 import { simulationStore } from "@/stores/SimulationStore";
-import type { PMType } from "@/types/simulation_request_types";
+import type { PMType, SimulationQuckData } from "@/types/simulation_request_types";
 
 const formatPollutant = (t: PMType) =>
   t === "pm10" ? "미세먼지(PM-10)" : t === "pm25" ? "초미세먼지(PM-2.5)" : t;
@@ -315,7 +315,7 @@ const SimulationQuick = observer(function SimulationQuick() {
               데이터가 없습니다.
             </div>
           ) : (
-            simulations.map((s: any, i: number) => {
+            simulations.map((s: SimulationQuckData, i: number) => {
               const rowNo = offset + i + 1;
               const dateStr = toLocalYMD(s.measured_at);
               const timeStr = toLocalHM(s.measured_at);

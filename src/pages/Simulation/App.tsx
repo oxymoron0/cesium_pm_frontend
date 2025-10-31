@@ -89,6 +89,7 @@ const App = observer(function App(props: AppProps) {
                 : "540px"
             }
             maxHeight="calc(100vh - 50px)"
+            allowOverflow={true}
           >
             {simulationStore.currentView === "quickResult" ? (
               <SimulationQuickResult
