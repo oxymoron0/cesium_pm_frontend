@@ -192,10 +192,6 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
           }
         }
       }
-
-      priorityStore.selectedStations.forEach(station => {
-        station.geometry.coordinates
-      });
     };
 
     renderBoundary();

@@ -10,6 +10,7 @@ import {
   ConstantProperty,
   HeightReference,
   Cartographic,
+  Viewer,
   sampleTerrainMostDetailed
 } from 'cesium';
 import type { NearbyStation } from '@/pages/Priority/types';
@@ -40,7 +41,7 @@ export async function renderNearbyStations(
     await clearNearStations();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const viewer = (window as unknown as { cviewer: any }).cviewer;
+    const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
     if (!viewer) {
       console.warn('[near by station] Cesium viewer not available');
       return;
@@ -127,7 +128,7 @@ function createSearchStationBillboardEntity(
   const cachedHeight = terrainHeightCache.get(key) || 0;
   const position = Cartesian3.fromDegrees(lng, lat, cachedHeight);
   
-  const viewer = (window as unknown as { cviewer: any }).cviewer;
+  const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
 
   let element = stationElementsCache.get(entityId);
 
@@ -305,7 +306,7 @@ export async function clearNearStations(): Promise<void> {
 
     // 전역 선택 상태 초기화
     currentSelectedSearchStationId = null;
-    const viewer = (window as unknown as { cviewer: any }).cviewer;
+    const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
     if (viewer && viewer.container) {
         stationElementsCache.forEach(element => { // 'stationElementsCache'로 수정했다고 가정
             viewer.container.removeChild(element);

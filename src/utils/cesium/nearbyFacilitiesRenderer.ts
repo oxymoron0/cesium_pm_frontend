@@ -7,7 +7,9 @@ import {
   HeightReference,
   Cartographic,
   sampleTerrainMostDetailed,
-  SceneMode
+  SceneMode,
+  TerrainProvider,
+  Viewer
 } from 'cesium';
 
 // --- Type Definitions ---
@@ -61,7 +63,7 @@ function getLevelStyle(level: VulnerableFacility['predictedLevel']): {
 async function sampleTerrainForVulnerableFacilities(facilities: VulnerableFacility[]): Promise<void> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const viewer = (window as unknown as { cviewer: { terrainProvider: any } }).cviewer;
+    const viewer = (window as unknown as { cviewer: { terrainProvider: TerrainProvider } }).cviewer;
     if (!viewer?.terrainProvider) return;
 
     const positions = facilities.map(feature => {
@@ -88,7 +90,7 @@ async function sampleTerrainForVulnerableFacilities(facilities: VulnerableFacili
  */
 function updateFacilityHtmlElementPositions(): void {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const viewer = (window as unknown as { cviewer: any }).cviewer;
+  const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
   if (!viewer) return;
 
   const scene = viewer.scene;
@@ -139,7 +141,7 @@ function updateFacilityHtmlElementPositions(): void {
  */
 function attachFacilityPostRenderListener(): void {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const viewer = (window as unknown as { cviewer: any }).cviewer;
+  const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
   if (!viewer || isFacilityPostRenderListenerAttached) return;
 
   viewer.scene.postRender.addEventListener(updateFacilityHtmlElementPositions);
@@ -164,7 +166,7 @@ function createFacilityBillboardEntity(
   const position = Cartesian3.fromDegrees(lng, lat, cachedHeight + 1); // 지면보다 살짝 위에
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const viewer = (window as unknown as { cviewer: any }).cviewer;
+  const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
 
   // 1. HTML 엘리먼트 생성 및 캐시
   let element = facilityElementsCache.get(entityId);
@@ -305,7 +307,7 @@ export async function renderVulnerableFacilities(
     await clearVulnerableFacilities();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const viewer = (window as unknown as { cviewer: any }).cviewer;
+    const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
     if (!viewer) {
       console.warn('[Vulnerable Facility] Cesium viewer not available');
       return;
@@ -346,7 +348,7 @@ export async function clearVulnerableFacilities(): Promise<void> {
     console.log('[clearVulnerableFacilities] Clearing facility rendering');
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const viewer = (window as unknown as { cviewer: any }).cviewer;
+    const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
     if (viewer && viewer.container) {
       // HTML 엘리먼트 제거
       facilityElementsCache.forEach(element => {

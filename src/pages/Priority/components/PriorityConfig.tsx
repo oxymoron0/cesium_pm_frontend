@@ -8,7 +8,6 @@ import Title from '@/components/basic/Title';
 import SubTitle from '@/components/basic/SubTitle';
 import Spacer from '@/components/basic/Spacer';
 import Button from '@/components/basic/Button';
-import InputField from '@/components/basic/InputField';
 import Select from '@/components/basic/Select';
 import Info from '@/components/basic/Info';
 import Divider from '@/components/basic/Divider';
@@ -17,7 +16,6 @@ import { administrativeStore } from '@/stores/AdministrativeStore';
 import { renderAdministrativeBoundary, clearAdministrativeBoundary } from '@/utils/cesium/administrativeRenderer';
 import { isGeometrySuccess } from '@/types/administrative';
 import type { PriorityConfig as PriorityConfigData } from '../types';
-import type { RouteStationsResponse } from '@/utils/api/types'
 
 interface PriorityConfigProps {
   onClose?: () => void;
@@ -34,10 +32,6 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
   const [timeStr, setTimeStr] = useState(
     `${String(now.getHours()).padStart(2, '0')}시 ~ ${String(now.getHours() + 1).padStart(2, '0')}시`
   );
-  const [stationData, setStationData] = useState<{
-    inbound?: RouteStationsResponse
-    outbound?: RouteStationsResponse
-  }>({})
   const currentTimeText = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}. ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
   const [showDatePicker, setShowDatePicker] = useState(false);
