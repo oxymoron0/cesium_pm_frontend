@@ -1,117 +1,10 @@
 import type { FacilityData } from '@/types/statistics'
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import FacilitySimulationTooltip from './FacilitySimulationTooltip'
 
 interface FacilitySimulationChartProps {
   data: FacilityData[]
   selectedType: 'bad' | 'veryBad'
-}
-
-interface TooltipPayload {
-  payload: FacilityData
-}
-
-interface CustomTooltipProps {
-  active?: boolean
-  payload?: TooltipPayload[]
-}
-
-// 커스텀 Tooltip
-function CustomTooltip({ active, payload }: CustomTooltipProps) {
-  if (!active || !payload || payload.length === 0) return null
-
-  const facilityName = payload[0]?.payload?.facilityName || ''
-  const veryBadCount = payload[0]?.payload?.veryBadCount || 0
-  const badCount = payload[0]?.payload?.badCount || 0
-  const totalCount = veryBadCount + badCount
-
-  return (
-    <div style={{
-      backgroundColor: '#000000',
-      border: '1px solid #666',
-      borderRadius: '8px',
-      padding: '12px 16px',
-      minWidth: '180px'
-    }}>
-      {/* 타이틀 */}
-      <div style={{
-        color: '#FFFFFF',
-        fontSize: '16px',
-        fontWeight: '600',
-        fontFamily: 'Pretendard',
-        marginBottom: '4px'
-      }}>
-        {facilityName}
-      </div>
-      <div style={{
-        color: '#FFFFFF',
-        fontSize: '14px',
-        fontFamily: 'Pretendard',
-        marginBottom: '8px'
-      }}>
-        총합 <span style={{ color: '#CFFF40' }}>{totalCount}</span>회
-      </div>
-
-      {/* 매우나쁨 */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        marginTop: '8px'
-      }}>
-        <div style={{
-          backgroundColor: '#D32F2F',
-          color: '#FFFFFF',
-          fontSize: '12px',
-          fontWeight: '600',
-          fontFamily: 'Pretendard',
-          padding: '2px 8px',
-          borderRadius: '4px',
-          minWidth: '60px',
-          textAlign: 'center'
-        }}>
-          매우나쁨
-        </div>
-        <span style={{
-          color: '#FFFFFF',
-          fontSize: '14px',
-          fontWeight: '600',
-          fontFamily: 'Pretendard'
-        }}>
-          {veryBadCount}회
-        </span>
-      </div>
-
-      {/* 나쁨 */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        marginTop: '6px'
-      }}>
-        <div style={{
-          backgroundColor: '#FF6B00',
-          color: '#FFFFFF',
-          fontSize: '12px',
-          fontWeight: '600',
-          fontFamily: 'Pretendard',
-          padding: '2px 8px',
-          borderRadius: '4px',
-          minWidth: '60px',
-          textAlign: 'center'
-        }}>
-          나쁨
-        </div>
-        <span style={{
-          color: '#FFFFFF',
-          fontSize: '14px',
-          fontWeight: '600',
-          fontFamily: 'Pretendard'
-        }}>
-          {badCount}회
-        </span>
-      </div>
-    </div>
-  )
 }
 
 const FacilitySimulationChart = function FacilitySimulationChart({ data, selectedType }: FacilitySimulationChartProps) {
@@ -181,15 +74,13 @@ const FacilitySimulationChart = function FacilitySimulationChart({ data, selecte
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
           data={data}
-          margin={{ top: 40, right: 50, left: 50, bottom: 60 }}
+          margin={{ top: 50, right: 50, left: 50, bottom: 0 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#333" />
           <XAxis
             dataKey="facilityName"
             stroke="#999"
             tick={{ fill: '#999', fontSize: 11 }}
-            angle={-45}
-            textAnchor="end"
             height={80}
           />
           <YAxis
@@ -203,7 +94,7 @@ const FacilitySimulationChart = function FacilitySimulationChart({ data, selecte
             stroke="#999"
             tick={{ fill: '#999', fontSize: 12 }}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<FacilitySimulationTooltip />} />
           <Bar
             yAxisId="left"
             dataKey={selectedType === 'bad' ? 'badCount' : 'veryBadCount'}
