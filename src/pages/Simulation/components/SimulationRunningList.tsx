@@ -7,6 +7,7 @@ import { simulationStore } from '@/stores/SimulationStore';
 import type { PMType } from '@/types/simulation_request_types';
 import SimulationDetailRow from '@/pages/Simulation/components/SimulationDetailRow';
 import Checkbox from './Checkbox';
+import { SimulationDataRangeModal } from './SimulationDataRangeModal';
 
 
 // 3. 유틸리티 함수 (데이터 포맷팅)
@@ -41,7 +42,8 @@ const SimulationRunningList = observer(function SimulationRunningList() {
     sortOrder, 
     openModal,
     isDeleteMode,
-    itemsToDelete, } = simulationStore;
+    itemsToDelete,
+    isDateModalOpen, } = simulationStore;
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -135,7 +137,7 @@ const SimulationRunningList = observer(function SimulationRunningList() {
               <Icon name="dropmenubtn" className="w-4 h-4" />
             </div>
           </div>
-            <Button variant="dark" showIcon={true} iconName="filterbtn" iconPos='right'>
+            <Button variant="dark" showIcon={true} iconName="filterbtn" iconPos='right'onClick={() => simulationStore.openDateModal()}>
               기간 설정
             </Button>
         </div>
@@ -303,6 +305,9 @@ const SimulationRunningList = observer(function SimulationRunningList() {
 
       {/* 8. Pagination */}
       {renderPagination()}
+
+      {/* DateModal */}
+      {isDateModalOpen && <SimulationDataRangeModal />}
     </>
   );
 });

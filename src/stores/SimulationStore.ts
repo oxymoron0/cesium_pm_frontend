@@ -1,5 +1,5 @@
 import { makeAutoObservable, observable, runInAction } from 'mobx';
-import type { AddressSearchResult, SimulationConfig, SimulationView, SimulationConfirmType } from '../pages/Simulation/types';
+import type { AddressSearchResult, SimulationConfig, SimulationView, /* SimulationConfirmType */ } from '../pages/Simulation/types';
 import type {
   SimulationRequest,
   SimulationResponse,
@@ -9,7 +9,7 @@ import type {
   SimulationQuckData,
   PMType
 } from '../types/simulation_request_types';
-import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList } from '@/utils/api';
+import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI } from '@/utils/api';
 import { userStore } from './UserStore';
 
 // ============================================================================
@@ -322,7 +322,7 @@ class SimulationStore {
 
   // confirm modal active
   isModalOpen = false
-  isModalConfirmType: SimulationConfirmType | null = null;
+  // isModalConfirmType: SimulationConfirmType | null = null;
 
   // 팝업 상태 관리
   isConfigPopupOpen = false
@@ -334,6 +334,11 @@ class SimulationStore {
   sortOrder: 'latest' | 'oldest' = 'latest'; // 기본값 'latest'
   isDeleteMode: boolean = false;
   itemsToDelete = new Set<string>();
+
+  // 기간 설정 관리
+  isDateModalOpen: boolean = false;
+  startDate: string | null = null;
+  endDate: string | null = null;
 
   constructor() {
     makeAutoObservable(this, {
@@ -359,7 +364,6 @@ class SimulationStore {
       simulationStore.closeConfigPopup();
     }
   }
-    
 
   // ============================================================================
   // 주소 검색
@@ -638,7 +642,7 @@ class SimulationStore {
       if (response.success && response.data) {
         // 성공 시 목록 갱신
         await this.loadSimulationList();
-        this.setCurrentView('running')
+        this.setCurrentView('running');
       }
 
       return response;
@@ -655,15 +659,20 @@ class SimulationStore {
    * 시뮬레이션 공개/비공개 상태 업데이트
    */
   async updateSimulationPrivacy(uuid: string, isPrivate: boolean): Promise<void> {    
+    const userId = userStore.currentUser;
+    if (!userId) {
+        console.error("Privacy Update failed: User ID is missing.");
+        throw new Error("User ID is missing.");
+    }
+
     try {
       // API 엔드포인트는 PUT /api/v1/simulation/{uuid} 또는 유사 형태를 가정
-      // await updateSimulationPrivacyAPI(uuid, isPrivate); 
+      await updateSimulationPrivacyAPI(uuid, isPrivate, userId); 
 
       // API 성공 시 로컬 목록 업데이트
       runInAction(() => {
         const index = this.simulationList.findIndex(sim => sim.uuid === uuid);
         if (index !== -1) {
-          // mobx observable 배열의 요소를 직접 수정하여 UI 업데이트 트리거
           this.simulationList[index] = { 
             ...this.simulationList[index], 
             is_private: isPrivate 
@@ -671,9 +680,6 @@ class SimulationStore {
           console.log("[Store] Local list updated.");
         }
       });
-      // --- 목록 전체 새로고침 ---
-      await this.loadSimulationList(this.currentPage);
-
     } catch (error) {
       console.error(`[Store] Failed to update privacy for ${uuid}:`, error);
       throw error; 
@@ -722,7 +728,9 @@ class SimulationStore {
 
       const response = await getSimulationList(page, limit, effectiveUserId,
         this.pollutantFilter,
-        this.sortOrder
+        this.sortOrder,
+        this.startDate,
+        this.endDate,
       );
       this.simulationList = response.simulations;
       this.pagination = response.pagination;
@@ -786,6 +794,38 @@ class SimulationStore {
     if (page > 0 && page !== this.currentPage && page <= this.totalPages) {
       this.loadSimulationList(page);
     }
+  }
+
+  openDateModal() {
+    this.isDateModalOpen = true;
+  }
+
+  closeDateModal() {
+    this.isDateModalOpen = false;
+  }
+
+  /**
+   * 날짜 범위 설정 및 데이터 새로고침
+   */
+  async setDateRange(startDate: string, endDate: string) {
+    runInAction(() => {
+      this.startDate = startDate;
+      this.endDate = endDate;
+    })
+    this.closeDateModal();
+    await this.loadSimulationList(1);
+  }
+
+  /**
+   * 날짜 범위 초기화 및 데이터 새로고침
+   */
+  async clearDateRange() {
+    runInAction(() => {
+      this.startDate = null;
+      this.endDate = null;
+    })
+    this.closeDateModal();
+    await this.loadSimulationList(1);
   }
 
   /**
@@ -894,19 +934,39 @@ class SimulationStore {
       return;
     }
 
-    const uuidsToDelete = Array.from(this.itemsToDelete);
-    console.log("[Store] Deleting UUIDs:", uuidsToDelete);
+    const uuidsToDelete = Array.from(this.itemsToDelete).filter(uuid => {
+      const sim = this.simulationList.find(s => s.uuid === uuid);
+      return sim && sim.status !== '진행중';
+    });
+
+    // "진행중"인 항목만 선택한 경우
+    if (uuidsToDelete.length === 0) {
+         console.warn("삭제할 수 있는 항목이 없습니다. (모두 '진행중' 상태)");
+         runInAction(() => {
+            this.isDeleteMode = false;
+            this.itemsToDelete.clear();
+         });
+         return;
+    }
+    
+    // "진행중" 항목이 섞여있는 경우
+    if (uuidsToDelete.length < this.itemsToDelete.size) {
+        console.warn("'진행중' 상태인 항목을 제외하고 삭제를 시도합니다.");
+        // (사용자에게 알림 팝업 띄우는 것 고려)
+    }
+
+    // user_id 가져오기
+    const userId = userStore.currentUser;
+    if (!userId) {
+        console.error("Delete failed: User ID is missing.");
+        return; 
+    }
 
     try {
       // TODO: (API) 'api.ts'에 deleteSimulations(uuids: string[]) 함수 구현 필요
-      // 예: await deleteSimulations(uuidsToDelete); 
+      await deleteSimulationsAPI(userId, uuidsToDelete); 
       
-      // --- (API 성공 가정) Mock 동작 ---
       runInAction(() => {
-        // 성공 시 목록에서 제거, 삭제 모드 종료
-        this.simulationList = this.simulationList.filter(
-          sim => !uuidsToDelete.includes(sim.uuid)
-        );
         this.itemsToDelete.clear();
         this.isDeleteMode = false;
       });
@@ -971,7 +1031,7 @@ class SimulationStore {
     //데이터 클리어
     this.pendingSimulationData = null;
     this.selectedStartSimulation = null;
-    this.isModalConfirmType = null;
+    // this.isModalConfirmType = null;
   }
 
   // ============================================================================

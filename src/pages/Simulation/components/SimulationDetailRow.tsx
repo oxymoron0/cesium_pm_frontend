@@ -58,10 +58,12 @@ const SimulationDetailRow: React.FC<{ sim: SimulationListItem }> = ({ sim }) => 
   const handleSavePrivacy = async () => {
     // 이미 저장 중이면 중복 실행 방지
     if (isSaving) return; 
-    
+    // 값 동일하면 실행 방지
+    if (isPrivateSelected === sim.is_private) return;
+
     setIsSaving(true);
     try {
-      // 스토어 액션 호출 (uuid와 새로운 isPrivate 값 전달)
+      // 스토어 액션 호출
       await simulationStore.updateSimulationPrivacy(sim.uuid, isPrivateSelected);
       console.log(`[DetailRow] Privacy updated for ${sim.uuid}`);
     } catch (error) {
@@ -106,7 +108,7 @@ const SimulationDetailRow: React.FC<{ sim: SimulationListItem }> = ({ sim }) => 
                 lineHeight: 'normal',
                 fontSize: '14px', 
                 fontWeight: '400', 
-                color: '#FFFFFF'
+                color: '#FFFFFF',
               }}
             >
               <option value="false">공개</option>
@@ -115,7 +117,8 @@ const SimulationDetailRow: React.FC<{ sim: SimulationListItem }> = ({ sim }) => 
             <div className="absolute left-51">
               <Icon name="dropmenubtn" className="w-4 h-4" />
             </div>
-            <span className="flex items-center justify-center w-auto h-7 cursor-pointer py-1 px-3 rounded-[4px] text-[#FFD040] border border-[#FFD040] bg-[#FFD040] text-black font-bold"
+            <span className="flex items-center justify-center w-auto h-7 cursor-pointer py-1 px-3 rounded-[4px] border border-[#FFD040] font-bold"
+              style={isPrivateSelected === sim.is_private ? {backgroundColor:'black', color:'#FFD040'} : {backgroundColor:'#FFD040', color:'black'}}
               onClick={handleSavePrivacy}>
               저장하기
             </span>
