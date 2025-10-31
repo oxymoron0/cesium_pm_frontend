@@ -21,9 +21,22 @@ type ConfirmForm = {
 const SimulationConfirm = observer(function SimulationConfirm() {
   const { dataForConfirm } = simulationStore;
 
-  console.log('dataForConfirm : ' , dataForConfirm);
 
-  // [fix] 요약 카드가 필요한 타입에서만 dataForConfirm가 없으면 닫기
+  const handleExecute = async () => {
+  if (simulationStore.currentView === 'detailConfig' && simulationStore.pendingSimulationData) {
+    console.log('상세설정 실행:', simulationStore.pendingSimulationData);
+    await simulationStore.submitSimulationRequest(simulationStore.pendingSimulationData);
+  } else if (simulationStore.currentView === 'running' && simulationStore.selectedStartSimulation) {
+    console.log('실행목록 실행:', simulationStore.selectedStartSimulation.uuid);
+    await simulationStore.selectSimulation(simulationStore.selectedStartSimulation.uuid);
+
+    if (!simulationStore.detailError && simulationStore.simulationDetail) {
+      simulationStore.setCurrentView('result')
+      console.log("simulationStore.simulationDetail : ", simulationStore.simulationDetail)
+    }
+  }
+};
+
   const needsData =
     simulationStore.isModalConfirmType === "runCustom" ||
     simulationStore.isModalConfirmType === "runDup" ||
@@ -268,7 +281,10 @@ const SimulationConfirm = observer(function SimulationConfirm() {
           content: <SummaryCard />,
           cancelText: "취소",
           confirmText: "바로 실행",
-          onConfirm: () => simulationStore.confirmModal(),
+          onConfirm: () => {
+            handleExecute();
+            simulationStore.confirmModal()
+          }
         };
 
       default:

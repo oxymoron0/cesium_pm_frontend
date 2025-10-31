@@ -1002,8 +1002,6 @@ class SimulationStore {
    * Confirm 모달에 표시할 데이터 반환 
    */
   get dataForConfirm(): SimulationRequest | SimulationListItem | null{
-    console.log(this.pendingSimulationData);
-    console.log(this.selectedStartSimulation);
     if (this.currentView === 'detailConfig') {
       return this.pendingSimulationData;
     } else {
