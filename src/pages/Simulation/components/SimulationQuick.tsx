@@ -95,7 +95,7 @@ const SimulationQuick = observer(function SimulationQuick() {
 
   const offset = (pagination.page - 1) * pagination.limit;
 
-  const RowDetail = ({ row }: { row: any }) => {
+  const RowDetail = ({ row }: { row: SimulationQuckData }) => {
     // weather 폴백 처리
     const wd10 =
       row?.weather?.wind_direction_10m ??
