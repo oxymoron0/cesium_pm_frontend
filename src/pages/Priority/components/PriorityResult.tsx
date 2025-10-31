@@ -5,6 +5,8 @@ import Spacer from '@/components/basic/Spacer';
 import Button from '@/components/basic/Button';
 import DongDropdown from './DongDropdown';
 import NearbyStationList from './NearbyStationList';
+import { renderNearbyStations } from '@/utils/cesium/nearbyStationRenderer';
+import { renderVulnerableFacilities, clearVulnerableFacilities } from '@/utils/cesium/nearbyFacilitiesRenderer';
 import { priorityStore } from '@/stores/PriorityStore';
 import { administrativeStore } from '@/stores/AdministrativeStore';
 import { renderAdministrativeBoundary, clearAdministrativeBoundary } from '@/utils/cesium/administrativeRenderer';
@@ -25,7 +27,11 @@ const mockFacilities: VulnerableFacility[] = [
     name: '백병원',
     address: '부산 부산진구 복지로 75',
     predictedConcentration: 160,
-    predictedLevel: 'very-bad'
+    predictedLevel: 'very-bad',
+    geometry: {
+      type: 'Point',
+      coordinates: [129.021222277, 35.146487166]
+    }
   },
   {
     id: '2',
@@ -33,7 +39,11 @@ const mockFacilities: VulnerableFacility[] = [
     name: '당감초등학교',
     address: '부산 부산진구 당감로 22-5',
     predictedConcentration: 135,
-    predictedLevel: 'bad'
+    predictedLevel: 'bad',
+    geometry: {
+      type: 'Point',
+      coordinates: [129.039945403, 35.164115172]
+    }
   },
   {
     id: '3',
@@ -41,7 +51,11 @@ const mockFacilities: VulnerableFacility[] = [
     name: '초읍초등학교',
     address: '부산 부산진구 성지로 104번길 26',
     predictedConcentration: 58,
-    predictedLevel: 'normal'
+    predictedLevel: 'normal',
+    geometry: {
+      type: 'Point',
+      coordinates: [129.054482652, 35.180499832]
+    }
   },
   {
     id: '4',
@@ -49,7 +63,11 @@ const mockFacilities: VulnerableFacility[] = [
     name: '부전역',
     address: '부산 부산진구 부전로 181',
     predictedConcentration: 55,
-    predictedLevel: 'normal'
+    predictedLevel: 'normal',
+    geometry: {
+      type: 'Point',
+      coordinates: [129.059569753, 35.164777143]
+    }
   },
   {
     id: '5',
@@ -57,7 +75,11 @@ const mockFacilities: VulnerableFacility[] = [
     name: '범내골역',
     address: '부산 부산진구 중앙대로 612',
     predictedConcentration: 48,
-    predictedLevel: 'normal'
+    predictedLevel: 'normal',
+    geometry: {
+      type: 'Point',
+      coordinates: [129.060004982, 35.147231683]
+    }
   }
 ];
 
@@ -121,6 +143,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
     return () => {
       priorityStore.closeDropdown();
       clearAdministrativeBoundary();
+      clearVulnerableFacilities();
     };
   }, [config]);
 
@@ -169,13 +192,18 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
           }
         }
       }
+
+      priorityStore.selectedStations.forEach(station => {
+        station.geometry.coordinates
+      });
     };
 
     renderBoundary();
+    renderVulnerableFacilities(mockFacilities);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [priorityStore.selectedDong]);
 
-  const toggleFacility = (id: string) => {
+  const toggleFacility = async (id: string) => {
     const newSet = new Set(selectedFacilities);
     if (newSet.has(id)) {
       newSet.delete(id);
@@ -186,6 +214,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
     // Store의 선택 상태도 업데이트 (주변 정류장 표시용)
     priorityStore.toggleFacilitySelection(id);
+    renderNearbyStations(priorityStore.selectedStations);
   };
 
   const toggleAll = () => {

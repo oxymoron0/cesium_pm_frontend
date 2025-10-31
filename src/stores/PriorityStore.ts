@@ -117,7 +117,11 @@ const MOCK_NEARBY_STATIONS: Record<string, NearbyStation[]> = {
       measurements: [
         { time: '05:53', concentration: 59, level: 'normal' },
         { time: '07:18', concentration: 68, level: 'normal' }
-      ]
+      ],
+      geometry: {
+        type: 'Point',
+        coordinates: [129.0592867, 35.15241336]
+      }
     },
     {
       id: 'station_2',
@@ -128,7 +132,11 @@ const MOCK_NEARBY_STATIONS: Record<string, NearbyStation[]> = {
         { time: '06:18', concentration: 65, level: 'normal' },
         { time: '07:27', concentration: 71, level: 'normal' },
         { time: '08:15', concentration: 59, level: 'normal' }
-      ]
+      ],
+      geometry: {
+        type: 'Point',
+        coordinates: [129.0593354, 35.14977663]
+      }
     }
   ],
   '2': [ // 당감초등학교
@@ -139,7 +147,11 @@ const MOCK_NEARBY_STATIONS: Record<string, NearbyStation[]> = {
       measurements: [
         { time: '06:15', concentration: 55, level: 'normal' },
         { time: '07:30', concentration: 62, level: 'normal' }
-      ]
+      ],
+      geometry: {
+        type: 'Point',
+        coordinates: [129.0397679, 35.16346526]
+      }
     }
   ],
   '3': [ // 초읍초등학교
@@ -150,7 +162,11 @@ const MOCK_NEARBY_STATIONS: Record<string, NearbyStation[]> = {
       measurements: [
         { time: '06:00', concentration: 48, level: 'normal' },
         { time: '07:45', concentration: 52, level: 'normal' }
-      ]
+      ],
+      geometry: {
+        type: 'Point',
+        coordinates: [129.054089, 35.18547513]
+      }
     }
   ]
 };
