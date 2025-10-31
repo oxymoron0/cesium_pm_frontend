@@ -1,5 +1,5 @@
 import { makeAutoObservable, observable, runInAction } from 'mobx';
-import type { AddressSearchResult, SimulationConfig, SimulationView, /* SimulationConfirmType */ } from '../pages/Simulation/types';
+import type { AddressSearchResult, SimulationConfig, SimulationView, SimulationConfirmType } from '../pages/Simulation/types';
 import type {
   SimulationRequest,
   SimulationResponse,
@@ -322,7 +322,8 @@ class SimulationStore {
 
   // confirm modal active
   isModalOpen = false
-  // isModalConfirmType: SimulationConfirmType | null = null;
+  isModalConfirmType: SimulationConfirmType | null = null;
+  private modalResolve?: (result: string) => void;
 
   // 팝업 상태 관리
   isConfigPopupOpen = false
@@ -1001,6 +1002,8 @@ class SimulationStore {
    * Confirm 모달에 표시할 데이터 반환 
    */
   get dataForConfirm(): SimulationRequest | SimulationListItem | null{
+    console.log(this.pendingSimulationData);
+    console.log(this.selectedStartSimulation);
     if (this.currentView === 'detailConfig') {
       return this.pendingSimulationData;
     } else {
@@ -1018,10 +1021,42 @@ class SimulationStore {
   /**
    * 모달 열기
    */
-  openModal = () => {
+  openModal(type: SimulationConfirmType): Promise<string> {
+    if (this.modalResolve) {
+      this.modalResolve('cancel');
+      this.modalResolve = undefined;
+    }
+
+    this.isModalConfirmType = type;
     this.isModalOpen = true;
-  } 
+
+    return new Promise<string>((resolve) => {
+      this.modalResolve = resolve;
+    });
+  }
   
+  /**
+   * 모달 확인버튼 콜백
+   */
+  confirmModal() {
+    this.isModalOpen = false;
+    this.isModalConfirmType = null;
+    const r = this.modalResolve;
+    this.modalResolve = undefined;
+    r?.('confirm');
+  }
+
+  /**
+   * 모달 취소버튼 콜백
+   */
+  cancelModal() {
+    this.isModalOpen = false;
+    this.isModalConfirmType = null;
+    const r = this.modalResolve;
+    this.modalResolve = undefined;
+    r?.('cancel');
+  }
+
   /**
    * 모달 닫기
    */
@@ -1031,7 +1066,7 @@ class SimulationStore {
     //데이터 클리어
     this.pendingSimulationData = null;
     this.selectedStartSimulation = null;
-    // this.isModalConfirmType = null;
+    this.isModalConfirmType = null;
   }
 
   // ============================================================================

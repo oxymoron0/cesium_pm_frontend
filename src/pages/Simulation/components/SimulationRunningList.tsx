@@ -145,10 +145,12 @@ const SimulationRunningList = observer(function SimulationRunningList() {
           variant="noStyle"
           showIcon={true} 
           iconName="delete"
-          onClick={() => {
+          onClick={async () => {
             if (isDeleteMode && itemsToDelete.size > 0) {
-              alert('삭제 하시겠습니까?') 
+            const result = await simulationStore.openModal('delSim');
+            if (result === 'confirm') {
               simulationStore.deleteSelectedSimulations();
+            }
             } else {
               simulationStore.toggleDeleteMode();
             }
@@ -275,9 +277,12 @@ const SimulationRunningList = observer(function SimulationRunningList() {
                 )}
                 {sim.status === '완료' && (
                   <Button iconName={'excute'} iconPos='right' 
-                    onClick={() => {
+                    onClick={async () => {
                       simulationStore.setSelectedStartSimulation(sim)
-                      openModal()
+                      const result = await simulationStore.openModal('runList');
+                      if (result === 'confirm') {
+                        //TODO 실행로직 추가해야함
+                      }
                     }}
                   >
                     실행

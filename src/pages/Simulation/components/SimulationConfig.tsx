@@ -370,10 +370,13 @@ const SimulationConfig = observer(function SimulationConfig({ onLocationComplete
               background: '#CFFF40',
               borderRadius: '4px'
             }}
-            onClick={() => {
-              const geometry = simulationStore.selectedLocationGeometry;
-              console.log('위치 설정 완료:', geometry);
-              onLocationComplete?.();
+            onClick={async () => {
+              const result = await simulationStore.openModal('locStart');
+              if (result === 'confirm') {
+                const geometry = simulationStore.selectedLocationGeometry;
+                console.log('위치 설정 완료:', geometry);
+                onLocationComplete?.();
+              }
             }}
           >
             <div

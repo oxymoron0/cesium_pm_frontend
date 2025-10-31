@@ -69,7 +69,19 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
         <Icon
           name="chevron-left"
           className="w-5 h-5 cursor-pointer"
-          onClick={onBack}
+          onClick={async () => {
+            const hasDirty =
+              title.trim() !== "" ||// 시뮬레이션 제목
+              pollutant !== "";// 오염물질
+            if (hasDirty) {
+              const result = await simulationStore.openModal("moveReset");
+              if (result === "confirm") {
+                onBack?.();
+              }
+            } else {
+              onBack?.();
+            }
+          }}
         />
         <SubTitle info="시뮬레이션 실행에 필요한 세부 설정을 입력해주세요.">
           상세설정
@@ -681,7 +693,7 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
             borderRadius: '4px',
             cursor: isFormValid ? 'pointer' : 'not-allowed',
           }}
-          onClick={() => {
+          onClick={async () => {
             if (!isFormValid) return;
 
             const selectedPmType: PMType | undefined =
@@ -730,10 +742,14 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
               },
             };
 
-            console.log('시뮬레이션 실행:', executionData);
+
+            //TODO 대기필요 팝업창(runDup) 추가 필요
+            const result = await simulationStore.openModal("runCustom");
             simulationStore.setPendingData(executionData);
-            simulationStore.openModal();
-            onExecute?.();
+            console.log('시뮬레이션 실행:', executionData);
+            if (result === "confirm") {
+              onExecute?.();
+            }
           }}
         >
           <Icon name="saas" className="w-4 h-4" />
