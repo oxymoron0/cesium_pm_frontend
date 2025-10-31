@@ -255,7 +255,10 @@ const SimulationConfirm = observer(function SimulationConfirm() {
           content: <SummaryCard />,
           cancelText: "취소",
           confirmText: "시뮬레이션 실행",
-          onConfirm: () => simulationStore.confirmModal(),
+          onConfirm: () => {
+            handleExecute();
+            simulationStore.confirmModal()
+          }
         };
 
       case "runDup":
@@ -271,7 +274,10 @@ const SimulationConfirm = observer(function SimulationConfirm() {
           content: <SummaryCard />,
           cancelText: "취소",
           confirmText: "시뮬레이션 실행",
-          onConfirm: () => simulationStore.confirmModal(),
+          onConfirm: () => {
+            handleExecute();
+            simulationStore.confirmModal()
+          }
         };
 
       case "runList":

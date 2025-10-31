@@ -270,7 +270,12 @@ const SimulationRunningList = observer(function SimulationRunningList() {
                 {sim.status === '진행중' && (
                   <div 
                     className="flex items-center justify-center w-auto h-8 cursor-pointer py-1 px-3 rounded-[4px] text-[#FFD040] border border-[#FFD040] bg-black"
-                    onClick={() => {}}
+                    onClick={async () => {
+                      const result = await simulationStore.openModal('stopSim');
+                      if (result === 'confirm') {
+                        //TODO 중지로직 추가해야함
+                      }
+                    }}
                   >
                     분석 중지
                   </div>
