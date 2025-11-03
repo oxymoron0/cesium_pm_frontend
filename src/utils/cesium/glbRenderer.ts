@@ -1,4 +1,4 @@
-import { Entity, ModelGraphics, Cartesian3, Color, ColorBlendMode, HeightReference, HeadingPitchRange, ConstantPositionProperty } from 'cesium'
+import { Entity, ModelGraphics, Cartesian3, Color, ColorBlendMode, HeightReference, HeadingPitchRange, ConstantPositionProperty, Transforms, Matrix4, HeadingPitchRoll, ConstantProperty } from 'cesium'
 import { createDataSource, findDataSource, removeDataSource } from './datasources'
 import { type BusTrajectoryData } from '@/utils/api/busApi'
 
@@ -105,6 +105,55 @@ interface BusAnimation {
 const busAnimations = new Map<string, BusAnimation>()
 
 /**
+ * 두 위치 사이의 heading 계산 (북쪽 기준 시계방향, radians)
+ * @param startPosition 시작 위치 (Cartesian3)
+ * @param targetPosition 목표 위치 (Cartesian3)
+ * @returns heading in radians (0 = 북쪽, π/2 = 동쪽)
+ */
+function calculateHeading(startPosition: Cartesian3, targetPosition: Cartesian3): number {
+  // 1. 방향 벡터 계산
+  const direction = Cartesian3.subtract(targetPosition, startPosition, new Cartesian3())
+
+  // 방향 벡터가 너무 짧으면 기본값 반환 (거의 움직이지 않음)
+  if (Cartesian3.magnitude(direction) < 0.01) {
+    return 0 // 북쪽 방향 기본값
+  }
+
+  Cartesian3.normalize(direction, direction)
+
+  // 2. 시작 위치의 ENU (East-North-Up) 변환 매트릭스 생성
+  const transform = Transforms.eastNorthUpToFixedFrame(startPosition, undefined, new Matrix4())
+
+  // 3. 방향 벡터를 로컬 좌표계로 변환
+  const inverseTransform = Matrix4.inverse(transform, new Matrix4())
+  const localDirection = Matrix4.multiplyByPointAsVector(
+    inverseTransform,
+    direction,
+    new Cartesian3()
+  )
+
+  // 4. heading 계산 (로컬 좌표계에서 x=동쪽, y=북쪽)
+  // atan2(x, y)는 동쪽 기준 반시계방향 각도를 반환
+  const heading = Math.atan2(localDirection.x, localDirection.y)
+
+  return heading
+}
+
+/**
+ * 위치와 heading으로부터 orientation quaternion 생성
+ * @param position 현재 위치 (Cartesian3)
+ * @param heading heading in radians
+ * @returns Quaternion
+ */
+function createOrientationFromHeading(position: Cartesian3, heading: number) {
+  // GLB 모델의 기본 방향을 보정하기 위해 -90도(반시계방향) 회전 적용
+  const adjustedHeading = heading - Math.PI / 2
+  const hpr = new HeadingPitchRoll(adjustedHeading, 0, 0) // pitch=0, roll=0
+  const quaternion = Transforms.headingPitchRollQuaternion(position, hpr)
+  return quaternion
+}
+
+/**
  * 개별 버스를 특정 위치로 애니메이션 이동
  */
 export function animateSingleBus(
@@ -134,6 +183,9 @@ export function animateSingleBus(
 
   const targetPosition = Cartesian3.fromDegrees(targetLongitude, targetLatitude, 0)
 
+  // 이동 방향 heading 계산
+  const movementHeading = calculateHeading(currentPos, targetPosition)
+
   // 간단한 setInterval 기반 애니메이션
   const animation: BusAnimation = {
     startPosition: currentPos,
@@ -152,6 +204,9 @@ export function animateSingleBus(
     if (progress >= 1.0) {
       // 애니메이션 완료
       entity.position = new ConstantPositionProperty(targetPosition)
+      // 최종 위치에서도 orientation 설정
+      const finalOrientation = createOrientationFromHeading(targetPosition, movementHeading)
+      entity.orientation = new ConstantProperty(finalOrientation)
       stopSingleBusAnimation(vehicleNumber)
       return
     }
@@ -165,7 +220,12 @@ export function animateSingleBus(
       new Cartesian3()
     )
 
+    // 위치 업데이트
     entity.position = new ConstantPositionProperty(currentPosition)
+
+    // 현재 위치에서 이동 방향으로 orientation 설정
+    const orientation = createOrientationFromHeading(currentPosition, movementHeading)
+    entity.orientation = new ConstantProperty(orientation)
   }, 16) // ~60fps
 
   return true
