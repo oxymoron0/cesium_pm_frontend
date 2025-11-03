@@ -1,5 +1,7 @@
 // Priority configuration data types
 
+import type { GeoJSONPoint } from "@/utils/api/types";
+
 export interface PriorityConfig {
   date: string;
   time: string;
@@ -15,6 +17,7 @@ export interface VulnerableFacility {
   address: string;
   predictedConcentration: number;
   predictedLevel: 'good' | 'normal' | 'bad' | 'very-bad';
+  geometry: GeoJSONPoint;
 }
 
 // 정류장 측정 데이터
@@ -30,6 +33,7 @@ export interface NearbyStation {
   stationName: string;
   stationId: string;
   measurements: StationMeasurement[];
+  geometry: GeoJSONPoint;
 }
 
 // 근방 도로 데이터

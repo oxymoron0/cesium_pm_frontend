@@ -1,18 +1,18 @@
-import { useEffect, useState } from 'react'
-import { observer } from 'mobx-react-lite'
-import CesiumViewer from '@/components/CesiumViewer'
-import Panel from '@/components/basic/Panel'
-import SimulationConfirm from './components/SimulationConfirm'
-import SimulationConfig from './components/SimulationConfig'
-import SimulationDetailConfig from './components/SimulationDetailConfig'
-import DirectLocationGuide from './components/DirectLocationGuide'
-import { simulationStore } from '@/stores/SimulationStore'
-import type { SimulationView } from './types'
-import TabNavigation from '@/components/basic/TabNavigation'
-import Title from '@/components/basic/Title'
-import SimulationActiveTabList from './components/SimulationActvieTabList'
-import Spacer from '@/components/basic/Spacer'
-import SimulationRunningList from './components/SimulationRunningList'
+import { useEffect, useState } from "react";
+import { observer } from "mobx-react-lite";
+import CesiumViewer from "@/components/CesiumViewer";
+import Panel from "@/components/basic/Panel";
+import SimulationConfirm from "./components/SimulationConfirm";
+import SimulationMain from "./components/SimulationMain";
+import SimulationConfigInfo from "./components/SimulationConfigInfo";
+import SimulationResultSummary from "./components/SimulationResultSummary";
+import DirectLocationGuide from "./components/DirectLocationGuide";
+import { simulationStore } from "@/stores/SimulationStore";
+import { flyToLocation } from "@/utils/cesiumControls";
+import SimulationQuickResult from "./components/SimulationQuickResult";
+import { clearLocationMarker } from "@/utils/cesium/locationMarker";
+import { disableDirectLocationClickHandler } from "@/utils/cesium/directLocationRenderer";
+import SimulationStationHtmlRenderer from "@/components/service/SimulationStationHtmlRenderer";
 
 interface AppProps {
   onCloseMicroApp?: () => void;
@@ -20,107 +20,111 @@ interface AppProps {
 }
 
 const App = observer(function App(props: AppProps) {
-  const [cesiumStatus, setCesiumStatus] = useState<'loading' | 'ready'>('loading')
-  const [activeTab, setActiveTab] = useState(0);
-  const [activeList, setActiveList] = useState('상세설정');
-  const [currentView, setCurrentView] = useState<SimulationView>('config')
+  const [cesiumStatus, setCesiumStatus] = useState<"loading" | "ready">(
+    "loading"
+  );
+
 
   useEffect(() => {
-    // Cesium 초기화 및 상태 감지
     const checkCesiumStatus = () => {
-      const isQiankun = window.__POWERED_BY_QIANKUN__
-      const parentViewer = window.cviewer
+      const isQiankun = window.__POWERED_BY_QIANKUN__;
+      const parentViewer = window.cviewer;
 
       if (isQiankun && parentViewer) {
-        setCesiumStatus('ready')
+        setCesiumStatus("ready");
+        setTimeout(() => {
+          flyToLocation(parentViewer, 129.0545, 35.1598, 3000);
+        }, 500);
       } else if (!isQiankun) {
-        // 독립 모드에서는 CesiumViewer 컴포넌트가 window.cviewer를 설정할 때까지 대기
         const waitForViewer = setInterval(() => {
           if (window.cviewer) {
-            setCesiumStatus('ready')
-            clearInterval(waitForViewer)
+            setCesiumStatus("ready");
+            clearInterval(waitForViewer);
+            setTimeout(() => {
+              flyToLocation(window.cviewer!, 129.0545, 35.1598, 3000);
+            }, 500);
           }
-        }, 100)
+        }, 100);
       }
+    };
+
+    checkCesiumStatus();
+  }, [cesiumStatus]);
+
+  // Clear location marker and disable handlers when leaving config/detailConfig views or switching tabs
+  useEffect(() => {
+    const isConfigView = simulationStore.currentView === "config"
+
+    if (!isConfigView) {
+      clearLocationMarker();
+      disableDirectLocationClickHandler();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [simulationStore.currentView]);
 
-    checkCesiumStatus()
-  }, [cesiumStatus])
-
-  const isQiankun = window.__POWERED_BY_QIANKUN__
+  const isQiankun = window.__POWERED_BY_QIANKUN__;
 
   return (
     <div className="relative w-full h-screen overflow-hidden pm-frontend-scope">
-      {/* Cesium Viewer */}
       {!isQiankun && <CesiumViewer />}
 
-      {/* Direct Location Guide - Top Center */}
-      {cesiumStatus === 'ready' && simulationStore.isDirectLocationMode && (
+      {cesiumStatus === "ready" && simulationStore.isDirectLocationMode && (
         <DirectLocationGuide />
       )}
 
-      {/* Simulation Panel - Left Top */}
-      {cesiumStatus === 'ready' && (
-        <Panel position="left" width="540px" maxHeight="calc(100vh - 160px)">
-          <Title
-            info="시뮬레이션 실행을 위한 설정 페이지입니다."
-            onClose={props.onCloseMicroApp}
-          >
-            시뮬레이션
-          </Title>
-          <TabNavigation
-            tabs={['맞춤실행', '빠른실행']}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-          />
-
-          <Spacer height={16} />
-
-          {activeTab === 0 ? (
-            <>
-            <SimulationActiveTabList 
-              activeList={activeList}
-              setActiveList={setActiveList}
-            />
-              {activeList === '상세설정' ? (
-                <>
-                {currentView === 'config' ? (
-                  <SimulationConfig
-                  onLocationComplete={() => setCurrentView('detailConfig')}
-                  />
-                ) : currentView === 'detailConfig' ? (
-                 <SimulationDetailConfig
-                  // onBack={() => setCurrentView('config')}
-                  onExecute={() => console.log('시뮬레이션 실행')}
-                  />)
-                : null}
-                </>
-              ) : activeList === '실행목록' ? (
-                <SimulationRunningList />
-              ) : null}
-            </>
-          ) 
-          : 
-          <div>
-            빠른실행
-          </div>
-          }
-        </Panel>
+      {cesiumStatus === "ready" &&
+        simulationStore.currentView == "quickResult" && (
+        <SimulationStationHtmlRenderer />
       )}
 
-      {/* Loading State */}
-      {cesiumStatus === 'loading' && (
+      {cesiumStatus === "ready" && 
+        simulationStore.currentView !== "result" && (
+          <Panel
+            position="left"
+            width={
+              simulationStore.currentView === "quick" ||
+              simulationStore.currentView === "quickResult" ||
+              simulationStore.currentView === "running" 
+                ? "720px"
+                : "540px"
+            }
+            maxHeight="calc(100vh - 50px)"
+            allowOverflow={true}
+          >
+            {simulationStore.currentView === "quickResult" ? (
+              <SimulationQuickResult
+                onCloseMicroApp={props.onCloseMicroApp}
+              />
+            ) : (
+              <SimulationMain
+                onCloseMicroApp={props.onCloseMicroApp}
+                dispatch={props.dispatch}
+              />
+            )}
+  
+          </Panel>
+
+        )}
+      
+
+      {cesiumStatus === "loading" && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
           <div className="text-lg text-white">Cesium 초기화 중...</div>
         </div>
       )}
 
-        {/* SimulationConfirm 모달 */}
       {simulationStore.isModalOpen && (
-        <SimulationConfirm onClose={() => simulationStore.closeModal()} />
+        <SimulationConfirm />
+      )}
+
+      {simulationStore.isConfigPopupOpen && (
+        <SimulationConfigInfo onClose={() => simulationStore.closeConfigPopup()} />
+      )}
+      {simulationStore.isResultPopupOpen && (
+        <SimulationResultSummary onClose={() => simulationStore.setCurrentView('running')} />
       )}
     </div>
-  )
+  );
 });
 
-export default App
+export default App;

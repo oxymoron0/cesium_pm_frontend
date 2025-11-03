@@ -28,9 +28,9 @@ const SimulationTestButton = observer(function SimulationTestButton() {
       },
       air_quality: {
         pm_type: 'pm10',
-        stations: [
+        points: [
           {
-            station_name: '연제공용버스차고지',
+            name: '연제공용버스차고지',
             location: {
               longitude: 129.0531938,
               latitude: 35.1852289,
@@ -38,7 +38,7 @@ const SimulationTestButton = observer(function SimulationTestButton() {
             concentration: 45.2,
           },
           {
-            station_name: '초읍고개',
+            name: '초읍고개',
             location: {
               longitude: 129.054089,
               latitude: 35.18547513,
@@ -46,7 +46,7 @@ const SimulationTestButton = observer(function SimulationTestButton() {
             concentration: 42.8,
           },
           {
-            station_name: '개인택시조합',
+            name: '개인택시조합',
             location: {
               longitude: 129.0557105,
               latitude: 35.18678579,
@@ -54,7 +54,7 @@ const SimulationTestButton = observer(function SimulationTestButton() {
             concentration: 38.5,
           },
           {
-            station_name: '부산의료원 정문',
+            name: '부산의료원 정문',
             location: {
               longitude: 129.0589711,
               latitude: 35.18795629,
@@ -62,7 +62,7 @@ const SimulationTestButton = observer(function SimulationTestButton() {
             concentration: 41.3,
           },
           {
-            station_name: '부산의료원',
+            name: '부산의료원',
             location: {
               longitude: 129.0605792,
               latitude: 35.18825674,

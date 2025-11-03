@@ -5,7 +5,12 @@ import Spacer from '@/components/basic/Spacer';
 import Button from '@/components/basic/Button';
 import DongDropdown from './DongDropdown';
 import NearbyStationList from './NearbyStationList';
+import { renderNearbyStations } from '@/utils/cesium/nearbyStationRenderer';
+import { renderVulnerableFacilities, clearVulnerableFacilities } from '@/utils/cesium/nearbyFacilitiesRenderer';
 import { priorityStore } from '@/stores/PriorityStore';
+import { administrativeStore } from '@/stores/AdministrativeStore';
+import { renderAdministrativeBoundary, clearAdministrativeBoundary } from '@/utils/cesium/administrativeRenderer';
+import { isGeometrySuccess } from '@/types/administrative';
 import type { PriorityConfig, VulnerableFacility } from '../types';
 
 interface PriorityResultProps {
@@ -22,7 +27,11 @@ const mockFacilities: VulnerableFacility[] = [
     name: '백병원',
     address: '부산 부산진구 복지로 75',
     predictedConcentration: 160,
-    predictedLevel: 'very-bad'
+    predictedLevel: 'very-bad',
+    geometry: {
+      type: 'Point',
+      coordinates: [129.021222277, 35.146487166]
+    }
   },
   {
     id: '2',
@@ -30,7 +39,11 @@ const mockFacilities: VulnerableFacility[] = [
     name: '당감초등학교',
     address: '부산 부산진구 당감로 22-5',
     predictedConcentration: 135,
-    predictedLevel: 'bad'
+    predictedLevel: 'bad',
+    geometry: {
+      type: 'Point',
+      coordinates: [129.039945403, 35.164115172]
+    }
   },
   {
     id: '3',
@@ -38,7 +51,11 @@ const mockFacilities: VulnerableFacility[] = [
     name: '초읍초등학교',
     address: '부산 부산진구 성지로 104번길 26',
     predictedConcentration: 58,
-    predictedLevel: 'normal'
+    predictedLevel: 'normal',
+    geometry: {
+      type: 'Point',
+      coordinates: [129.054482652, 35.180499832]
+    }
   },
   {
     id: '4',
@@ -46,7 +63,11 @@ const mockFacilities: VulnerableFacility[] = [
     name: '부전역',
     address: '부산 부산진구 부전로 181',
     predictedConcentration: 55,
-    predictedLevel: 'normal'
+    predictedLevel: 'normal',
+    geometry: {
+      type: 'Point',
+      coordinates: [129.059569753, 35.164777143]
+    }
   },
   {
     id: '5',
@@ -54,7 +75,11 @@ const mockFacilities: VulnerableFacility[] = [
     name: '범내골역',
     address: '부산 부산진구 중앙대로 612',
     predictedConcentration: 48,
-    predictedLevel: 'normal'
+    predictedLevel: 'normal',
+    geometry: {
+      type: 'Point',
+      coordinates: [129.060004982, 35.147231683]
+    }
   }
 ];
 
@@ -93,14 +118,88 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
   // Store에 config 설정
   useEffect(() => {
-    priorityStore.setConfig(config);
+    const initialize = async () => {
+      priorityStore.setConfig(config);
+
+      // 행정구역 데이터 초기화
+      if (administrativeStore.provinces.length === 0) {
+        await administrativeStore.loadProvinces();
+      }
+      if (!administrativeStore.selectedProvinceCode) {
+        await administrativeStore.selectProvince('26');
+      }
+      if (!administrativeStore.selectedDistrictCode) {
+        await administrativeStore.selectDistrict('230');
+      }
+
+      // config.dong 값이 없으면 "전체"로 설정
+      if (!config.dong) {
+        priorityStore.updateDong('전체');
+      }
+    };
+
+    initialize();
 
     return () => {
       priorityStore.closeDropdown();
+      clearAdministrativeBoundary();
+      clearVulnerableFacilities();
     };
   }, [config]);
 
-  const toggleFacility = (id: string) => {
+  // 읍면동 드롭다운 선택에 따라 경계 렌더링
+  useEffect(() => {
+    const renderBoundary = async () => {
+      const selectedDong = priorityStore.selectedDong;
+
+      // Clear existing boundary
+      clearAdministrativeBoundary();
+
+      if (!administrativeStore.selectedDistrictCode) {
+        return;
+      }
+
+      // "전체" 선택 시 부산진구 경계 표시
+      if (selectedDong === '전체') {
+        try {
+          const response = await administrativeStore.loadGeometry({
+            province_code: '26',
+            district_code: '230'
+          });
+
+          if (isGeometrySuccess(response)) {
+            renderAdministrativeBoundary(response.geom, response.full_name);
+          }
+        } catch (error) {
+          console.error('[PriorityResult] Failed to render district boundary:', error);
+        }
+      } else {
+        // 특정 읍면동 선택 시 해당 경계 표시
+        const neighborhood = administrativeStore.neighborhoods.find(n => n.name === selectedDong);
+        if (neighborhood) {
+          try {
+            const response = await administrativeStore.loadGeometry({
+              province_code: '26',
+              district_code: '230',
+              neighborhood_code: neighborhood.code.substring(5)
+            });
+
+            if (isGeometrySuccess(response)) {
+              renderAdministrativeBoundary(response.geom, response.full_name);
+            }
+          } catch (error) {
+            console.error('[PriorityResult] Failed to render neighborhood boundary:', error);
+          }
+        }
+      }
+    };
+
+    renderBoundary();
+    renderVulnerableFacilities(mockFacilities);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priorityStore.selectedDong]);
+
+  const toggleFacility = async (id: string) => {
     const newSet = new Set(selectedFacilities);
     if (newSet.has(id)) {
       newSet.delete(id);
@@ -111,6 +210,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
     // Store의 선택 상태도 업데이트 (주변 정류장 표시용)
     priorityStore.toggleFacilitySelection(id);
+    renderNearbyStations(priorityStore.selectedStations);
   };
 
   const toggleAll = () => {
@@ -127,6 +227,21 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
         }
       });
     }
+  };
+
+  // 읍면동 드롭다운 옵션 생성
+  const getDongOptions = () => {
+    const options = [{ value: '전체', label: '전체' }];
+
+    if (administrativeStore.neighborhoods.length > 0) {
+      const dongOptions = administrativeStore.neighborhoods.map(n => ({
+        value: n.name,
+        label: n.name
+      }));
+      options.push(...dongOptions);
+    }
+
+    return options;
   };
 
   return (
@@ -189,7 +304,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
           {/* 동 드롭다운 */}
           <DongDropdown
             selectedValue={priorityStore.selectedDong}
-            options={priorityStore.getDongOptions()}
+            options={getDongOptions()}
             isOpen={priorityStore.isDropdownOpen}
             onToggle={() => priorityStore.toggleDropdown()}
             onSelect={(value) => priorityStore.updateDong(value)}
