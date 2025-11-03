@@ -1,5 +1,6 @@
-import { Entity, ModelGraphics, Cartesian3, ColorBlendMode, HeightReference, ConstantPositionProperty, Cartographic, sampleTerrainMostDetailed } from 'cesium'
+import { Entity, ModelGraphics, Cartesian3, ColorBlendMode, HeightReference, ConstantPositionProperty, Cartographic, sampleTerrainMostDetailed, Color } from 'cesium'
 import { createDataSource, findDataSource, removeDataSource } from './datasources'
+import { flyToStationSmooth } from './cameraUtils'
 
 const DATASOURCE_NAME = 'simulation_glb_result'
 
@@ -26,7 +27,12 @@ export interface SimulationGlbData {
  * 순차 렌더링 옵션
  */
 export interface SequentialRenderOptions {
-  delayMs?: number              // Delay between each model (default: 50ms)
+  totalCount: number            // Total number of GLB files
+  centerLongitude: number       // Center longitude
+  centerLatitude: number        // Center latitude
+  resultPath: string            // Result path (e.g., 'finedust')
+  delayMs?: number              // Delay between each model (default: 500ms)
+  signal?: AbortSignal          // AbortSignal for cancellation
   onProgress?: (current: number, total: number) => void  // Progress callback
   onComplete?: () => void       // Completion callback
 }
@@ -99,6 +105,7 @@ function createGlbEntity(data: SimulationGlbData): Entity {
     longitude,
     latitude,
     height,
+    color = '#888888', // 기본값: 회색
   } = data
 
   //샘플 바람길이 잘안보여서 스타일 조정
@@ -108,10 +115,11 @@ function createGlbEntity(data: SimulationGlbData): Entity {
     position: new ConstantPositionProperty(Cartesian3.fromDegrees(longitude, latitude, height)),
     model: new ModelGraphics({
       uri: glbUrl,
-      scale: 10.0,
-      minimumPixelSize: 128,
-      maximumScale: 256,
-      colorBlendMode: ColorBlendMode.HIGHLIGHT,
+      scale: 1.0,
+      //minimumPixelSize: 128,
+      //maximumScale: 256,
+      color: Color.fromCssColorString(color),
+      colorBlendMode: ColorBlendMode.REPLACE,
       heightReference: HeightReference.NONE,
     })
   })
@@ -121,47 +129,88 @@ function createGlbEntity(data: SimulationGlbData): Entity {
  * GLB 모델을 순차적으로 렌더링 (애니메이션 효과)
  */
 export async function renderSimulationGlbsSequentially(
-  glbDataList: SimulationGlbData[],
-  options: SequentialRenderOptions = {}
+  options: SequentialRenderOptions
 ): Promise<void> {
   const viewer = getViewer()
   if (!viewer) return
 
-  const { delayMs = 5, onProgress, onComplete } = options
+  const {
+    totalCount,
+    centerLongitude,
+    centerLatitude,
+    resultPath,
+    delayMs = 500,
+    signal,
+    onProgress,
+    onComplete
+  } = options
+
+  const basePath = import.meta.env.VITE_BASE_PATH || '/'
+
+  // 카메라를 GLB 위치로 이동
+  flyToStationSmooth(centerLongitude, centerLatitude, 4000, 0)
 
   // 기존 DataSource 제거 후 새로 생성
   removeDataSource(DATASOURCE_NAME)
   const dataSource = createDataSource(DATASOURCE_NAME)
 
-  // 터레인 높이 샘플링 (렌더링 전 일괄 처리)
-  await sampleTerrainHeights(glbDataList)
+  // 터레인 높이 샘플링 (한 번만 수행)
+  let terrainHeight = 0
+  const key = `${centerLongitude.toFixed(6)}_${centerLatitude.toFixed(6)}`
 
-  // 순차적으로 Entity 추가
-  for (let i = 0; i < glbDataList.length; i++) {
-    const data = glbDataList[i]
+  // 캐시 확인
+  if (terrainHeightCache.has(key)) {
+    terrainHeight = terrainHeightCache.get(key) || 0
+  } else {
+    // 터레인 샘플링
+    const dummyData = { longitude: centerLongitude, latitude: centerLatitude }
+    await sampleTerrainHeights([dummyData as SimulationGlbData])
+    terrainHeight = getCachedTerrainHeight(centerLongitude, centerLatitude)
+  }
 
-    // 터레인 높이 + 추가 높이 (600m) 적용
-    const terrainHeight = getCachedTerrainHeight(data.longitude, data.latitude)
-    const entityData = {
-      ...data,
-      height: terrainHeight + 600
+  // 순차적으로 Entity 교체 (즉석 생성)
+  for (let i = 1; i <= totalCount; i++) {
+    // 취소 신호 확인
+    if (signal?.aborted) {
+      console.log(`[simulationGlbRenderer] Rendering aborted at ${i}/${totalCount}`)
+      return
     }
 
-    const entity = createGlbEntity(entityData)
+    const paddedNumber = String(i).padStart(4, '0')
+    const glbUrl = `${basePath}${resultPath}/Finedust_${paddedNumber}.glb`
+
+    // GLB 데이터 즉석 생성
+    const glbData: SimulationGlbData = {
+      id: `windroad_${paddedNumber}`,
+      glbUrl: glbUrl,
+      longitude: centerLongitude,
+      latitude: centerLatitude,
+      height: terrainHeight + 100,
+      color: '#888888',
+    }
+
+    // 이전 entity 모두 제거
+    dataSource.entities.removeAll()
+
+    // 새로운 entity 추가
+    const entity = createGlbEntity(glbData)
     dataSource.entities.add(entity)
 
-    // Progress callback
+    // 렌더링 중인 GLB 파일명 출력
+    console.log(`[simulationGlbRenderer] Rendering ${i}/${totalCount}: ${glbUrl}`)
+
+    // Progress callback (실시간 업데이트)
     if (onProgress) {
-      onProgress(i + 1, glbDataList.length)
+      onProgress(i, totalCount)
     }
 
-    // 다음 모델까지 대기 (마지막 모델은 대기 불필요)
-    if (i < glbDataList.length - 1) {
+    // delay가 0이 아닐 때만 대기
+    if (delayMs > 0 && i < totalCount) {
       await new Promise(resolve => setTimeout(resolve, delayMs))
     }
   }
 
-  console.log(`[simulationGlbRenderer] Sequentially rendered ${glbDataList.length} GLB models`)
+  console.log(`[simulationGlbRenderer] Sequentially rendered ${totalCount} GLB models`)
 
   // Completion callback
   if (onComplete) {
@@ -187,31 +236,3 @@ export function getSimulationGlbCount(): number {
 }
 
 
-/**
- * 하드코딩된 GLB 데이터 생성 (백엔드 작업 전 임시)
- * public/openfoam/Windroad_0001.glb ~ Windroad_0666.glb
- *
- * @param centerLongitude - 중심 경도 (기본값: 129.0634)
- * @param centerLatitude - 중심 위도 (기본값: 35.1598)
- */
-export function generateGlbData(
-  centerLongitude: number = 129.0634,
-  centerLatitude: number = 35.1598,
-): SimulationGlbData[] {
-  const basePath = import.meta.env.VITE_BASE_PATH || '/'
-  const glbDataList: SimulationGlbData[] = []
-  const resultPath = 'openfoam'//simulationStore.simulationDetail?.resultPath;
-  const totalCount = 666; //simulationStore.simulationDetail?.glbCount ?
-  for (let i = 1; i <= totalCount; i++) {
-    const paddedNumber = String(i).padStart(4, '0')
-
-    glbDataList.push({
-      id: `windroad_${paddedNumber}`,
-      glbUrl: `${basePath}${resultPath}/Windroad_${paddedNumber}.glb`,
-      longitude: centerLongitude,
-      latitude: centerLatitude,
-    })
-  }
-
-  return glbDataList
-}

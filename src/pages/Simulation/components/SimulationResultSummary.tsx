@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Panel from '@/components/basic/Panel';
 import Title from '@/components/basic/Title';
 import Spacer from '@/components/basic/Spacer';
@@ -14,7 +14,6 @@ import {
 } from 'recharts';
 import { simulationStore } from '@/stores/SimulationStore';
 import {
-  generateGlbData,
   renderSimulationGlbsSequentially,
   clearSimulationGlbs,
   getSimulationGlbCount
@@ -34,6 +33,7 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
   const [isImpactExpanded, setIsImpactExpanded] = useState(true);
   const [isRenderingGlb, setIsRenderingGlb] = useState(false);
   const [renderProgress, setRenderProgress] = useState<{ current: number; total: number } | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // 시뮬레이션 발생 위치 좌표 (첫 번째 측정소 위치)
   const firstPoint = simulationDetail?.airQualityData?.points[0];
@@ -47,6 +47,10 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
     renderLocationMarker(centerLng, centerLat);
     //handleRenderGlb();
     return () => {
+      // 렌더링 중단
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
       clearLocationMarker();
       clearSimulationGlbs();
     };
@@ -76,16 +80,26 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
 
   // GLB 렌더링 핸들러
   const handleRenderGlb = async () => {
+    // 이전 렌더링 취소
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // 새로운 AbortController 생성
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
     setIsRenderingGlb(true);
-    setRenderProgress({ current: 0, total: 666 });
+    setRenderProgress({ current: 0, total: 101 });
 
     try {
-      // GLB 데이터 생성
-      const glbDataList = generateGlbData(centerLng, centerLat);
-
-      // 순차적으로 렌더링 (10ms 간격)
-      await renderSimulationGlbsSequentially(glbDataList, {
-        delayMs: 10,
+      // 순차적으로 렌더링 (즉석 생성 방식)
+      await renderSimulationGlbsSequentially({
+        totalCount: 101,
+        centerLongitude: centerLng,
+        centerLatitude: centerLat,
+        resultPath: 'finedust',
+        signal: abortController.signal,
         onProgress: (current, total) => {
           setRenderProgress({ current, total });
         },
@@ -98,6 +112,7 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
       console.error('[SimulationResultSummary] GLB rendering failed:', error);
     } finally {
       setIsRenderingGlb(false);
+      abortControllerRef.current = null;
     }
   };
 
