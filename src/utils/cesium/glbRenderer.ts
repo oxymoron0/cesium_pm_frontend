@@ -4,8 +4,13 @@ import { type BusTrajectoryData } from '@/utils/api/busApi'
 
 const basePath = import.meta.env.VITE_BASE_PATH || '/';
 
+/**
+ * 노선 번호에 따른 GLB 모델 URL 생성
+ */
+function getBusModelUrl(routeName: string): string {
+  return `${basePath}BusanBus_num${routeName}.glb`
+}
 
-const GLB_MODEL_URL = `${basePath}BusanBus_num10.glb`
 const DATASOURCE_NAME = 'bus_models'
 
 // 노선별 색상 매핑
@@ -54,7 +59,7 @@ export async function renderBusModels(busData: BusTrajectoryData[]): Promise<voi
       name: `Bus ${bus.vehicle_number} (Route ${bus.route_name})`,
       position: new ConstantPositionProperty(Cartesian3.fromDegrees(longitude, latitude, 0)),
       model: new ModelGraphics({
-        uri: GLB_MODEL_URL,
+        uri: getBusModelUrl(bus.route_name),
         scale: 1,
         minimumPixelSize: 48,
         maximumScale: 48,
