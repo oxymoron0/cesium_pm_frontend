@@ -93,8 +93,8 @@ const SimulationConfirm = observer(function SimulationConfirm() {
   };
 
   const renderWeather = () => {
-    const wd = dataForConfirm?.weather?.wind_direction_10m;
-    const ws = dataForConfirm?.weather?.wind_speed_10m;
+    const wd = dataForConfirm?.weather?.wind_direction_1m;
+    const ws = dataForConfirm?.weather?.wind_speed_1m;
     return wd != null || ws != null ? (
       <>
         {wd != null && <span>(풍향) {wd}° </span>}
