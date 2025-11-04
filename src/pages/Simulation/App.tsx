@@ -7,6 +7,7 @@ import SimulationMain from "./components/SimulationMain";
 import SimulationConfigInfo from "./components/SimulationConfigInfo";
 import SimulationResultSummary from "./components/SimulationResultSummary";
 import DirectLocationGuide from "./components/DirectLocationGuide";
+import SimulationQuickGuide from "./components/SimulationQuickGuide";
 import { simulationStore } from "@/stores/SimulationStore";
 import { flyToLocation } from "@/utils/cesiumControls";
 import SimulationQuickResult from "./components/SimulationQuickResult";
@@ -70,6 +71,10 @@ const App = observer(function App(props: AppProps) {
 
       {cesiumStatus === "ready" && simulationStore.isDirectLocationMode && (
         <DirectLocationGuide />
+      )}
+
+      {cesiumStatus === "ready" && simulationStore.isSimulationQuickGuideMode && (
+        <SimulationQuickGuide />
       )}
 
       {cesiumStatus === "ready" &&

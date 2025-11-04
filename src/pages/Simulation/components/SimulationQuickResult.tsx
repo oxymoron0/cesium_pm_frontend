@@ -112,6 +112,8 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
 
   // 빠른 폴링(60fps)로 CESIUM 선택 상태 반영
   useEffect(() => {
+    //가이드 문구 active
+    simulationStore.isSimulationQuickGuideMode = true;
     const intervalId = setInterval(() => {
       const raw = getSelectedSimulationStationId();
       const normalized =
@@ -124,7 +126,11 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
           : String(raw);
       setSelectedStationId(normalized);
     }, 16);
-    return () => clearInterval(intervalId);
+    return () => {
+      clearInterval(intervalId);
+      //가이드 문구 active false
+      simulationStore.isSimulationQuickGuideMode = false;
+    };
   }, []);
 
   useEffect(() => {

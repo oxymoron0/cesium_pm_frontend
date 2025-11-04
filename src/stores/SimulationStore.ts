@@ -314,6 +314,8 @@ class SimulationStore {
   paginationQuick: SimulationListPagination | null = null;
   selectedsimulationQuick: SimulationQuckData | null = null;
   isLoadingQuickList: boolean = false;
+  // 빠른실행 결과 가이드창 활성화
+  isSimulationQuickGuideMode: boolean = false;
 
   // 시뮬레이션 상세 정보
   selectedSimulationUuid: string | null = null;
