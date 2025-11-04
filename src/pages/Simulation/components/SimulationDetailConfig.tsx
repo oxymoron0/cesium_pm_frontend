@@ -83,9 +83,9 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
             }
           }}
         />
-        <SubTitle info="시뮬레이션 실행에 필요한 세부 설정을 입력해주세요.">
+        <div className="font-bold text-lg text-white py-[10px] px-0"> 
           상세설정
-        </SubTitle>
+        </div>
       </div>
       <Divider color="bg-[#C3C3C3]" />
 
@@ -107,25 +107,8 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
             >
               시뮬레이션 제목
             </div>
-            <Info>
-              <>
-                <div
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '18px',
-                    fontWeight: '700',
-                    lineHeight: 'normal',
-                    color: '#FFF'
-                  }}
-                >
-                  시뮬레이션 제목
-                </div>
-                <div style={{ width: '100%', height: '1px', background: '#C4C6C6' }} />
-                <div className="flex gap-[2px] items-start" style={{ fontFamily: 'Pretendard', fontSize: '14px', fontWeight: '400', lineHeight: '18px', color: '#A6A6A6' }}>
-                  <span style={{ fontWeight: '500', flexShrink: 0 }}>※</span>
-                  <span style={{ flex: '1 0 0' }}>시뮬레이션 구분용 제목을 입력하세요.</span>
-                </div>
-              </>
+            <Info infoTitle="시뮬레이션 제목">
+              ※ 시뮬레이션 구분용 제목을 입력하세요.
             </Info>
           </div>
           <div className="relative" style={{ width: '360px' }}>
@@ -175,25 +158,8 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
             >
               오염 물질
             </div>
-            <Info>
-              <>
-                <div
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '18px',
-                    fontWeight: '700',
-                    lineHeight: 'normal',
-                    color: '#FFF'
-                  }}
-                >
-                  오염 물질
-                </div>
-                <div style={{ width: '100%', height: '1px', background: '#C4C6C6' }} />
-                <div className="flex gap-[2px] items-start" style={{ fontFamily: 'Pretendard', fontSize: '14px', fontWeight: '400', lineHeight: '18px', color: '#A6A6A6' }}>
-                  <span style={{ fontWeight: '500', flexShrink: 0 }}>※</span>
-                  <span style={{ flex: '1 0 0' }}>시뮬레이션할 오염물질을 선택하고 해당 물질의 예상 농도를 입력하세요.</span>
-                </div>
-              </>
+            <Info infoTitle="오염 물질">
+              ※ 시뮬레이션할 오염물질을 선택하고 해당 물질의 예상 농도를 입력하세요.
             </Info>
           </div>
           <div className="flex gap-3" style={{ width: '360px' }}>
@@ -295,25 +261,8 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
             >
               발생 위치
             </div>
-            <Info>
-              <>
-                <div
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '18px',
-                    fontWeight: '700',
-                    lineHeight: 'normal',
-                    color: '#FFF'
-                  }}
-                >
-                  발생 위치
-                </div>
-                <div style={{ width: '100%', height: '1px', background: '#C4C6C6' }} />
-                <div className="flex gap-[2px] items-start" style={{ fontFamily: 'Pretendard', fontSize: '14px', fontWeight: '400', lineHeight: '18px', color: '#A6A6A6' }}>
-                  <span style={{ fontWeight: '500', flexShrink: 0 }}>※</span>
-                  <span style={{ flex: '1 0 0' }}>선택한 위치를 기준으로 측정이 진행됩니다. <br /> 위치를 변경하려면 이전 단계로 돌아가 주세요.</span>
-                </div>
-              </>
+            <Info infoTitle="발생 위치">
+              <span style={{ flex: '1 0 0' }}>※ 선택한 위치를 기준으로 측정이 진행됩니다. <br /> 위치를 변경하려면 이전 단계로 돌아가 주세요.</span>
             </Info>
           </div>
           <div
@@ -457,25 +406,8 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
             >
               기상 조건
             </div>
-            <Info>
-              <>
-                <div
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '18px',
-                    fontWeight: '700',
-                    lineHeight: 'normal',
-                    color: '#FFF'
-                  }}
-                >
-                  기상 조건
-                </div>
-                <div style={{ width: '100%', height: '1px', background: '#C4C6C6' }} />
-                <div className="flex gap-[2px] items-start" style={{ fontFamily: 'Pretendard', fontSize: '14px', fontWeight: '400', lineHeight: '18px', color: '#A6A6A6' }}>
-                  <span style={{ fontWeight: '500', flexShrink: 0 }}>※</span>
-                  <span style={{ flex: '1 0 0' }}>시뮬레이션 시점의 기상 조건을 직접 입력하거나, 현재 기상 정보를 적용할 수 있습니다.</span>
-                </div>
-              </>
+            <Info infoTitle="기상 조건">
+              ※ 시뮬레이션 시점의 기상 조건을 직접 입력하거나, 현재 기상 정보를 적용할 수 있습니다.
             </Info>
           </div>
           <div className="flex flex-col gap-1" style={{ width: '360px' }}>
@@ -594,25 +526,8 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
             >
               공개 설정
             </div>
-            <Info>
-              <>
-                <div
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '18px',
-                    fontWeight: '700',
-                    lineHeight: 'normal',
-                    color: '#FFF'
-                  }}
-                >
-                  공개 설정
-                </div>
-                <div style={{ width: '100%', height: '1px', background: '#C4C6C6' }} />
-                <div className="flex gap-[2px] items-start" style={{ fontFamily: 'Pretendard', fontSize: '14px', fontWeight: '400', lineHeight: '18px', color: '#A6A6A6' }}>
-                  <span style={{ fontWeight: '500', flexShrink: 0 }}>※</span>
-                  <span style={{ flex: '1 0 0' }}>공개 설정 시 시뮬레이션 설정값이 다른 사용자에게도 공유됩니다. <br /> [실행목록 &gt; 맞춤실행 &gt; 내 시뮬레이션] 에서 언제든 수정할 수 있습니다.</span>
-                </div>
-              </>
+            <Info infoTitle="공개 설정">
+              <span style={{ flex: '1 0 0' }}>※ 공개 설정 시 시뮬레이션 설정값이 다른 사용자에게도 공유됩니다. <br /> [실행목록 &gt; 맞춤실행 &gt; 내 시뮬레이션] 에서 언제든 수정할 수 있습니다.</span>
             </Info>
           </div>
           <div className="flex gap-3" style={{ width: '360px' }}>

@@ -9,9 +9,10 @@ interface TitleProps {
   onMinimize?: () => void;
   onBack?: () => void;
   dividerColor?: string;
+  infoTitle? : React.ReactNode;
 }
 
-export default function Title({ children, info, onClose, onMinimize, onBack, dividerColor = "bg-[#FFD040]" }: TitleProps) {
+export default function Title({ children, info, onClose, onMinimize, onBack, dividerColor = "bg-[#FFD040]", infoTitle }: TitleProps) {
   return (
     <div className="flex flex-col w-full">
       <div className="flex items-center self-stretch justify-between mb-2 font-pretendard-h1">
@@ -25,7 +26,7 @@ export default function Title({ children, info, onClose, onMinimize, onBack, div
             />
           )}
           {children}
-          {info && <Info>{info}</Info>}
+          {info && <Info infoTitle={infoTitle}>{info}</Info>}
         </div>
 
         {/* 오른쪽: Minimize + Close 아이콘 */}

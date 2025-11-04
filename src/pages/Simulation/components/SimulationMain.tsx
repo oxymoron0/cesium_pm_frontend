@@ -21,7 +21,8 @@ const SimulationMain = observer(function App(props: SimulationMainProps) {
   return (
     <>
       <Title
-        info="시뮬레이션 실행을 위한 설정 페이지입니다."
+        info="※ 시뮬레이션 실행을 위한 설정 페이지입니다."
+        infoTitle="시뮬레이션"
         onClose={() => simulationStore.setCurrentView("config")}
       >
         시뮬레이션

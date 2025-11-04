@@ -118,7 +118,7 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
 
   return (
     <Panel width="540px" maxHeight="calc(100vh - 160px)" >
-      <Title onClose={onClose}>
+      <Title onClose={onClose} infoTitle="시뮬레이션 결과 요약" info="※ 시뮬레이션 요청 일시와 오염물질 최대 확산 반경, 총 영향 면적, 영향 시설물 수를 확인할 수 있습니다. 영향 시설물 수의 경우 나쁨 등급 이상 면적에 포함된 취약시설 수를 의미합니다.">
         시뮬레이션 결과 요약
       </Title>
 

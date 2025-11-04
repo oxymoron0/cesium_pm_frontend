@@ -147,7 +147,7 @@ const SimulationConfig = observer(function SimulationConfig({ onLocationComplete
               className="w-5 h-5 cursor-pointer"
               onClick={() => simulationStore.disableDirectLocationMode()}
             />
-            <SubTitle info="지도를 클릭하여 시뮬레이션할 위치를 직접 지정할 수 있습니다.">
+            <SubTitle info="※ 지도를 클릭하여 시뮬레이션할 위치를 직접 지정할 수 있습니다." infoTitle="직접 위치 지정">
               직접 위치 지정
             </SubTitle>
           </div>
@@ -183,7 +183,7 @@ const SimulationConfig = observer(function SimulationConfig({ onLocationComplete
       ) : (
         <>
           {/* 주소 조회 섹션 */}
-          <SubTitle info="주소를 조회하거나 지도를 클릭하여 시뮬레이션할 위치를 지정할 수 있습니다.">주소 조회</SubTitle>
+          <SubTitle info="※ 주소를 조회하거나 지도를 클릭하여 시뮬레이션할 위치를 지정할 수 있습니다." infoTitle="주소 조회">주소 조회</SubTitle>
           <Divider color="bg-[#C3C3C3]" />
 
           <Spacer height={16} />
