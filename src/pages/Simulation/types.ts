@@ -51,6 +51,7 @@ export type SimulationView = 'config' | 'detailConfig' | 'running' | 'result' | 
 export type SimulationConfirmType =   | "moveReset" //이동시 초기화 컨펌
   | "locStart" //위치 지정확인 컨펌
   | "stopSim" //시뮬레이션 분석 중지 컨펌
+  | "startSim" //시뮬레이션 분석 중지 컨펌
   | "delSim" //시뮬레이션 삭제 컨펌
   | "runCustom" //상세 설정 시뮬레이션 시작 컨펌
   | "runDup" //상세 설정 시뮬레이션 중복 있을시에 나오는 컨펌

@@ -218,6 +218,25 @@ const SimulationConfirm = observer(function SimulationConfirm() {
           onConfirm: () => simulationStore.confirmModal(),
         };
 
+      case "startSim":
+        return {
+          open: true,
+          title: "시뮬레이션 분석을 시작하시겠습니까?",
+          description: (
+            <>
+              <div className="text-[rgba(166,166,166,1)]">
+                시작 시 해당 시뮬레이션 진행이 시작되며,
+                <br />
+                임시텍스트1
+                <br />임시텍스트2
+              </div>
+            </>
+          ),
+          cancelText: "취소",
+          confirmText: "시작",
+          onConfirm: () => simulationStore.confirmModal(),
+        };
+
       case "delSim":
         return {
           open: true,
