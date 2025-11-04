@@ -7,10 +7,11 @@ import type {
   SimulationListPagination,
   SimulationDetail,
   SimulationQuckData,
+  SimulationInProgressResponse,
   PMType,
   Weather
 } from '../types/simulation_request_types';
-import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI } from '@/utils/api';
+import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck } from '@/utils/api';
 import { userStore } from './UserStore';
 
 // ============================================================================
@@ -643,6 +644,25 @@ class SimulationStore {
    */
   get weatherInfoLabel(): string {
     return `현재 기상 정보 적용 (기상청, ${this.weatherLocation}, ${this.weatherTimestamp} 기준)`;
+  }
+
+  // ============================================================================
+  // 진행중인 시뮬레이션 확인
+  // ============================================================================
+
+  /**
+   * 진행중인 시뮬레이션 확인
+   * POST /api/v1/simulation/check
+   */
+  async runSimulationCheck(): Promise<SimulationInProgressResponse | null> {
+    try {
+      const response = await runSimulationCheck();
+      
+      return response;
+    } catch (error) {
+      console.error('[SimulationStore] Simulation runSimulationCheck failed:', error);
+      return null;
+    }
   }
 
   // ============================================================================

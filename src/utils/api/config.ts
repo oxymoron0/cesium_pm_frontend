@@ -42,6 +42,7 @@ export const API_PATHS = {
   // 시뮬레이션 API (PM Backend)
   SIMULATION_PROCESS: getApiPath('api/v1/simulation/process'),
   SIMULATION_LIST: getApiPath('api/v1/simulation/list'),
+  SIMULATION_CHECK: getApiPath('api/v1/simulation/check'),
   SIMULATION_QUICK_LIST: getApiPath('api/v1/simulation_auto/list'),
   SIMULATION_DETAIL: (uuid: string) => getApiPath(`api/v1/simulation/${uuid}`),
   SIMULATION_DELETE: getApiPath(`/api/v1/simulation`),

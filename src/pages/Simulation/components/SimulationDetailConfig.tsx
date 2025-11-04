@@ -9,6 +9,7 @@ import Checkbox from './Checkbox';
 import { simulationStore } from '@/stores/SimulationStore';
 import { renderLocationMarker } from '@/utils/cesium/locationMarker';
 import type { PMType, SimulationRequest, Weather } from '@/types/simulation_request_types';
+import type { SimulationConfirmType } from '../types';
 import { userStore } from '@/stores/UserStore';
 
 interface SimulationDetailConfigProps {
@@ -627,9 +628,18 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
               },
             };
 
+            //simulationCheck == false : 선행 작업 없음
+            //simulationCheck == true : 이미 선행 작업 있음
+            const simulationCheck = await simulationStore.runSimulationCheck();
 
-            //TODO 대기필요 팝업창(runDup) 추가 필요
-            const result = await simulationStore.openModal("runCustom");
+            let modalType: SimulationConfirmType = "runCustom";
+
+            if (!simulationCheck?.data.in_progress == false) {
+              modalType = "runDup";
+            }
+
+            const result = await simulationStore.openModal(modalType);
+
             simulationStore.setPendingData(executionData);
             console.log('시뮬레이션 실행:', executionData);
             if (result === "confirm") {

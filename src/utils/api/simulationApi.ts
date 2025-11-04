@@ -13,6 +13,7 @@ import type {
   SimulationQuckDataResponse,
   PMType,
   Weather,
+  SimulationInProgressResponse,
 } from '../../types/simulation_request_types';
 
 /**
@@ -50,6 +51,30 @@ export async function submitSimulation(
       '[submitSimulation] API 호출 실패:',
       error
     );
+    throw error;
+  }
+}
+
+/**
+ * 진행중인 시뮬레이션 체크
+ * GET /api/v1/simulation/check
+ */
+export async function runSimulationCheck(
+): Promise<SimulationInProgressResponse> {
+  try {
+
+    const url = `${API_PATHS.SIMULATION_CHECK}`;
+    const response = await get<SimulationInProgressResponse>(url);
+
+    if (!response.ok) {
+      throw new Error(
+        `Simulation list API failed with status ${response.status}`
+      );
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error("[getSimulationList] API 호출 실패:", error);
     throw error;
   }
 }
