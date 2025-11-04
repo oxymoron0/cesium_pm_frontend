@@ -3,7 +3,6 @@ import { observer } from 'mobx-react-lite';
 import { reaction } from 'mobx';
 // import Title from '@/components/basic/Title';
 // import TabNavigation from '@/components/basic/TabNavigation';
-import SubTitle from '@/components/basic/SubTitle';
 import Divider from '@/components/basic/Divider';
 import Spacer from '@/components/basic/Spacer';
 import Icon from '@/components/basic/Icon';

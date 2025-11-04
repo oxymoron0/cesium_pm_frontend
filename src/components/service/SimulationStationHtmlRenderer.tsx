@@ -126,7 +126,7 @@ const SimulationStationHtmlRenderer = () => {
             if (!station) return;
 
             const [lon, lat] = station.location.coordinates;
-            const viewer = (window as any).cviewer;
+            const viewer = window.cviewer;
             if (!viewer?.camera) return;
 
             viewer.camera.flyTo({
