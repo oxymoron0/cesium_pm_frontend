@@ -36,6 +36,7 @@ const SimulationConfig = observer(function SimulationConfig({ onLocationComplete
         const shortCode = busanjingu.code.substring(2);
         administrativeStore.selectedDistrictCode = shortCode;
         console.log('[SimulationConfig] 부산진구 자동 선택 완료:', busanjingu);
+        simulationStore.searchAddress(simulationStore.searchQuery);
       }
     };
     loadBusanDistricts();
