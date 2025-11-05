@@ -379,17 +379,24 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
             {/* 테이블 데이터 */}
             {mockFacilities.map((facility) => {
               const levelStyle = getLevelStyle(facility.predictedLevel);
+              const isSelected = selectedFacilities.has(facility.id);
+
               return (
                 <div
                   key={facility.id}
-                  className="flex items-center self-stretch border-b border-[#696A6A]"
+                  className={`flex items-center self-stretch border-b border-[#696A6A] ${
+                    isSelected ? 'bg-[rgba(255,208,64,0.2)]' : ''
+                  }`}
                   style={{ minHeight: '40px' }}
                 >
-                  <div className="flex items-center justify-center" style={{ width: '40px', height: '40px', flexShrink: 0 }}>
+                  <div
+                    className="flex items-center justify-center"
+                    style={{ width: '40px', height: '40px', flexShrink: 0 }}
+                  >
                     <input
                       type="checkbox"
                       className="custom-checkbox"
-                      checked={selectedFacilities.has(facility.id)}
+                      checked={isSelected}
                       onChange={() => toggleFacility(facility.id)}
                     />
                   </div>

@@ -332,9 +332,9 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
           >
             관찰일시
           </div>
-          <Info>
-            시뮬레이션을 실행할 시점을 선택합니다.
-            날짜와 시간대를 지정하여 해당 시점의 대기질 상태를 시뮬레이션할 수 있습니다.
+          <Info infoTitle="관찰일시">
+            ※ 관찰일시는 오늘까지의 날짜와 현재 시각 기준 1시간 단위 구간까지만 선택 가능합니다.
+            버스 운행시간인 첫차~막차 시간으로 한정됩니다.
           </Info>
         </div>
 
@@ -444,11 +444,10 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
           >
             행정구역
           </div>
-          <Info>
-            <SubTitle>행정구역</SubTitle>
-            <Divider height='h-[2px]' />
-            우선순위를 조회할 행정구역을 선택합니다.
-            시/도, 군/구, 읍/면/동 단위로 지역을 지정할 수 있습니다.
+          <Info infoTitle="행정구역">
+            ※ 시범구역 기간동안 부산진구로 한정됩니다. <br />
+            주소 조회 : 동 목록 중 선택할 수 있습니다. <br />
+            위치 지정 : 지도에서 원하는 동을 직접 선택할 수 있습니다. <br />
           </Info>
         </div>
 
@@ -581,6 +580,12 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
       </div>
 
       <Spacer height={36} />
+
+      {locationMode === 'point' && (
+        <div className="font-pretendard font-normal text-[14px] text-[rgba(166,166,166,1)]">
+          ※ 우선순위를 조회할 부산진구 동을 지도에서 선택해 주세요.
+        </div>
+      )}
 
       {/* 로딩 표시 - 위치 지정 모드에서만 임시사용 */}
       {locationMode === 'point' && administrativeStore.loading && (

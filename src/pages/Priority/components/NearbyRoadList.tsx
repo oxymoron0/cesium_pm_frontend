@@ -82,7 +82,7 @@ const NearbyRoadList = observer(function NearbyRoadList({ roads, onClose }: Near
           opacity: 0.8
         }}
       >
-        살수차 우선 투입 취약시설에 인접한 도로를 파악할 수 있습니다.
+        ※ 취약시설 주변 공기질 개선을 위한 살수차 우선 투입 도로 정보를 확인하세요.
       </div>
 
       <Spacer height={16} />
