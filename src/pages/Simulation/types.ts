@@ -6,21 +6,73 @@
 // Address Search Types
 // ============================================================================
 
+/**
+ * 공통 에러 응답 구조
+ */
+export interface ApiErrorResponse {
+  status: "error";
+  error: string;
+  details?: string;
+}
+
+/**
+ * UI 컴포넌트 구조
+ */
 export interface AddressSearchResult {
   id: string;
-  roadAddress?: string; // 도로명 주소 (optional)
-  jibunAddress?: string; // 지번 주소 (optional)
-  detailAddress?: string; // 건물명 등
+  roadAddress?: string;
+  jibunAddress?: string;
+  detailAddress?: string;
   geometry: {
     type: 'Point';
-    coordinates: [number, number]; // [longitude, latitude]
+    coordinates: [number, number]; // [lng, lat]
   };
 }
 
-export interface AddressSearchResponse {
-  results: AddressSearchResult[];
-  totalCount: number;
+// --- 주소 검색 API (GET /api/v1/address/search) ---
+export interface ApiAddressSearchResult {
+  id: string;
+  address: {
+    zipcode: string;
+    category: "road" | "parcel" | string;
+    road: string;
+    parcel: string;
+    bldnm: string;
+    bldnmdc: string;
+  };
+  point: {
+    longitude: number;
+    latitude: number;
+  };
 }
+
+export interface AddressSearchSuccessResponse {
+  status: "success";
+  items: ApiAddressSearchResult[];
+  total: number;
+}
+
+export type AddressSearchResponse = AddressSearchSuccessResponse | ApiErrorResponse;
+
+// --- 좌표 -> 주소 변환 API (GET /api/v1/address/reverse) ---
+export interface ApiReverseGeocodeResult {
+  zipcode: string;
+  type: "parcel" | "road" | string;
+  text: string;
+  structure: {
+    level4L: string; // 읍면동/도로명
+    level5: string;  // 번지
+    detail: string;  // 상세주소
+    // 필요한 다른 필드들 추가 가능
+  };
+}
+
+export interface ReverseGeocodeSuccessResponse {
+  status: "success";
+  results: ApiReverseGeocodeResult[];
+}
+
+export type ReverseGeocodeResponse = ReverseGeocodeSuccessResponse | ApiErrorResponse;
 
 // ============================================================================
 // Simulation Configuration
