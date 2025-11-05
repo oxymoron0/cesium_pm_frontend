@@ -111,8 +111,8 @@ const SimulationStationHtmlRenderer = () => {
   const createStationIdHTML = useCallback((displayText: string, isSelected: boolean) => {
     const backgroundColor = isSelected ? 'black' : 'white';
     return `
-      <div class="station-tag-container" style="display:inline-flex;justify-content:center;align-items:center;gap:4px;border-radius:26.87px;border:1px solid #F12124;background:${backgroundColor};box-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1),0 2px 4px -2px rgb(0 0 0 / 0.1);padding:2px 6px 2px 8px;transition:all 0.3s ease;cursor:pointer;user-select:none;">
-        <span class="station-name" style="color:#DC5449;text-align:center;font-variant-numeric:lining-nums tabular-nums;font-family:Pretendard;font-size:12px;font-weight:700;line-height:normal;">
+      <div class="station-tag-container" style="display: inline-flex; justify-content: center; align-items: center; gap: 4px; border-radius: 26.87px; border: 1px solid #F12124; background: ${backgroundColor}; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); padding: 2px 6px 2px 8px; transition: all 0.3s ease; cursor: pointer; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
+        <span class="station-name" style="color: #DC5449; text-align: center; font-variant-numeric: lining-nums tabular-nums; font-family: Pretendard; font-size: 12px; font-weight: 700; line-height: normal;">
           ${displayText}
         </span>
       </div>
