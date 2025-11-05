@@ -42,13 +42,14 @@ export interface GeoJSONPolygon {
 }
 
 /**
- * Route geometry (inbound/outbound separated)
+ * Route geometry (inbound/outbound separated + entire route)
  * GET /api/v1/route/geom/{route_name} response
  */
 export interface RouteGeom {
   route_name: string;
   inbound: GeoJSONLineString;    // Correct: LineString not Polygon
   outbound: GeoJSONLineString;   // Correct: LineString not Polygon
+  entire: GeoJSONLineString;     // Combined route (inbound + outbound)
 }
 
 
