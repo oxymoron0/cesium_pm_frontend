@@ -99,9 +99,9 @@ export async function prepareSimulationGlbSequence(params: {
     model: new ModelGraphics({
       uri: '',
       scale: 1.0,
-      color: Color.fromCssColorString('#888888'),
+      color: Color.fromCssColorString('#FF0000'),
       colorBlendMode: ColorBlendMode.REPLACE,
-      heightReference: HeightReference.NONE
+      heightReference: HeightReference.NONE,
     })
   })
   dataSource.entities.add(entity)
