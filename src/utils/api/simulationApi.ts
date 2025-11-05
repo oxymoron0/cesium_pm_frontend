@@ -15,6 +15,7 @@ import type {
   Weather,
   SimulationInProgressResponse,
 } from '../../types/simulation_request_types';
+import type { AddressSearchResponse, ReverseGeocodeResponse } from '@/pages/Simulation/types';
 
 /**
  * 시뮬레이션 프로세스 요청
@@ -292,7 +293,7 @@ export async function deleteSimulationsAPI(
  */
 export async function getCurrentWeatherAPI(): Promise<Weather>{
   try {
-    const response = await get<Weather>(API_PATHS.SIMULATION_CURRNET_WEATHER);
+    const response = await get<Weather>(API_PATHS.SIMULATION_CURRENT_WEATHER);
 
     if (!response.ok) {
       throw new Error(
@@ -306,3 +307,70 @@ export async function getCurrentWeatherAPI(): Promise<Weather>{
     throw error;
   }
 }
+
+/**
+ * '주소 검색' API 호출
+ * GET /api/v1/address/search
+ *
+ * @param query - 검색할 주소 문자열
+ * @param page - 페이지 번호
+ * @param size - 페이지 크기
+ */
+export async function searchAddressAPI(
+  query: string,
+  page: number = 1,
+  size: number = 10
+): Promise<AddressSearchResponse> {
+  try {
+    const params = new URLSearchParams({
+      query: query,
+      page: page.toString(),
+      size: size.toString(),
+    });
+
+    const url = `${API_PATHS.ADDRESS_SEARCH}?${params.toString()}`;
+    const response = await get<AddressSearchResponse>(url);
+
+    if (!response.ok) {
+       throw new Error(`Address Search API failed with status ${response.status}`);
+    }
+    return response.data;
+
+  } catch (error) {
+    console.error('[searchAddressAPI] API 호출 실패:', error);
+    throw error;
+  }
+}
+
+/**
+ * '좌표 -> 주소' (Reverse Geocoding) API 호출
+ * GET /api/v1/address/reverse
+ *
+ * @param longitude - 경도 (x)
+ * @param latitude - 위도 (y)
+ */
+export async function reverseGeocodeAPI(
+  longitude: number, 
+  latitude: number
+): Promise<ReverseGeocodeResponse> {
+  try {
+    const params = new URLSearchParams({
+      longitude: longitude.toString(),
+      latitude: latitude.toString(),
+    });
+
+    const url = `${API_PATHS.ADDRESS_REVERSE}?${params.toString()}`;
+    
+    const response = await get<ReverseGeocodeResponse>(url);
+
+    if (!response.ok) {
+       throw new Error(`Reverse Geocode API failed with status ${response.status}`);
+    }
+    return response.data;
+
+  } catch (error) {
+    console.error('[reverseGeocodeAPI] API 호출 실패:', error);
+    throw error;
+  }
+}
+

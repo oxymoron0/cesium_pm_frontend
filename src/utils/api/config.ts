@@ -47,7 +47,7 @@ export const API_PATHS = {
   SIMULATION_DETAIL: (uuid: string) => getApiPath(`api/v1/simulation/${uuid}`),
   SIMULATION_DELETE: getApiPath(`/api/v1/simulation`),
   SIMULATION_UPDATE_PRIVACY: (uuid: string) => getApiPath(`/api/v1/simulation/${uuid}/privacy`),
-  SIMULATION_CURRNET_WEATHER: getApiPath('/api/v1/weather/current'),
+  SIMULATION_CURRENT_WEATHER: getApiPath('/api/v1/weather/current'),
 
   // 북마크 API (PM Backend)
   BOOKMARKS_ROUTES: (user: string) => getApiPath(`api/v1/bookmarks/routes?user=${user}`),
@@ -83,6 +83,10 @@ export const API_PATHS = {
   STATISTICS_FACILITY_TODAY: getApiPath('api/v1/statistics/facility/today'),
   STATISTICS_FACILITY_WEEK: getApiPath('api/v1/statistics/facility/week'),
   STATISTICS_FACILITY_MONTH: getApiPath('api/v1/statistics/facility/month'),
+
+  // 주소 조회 API (PM Backend)
+  ADDRESS_SEARCH: getApiPath('/api/v1/address/search'),
+  ADDRESS_REVERSE: getApiPath('/api/v1/address/reverse'),
 } as const;
 
 /**

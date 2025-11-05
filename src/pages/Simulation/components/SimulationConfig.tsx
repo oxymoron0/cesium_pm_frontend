@@ -1,8 +1,6 @@
 import { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { reaction } from 'mobx';
-// import Title from '@/components/basic/Title';
-// import TabNavigation from '@/components/basic/TabNavigation';
 import SubTitle from '@/components/basic/SubTitle';
 import Spacer from '@/components/basic/Spacer';
 import Icon from '@/components/basic/Icon';
@@ -21,8 +19,6 @@ interface SimulationConfigProps {
 }
 
 const SimulationConfig = observer(function SimulationConfig({ onLocationComplete }: SimulationConfigProps) {
-  // const [activeTab, setActiveTab] = useState(0);
-  // const [activeList, setActiveList] = useState('상세설정');
 
   // 부산 행정구역 시군구 정보 조회
   useEffect(() => {
@@ -40,6 +36,7 @@ const SimulationConfig = observer(function SimulationConfig({ onLocationComplete
         const shortCode = busanjingu.code.substring(2);
         administrativeStore.selectedDistrictCode = shortCode;
         console.log('[SimulationConfig] 부산진구 자동 선택 완료:', busanjingu);
+        simulationStore.searchAddress(simulationStore.searchQuery);
       }
     };
     loadBusanDistricts();
