@@ -20,6 +20,7 @@ export interface BusPosition {
     pm: number
     fpm: number
   }
+  progress_percent: number  // Route progress percentage (0-100)
 }
 
 export interface BusTrajectoryData {
@@ -81,7 +82,7 @@ export async function getBusTrajectoryInitial(): Promise<BusTrajectoryResponse> 
  */
 export async function getBusTrajectoryLatest(): Promise<BusLatestResponse> {
   try {
-    const response = await get<BusLatestResponse>(getApiPath('api/v1/buses/trajectory/latest'))
+    const response = await get<BusLatestResponse>(getApiPath('api/v1/buses/trajectory/latest-new'))
 
     if (!response.ok) {
       throw new Error(`Bus latest positions API failed with status ${response.status}`)
