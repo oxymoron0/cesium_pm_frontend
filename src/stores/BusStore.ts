@@ -1,6 +1,14 @@
 import { makeAutoObservable, runInAction } from 'mobx'
 import { getBusTrajectoryInitial, getBusTrajectoryLatest, type BusTrajectoryData, type BusPosition } from '@/utils/api/busApi'
-import { renderBusModels, animateSingleBus, trackBusEntity, stopTracking, getCurrentTrackedBus } from '@/utils/cesium/glbRenderer'
+import {
+  renderBusModels,
+  trackBusEntity,
+  stopTracking,
+  getCurrentTrackedBus,
+  startProgressAnimationSystem,
+  stopProgressAnimationSystem,
+  setBusTargetProgress
+} from '@/utils/cesium/glbRenderer'
 
 // 개별 버스 애니메이션을 위한 인터페이스
 interface BusAnimationState {
@@ -71,6 +79,10 @@ class BusStore {
       // 버스 애니메이션 상태 초기화
       this.initializeBusAnimations()
 
+      // preRender 기반 progress 애니메이션 시스템 시작
+      startProgressAnimationSystem()
+      console.log('[BusStore] Progress animation system started')
+
       // 초기화 완료 후 실시간 폴링 자동 시작
       console.log('[BusStore] Initialization complete, starting real-time polling')
       this.startRealTimePolling()
@@ -88,6 +100,7 @@ class BusStore {
   cleanup() {
     this.stopRealTimePolling()
     this.cleanupAllAnimations()
+    stopProgressAnimationSystem()
     this.busData = []
     this.latestPositions.clear()
   }
@@ -292,7 +305,7 @@ class BusStore {
 
 
   /**
-   * 개별 버스의 다음 애니메이션 시작
+   * 개별 버스의 다음 애니메이션 시작 (progress_percent 기반)
    */
   private startNextAnimation(vehicleNumber: string): void {
     const animationState = this.busAnimations.get(vehicleNumber)
@@ -313,13 +326,43 @@ class BusStore {
     const sortedPositions = [...busData.positions].sort((a, b) =>
       new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()
     )
-    const currentPosition = sortedPositions[sortedPositions.length - 2] || sortedPositions[0] // 이전 위치 또는 현재 위치
+    const currentPosition = sortedPositions[sortedPositions.length - 2] || sortedPositions[0]
 
-    // 시간 차이 계산
+    // progress_percent 필수 검증
+    if (nextPosition.progress_percent === undefined || nextPosition.progress_percent === null) {
+      console.error(`[BusStore] Missing progress_percent in nextPosition for bus ${vehicleNumber}:`, nextPosition)
+      runInAction(() => {
+        animationState.isAnimating = false
+      })
+      // 큐에 다음 데이터가 있으면 재시도
+      if (animationState.positionQueue.length > 0) {
+        setTimeout(() => this.startNextAnimation(vehicleNumber), 100)
+      }
+      return
+    }
+
+    if (currentPosition.progress_percent === undefined || currentPosition.progress_percent === null) {
+      console.error(`[BusStore] Missing progress_percent in currentPosition for bus ${vehicleNumber}:`, currentPosition)
+      runInAction(() => {
+        animationState.isAnimating = false
+      })
+      return
+    }
+
+    // progress_percent 기반 애니메이션
+    const targetProgressPercent = nextPosition.progress_percent
+    const currentProgressPercent = currentPosition.progress_percent
+
+    console.log(`[BusStore] Starting progress animation for bus ${vehicleNumber}: ${currentProgressPercent.toFixed(2)}% → ${targetProgressPercent.toFixed(2)}%`)
+
+    // 두 위치 데이터의 시간 차이 계산
     const timeDiff = BusStore.getTimeDifferenceInSeconds(currentPosition, nextPosition)
-    const duration = timeDiff ? Math.min(timeDiff, 60) / this.animationSystem.playbackSpeed : 2.0
 
-    console.log(`[BusStore] Starting animation for bus ${vehicleNumber}: ${currentPosition.recorded_at} → ${nextPosition.recorded_at} (${duration.toFixed(1)}s)`)
+    // 실제 시간 차이를 애니메이션 duration으로 사용 (최소 2초 보장)
+    const durationSeconds = timeDiff && timeDiff > 0 ? timeDiff : 2.0
+    const duration = durationSeconds / this.animationSystem.playbackSpeed
+
+    console.log(`[BusStore] Animation duration for bus ${vehicleNumber}: ${durationSeconds.toFixed(1)}s (time diff between positions)`)
 
     // 애니메이션 상태 업데이트
     runInAction(() => {
@@ -332,9 +375,8 @@ class BusStore {
       }
     })
 
-    // Cesium 애니메이션 시작
-    const { longitude, latitude } = nextPosition.position
-    animateSingleBus(vehicleNumber, longitude, latitude, duration)
+    // Progress 기반 Cesium 애니메이션 시작 (시간 기반 선형 이동)
+    setBusTargetProgress(vehicleNumber, targetProgressPercent, duration)
 
     // 애니메이션 완료 타이머 설정
     if (animationState.currentAnimation) {
@@ -378,14 +420,12 @@ class BusStore {
 
   // 개별 버스 제어 함수
 
-  animateBusToPosition(
-    vehicleNumber: string,
-    longitude: number,
-    latitude: number,
-    durationSeconds: number = 3
-  ): boolean {
-    const success = animateSingleBus(vehicleNumber, longitude, latitude, durationSeconds)
-    return success
+  /**
+   * @deprecated Progress 기반 애니메이션으로 변경됨. setBusTargetProgress() 사용 권장
+   */
+  animateBusToPosition(): boolean {
+    console.warn('[BusStore] animateBusToPosition is deprecated. Progress-based animation is now used automatically.')
+    return false
   }
 
 
