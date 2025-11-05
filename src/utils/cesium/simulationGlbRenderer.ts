@@ -1,41 +1,8 @@
-import { Entity, ModelGraphics, Cartesian3, ColorBlendMode, HeightReference, ConstantPositionProperty, Cartographic, sampleTerrainMostDetailed, Color } from 'cesium'
-import { createDataSource, findDataSource, removeDataSource } from './datasources'
+import { Entity, ModelGraphics, Cartesian3, HeightReference, ConstantPositionProperty, Cartographic, sampleTerrainMostDetailed, Color, CustomDataSource, ColorBlendMode, ConstantProperty } from 'cesium'
+import { createDataSource, removeDataSource, clearDataSource } from './datasources'
 import { flyToStationSmooth } from './cameraUtils'
 
 const DATASOURCE_NAME = 'simulation_glb_result'
-
-// 터레인 높이 캐시
-const terrainHeightCache = new Map<string, number>()
-
-/**
- * GLB 모델 데이터 구조
- */
-export interface SimulationGlbData {
-  id: string                    // Unique identifier
-  glbUrl: string                // GLB file URL
-  longitude: number             // WGS84 longitude
-  latitude: number              // WGS84 latitude
-  height?: number               // Height above ground (default: 0)
-  scale?: number                // Model scale (default: 1)
-  color?: string                // CSS color string (default: white)
-  heading?: number              // Heading in degrees (default: 0)
-  pitch?: number                // Pitch in degrees (default: 0)
-  roll?: number                 // Roll in degrees (default: 0)
-}
-
-/**
- * 순차 렌더링 옵션
- */
-export interface SequentialRenderOptions {
-  totalCount: number            // Total number of GLB files
-  centerLongitude: number       // Center longitude
-  centerLatitude: number        // Center latitude
-  resultPath: string            // Result path (e.g., 'finedust')
-  delayMs?: number              // Delay between each model (default: 500ms)
-  signal?: AbortSignal          // AbortSignal for cancellation
-  onProgress?: (current: number, total: number) => void  // Progress callback
-  onComplete?: () => void       // Completion callback
-}
 
 /**
  * Cesium viewer 가용성 체크
@@ -49,190 +16,142 @@ function getViewer() {
   return viewer
 }
 
+/** ─────────────────────────────────────────────────────────────
+ * 재생(Play/Pause) UI를 위한 API
+ * ───────────────────────────────────────────────────────────── */
+
+type PreparedContext = {
+  centerLongitude: number
+  centerLatitude: number
+  terrainHeight: number
+  resultPath: string
+  basePath: string
+  normalizedPath: string
+  dataSource: CustomDataSource
+  totalCount: number
+  entity: Entity | null
+} | null
+
+let preparedCtx: PreparedContext = null
+
 /**
- * 캐시된 터레인 높이 조회
+ * 모든 시뮬레이션 GLB 리소스 정리
  */
-function getCachedTerrainHeight(longitude: number, latitude: number): number {
-  const key = `${longitude.toFixed(6)}_${latitude.toFixed(6)}`
-  return terrainHeightCache.get(key) || 0
+export function clearSimulationGlbs(): void {
+  clearDataSource(DATASOURCE_NAME)
+  removeDataSource(DATASOURCE_NAME)
+  preparedCtx = null
+  console.log('[simulationGlbRenderer] Cleared all simulation GLB resources')
 }
 
 /**
- * 터레인 높이 샘플링 및 캐싱
+ * 재생 시퀀스 준비: 데이터소스/카메라/지형높이
  */
-async function sampleTerrainHeights(glbDataList: SimulationGlbData[]): Promise<void> {
+export async function prepareSimulationGlbSequence(params: {
+  centerLongitude: number
+  centerLatitude: number
+  resultPath: string
+  totalCount: number
+}): Promise<void> {
+  const viewer = getViewer()
+  if (!viewer) return
+
+  const { centerLongitude, centerLatitude, resultPath, totalCount } = params
+
+  if (!totalCount || totalCount <= 0) {
+    console.warn('[simulationGlbRenderer] Invalid totalCount:', totalCount)
+    return
+  }
+
+  flyToStationSmooth(centerLongitude, centerLatitude, 3500, 0)
+
+  if (preparedCtx &&
+      preparedCtx.centerLongitude === centerLongitude &&
+      preparedCtx.centerLatitude === centerLatitude &&
+      preparedCtx.resultPath === resultPath &&
+      preparedCtx.totalCount === totalCount) {
+    console.log('[simulationGlbRenderer] Already prepared, skipping')
+    return
+  }
+  
+  // (중략) ... 기존 코드와 동일 ...
+
+  const basePath = import.meta.env.VITE_BASE_PATH || '/'
+  const normalizedPath = basePath.endsWith('/') && resultPath.startsWith('/')
+    ? basePath + resultPath.slice(1)
+    : basePath + resultPath
+  clearDataSource(DATASOURCE_NAME)
+  removeDataSource(DATASOURCE_NAME)
+  const dataSource = createDataSource(DATASOURCE_NAME)
+  let terrainHeight = 0
   try {
-    const viewer = getViewer()
-    if (!viewer?.terrainProvider || glbDataList.length === 0) return
-
-    // 중복 제거된 좌표 목록 생성
-    const uniqueCoords = new Map<string, { longitude: number; latitude: number }>()
-    glbDataList.forEach(data => {
-      const key = `${data.longitude.toFixed(6)}_${data.latitude.toFixed(6)}`
-      if (!uniqueCoords.has(key)) {
-        uniqueCoords.set(key, { longitude: data.longitude, latitude: data.latitude })
-      }
-    })
-
-    // Cartographic 변환
-    const positions = Array.from(uniqueCoords.values()).map(coord =>
-      Cartographic.fromDegrees(coord.longitude, coord.latitude)
-    )
-
-    // 터레인 샘플링
-    const sampledPositions = await sampleTerrainMostDetailed(viewer.terrainProvider, positions)
-
-    // 캐시 저장
-    sampledPositions.forEach((position, index) => {
-      const coord = Array.from(uniqueCoords.values())[index]
-      const key = `${coord.longitude.toFixed(6)}_${coord.latitude.toFixed(6)}`
-      terrainHeightCache.set(key, position.height || 0)
-    })
-
-    console.log(`[simulationGlbRenderer] Sampled terrain heights for ${uniqueCoords.size} unique positions`)
+    const position = Cartographic.fromDegrees(centerLongitude, centerLatitude)
+    const [sampled] = await sampleTerrainMostDetailed(viewer.terrainProvider, [position])
+    terrainHeight = sampled.height || 0
+    console.log(`[simulationGlbRenderer] Sampled terrain height: ${terrainHeight}m`)
   } catch (error) {
     console.error('[simulationGlbRenderer] Terrain sampling failed:', error)
   }
-}
-
-/**
- * 단일 GLB Entity 생성
- */
-function createGlbEntity(data: SimulationGlbData): Entity {
-  const {
-    id,
-    glbUrl,
-    longitude,
-    latitude,
-    height,
-    color = '#888888', // 기본값: 회색
-  } = data
-
-  //샘플 바람길이 잘안보여서 스타일 조정
-  return new Entity({
-    id: `simulation_glb_${id}`,
-    name: `Simulation GLB ${id}`,
-    position: new ConstantPositionProperty(Cartesian3.fromDegrees(longitude, latitude, height)),
+  const entity = new Entity({
+    id: 'simulation_glb_frame',
+    name: 'Simulation GLB Frame',
+    position: new ConstantPositionProperty(Cartesian3.fromDegrees(centerLongitude, centerLatitude, terrainHeight)),
     model: new ModelGraphics({
-      uri: glbUrl,
+      uri: '',
       scale: 1.0,
-      //minimumPixelSize: 128,
-      //maximumScale: 256,
-      color: Color.fromCssColorString(color),
+      color: Color.fromCssColorString('#FF0000'),
       colorBlendMode: ColorBlendMode.REPLACE,
       heightReference: HeightReference.NONE,
     })
   })
-}
+  dataSource.entities.add(entity)
 
-/**
- * GLB 모델을 순차적으로 렌더링 (애니메이션 효과)
- */
-export async function renderSimulationGlbsSequentially(
-  options: SequentialRenderOptions
-): Promise<void> {
-  const viewer = getViewer()
-  if (!viewer) return
-
-  const {
-    totalCount,
+  preparedCtx = {
     centerLongitude,
     centerLatitude,
+    terrainHeight,
     resultPath,
-    delayMs = 500,
-    signal,
-    onProgress,
-    onComplete
-  } = options
-
-  const basePath = import.meta.env.VITE_BASE_PATH || '/'
-
-  // 카메라를 GLB 위치로 이동
-  flyToStationSmooth(centerLongitude, centerLatitude, 4000, 0)
-
-  // 기존 DataSource 제거 후 새로 생성
-  removeDataSource(DATASOURCE_NAME)
-  const dataSource = createDataSource(DATASOURCE_NAME)
-
-  // 터레인 높이 샘플링 (한 번만 수행)
-  let terrainHeight = 0
-  const key = `${centerLongitude.toFixed(6)}_${centerLatitude.toFixed(6)}`
-
-  // 캐시 확인
-  if (terrainHeightCache.has(key)) {
-    terrainHeight = terrainHeightCache.get(key) || 0
-  } else {
-    // 터레인 샘플링
-    const dummyData = { longitude: centerLongitude, latitude: centerLatitude }
-    await sampleTerrainHeights([dummyData as SimulationGlbData])
-    terrainHeight = getCachedTerrainHeight(centerLongitude, centerLatitude)
+    basePath,
+    normalizedPath,
+    dataSource,
+    totalCount,
+    entity
   }
 
-  // 순차적으로 Entity 교체 (즉석 생성)
-  for (let i = 1; i <= totalCount; i++) {
-    // 취소 신호 확인
-    if (signal?.aborted) {
-      console.log(`[simulationGlbRenderer] Rendering aborted at ${i}/${totalCount}`)
-      return
-    }
-
-    const paddedNumber = String(i).padStart(4, '0')
-    const glbUrl = `${basePath}${resultPath}/Finedust_${paddedNumber}.glb`
-
-    // GLB 데이터 즉석 생성
-    const glbData: SimulationGlbData = {
-      id: `windroad_${paddedNumber}`,
-      glbUrl: glbUrl,
-      longitude: centerLongitude,
-      latitude: centerLatitude,
-      height: terrainHeight + 100,
-      color: '#888888',
-    }
-
-    // 이전 entity 모두 제거
-    dataSource.entities.removeAll()
-
-    // 새로운 entity 추가
-    const entity = createGlbEntity(glbData)
-    dataSource.entities.add(entity)
-
-    // 렌더링 중인 GLB 파일명 출력
-    console.log(`[simulationGlbRenderer] Rendering ${i}/${totalCount}: ${glbUrl}`)
-
-    // Progress callback (실시간 업데이트)
-    if (onProgress) {
-      onProgress(i, totalCount)
-    }
-
-    // delay가 0이 아닐 때만 대기
-    if (delayMs > 0 && i < totalCount) {
-      await new Promise(resolve => setTimeout(resolve, delayMs))
-    }
-  }
-
-  console.log(`[simulationGlbRenderer] Sequentially rendered ${totalCount} GLB models`)
-
-  // Completion callback
-  if (onComplete) {
-    onComplete()
-  }
+  console.log('[simulationGlbRenderer] Prepared GLB sequence context', preparedCtx)
 }
 
 /**
- * 모든 시뮬레이션 GLB 모델 제거
+ * [수정됨] 지정 프레임 1장만 렌더링 (0-based index 사용)
+ * @param index - 렌더링할 프레임의 0-based 인덱스 (0부터 totalCount - 1 까지)
  */
-export function clearSimulationGlbs(): void {
-  removeDataSource(DATASOURCE_NAME)
-  terrainHeightCache.clear()
-  console.log('[simulationGlbRenderer] Cleared all simulation GLB models')
+export function renderSimulationGlbFrame(index: number): void {
+  if (!preparedCtx) {
+    console.warn('[simulationGlbRenderer] Call prepareSimulationGlbSequence() first.')
+    return
+  }
+  const {
+    normalizedPath,
+    totalCount,
+    entity
+  } = preparedCtx
+
+  // [수정] 0-based 인덱스 유효성 검사
+  if (index < 0 || index >= totalCount) {
+    console.warn(`[simulationGlbRenderer] Frame index out of range: ${index} (total: ${totalCount})`)
+    return
+  }
+
+  if (!entity || !entity.model) {
+    console.error('[simulationGlbRenderer] Entity or model not found')
+    return
+  }
+
+  // [수정] 파일명 생성을 위해 0-based index에 1을 더해 1-based 숫자로 변환
+  const fileNumber = index + 1
+  const paddedNumber = String(fileNumber).padStart(4, '0')
+  const glbUrl = `${normalizedPath}Finedust_${paddedNumber}.glb`
+
+  // Entity 재사용: URI만 업데이트
+  entity.model.uri = new ConstantProperty(glbUrl)
 }
-
-/**
- * 렌더링된 GLB 모델 수 반환
- */
-export function getSimulationGlbCount(): number {
-  const dataSource = findDataSource(DATASOURCE_NAME)
-  return dataSource ? dataSource.entities.values.length : 0
-}
-
-

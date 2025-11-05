@@ -93,8 +93,8 @@ const SimulationConfirm = observer(function SimulationConfirm() {
   };
 
   const renderWeather = () => {
-    const wd = dataForConfirm?.weather?.wind_direction_10m;
-    const ws = dataForConfirm?.weather?.wind_speed_10m;
+    const wd = dataForConfirm?.weather?.wind_direction_1m;
+    const ws = dataForConfirm?.weather?.wind_speed_1m;
     return wd != null || ws != null ? (
       <>
         {wd != null && <span>(풍향) {wd}° </span>}
@@ -215,6 +215,25 @@ const SimulationConfirm = observer(function SimulationConfirm() {
           ),
           cancelText: "취소",
           confirmText: "중지",
+          onConfirm: () => simulationStore.confirmModal(),
+        };
+
+      case "startSim":
+        return {
+          open: true,
+          title: "시뮬레이션 분석을 시작하시겠습니까?",
+          description: (
+            <>
+              <div className="text-[rgba(166,166,166,1)]">
+                시작 시 해당 시뮬레이션 진행이 시작되며,
+                <br />
+                임시텍스트1
+                <br />임시텍스트2
+              </div>
+            </>
+          ),
+          cancelText: "취소",
+          confirmText: "시작",
           onConfirm: () => simulationStore.confirmModal(),
         };
 

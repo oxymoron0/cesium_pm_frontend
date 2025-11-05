@@ -1,8 +1,9 @@
 import { observer } from 'mobx-react-lite';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Panel from '@/components/basic/Panel';
 import Title from '@/components/basic/Title';
 import Spacer from '@/components/basic/Spacer';
+import SimulationProgressIndicator from '@/components/service/SimulationProgressIndicator';
 import {
   ResponsiveContainer,
   BarChart,
@@ -14,14 +15,10 @@ import {
 } from 'recharts';
 import { simulationStore } from '@/stores/SimulationStore';
 import {
-  renderSimulationGlbsSequentially,
-  clearSimulationGlbs,
-  getSimulationGlbCount
-} from '@/utils/cesium/simulationGlbRenderer';
-import {
   renderLocationMarker,
   clearLocationMarker
 } from '@/utils/cesium/locationMarker';
+import { clearSimulationGlbs } from '@/utils/cesium/simulationGlbRenderer';
 
 interface SimulationResultSummaryProps {
   onClose?: () => void;
@@ -31,26 +28,15 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
   const { simulationDetail } = simulationStore;
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(true);
   const [isImpactExpanded, setIsImpactExpanded] = useState(true);
-  const [isRenderingGlb, setIsRenderingGlb] = useState(false);
-  const [renderProgress, setRenderProgress] = useState<{ current: number; total: number } | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // 시뮬레이션 발생 위치 좌표 (첫 번째 측정소 위치)
   const firstPoint = simulationDetail?.airQualityData?.points[0];
-  const centerLng = firstPoint?.location.longitude || 129.0634; // fallback
+  const centerLng = firstPoint?.location.longitude || 129.0634;
   const centerLat = firstPoint?.location.latitude || 35.1598;
 
-  // 팝업 열릴 때 마커 렌더링, 닫힐 때 제거
   useEffect(() => {
     if (!simulationDetail) return;
-
     renderLocationMarker(centerLng, centerLat);
-    //handleRenderGlb();
     return () => {
-      // 렌더링 중단
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
       clearLocationMarker();
       clearSimulationGlbs();
     };
@@ -60,7 +46,6 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
     return null;
   }
 
-  // ISO 8601 날짜를 "YYYY.MM.DD HH:mm" 형식으로 변환
   const formatDateTime = (isoString: string) => {
     const date = new Date(isoString);
     const year = date.getFullYear();
@@ -71,6 +56,7 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
     return `${year}.${month}.${day} ${hours}:${minutes}`;
   };
 
+  // TODO: 실제 API 데이터로 교체 필요
   const mockImpactData = [
     { level: '좋음', count: 18, color: '#FFD040' },
     { level: '보통', count: 32, color: '#FFD040' },
@@ -78,83 +64,26 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
     { level: '매우나쁨', count: 35, color: '#FFD040' }
   ];
 
-  // GLB 렌더링 핸들러
-  const handleRenderGlb = async () => {
-    // 이전 렌더링 취소
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    // 새로운 AbortController 생성
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
-
-    setIsRenderingGlb(true);
-    setRenderProgress({ current: 0, total: 101 });
-
-    try {
-      // 순차적으로 렌더링 (즉석 생성 방식)
-      await renderSimulationGlbsSequentially({
-        totalCount: 101,
-        centerLongitude: centerLng,
-        centerLatitude: centerLat,
-        resultPath: 'finedust',
-        signal: abortController.signal,
-        onProgress: (current, total) => {
-          setRenderProgress({ current, total });
-        },
-        onComplete: () => {
-          console.log('[SimulationResultSummary] GLB rendering completed');
-          setRenderProgress(null);
-        }
-      });
-    } catch (error) {
-      console.error('[SimulationResultSummary] GLB rendering failed:', error);
-    } finally {
-      setIsRenderingGlb(false);
-      abortControllerRef.current = null;
-    }
-  };
-
   return (
-    <Panel width="540px" maxHeight="calc(100vh - 160px)" >
-      <Title onClose={onClose}>
-        시뮬레이션 결과 요약
-      </Title>
+    <>
+      <Panel width="540px" maxHeight="calc(100vh - 160px)" >
+        <Title onClose={onClose} infoTitle="시뮬레이션 결과 요약" info="※ 시뮬레이션 요청 일시와 오염물질 최대 확산 반경, 총 영향 면적, 영향 시설물 수를 확인할 수 있습니다. 영향 시설물 수의 경우 나쁨 등급 이상 면적에 포함된 취약시설 수를 의미합니다.">
+          시뮬레이션 결과 요약
+        </Title>
 
-      <Spacer height={16} />
+        <Spacer height={16} />
 
-      {/* GLB Rendering Controls */}
-      <div className="flex gap-2 self-stretch">
-        <button
-          onClick={handleRenderGlb}
-          disabled={isRenderingGlb}
-          className="flex-1 h-10 px-4 py-2 bg-[#FFD040] text-black rounded font-pretendard text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#FFC020] transition-colors"
-        >
-          {isRenderingGlb
-            ? `렌더링 중... (${renderProgress?.current || 0}/${renderProgress?.total || 0})`
-            : `GLB 렌더링 테스트(${getSimulationGlbCount()}개)`}
-        </button>
-      </div>
-
-      <Spacer height={16} />
-
-      {/* Simulation Selection Collapsible */}
-      <div className="flex flex-col self-stretch">
+        <div className="flex flex-col self-stretch">
         <button
           onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}
           className="flex items-center justify-between h-[42px] py-[10px] pr-4 border-b border-[#696A6A] cursor-pointer"
         >
-          <p className="text-white font-pretendard text-[14px] font-bold">
+          <p className="text-white font-pretendard text-sm font-bold">
             {simulationDetail.simulationName}
           </p>
           <div
-            className="text-white transform transition-transform"
-            style={{
-              fontSize: '8px',
-              lineHeight: '4px',
-              transform: isSummaryExpanded ? 'rotate(180deg)' : 'rotate(0deg)'
-            }}
+            className="text-white text-[8px] leading-[4px] transform transition-transform"
+            style={{ transform: isSummaryExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
           >
             ▼
           </div>
@@ -164,116 +93,39 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
           <>
             <Spacer height={16} />
 
-            {/* Summary Info Grid */}
             <div className="flex flex-col self-stretch gap-3">
-              {/* 요청 일시 */}
               <div className="flex items-center self-stretch justify-between">
-                <div
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    lineHeight: 'normal',
-                    color: '#FFF'
-                  }}
-                >
+                <div className="text-white font-pretendard text-sm font-bold">
                   요청 일시
                 </div>
-                <div
-                  className="flex items-center h-8 px-3 py-1 bg-black rounded border border-[#696A6A]"
-                  style={{
-                    width: '360px',
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
-                    fontWeight: '400',
-                    lineHeight: 'normal',
-                    color: '#FFF'
-                  }}
-                >
+                <div className="flex items-center h-8 px-3 py-1 w-[360px] bg-black rounded border border-[#696A6A] text-white font-pretendard text-sm">
                   {formatDateTime(simulationDetail.requestedAt)}
                 </div>
               </div>
 
-              {/* 최대 확산 반경 */}
               <div className="flex items-center self-stretch justify-between">
-                <div
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    lineHeight: 'normal',
-                    color: '#FFF'
-                  }}
-                >
+                <div className="text-white font-pretendard text-sm font-bold">
                   최대 확산 반경 (m)
                 </div>
-                <div
-                  className="flex items-center h-8 px-3 py-1 bg-black rounded border border-[#696A6A]"
-                  style={{
-                    width: '360px',
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
-                    fontWeight: '400',
-                    lineHeight: 'normal',
-                    color: '#FFF'
-                  }}
-                >
+                <div className="flex items-center h-8 px-3 py-1 w-[360px] bg-black rounded border border-[#696A6A] text-white font-pretendard text-sm">
                   600 m
                 </div>
               </div>
 
-              {/* 총 영향 면적 */}
               <div className="flex items-center self-stretch justify-between">
-                <div
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    lineHeight: 'normal',
-                    color: '#FFF'
-                  }}
-                >
+                <div className="text-white font-pretendard text-sm font-bold">
                   총 영향 면적 (m²)
                 </div>
-                <div
-                  className="flex items-center h-8 px-3 py-1 bg-black rounded border border-[#696A6A]"
-                  style={{
-                    width: '360px',
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
-                    fontWeight: '400',
-                    lineHeight: 'normal',
-                    color: '#FFF'
-                  }}
-                >
+                <div className="flex items-center h-8 px-3 py-1 w-[360px] bg-black rounded border border-[#696A6A] text-white font-pretendard text-sm">
                   1,130,973 m² (약 1.13 km²)
                 </div>
               </div>
 
-              {/* 영향 취약시설 수 */}
               <div className="flex items-center self-stretch justify-between">
-                <div
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    lineHeight: 'normal',
-                    color: '#FFF'
-                  }}
-                >
+                <div className="text-white font-pretendard text-sm font-bold">
                   영향 취약시설 수
                 </div>
-                <div
-                  className="flex items-center h-8 px-3 py-1 bg-black rounded border border-[#696A6A]"
-                  style={{
-                    width: '360px',
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
-                    fontWeight: '400',
-                    lineHeight: 'normal',
-                    color: '#FFF'
-                  }}
-                >
+                <div className="flex items-center h-8 px-3 py-1 w-[360px] bg-black rounded border border-[#696A6A] text-white font-pretendard text-sm">
                   102개
                 </div>
               </div>
@@ -284,22 +136,17 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
 
       <Spacer height={16} />
 
-      {/* Collapsible Section: 등급별 영향 취약시설 수 */}
       <div className="flex flex-col self-stretch">
         <button
           onClick={() => setIsImpactExpanded(!isImpactExpanded)}
           className="flex items-center justify-between h-[42px] py-[10px] pr-4 border-b border-[#696A6A] cursor-pointer"
         >
-          <p className="text-white font-pretendard text-[14px] font-bold">
+          <p className="text-white font-pretendard text-sm font-bold">
             등급별 영향 취약시설 수
           </p>
           <div
-            className="text-white transform transition-transform"
-            style={{
-              fontSize: '8px',
-              lineHeight: '4px',
-              transform: isImpactExpanded ? 'rotate(180deg)' : 'rotate(0deg)'
-            }}
+            className="text-white text-[8px] leading-[4px] transform transition-transform"
+            style={{ transform: isImpactExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
           >
             ▼
           </div>
@@ -308,24 +155,11 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
         {isImpactExpanded && (
           <>
             <Spacer height={16} />
-            <div
-              className="flex flex-col self-stretch px-4 py-3"
-            >
-              {/* Y축 라벨 */}
-              <div
-                className="self-start"
-                style={{
-                  color: '#C4C6C6',
-                  fontFamily: 'Pretendard',
-                  fontSize: '12px',
-                  fontWeight: '400',
-                  marginBottom: '8px'
-                }}
-              >
+            <div className="flex flex-col self-stretch px-4 py-3">
+              <div className="self-start text-[#C4C6C6] font-pretendard text-xs mb-2">
                 영향 시설 수
               </div>
 
-              {/* Bar Chart */}
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart
                   data={mockImpactData}
@@ -366,7 +200,10 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
           </>
         )}
       </div>
-    </Panel>
+      </Panel>
+
+      <SimulationProgressIndicator />
+    </>
   );
 });
 

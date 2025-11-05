@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { reaction } from 'mobx';
-// import Title from '@/components/basic/Title';
-// import TabNavigation from '@/components/basic/TabNavigation';
-import SubTitle from '@/components/basic/SubTitle';
 import Divider from '@/components/basic/Divider';
 import Spacer from '@/components/basic/Spacer';
 import Icon from '@/components/basic/Icon';
@@ -11,7 +8,8 @@ import Info from '@/components/basic/Info';
 import Checkbox from './Checkbox';
 import { simulationStore } from '@/stores/SimulationStore';
 import { renderLocationMarker } from '@/utils/cesium/locationMarker';
-import type { PMType, SimulationRequest } from '@/types/simulation_request_types';
+import type { PMType, SimulationRequest, Weather } from '@/types/simulation_request_types';
+import type { SimulationConfirmType } from '../types';
 import { userStore } from '@/stores/UserStore';
 
 interface SimulationDetailConfigProps {
@@ -24,7 +22,6 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
   const [title, setTitle] = useState('');
   const [pollutant, setPollutant] = useState('');
   const [concentration, setConcentration] = useState('');
-  //const [altitude, setAltitude] = useState('1.5');
   const [windDirection, setWindDirection] = useState('270');
   const [windSpeed, setWindSpeed] = useState('2.31');
   const [useCurrentWeather, setUseCurrentWeather] = useState(false);
@@ -44,6 +41,24 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
 
   // Get selected location from store
   const selectedLocation = simulationStore.selectedAddress;
+
+  // 마운트 시 현재 기상 정보 로드
+  useEffect(() => {
+    simulationStore.loadWeatherInfo();
+  }, [])
+
+  // useCurrnetweather 체크박스 상태 변경 체크
+  useEffect(() => {
+    const weatherData = simulationStore.currentWeather;
+
+    if (useCurrentWeather && weatherData) {
+      setWindDirection(String(weatherData.wind_direction_1m));
+      setWindSpeed(String(weatherData.wind_speed_1m));
+    } else if (!useCurrentWeather) {
+      setWindDirection('270');
+      setWindSpeed('2.31');
+    }
+  }, [useCurrentWeather, simulationStore.currentWeather])
 
   // 선택된 위치(selectedLocation)에 따라 마커 표시
   useEffect(() => {
@@ -83,9 +98,9 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
             }
           }}
         />
-        <SubTitle info="시뮬레이션 실행에 필요한 세부 설정을 입력해주세요.">
+        <div className="font-bold text-lg text-white py-[10px] px-0"> 
           상세설정
-        </SubTitle>
+        </div>
       </div>
       <Divider color="bg-[#C3C3C3]" />
 
@@ -107,25 +122,8 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
             >
               시뮬레이션 제목
             </div>
-            <Info>
-              <>
-                <div
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '18px',
-                    fontWeight: '700',
-                    lineHeight: 'normal',
-                    color: '#FFF'
-                  }}
-                >
-                  시뮬레이션 제목
-                </div>
-                <div style={{ width: '100%', height: '1px', background: '#C4C6C6' }} />
-                <div className="flex gap-[2px] items-start" style={{ fontFamily: 'Pretendard', fontSize: '14px', fontWeight: '400', lineHeight: '18px', color: '#A6A6A6' }}>
-                  <span style={{ fontWeight: '500', flexShrink: 0 }}>※</span>
-                  <span style={{ flex: '1 0 0' }}>시뮬레이션 구분용 제목을 입력하세요.</span>
-                </div>
-              </>
+            <Info infoTitle="시뮬레이션 제목">
+              ※ 시뮬레이션 구분용 제목을 입력하세요.
             </Info>
           </div>
           <div className="relative" style={{ width: '360px' }}>
@@ -175,25 +173,8 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
             >
               오염 물질
             </div>
-            <Info>
-              <>
-                <div
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '18px',
-                    fontWeight: '700',
-                    lineHeight: 'normal',
-                    color: '#FFF'
-                  }}
-                >
-                  오염 물질
-                </div>
-                <div style={{ width: '100%', height: '1px', background: '#C4C6C6' }} />
-                <div className="flex gap-[2px] items-start" style={{ fontFamily: 'Pretendard', fontSize: '14px', fontWeight: '400', lineHeight: '18px', color: '#A6A6A6' }}>
-                  <span style={{ fontWeight: '500', flexShrink: 0 }}>※</span>
-                  <span style={{ flex: '1 0 0' }}>시뮬레이션할 오염물질을 선택하고 해당 물질의 예상 농도를 입력하세요.</span>
-                </div>
-              </>
+            <Info infoTitle="오염 물질">
+              ※ 시뮬레이션할 오염물질을 선택하고 해당 물질의 예상 농도를 입력하세요.
             </Info>
           </div>
           <div className="flex gap-3" style={{ width: '360px' }}>
@@ -295,25 +276,11 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
             >
               발생 위치
             </div>
-            <Info>
-              <>
-                <div
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '18px',
-                    fontWeight: '700',
-                    lineHeight: 'normal',
-                    color: '#FFF'
-                  }}
-                >
-                  발생 위치
-                </div>
-                <div style={{ width: '100%', height: '1px', background: '#C4C6C6' }} />
-                <div className="flex gap-[2px] items-start" style={{ fontFamily: 'Pretendard', fontSize: '14px', fontWeight: '400', lineHeight: '18px', color: '#A6A6A6' }}>
-                  <span style={{ fontWeight: '500', flexShrink: 0 }}>※</span>
-                  <span style={{ flex: '1 0 0' }}>선택한 위치를 기준으로 측정이 진행됩니다. <br /> 위치를 변경하려면 이전 단계로 돌아가 주세요.</span>
-                </div>
-              </>
+            <Info infoTitle="발생 위치">
+              <span style={{ flex: '1 0 0' }}>
+                ※ 선택한 위치를 기준으로 측정이 진행됩니다. 
+                <br /> 위치를 변경하려면 이전 단계로 돌아가 주세요.
+              </span>
             </Info>
           </div>
           <div
@@ -379,70 +346,6 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
           </div>
         </div>
 
-        {/* 발생 고도 */}
-        {/* <div className="flex items-center self-stretch justify-between">
-          <div className="flex items-center gap-[5px]">
-            <div
-              style={{
-                fontFamily: 'Pretendard',
-                fontSize: '16px',
-                fontWeight: '700',
-                lineHeight: 'normal',
-                color: '#FFF'
-              }}
-            >
-              발생 고도
-            </div>
-            <Info>
-              <>
-                <div
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '18px',
-                    fontWeight: '700',
-                    lineHeight: 'normal',
-                    color: '#FFF'
-                  }}
-                >
-                  발생 고도
-                </div>
-                <div style={{ width: '100%', height: '1px', background: '#C4C6C6' }} />
-                <div className="flex gap-[2px] items-start" style={{ fontFamily: 'Pretendard', fontSize: '14px', fontWeight: '400', lineHeight: '18px', color: '#A6A6A6' }}>
-                  <span style={{ fontWeight: '500', flexShrink: 0 }}>※</span>
-                  <span style={{ flex: '1 0 0' }}>측정 위치의 고도를 입력해 주세요. <br /> 센서가 설치된 높이인 1.5m로 입력하면 가장 정확한 예측이 가능합니다.</span>
-                </div>
-              </>
-            </Info>
-          </div>
-          <div className="relative" style={{ width: '360px' }}>
-            <input
-              type="text"
-              value={altitude}
-              onChange={(e) => setAltitude(e.target.value)}
-              placeholder="예: 1.5"
-              className="w-full h-8 px-3 py-1 bg-black rounded border border-[#696A6A] text-white outline-none"
-              style={{
-                fontFamily: 'Pretendard',
-                fontSize: '14px',
-                fontWeight: '400',
-                lineHeight: 'normal'
-              }}
-            />
-            <div
-              className="absolute transform -translate-y-1/2 right-3 top-1/2"
-              style={{
-                fontFamily: 'Pretendard',
-                fontSize: '12px',
-                fontWeight: '400',
-                lineHeight: 'normal',
-                color: '#A6A6A6'
-              }}
-            >
-              m
-            </div>
-          </div>
-        </div> */}
-
         {/* 기상 조건 */}
         <div className="flex items-center self-stretch justify-between">
           <div className="flex items-center gap-[5px]">
@@ -457,25 +360,8 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
             >
               기상 조건
             </div>
-            <Info>
-              <>
-                <div
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '18px',
-                    fontWeight: '700',
-                    lineHeight: 'normal',
-                    color: '#FFF'
-                  }}
-                >
-                  기상 조건
-                </div>
-                <div style={{ width: '100%', height: '1px', background: '#C4C6C6' }} />
-                <div className="flex gap-[2px] items-start" style={{ fontFamily: 'Pretendard', fontSize: '14px', fontWeight: '400', lineHeight: '18px', color: '#A6A6A6' }}>
-                  <span style={{ fontWeight: '500', flexShrink: 0 }}>※</span>
-                  <span style={{ flex: '1 0 0' }}>시뮬레이션 시점의 기상 조건을 직접 입력하거나, 현재 기상 정보를 적용할 수 있습니다.</span>
-                </div>
-              </>
+            <Info infoTitle="기상 조건">
+              ※ 시뮬레이션 시점의 기상 조건을 직접 입력하거나, 현재 기상 정보를 적용할 수 있습니다.
             </Info>
           </div>
           <div className="flex flex-col gap-1" style={{ width: '360px' }}>
@@ -503,7 +389,10 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
                     value={windDirection}
                     onChange={(e) => setWindDirection(e.target.value)}
                     placeholder="예 : 270"
-                    className="w-full h-8 px-3 py-1 bg-black rounded border border-[#696A6A] text-white outline-none"
+                    disabled={useCurrentWeather}
+                    className={`w-full h-8 px-3 py-1 bg-black rounded border border-[#696A6A] text-white outline-none 
+                      ${useCurrentWeather ? 'disabled:bg-[#333] disabled:text-[#A6A6A6]' : ''
+                    }`}
                     style={{
                       fontFamily: 'Pretendard',
                       fontSize: '14px',
@@ -549,7 +438,10 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
                     value={windSpeed}
                     onChange={(e) => setWindSpeed(e.target.value)}
                     placeholder="예 : 2.31"
-                    className="w-full h-8 px-3 py-1 bg-black rounded border border-[#696A6A] text-white outline-none"
+                    disabled={useCurrentWeather}
+                    className={`w-full h-8 px-3 py-1 bg-black rounded border border-[#696A6A] text-white outline-none 
+                      ${useCurrentWeather ? 'disabled:bg-[#333] disabled:text-[#A6A6A6]' : ''
+                    }`}
                     style={{
                       fontFamily: 'Pretendard',
                       fontSize: '14px',
@@ -575,7 +467,7 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
             <Checkbox
               checked={useCurrentWeather}
               onChange={setUseCurrentWeather}
-              label={simulationStore.weatherInfoLabel}
+              label={simulationStore.isLoadingCurrentWeather ? '기상 정보 받아오는 중...' : simulationStore.weatherInfoLabel}
             />
           </div>
         </div>
@@ -594,25 +486,11 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
             >
               공개 설정
             </div>
-            <Info>
-              <>
-                <div
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '18px',
-                    fontWeight: '700',
-                    lineHeight: 'normal',
-                    color: '#FFF'
-                  }}
-                >
-                  공개 설정
-                </div>
-                <div style={{ width: '100%', height: '1px', background: '#C4C6C6' }} />
-                <div className="flex gap-[2px] items-start" style={{ fontFamily: 'Pretendard', fontSize: '14px', fontWeight: '400', lineHeight: '18px', color: '#A6A6A6' }}>
-                  <span style={{ fontWeight: '500', flexShrink: 0 }}>※</span>
-                  <span style={{ flex: '1 0 0' }}>공개 설정 시 시뮬레이션 설정값이 다른 사용자에게도 공유됩니다. <br /> [실행목록 &gt; 맞춤실행 &gt; 내 시뮬레이션] 에서 언제든 수정할 수 있습니다.</span>
-                </div>
-              </>
+            <Info infoTitle="공개 설정">
+              <span style={{ flex: '1 0 0' }}>
+                ※ 공개 설정 시 시뮬레이션 설정값이 다른 사용자에게도 공유됩니다. 
+                <br /> [실행목록 &gt; 맞춤실행 &gt; 내 시뮬레이션] 에서 언제든 수정할 수 있습니다.
+              </span>
             </Info>
           </div>
           <div className="flex gap-3" style={{ width: '360px' }}>
@@ -705,6 +583,22 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
             const concentrationValue = parseFloat(concentration);
             if (isNaN(concentrationValue)) return alert('농도 값 유효하지 않음') // 농도 값 유효성 검사
 
+            // useCurrentWeather 체크 여부에 따른 weather 객체 구성
+            const weatherPayload: Weather = useCurrentWeather && simulationStore.currentWeather 
+            ? {
+                ...simulationStore.currentWeather
+              } 
+            :
+              {
+                wind_direction_10m: parseFloat(windDirection) || 0,
+                wind_speed_10m: parseFloat(windSpeed) || 0,
+                wind_direction_1m: parseFloat(windDirection) || 0, // 임시로 10m값 사용
+                wind_speed_1m: parseFloat(windSpeed) || 0, // 임시로 10m값 사용
+                humidity: 60, // 임시값
+                sea_level_pressure: 1013, // 임시값
+                temperature: 20, // 임시값
+              }
+
             const executionData: SimulationRequest = {
               simulation_name: title,
               user: userStore.currentUser || '',
@@ -716,15 +610,7 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
               location: '부산진구', // 임시값
 
               // weather 객체
-              weather: {
-                wind_direction_10m: parseFloat(windDirection) || 0,
-                wind_speed_10m: parseFloat(windSpeed) || 0,
-                wind_direction_1m: parseFloat(windDirection) || 0, // 임시로 10m값 사용
-                wind_speed_1m: parseFloat(windSpeed) || 0, // 임시로 10m값 사용
-                humidity: 60, // 임시값
-                sea_level_pressure: 1013, // 임시값
-                temperature: 20, // 임시값
-              },
+              weather: weatherPayload,
 
               // air_quality 객체
               air_quality: {
@@ -742,9 +628,18 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
               },
             };
 
+            //simulationCheck == false : 선행 작업 없음
+            //simulationCheck == true : 이미 선행 작업 있음
+            const simulationCheck = await simulationStore.runSimulationCheck();
 
-            //TODO 대기필요 팝업창(runDup) 추가 필요
-            const result = await simulationStore.openModal("runCustom");
+            let modalType: SimulationConfirmType = "runCustom";
+
+            if (!simulationCheck?.data.in_progress == false) {
+              modalType = "runDup";
+            }
+
+            const result = await simulationStore.openModal(modalType);
+
             simulationStore.setPendingData(executionData);
             console.log('시뮬레이션 실행:', executionData);
             if (result === "confirm") {

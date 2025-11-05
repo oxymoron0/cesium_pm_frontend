@@ -295,13 +295,12 @@ const SimulationRunningList = observer(function SimulationRunningList() {
                 {sim.status === '대기' &&                   
                 <div 
                     className="flex items-center justify-center w-auto h-8 cursor-pointer py-1 px-3 rounded-[4px] text-black border border-[#FFD040] bg-[#FFD040]"
-                    // onClick={async () => {
-                    //   const result = await simulationStore.openModal('');
-                    //   if (result === 'confirm') {
-                    //     //TODO 시작로직 추가해야함
-                    //   }
-                    // }}
-                    onClick={() => console.log(sim.uuid, '분석 시작')}
+                    onClick={async () => {
+                      const result = await simulationStore.openModal('startSim');
+                      if (result === 'confirm') {
+                        //TODO 시작로직 추가해야함
+                      }
+                    }}
                   >
                     분석 시작
                 </div>}

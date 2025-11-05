@@ -7,9 +7,11 @@ import type {
   SimulationListPagination,
   SimulationDetail,
   SimulationQuckData,
-  PMType
+  SimulationInProgressResponse,
+  PMType,
+  Weather
 } from '../types/simulation_request_types';
-import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI } from '@/utils/api';
+import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck } from '@/utils/api';
 import { userStore } from './UserStore';
 
 // ============================================================================
@@ -290,6 +292,8 @@ class SimulationStore {
   config: SimulationConfig | null = null;
 
   // 현재 기상 정보
+  currentWeather: Weather | null = null;
+  isLoadingCurrentWeather: boolean = false;
   weatherLocation: string = '부전동';
   weatherTimestamp: string = '08.07. 09:00';
 
@@ -310,6 +314,8 @@ class SimulationStore {
   paginationQuick: SimulationListPagination | null = null;
   selectedsimulationQuick: SimulationQuckData | null = null;
   isLoadingQuickList: boolean = false;
+  // 빠른실행 결과 가이드창 활성화
+  isSimulationQuickGuideMode: boolean = false;
 
   // 시뮬레이션 상세 정보
   selectedSimulationUuid: string | null = null;
@@ -343,7 +349,8 @@ class SimulationStore {
 
   constructor() {
     makeAutoObservable(this, {
-      itemsToDelete: observable // itemDelete 체크박스 이벤트 추적용
+      itemsToDelete: observable, // itemDelete 체크박스 이벤트 추적용
+      currentWeather: observable
     });
   }
 
@@ -600,21 +607,37 @@ class SimulationStore {
 
   /**
    * 현재 기상 정보 불러오기
-   * 실제로는 API 호출: GET /api/simulation/current-weather
+   * GET /api/v1/weather/current
    */
   async loadWeatherInfo(): Promise<void> {
-    try {
-      // TODO: 실제 API 호출
-      // const response = await fetch('/api/simulation/current-weather');
-      // const data = await response.json();
-      // this.weatherLocation = data.location;
-      // this.weatherTimestamp = data.timestamp;
+    // 이미 로딩했거나 로딩 중이면 중복 호출 방지
+    if (this.isLoadingCurrentWeather || this.currentWeather) return;
+    
+      runInAction(() => {
+        this.isLoadingCurrentWeather = true;
+      });
 
-      // Mock: 기본값 사용
-      // 실제 구현 시 API에서 받은 데이터로 업데이트
+    try {
+      const weatherData = await getCurrentWeatherAPI();
+
+      runInAction(() => {
+        this.currentWeather = weatherData;
+        // this.weatherLocation = '기상청';
+
+        const now = new Date(); // API 호출 성공 시점의 현재 시간
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        this.weatherTimestamp = `${month}.${day}. ${hours}:${minutes}`;
+      });
+
     } catch (error) {
       console.error('[SimulationStore] Weather info load failed:', error);
-      // 실패 시 기본값 유지
+    } finally {
+      runInAction(() => {
+        this.isLoadingCurrentWeather = false;
+      })
     }
   }
 
@@ -623,6 +646,25 @@ class SimulationStore {
    */
   get weatherInfoLabel(): string {
     return `현재 기상 정보 적용 (기상청, ${this.weatherLocation}, ${this.weatherTimestamp} 기준)`;
+  }
+
+  // ============================================================================
+  // 진행중인 시뮬레이션 확인
+  // ============================================================================
+
+  /**
+   * 진행중인 시뮬레이션 확인
+   * POST /api/v1/simulation/check
+   */
+  async runSimulationCheck(): Promise<SimulationInProgressResponse | null> {
+    try {
+      const response = await runSimulationCheck();
+      
+      return response;
+    } catch (error) {
+      console.error('[SimulationStore] Simulation runSimulationCheck failed:', error);
+      return null;
+    }
   }
 
   // ============================================================================

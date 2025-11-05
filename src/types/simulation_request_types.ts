@@ -186,3 +186,13 @@ export interface SimulationQuckDataResponse {
   simulations: SimulationQuckData[]; // Simulation items
   pagination: SimulationListPagination; // Pagination info
 }
+
+export interface SimulationInProgressResponse {
+  success: boolean;
+  data: SimulationInProgressData;
+  message?: string;
+}
+
+export interface SimulationInProgressData {
+  in_progress: boolean;
+}

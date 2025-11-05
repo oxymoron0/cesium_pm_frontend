@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { Entity } from 'cesium';
+import { Entity, Cartesian3 } from 'cesium';
 import { setSelectedSimulationStationId } from '@/utils/cesium/simulationResultRenderer';
+import { simulationStore } from "@/stores/SimulationStore";
 
 const SimulationStationHtmlRenderer = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -12,6 +13,24 @@ const SimulationStationHtmlRenderer = () => {
   useEffect(() => {
     setSelectedSimulationStationId(selectedStationId);
   }, [selectedStationId]);
+
+  // flyto 시 선택된 엔티티 ID 기준으로 스토어에서 데이터 가져옴 
+  const getStationFromStoreBySelectedId = (id: string | null) => {
+    if (!id) return null;
+
+    // 예: 'station_38' → 38
+    const idx = Number(String(id).replace(/\D+/g, ''));
+    const data = simulationStore.selectedsimulationQuick?.station_data;
+    if (!data || !Number.isFinite(idx)) return null;
+
+    // 1) index로 우선 매칭
+    let found = data.find(s => s.index === idx);
+    // 2) 혹시 모를 예외: id/이름으로 보조 매칭
+    if (!found) {
+      found = data.find(s => s.station_id === id || s.station_name === id);
+    }
+    return found ?? null;
+  };
 
   // 시간 포맷 변환 함수 (2024.08.07 15:00 → 오후 03:00)
   const formatTime = useCallback((timeStr: string): string => {
@@ -97,6 +116,28 @@ const SimulationStationHtmlRenderer = () => {
       element.style.overflow = 'visible';
       element.style.zIndex = '1520';
       element.innerHTML = createPM10HTML(pm10Value, timeValue);
+
+      const button = element.querySelector('button');
+      if (button) {
+        button.addEventListener('click', () => {
+          try {
+            // 선택 ID → 스토어에서 해당 스테이션 찾기
+            const station = getStationFromStoreBySelectedId(entityId);
+            if (!station) return;
+
+            const [lon, lat] = station.location.coordinates;
+            const viewer = window.cviewer;
+            if (!viewer?.camera) return;
+
+            viewer.camera.flyTo({
+              destination: Cartesian3.fromDegrees(lon, lat, 500),
+              duration: 1.2,
+            });
+          } catch (err) {
+            console.error('flyTo (store) error:', err);
+          }
+        });
+      }
 
       sensorElementsRef.current.set(entityId, element);
       containerRef.current?.appendChild(element);
