@@ -199,34 +199,37 @@ function createFacilityBillboardEntity(
                     color: white;
                     border: 1px solid #C4C6C6;
                     border-radius: 12px;
-                    padding: 0px 0px 8px 0;
+                    padding: 4px 16px 8px 24px;
                     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
                     /* 화살표와의 간격 */
-                    margin-bottom: 0; 
-                    min-width: 110px;
+                    margin-bottom: 0;
+                    min-width: 140px;
                     display: flex;
                     flex-direction: column;
-                    font-family: Pretendard, sans-serif;">
-          <span style="background: white; position: absolute;
+                    font-family: Pretendard, sans-serif;
+                    position: relative;">
+          <span style="background: white;
+                          position: absolute;
                           color: black;
                           border: 1px solid #C4C6C6;
                           border-radius: 50%;
                           width: 22px;
                           height: 22px;
-                          line-height: 20px; top: 0px; left 0px;
+                          line-height: 20px;
+                          top: -1px;
+                          left: -1px;
                           text-align: center;
                           font-weight: 700;
-                          font-size: 12px;
-                          margin-right: 8px;">
+                          font-size: 12px;">
               ${facility.rank}
           </span>
-          <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 4px; padding-left: 12px;">
-            <span style="font-weight: 700; font-size: 14px; line-height: 22px;">
+          <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 8px;">
+            <span style="font-weight: 700; font-size: 14px; line-height: 22px; text-align: center; word-break: keep-all;">
               ${facility.name}
             </span>
           </div>
           <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 4px;">
-            <div style="font-size: 12px; color: #ccc; margin-bottom: 8px;">
+            <div style="font-size: 12px; color: #ccc; margin: 0 0 8px -6px;">
                 미세먼지
             </div>
             <div style="background: ${styles.borderColor};
@@ -235,6 +238,7 @@ function createFacilityBillboardEntity(
                         border-radius: 50%;
                         width: 50px;
                         height: 50px;
+                        margin: 0 0 0 -6px;
                         line-height: 50px;
                         text-align: center;
                         font-weight: 700;

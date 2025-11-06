@@ -521,6 +521,10 @@ class PriorityStore {
     return this.nearbyStationsCache.get(facilityId) || [];
   }
 
+  setNearbyStations(facilityId: string, stations: NearbyStation[]) {
+    this.nearbyStationsCache.set(facilityId, stations);
+  }
+
   get selectedStations(): NearbyStation[] {
     const stations: NearbyStation[] = [];
     this.selectedFacilityIds.forEach(facilityId => {

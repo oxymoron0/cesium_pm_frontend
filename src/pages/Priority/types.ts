@@ -14,6 +14,7 @@ export interface VulnerableFacility {
   id: string;
   rank: number;
   name: string;
+  dong: string;
   address: string;
   predictedConcentration: number;
   predictedLevel: 'good' | 'normal' | 'bad' | 'very-bad';
