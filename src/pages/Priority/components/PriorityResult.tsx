@@ -79,13 +79,13 @@ const transformToVulnerableFacility = (
     address = facility.address;
 
     // address에서 동 정보 추출 시도 (예: "부산광역시 부산진구 전포동 123-45")
-    const dongMatch = address.match(/([가-힣]+동|[가-힣]+읍|[가-힣]+면)/);
-    dong = dongMatch ? dongMatch[1] : '정보 없음';
+    const dongMatch = address.match(/([가-힣0-9]+동|[가-힣0-9]+읍|[가-힣0-9]+면)/);
+    dong = dongMatch ? dongMatch[1].replace(/\d+/g, '') : '정보 없음';
   } else {
     // SeniorCenter
     uniqueId = `senior_${id}`;
     address = facility.road_address || facility.lot_address || '주소 정보 없음';
-    dong = facility.dong || '정보 없음';
+    dong = facility.dong ? facility.dong.replace(/\d+/g, '') : '정보 없음';
   }
 
   // 예측 데이터 Mock 값 (실제 모델 예측 결과로 대체되어야 함)
@@ -244,7 +244,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
   // 필터링된 시설들을 Cesium에 렌더링
   useEffect(() => {
     if (facilities.length > 0) {
-      renderVulnerableFacilities(facilities);
+      renderVulnerableFacilities(facilities, priorityStore.selectedDong);
     } else {
       clearVulnerableFacilities();
     }
