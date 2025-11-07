@@ -839,12 +839,12 @@ class SimulationStore {
    */
   setSelectedSimulationQuick(item: SimulationQuckData) {
     this.selectedsimulationQuick = null;
-    //this.selectedsimulationQuick = item;
+    this.selectedsimulationQuick = item;
     
     // 목업 모드가 활성화된 경우 concentration 값을 랜덤화하여 히트맵 시각화 개선
-    this.selectedsimulationQuick = ENABLE_MOCK_CONCENTRATION
-      ? randomizeSimulationConcentration(item)
-      : item;
+    // this.selectedsimulationQuick = ENABLE_MOCK_CONCENTRATION
+    //   ? randomizeSimulationConcentration(item)
+    //   : item;
   }
   /**
    * 모달 열기
