@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import Title from '@/components/basic/Title';
 import Spacer from '@/components/basic/Spacer';
@@ -11,7 +11,10 @@ import { priorityStore } from '@/stores/PriorityStore';
 import { administrativeStore } from '@/stores/AdministrativeStore';
 import { renderAdministrativeBoundary, clearAdministrativeBoundary } from '@/utils/cesium/administrativeRenderer';
 import { isGeometrySuccess } from '@/types/administrative';
-import type { PriorityConfig, VulnerableFacility } from '../types';
+import { vulnerabilityStore, type ChildcareCenter, type SeniorCenter } from '@/stores/VulnerabilityStore';
+import { stationStore } from '@/stores/StationStore';
+import type { PriorityConfig, VulnerableFacility, NearbyStation, StationMeasurement } from '../types';
+import type { RouteStationFeature } from '@/utils/api/types';
 
 interface PriorityResultProps {
   config: PriorityConfig;
@@ -19,69 +22,11 @@ interface PriorityResultProps {
   onClose?: () => void;
 }
 
-// MockUp 데이터
-const mockFacilities: VulnerableFacility[] = [
-  {
-    id: '1',
-    rank: 1,
-    name: '백병원',
-    address: '부산 부산진구 복지로 75',
-    predictedConcentration: 160,
-    predictedLevel: 'very-bad',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.021222277, 35.146487166]
-    }
-  },
-  {
-    id: '2',
-    rank: 2,
-    name: '당감초등학교',
-    address: '부산 부산진구 당감로 22-5',
-    predictedConcentration: 135,
-    predictedLevel: 'bad',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.039945403, 35.164115172]
-    }
-  },
-  {
-    id: '3',
-    rank: 3,
-    name: '초읍초등학교',
-    address: '부산 부산진구 성지로 104번길 26',
-    predictedConcentration: 58,
-    predictedLevel: 'normal',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.054482652, 35.180499832]
-    }
-  },
-  {
-    id: '4',
-    rank: 4,
-    name: '부전역',
-    address: '부산 부산진구 부전로 181',
-    predictedConcentration: 55,
-    predictedLevel: 'normal',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.059569753, 35.164777143]
-    }
-  },
-  {
-    id: '5',
-    rank: 5,
-    name: '범내골역',
-    address: '부산 부산진구 중앙대로 612',
-    predictedConcentration: 48,
-    predictedLevel: 'normal',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.060004982, 35.147231683]
-    }
-  }
-];
+interface PriorityResultProps {
+  config: PriorityConfig;
+  onBack: () => void;
+  onClose?: () => void;
+}
 
 // 등급별 스타일
 const getLevelStyle = (level: VulnerableFacility['predictedLevel']) => {
@@ -112,9 +57,100 @@ const getLevelStyle = (level: VulnerableFacility['predictedLevel']) => {
       };
   }
 };
+const transformToVulnerableFacility = (
+  facility: ChildcareCenter | SeniorCenter,
+  index: number
+): VulnerableFacility | null => {
+  const { geom, id, name } = facility;
+
+  // 지오메트리 데이터가 없는 시설은 제외
+  if (!geom || !geom.longitude || !geom.latitude) {
+    return null;
+  }
+
+  // ID 충돌 방지: 타입별 prefix 추가
+  let uniqueId: string;
+  let address: string;
+  let dong: string;
+
+  if ('address' in facility) {
+    // ChildcareCenter
+    uniqueId = `childcare_${id}`;
+    address = facility.address;
+
+    // address에서 동 정보 추출 시도 (예: "부산광역시 부산진구 전포동 123-45")
+    const dongMatch = address.match(/([가-힣]+동|[가-힣]+읍|[가-힣]+면)/);
+    dong = dongMatch ? dongMatch[1] : '정보 없음';
+  } else {
+    // SeniorCenter
+    uniqueId = `senior_${id}`;
+    address = facility.road_address || facility.lot_address || '주소 정보 없음';
+    dong = facility.dong || '정보 없음';
+  }
+
+  // 예측 데이터 Mock 값 (실제 모델 예측 결과로 대체되어야 함)
+  const mockConcentrations = [160, 135, 58, 55, 48];
+  const mockLevels: VulnerableFacility['predictedLevel'][] = [
+    'very-bad',
+    'bad',
+    'normal',
+    'normal',
+    'normal'
+  ];
+
+  const concentration = mockConcentrations[index % mockConcentrations.length];
+  const level = mockLevels[index % mockLevels.length];
+
+  return {
+    id: uniqueId,
+    rank: index + 1,
+    name,
+    dong,
+    address,
+    predictedConcentration: concentration,
+    predictedLevel: level,
+    geometry: {
+      type: 'Point',
+      coordinates: [geom.longitude, geom.latitude]
+    }
+  };
+};
 
 const PriorityResult = observer(function PriorityResult({ config, onBack, onClose }: PriorityResultProps) {
   const [selectedFacilities, setSelectedFacilities] = useState<Set<string>>(new Set());
+
+  // 선택된 동에 따라 시설 필터링
+  const facilities = useMemo(() => {
+    const allFacilities = vulnerabilityStore.facilitiesWithGeometry
+      .map(transformToVulnerableFacility)
+      .filter((f): f is VulnerableFacility => f !== null);
+
+    // "전체" 선택 시 모든 시설 반환
+    if (priorityStore.selectedDong === '전체') {
+      return allFacilities;
+    }
+
+    // 특정 동 선택 시 해당 동의 시설만 필터링
+    return allFacilities.filter(f => f.dong === priorityStore.selectedDong);
+  }, [vulnerabilityStore.facilitiesWithGeometry, priorityStore.selectedDong]);
+
+  
+
+  useEffect(() => {
+    const loadFacilities = async () => {
+      await vulnerabilityStore.loadFacilitiesByRadius({ radius: 100 });
+    };
+
+    loadFacilities();
+
+    // const facilities = vulnerabilityStore.facilitiesWithGeometry;
+    // facilities = facilities;
+    // PriorityFacilities = facilities.map(transformToVulnerableFacility).filter((f): f is VulnerableFacility => f !== null);
+    
+    return () => {
+      clearVulnerableFacilities();
+    };
+  }, []);
 
   // Store에 config 설정
   useEffect(() => {
@@ -195,9 +231,147 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
     };
 
     renderBoundary();
-    renderVulnerableFacilities(mockFacilities);
+    // renderVulnerableFacilities(mockFacilities);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [priorityStore.selectedDong]);
+
+  // 동이 변경되면 체크박스 선택 상태 초기화
+  useEffect(() => {
+    setSelectedFacilities(new Set());
+    priorityStore.clearFacilitySelection();
+  }, [priorityStore.selectedDong]);
+
+  // 필터링된 시설들을 Cesium에 렌더링
+  useEffect(() => {
+    if (facilities.length > 0) {
+      renderVulnerableFacilities(facilities);
+    } else {
+      clearVulnerableFacilities();
+    }
+  }, [facilities]);
+
+  // 두 좌표 간 거리 계산 (Haversine formula, 단위: km)
+  const calculateDistance = (
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+  ): number => {
+    const R = 6371; // 지구 반지름 (km)
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  // 시설 주변 정류장 데이터 로드
+  const loadStationsForFacility = async (facility: VulnerableFacility) => {
+    try {
+      // 이미 캐시에 있으면 스킵
+      if (priorityStore.getNearbyStations(facility.id).length > 0) {
+        return;
+      }
+
+      const [facilityLng, facilityLat] = facility.geometry.coordinates;
+
+      // StationStore에서 모든 정류장 가져오기
+      const allStations: Array<RouteStationFeature & { distance: number }> = [];
+
+      stationStore.stationDataMap.forEach((stationData) => {
+        stationData.features.forEach((feature) => {
+          const [stationLng, stationLat] = feature.geometry.coordinates;
+          const distance = calculateDistance(facilityLat, facilityLng, stationLat, stationLng);
+
+          allStations.push({
+            ...feature,
+            distance
+          });
+        });
+      });
+
+      // 중복 제거 (같은 station_id)
+      const uniqueStations = allStations.reduce((acc, station) => {
+        const existing = acc.find(s => s.properties.station_id === station.properties.station_id);
+        if (!existing) {
+          acc.push(station);
+        }
+        return acc;
+      }, [] as Array<RouteStationFeature & { distance: number }>);
+
+      // 거리 필터링: 3km 이내 정류장만 선택
+      const MAX_DISTANCE_KM = 3.0;
+      const MAX_STATIONS = 10;
+
+      const nearbyStations = uniqueStations
+        .filter(station => station.distance <= MAX_DISTANCE_KM)
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, MAX_STATIONS);
+
+      if (nearbyStations.length === 0) {
+        console.log(`[loadStationsForFacility] No stations found within ${MAX_DISTANCE_KM}km for facility ${facility.id}`);
+        return;
+      }
+
+      console.log(`[loadStationsForFacility] Found ${nearbyStations.length} stations within ${MAX_DISTANCE_KM}km for facility ${facility.id}`);
+
+
+      // 각 정류장에 대해 랜덤 센서 데이터 생성
+      const stationPromises = nearbyStations.map(async (feature) => {
+        return {
+          id: `${facility.id}_${feature.properties.station_id}`,
+          stationName: feature.properties.station_name,
+          stationId: feature.properties.station_id,
+          measurements: generateRandomMeasurements(4), // 4개의 랜덤 측정값 생성
+          geometry: feature.geometry
+        } as NearbyStation;
+      });
+
+      const stations = await Promise.all(stationPromises);
+      priorityStore.setNearbyStations(facility.id, stations);
+
+    } catch (error) {
+      console.error(`[loadStationsForFacility] Failed to load stations for facility ${facility.id}:`, error);
+    }
+  };
+
+  // PM10 농도에 따른 등급 계산
+  const getPM10Level = (concentration: number): 'good' | 'normal' | 'bad' | 'very-bad' => {
+    if (concentration <= 30) return 'good';
+    if (concentration <= 80) return 'normal';
+    if (concentration <= 150) return 'bad';
+    return 'very-bad';
+  };
+
+  // 랜덤 StationMeasurement 생성
+  const generateRandomMeasurements = (count: number = 4): StationMeasurement[] => {
+    const measurements: StationMeasurement[] = [];
+    const now = new Date();
+
+    for (let i = 0; i < count; i++) {
+      // 현재 시간에서 i시간 전
+      const measurementTime = new Date(now.getTime() - i * 60 * 60 * 1000);
+      const hours = measurementTime.getHours().toString().padStart(2, '0');
+      const minutes = measurementTime.getMinutes().toString().padStart(2, '0');
+
+      // 랜덤 농도 생성 (0-200 μg/m³)
+      const concentration = Math.floor(Math.random() * 200);
+      const level = getPM10Level(concentration);
+
+      measurements.push({
+        time: `${hours}:${minutes}`,
+        concentration,
+        level
+      });
+    }
+
+    return measurements;
+  };
 
   const toggleFacility = async (id: string) => {
     const newSet = new Set(selectedFacilities);
@@ -205,6 +379,12 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       newSet.delete(id);
     } else {
       newSet.add(id);
+
+      // 선택된 시설의 주변 정류장 데이터 로드
+      const facility = facilities.find(f => f.id === id);
+      if (facility) {
+        await loadStationsForFacility(facility);
+      }
     }
     setSelectedFacilities(newSet);
 
@@ -213,19 +393,27 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
     renderNearbyStations(priorityStore.selectedStations);
   };
 
-  const toggleAll = () => {
-    if (selectedFacilities.size === mockFacilities.length) {
+  const toggleAll = async () => {
+    if (selectedFacilities.size === facilities.length) {
       setSelectedFacilities(new Set());
       priorityStore.clearFacilitySelection();
+      renderNearbyStations([]);
     } else {
-      const allIds = mockFacilities.map(f => f.id);
+      const allIds = facilities.map(f => f.id);
       setSelectedFacilities(new Set(allIds));
+
+      // 모든 시설에 대해 정류장 데이터 로드 (병렬 처리)
+      const loadPromises = facilities.map(facility => loadStationsForFacility(facility));
+      await Promise.all(loadPromises);
+
       // Store에도 반영
       allIds.forEach(id => {
         if (!priorityStore.isFacilitySelected(id)) {
           priorityStore.toggleFacilitySelection(id);
         }
       });
+
+      renderNearbyStations(priorityStore.selectedStations);
     }
   };
 
@@ -338,7 +526,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
                 <input
                   type="checkbox"
                   className="custom-checkbox"
-                  checked={selectedFacilities.size === mockFacilities.length}
+                  checked={(facilities && selectedFacilities.size === facilities.length)}
                   onChange={toggleAll}
                 />
               </div>
@@ -377,19 +565,26 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
             </div>
 
             {/* 테이블 데이터 */}
-            {mockFacilities.map((facility) => {
+            {facilities.map((facility) => {
               const levelStyle = getLevelStyle(facility.predictedLevel);
+              const isSelected = selectedFacilities.has(facility.id);
+
               return (
                 <div
                   key={facility.id}
-                  className="flex items-center self-stretch border-b border-[#696A6A]"
+                  className={`flex items-center self-stretch border-b border-[#696A6A] ${
+                    isSelected ? 'bg-[rgba(255,208,64,0.2)]' : ''
+                  }`}
                   style={{ minHeight: '40px' }}
                 >
-                  <div className="flex items-center justify-center" style={{ width: '40px', height: '40px', flexShrink: 0 }}>
+                  <div
+                    className="flex items-center justify-center"
+                    style={{ width: '40px', height: '40px', flexShrink: 0 }}
+                  >
                     <input
                       type="checkbox"
                       className="custom-checkbox"
-                      checked={selectedFacilities.has(facility.id)}
+                      checked={isSelected}
                       onChange={() => toggleFacility(facility.id)}
                     />
                   </div>

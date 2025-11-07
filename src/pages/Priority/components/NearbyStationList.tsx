@@ -24,8 +24,13 @@ const getLevelStyle = (level: string) => {
 const NearbyStationList = observer(function NearbyStationList({ stations }: NearbyStationListProps) {
   if (stations.length === 0) {
     return (
-      <div className="flex items-center justify-center py-8 text-[#999999] font-pretendard text-[14px]">
-        취약시설을 선택하면 주변 정류장 정보가 표시됩니다.
+      <div>
+        <div className="flex h-[42px] py-[10px] items-center gap-2 self-stretch border-b border-[#C3C3C3]">
+          <p className="text-white font-pretendard text-[18px] font-bold">주변 정류장</p>
+        </div>
+        <div className="flex items-center justify-center py-8 text-[#999999] font-pretendard text-[14px]">
+          ※ 취약시설 선택 시, 해당 시설 주변의 정류장 정보가 아래에 표시됩니다.
+        </div>
       </div>
     );
   }

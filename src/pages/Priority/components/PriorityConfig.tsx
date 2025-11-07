@@ -181,12 +181,16 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
   return (
     <>
       <Title
-        info="• 현재 시간 기준, 부산진구 전체의 취약시설 및 살수차 투입 우선순위를 조회할 수 있습니다. 원하는 조건으로 변경하려면 [맞춤설정 조회] 버튼을 눌러주세요."
+        info="※ 정류장 공기질 측정 데이터 기반으로, 대기질 취약 시설 순위와 살수차 우선 투입 도로 정보를 제공합니다."
         onClose={onClose}
+        infoTitle="우선순위"
       >
         우선순위
       </Title>
-
+      <Spacer height={16} />
+      <span className="font-normal text-[14px] text-[rgba(166,166,166,1)]"> 
+        ※ 현재 시간 기준, 부산진구 전체의 취약시설 및 살수차 투입 우선순위를 조회할 수 있습니다. 원하는 조건으로 변경하려면 [맞춤설정 조회] 버튼을 눌러주세요.
+        </span>
       <Spacer height={16} />
       <SubTitle>기본 설정</SubTitle>
       <Divider />
@@ -225,9 +229,8 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
           >
             관찰일시
           </div>
-          <Info>
-            시뮬레이션을 실행할 시점을 선택합니다.
-            날짜와 시간대를 지정하여 해당 시점의 대기질 상태를 시뮬레이션할 수 있습니다.
+          <Info infoTitle="관찰일시">
+            ※ 접속 시간 기준, 가장 최근 측정된 시간이 기본으로 설정되어 있습니다.
           </Info>
         </div>
 
@@ -337,11 +340,8 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
           >
             행정구역
           </div>
-          <Info>
-            <SubTitle>행정구역</SubTitle>
-            <Divider height='h-[2px]' />
-            우선순위를 조회할 행정구역을 선택합니다.
-            시/도, 군/구, 읍/면/동 단위로 지역을 지정할 수 있습니다.
+          <Info infoTitle="행정구역">
+            ※ 시범구역 기간동안 부산진구로 한정됩니다. 부산진구 전체의 우선순위를 제공합니다.
           </Info>
         </div>
 
