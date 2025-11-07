@@ -296,8 +296,7 @@ const SimulationStationHtmlRenderer = () => {
 
   // ===== 히트맵 드로잉 =====
   type HeatPoint = { x: number; y: number; value: number };
-  //const drawHeatmap = useCallback((points: HeatPoint[]) => {
-  const drawHeatmap = useCallback((points: HeatPoint[], emph: number) => {
+  const drawHeatmap = useCallback((points: HeatPoint[], emph: number, effectiveDistance: number) => {
     const viewCtx = heatCtxRef.current;
     const viewCanvas = heatCanvasRef.current;
     const accCtx = heatAccumCtxRef.current;
@@ -311,20 +310,23 @@ const SimulationStationHtmlRenderer = () => {
     if (!viewCtx || !viewCanvas || !accCtx || !accCanvas || !blurCtx || !blurCanvas || !colorCtx || !colorCanvas || !lut) return;
 
     const dpr = dprRef.current || 1;
-    
-    // const viewer = (window as any).cviewer;
-    // const cameraHeight = viewer?.camera?.positionCartographic?.height || 1000;
 
-    // === 🔸 줌 레벨 보정 ===
-    // (높을수록 작게, 낮을수록 크게. 500m~10km 구간 보정)
-    //const scale = Math.min(3, Math.max(0.3, 2000 / cameraHeight));
-
+    // === 🔸 실제 거리 기반 반경 스케일링 ===
+    // effectiveDistance: 카메라에서 지면까지의 실제 거리 (pitch 고려)
+    // 300m에서 최대, 50km에서 최소로 로그 스케일 적용
+    let heightScale = 1.0;
+    if (effectiveDistance > 7000) {
+      // 8km 이상에서만 동적 스케일링 적용
+      heightScale = Math.max(0.05, Math.min(1.5,
+        Math.pow(5000 / Math.max(300, effectiveDistance), 0.6)
+      ));
+    }
     // (★) 히트맵 크기/강도 조절 포인트
-    const BASE_RADIUS = 80;     // 내부 코어 반경 (CSS px)
-    const BLUR_RADIUS = 120;    // 그라디언트 반경 (CSS px)
-    const BLUR_PX = 60;         // 블러 강도(px, dpr 전)
-    const ALPHA_BASE = 0.45;    // 최소 알파
-    const ALPHA_GAIN = 0.85;    // 값에 따른 알파 가중
+    const BASE_RADIUS = 80 * heightScale;     // 카메라 높이에 따라 동적 조절
+    const BLUR_RADIUS = 120 * heightScale;    // 카메라 높이에 따라 동적 조절
+    const BLUR_PX = 60 * heightScale;         // 블러도 함께 조절
+    const ALPHA_BASE = 0.45;                  // 최소 알파
+    const ALPHA_GAIN = 0.85;                  // 값에 따른 알파 가중
     
     // === 줌인 시 강조: 가까울수록 더 진하고(알파↑), 흐림↓, 반경↓(또렷) ===
     // emph: 0(멀리) ~ 1(가깝게)
@@ -436,7 +438,7 @@ const SimulationStationHtmlRenderer = () => {
           const entities = dataSource.entities.values;
           if (!entities) continue;
 
-          console.log('[DEBUG] Entities count:', entities.length);
+          // console.log('[DEBUG] Entities count:', entities.length);
 
           entities.forEach((entity: Entity) => {
             try {
@@ -490,7 +492,19 @@ const SimulationStationHtmlRenderer = () => {
       ensureHeatCanvas();
       const viewerAny = window.cviewer;
       const emph = viewerAny ? getZoomEmphasis(viewerAny) : 0; // 0~1
-      drawHeatmap(heatPoints, emph);
+
+      // 카메라 pitch를 고려한 실제 거리 계산
+      const carto = viewer.scene.globe.ellipsoid.cartesianToCartographic(viewer.camera.position);
+      const height = carto?.height ?? 0;
+      const pitch = viewer.camera.pitch; // 라디안 단위 (수평=0, 수직 아래=-π/2)
+
+      // pitch를 고려한 유효 거리 계산
+      // pitch가 수평에 가까우면 거리가 멀어지고, 수직에 가까우면 height와 동일
+      const pitchAngle = Math.abs(pitch);
+      const minPitch = Math.PI / 18; // 약 10도, 너무 수평일 때 무한대 방지
+      const effectiveDistance = height / Math.max(Math.sin(pitchAngle), Math.sin(minPitch));
+
+      drawHeatmap(heatPoints, emph, effectiveDistance);
 
       // 정리
       stationElementsRef.current.forEach((element, entityId) => {

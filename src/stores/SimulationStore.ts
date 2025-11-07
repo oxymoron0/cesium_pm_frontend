@@ -86,12 +86,17 @@ class SimulationStore {
   isConfigPopupOpen = false
   isResultPopupOpen = false
 
+  // 팝업별 최소화 상태
+  isConfigPopupMinimized = false
+  isResultPopupMinimized = false
+
   // 시뮬레이션 Panel 상태 관리
   currentView: SimulationView = "config"
   pollutantFilter: PMType | 'all' = 'all';
   sortOrder: 'latest' | 'oldest' = 'latest'; // 기본값 'latest'
   isDeleteMode: boolean = false;
   itemsToDelete = new Set<string>();
+  isMinimized: boolean = false;
 
   // 기간 설정 관리
   isDateModalOpen: boolean = false;
@@ -122,6 +127,13 @@ class SimulationStore {
       simulationStore.closeResultPopup();
       simulationStore.closeConfigPopup();
     }
+  }
+
+  /**
+   * 패널 최소화/최대화 토글
+   */
+  toggleMinimize() {
+    this.isMinimized = !this.isMinimized;
   }
 
   // ============================================================================
@@ -888,6 +900,7 @@ class SimulationStore {
    */
   openConfigPopup = () => {
     this.isConfigPopupOpen = true;
+    this.isConfigPopupMinimized = false; // 팝업 열 때 최소화 해제
   }
 
   /**
@@ -895,6 +908,14 @@ class SimulationStore {
    */
   closeConfigPopup = () => {
     this.isConfigPopupOpen = false;
+    this.isConfigPopupMinimized = false; // 팝업 닫을 때 최소화 상태 초기화
+  }
+
+  /**
+   * 설정 정보 팝업 최소화/최대화 토글
+   */
+  toggleConfigPopupMinimize = () => {
+    this.isConfigPopupMinimized = !this.isConfigPopupMinimized;
   }
 
   /**
@@ -902,6 +923,7 @@ class SimulationStore {
    */
   openResultPopup = () => {
     this.isResultPopupOpen = true;
+    this.isResultPopupMinimized = false; // 팝업 열 때 최소화 해제
   }
 
   /**
@@ -909,6 +931,14 @@ class SimulationStore {
    */
   closeResultPopup = () => {
     this.isResultPopupOpen = false;
+    this.isResultPopupMinimized = false; // 팝업 닫을 때 최소화 상태 초기화
+  }
+
+  /**
+   * 결과 요약 팝업 최소화/최대화 토글
+   */
+  toggleResultPopupMinimize = () => {
+    this.isResultPopupMinimized = !this.isResultPopupMinimized;
   }
 
 }

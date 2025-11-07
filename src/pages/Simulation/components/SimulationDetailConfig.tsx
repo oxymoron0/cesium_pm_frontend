@@ -638,9 +638,9 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
               modalType = "runDup";
             }
 
+            simulationStore.setPendingData(executionData);
             const result = await simulationStore.openModal(modalType);
 
-            simulationStore.setPendingData(executionData);
             console.log('시뮬레이션 실행:', executionData);
             if (result === "confirm") {
               onExecute?.();

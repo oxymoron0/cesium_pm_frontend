@@ -25,7 +25,7 @@ interface SimulationResultSummaryProps {
 }
 
 const SimulationResultSummary = observer(function SimulationResultSummary({ onClose }: SimulationResultSummaryProps) {
-  const { simulationDetail } = simulationStore;
+  const { simulationDetail, isResultPopupMinimized } = simulationStore;
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(true);
   const [isImpactExpanded, setIsImpactExpanded] = useState(true);
 
@@ -67,13 +67,19 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
   return (
     <>
       <Panel width="540px" maxHeight="calc(100vh - 160px)" >
-        <Title onClose={onClose} infoTitle="시뮬레이션 결과 요약" info="※ 시뮬레이션 요청 일시와 오염물질 최대 확산 반경, 총 영향 면적, 영향 시설물 수를 확인할 수 있습니다. 영향 시설물 수의 경우 나쁨 등급 이상 면적에 포함된 취약시설 수를 의미합니다.">
+        <Title
+          onClose={onClose}
+          onMinimize={() => simulationStore.toggleResultPopupMinimize()}
+          infoTitle="시뮬레이션 결과 요약"
+          info="※ 시뮬레이션 요청 일시와 오염물질 최대 확산 반경, 총 영향 면적, 영향 시설물 수를 확인할 수 있습니다. 영향 시설물 수의 경우 나쁨 등급 이상 면적에 포함된 취약시설 수를 의미합니다."
+        >
           시뮬레이션 결과 요약
         </Title>
 
-        <Spacer height={16} />
+        <div style={{ display: isResultPopupMinimized ? 'none' : 'contents' }}>
+          <Spacer height={16} />
 
-        <div className="flex flex-col self-stretch">
+          <div className="flex flex-col self-stretch">
         <button
           onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}
           className="flex items-center justify-between h-[42px] py-[10px] pr-4 border-b border-[#696A6A] cursor-pointer"
@@ -199,7 +205,8 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
             </div>
           </>
         )}
-      </div>
+        </div>
+        </div>
       </Panel>
 
       <SimulationProgressIndicator />
