@@ -31,23 +31,23 @@ const SimulationStationHtmlRenderer = () => {
   // helpers
   const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
   // const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-  const smoothstep = (e0: number, e1: number, x: number) => {
-    const t = clamp01((x - e0) / (e1 - e0));
-    return t * t * (3 - 2 * t);
-  };
+  // const smoothstep = (e0: number, e1: number, x: number) => {
+  //   const t = clamp01((x - e0) / (e1 - e0));
+  //   return t * t * (3 - 2 * t);
+  // };
 
   /** 카메라 높이를 이용해 줌강조(0=멀리, 1=아주 가까이) */
-  const getZoomEmphasis = (viewer: Viewer) => {
-    try {
-      const carto = viewer.scene.globe.ellipsoid.cartesianToCartographic(viewer.camera.position);
-      const h = carto?.height ?? 0;
-      // 높이 기준은 상황에 맞게 조절: 300m 이하면 강하게, 3000m 이상이면 거의 없음
-      const EMPHASIS_NEAR = 300;   // 근거리 기준(m)
-      const EMPHASIS_FAR  = 3000;  // 원거리 기준(m)
-      // 가까울수록 1에 가깝도록
-      return clamp01(1 - smoothstep(EMPHASIS_NEAR, EMPHASIS_FAR, h));
-    } catch { return 0; }
-  };
+  // const getZoomEmphasis = (viewer: Viewer) => {
+  //   try {
+  //     const carto = viewer.scene.globe.ellipsoid.cartesianToCartographic(viewer.camera.position);
+  //     const h = carto?.height ?? 0;
+  //     // 높이 기준은 상황에 맞게 조절: 300m 이하면 강하게, 3000m 이상이면 거의 없음
+  //     const EMPHASIS_NEAR = 300;   // 근거리 기준(m)
+  //     const EMPHASIS_FAR  = 3000;  // 원거리 기준(m)
+  //     // 가까울수록 1에 가깝도록
+  //     return clamp01(1 - smoothstep(EMPHASIS_NEAR, EMPHASIS_FAR, h));
+  //   } catch { return 0; }
+  // };
 
   // ===== 스토어 기반 선택 스테이션 조회 =====
   const getStationFromStoreBySelectedId = (id: string | null) => {
@@ -323,7 +323,7 @@ const SimulationStationHtmlRenderer = () => {
 
   // ===== 히트맵 드로잉 =====
   type HeatPoint = { x: number; y: number; value: number };
-  const drawHeatmap = useCallback((points: HeatPoint[], emph: number, effectiveDistance: number) => {
+  const drawHeatmap = useCallback((points: HeatPoint[], effectiveDistance: number) => {
     const viewCtx = heatCtxRef.current;
     const viewCanvas = heatCanvasRef.current;
     const accCtx = heatAccumCtxRef.current;
@@ -571,13 +571,10 @@ const SimulationStationHtmlRenderer = () => {
 
       // 히트맵 그리기
       ensureHeatCanvas();
-      const viewerAny = window.cviewer;
-      const emph = viewerAny ? getZoomEmphasis(viewerAny) : 0; // 0~1
-
       const metersPerPixel = getMetersPerPixel(viewer);
 
       // drawHeatmap의 세 번째 인자는 이제 MPP로 전달
-      drawHeatmap(heatPoints, emph, metersPerPixel);
+      drawHeatmap(heatPoints, metersPerPixel);
       // 정리
       stationElementsRef.current.forEach((element, entityId) => {
         if (!currentEntityIds.has(entityId)) {
