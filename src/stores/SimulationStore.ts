@@ -14,6 +14,7 @@ import type {
 import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck, reverseGeocodeAPI, searchAddressAPI } from '@/utils/api';
 import { userStore } from './UserStore';
 import { administrativeStore } from './AdministrativeStore';
+// import { randomizeSimulationConcentration, ENABLE_MOCK_CONCENTRATION } from '@/utils/mockData/simulationConcentration';
 
 // ============================================================================
 // SimulationStore Class
@@ -839,6 +840,11 @@ class SimulationStore {
   setSelectedSimulationQuick(item: SimulationQuckData) {
     this.selectedsimulationQuick = null;
     this.selectedsimulationQuick = item;
+    
+    // 목업 모드가 활성화된 경우 concentration 값을 랜덤화하여 히트맵 시각화 개선
+    // this.selectedsimulationQuick = ENABLE_MOCK_CONCENTRATION
+    //   ? randomizeSimulationConcentration(item)
+    //   : item;
   }
   /**
    * 모달 열기

@@ -30,24 +30,24 @@ const SimulationStationHtmlRenderer = () => {
 
   // helpers
   const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
-  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-  const smoothstep = (e0: number, e1: number, x: number) => {
-    const t = clamp01((x - e0) / (e1 - e0));
-    return t * t * (3 - 2 * t);
-  };
+  // const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+  // const smoothstep = (e0: number, e1: number, x: number) => {
+  //   const t = clamp01((x - e0) / (e1 - e0));
+  //   return t * t * (3 - 2 * t);
+  // };
 
   /** 카메라 높이를 이용해 줌강조(0=멀리, 1=아주 가까이) */
-  const getZoomEmphasis = (viewer: Viewer) => {
-    try {
-      const carto = viewer.scene.globe.ellipsoid.cartesianToCartographic(viewer.camera.position);
-      const h = carto?.height ?? 0;
-      // 높이 기준은 상황에 맞게 조절: 300m 이하면 강하게, 3000m 이상이면 거의 없음
-      const EMPHASIS_NEAR = 300;   // 근거리 기준(m)
-      const EMPHASIS_FAR  = 3000;  // 원거리 기준(m)
-      // 가까울수록 1에 가깝도록
-      return clamp01(1 - smoothstep(EMPHASIS_NEAR, EMPHASIS_FAR, h));
-    } catch { return 0; }
-  };
+  // const getZoomEmphasis = (viewer: Viewer) => {
+  //   try {
+  //     const carto = viewer.scene.globe.ellipsoid.cartesianToCartographic(viewer.camera.position);
+  //     const h = carto?.height ?? 0;
+  //     // 높이 기준은 상황에 맞게 조절: 300m 이하면 강하게, 3000m 이상이면 거의 없음
+  //     const EMPHASIS_NEAR = 300;   // 근거리 기준(m)
+  //     const EMPHASIS_FAR  = 3000;  // 원거리 기준(m)
+  //     // 가까울수록 1에 가깝도록
+  //     return clamp01(1 - smoothstep(EMPHASIS_NEAR, EMPHASIS_FAR, h));
+  //   } catch { return 0; }
+  // };
 
   // ===== 스토어 기반 선택 스테이션 조회 =====
   const getStationFromStoreBySelectedId = (id: string | null) => {
@@ -82,10 +82,29 @@ const SimulationStationHtmlRenderer = () => {
   }, []);
 
   const getPM10Color = useCallback((value: number): string => {
-    if (value <= 30) return '#18A274';
-    if (value <= 80) return '#FFD040';
-    if (value <= 150) return '#F70';
-    return '#D32F2D';
+    const LEGEND_COLORS = [
+      '#253494', // 짙은 파랑 (0)
+      '#2c7fb8', // 밝은 파랑
+      '#41b6c4', // 청록
+      '#a1dab4', // 연한 청록
+      '#ffffcc', // 연노랑
+      '#fee391', // 노랑
+      '#fec44f', // 주황
+      '#fe9929', // 진한 주황
+      '#ec7014', // 붉은 주황
+      '#cc4c02', // 짙은 붉은색 (100)
+    ];
+
+    // PM10 값을 0~100으로 클램프
+    const v = Math.max(0, Math.min(100, value));
+
+    // 색상 구간 계산 (10등분)
+    const idx = Math.min(
+      LEGEND_COLORS.length - 1,
+      Math.floor((v / 100) * (LEGEND_COLORS.length - 1))
+    );
+
+    return LEGEND_COLORS[idx];
   }, []);
 
   const createPM10HTML = useCallback((pm10Value: string, timeValue: string) => {
@@ -121,8 +140,16 @@ const SimulationStationHtmlRenderer = () => {
 
   // ===== HEX -> RGB / LUT =====
   const LEGEND_COLORS = [
-    '#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8',
-    '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027',
+    '#253494', // 짙은 파랑 (0)
+    '#2c7fb8', // 밝은 파랑
+    '#41b6c4', // 청록
+    '#a1dab4', // 연한 청록
+    '#ffffcc', // 연노랑 (중간)
+    '#fee391', // 노랑
+    '#fec44f', // 주황
+    '#fe9929', // 진한 주황
+    '#ec7014', // 붉은 주황
+    '#cc4c02', // 짙은 붉은색 (100)
   ];
   const hexToRgb = (hex: string) => {
     const h = hex.replace('#', '');
@@ -174,7 +201,7 @@ const SimulationStationHtmlRenderer = () => {
     const h = containerRef.current.clientHeight;
     const dw = Math.floor(w * dpr);
     const dh = Math.floor(h * dpr);
-    console.log(`[Heatmap] Low-res mode: ${dw}x${dh} (DPR: ${dpr})`);
+    // console.log(`[Heatmap] Low-res mode: ${dw}x${dh} (DPR: ${dpr})`);
 
     if (canvas.width !== dw || canvas.height !== dh) {
       canvas.width = dw; canvas.height = dh;
@@ -240,7 +267,7 @@ const SimulationStationHtmlRenderer = () => {
             const viewer = window.cviewer;
             if (!viewer?.camera) return;
             viewer.camera.flyTo({
-              destination: Cartesian3.fromDegrees(lon, lat, 500),
+              destination: Cartesian3.fromDegrees(lon, lat, 1000),
               duration: 1.2,
             });
           } catch (err) {
@@ -296,7 +323,7 @@ const SimulationStationHtmlRenderer = () => {
 
   // ===== 히트맵 드로잉 =====
   type HeatPoint = { x: number; y: number; value: number };
-  const drawHeatmap = useCallback((points: HeatPoint[], emph: number, effectiveDistance: number) => {
+  const drawHeatmap = useCallback((points: HeatPoint[], effectiveDistance: number) => {
     const viewCtx = heatCtxRef.current;
     const viewCanvas = heatCanvasRef.current;
     const accCtx = heatAccumCtxRef.current;
@@ -314,36 +341,50 @@ const SimulationStationHtmlRenderer = () => {
     // === 🔸 실제 거리 기반 반경 스케일링 ===
     // effectiveDistance: 카메라에서 지면까지의 실제 거리 (pitch 고려)
     // 300m에서 최대, 50km에서 최소로 로그 스케일 적용
-    let heightScale = 1.0;
-    if (effectiveDistance > 7000) {
-      // 8km 이상에서만 동적 스케일링 적용
-      heightScale = Math.max(0.05, Math.min(1.5,
-        Math.pow(5000 / Math.max(300, effectiveDistance), 0.6)
-      ));
-    }
-    // (★) 히트맵 크기/강도 조절 포인트
-    const BASE_RADIUS = 80 * heightScale;     // 카메라 높이에 따라 동적 조절
-    const BLUR_RADIUS = 120 * heightScale;    // 카메라 높이에 따라 동적 조절
-    const BLUR_PX = 60 * heightScale;         // 블러도 함께 조절
-    const ALPHA_BASE = 0.45;                  // 최소 알파
-    const ALPHA_GAIN = 0.85;                  // 값에 따른 알파 가중
-    
-    // === 줌인 시 강조: 가까울수록 더 진하고(알파↑), 흐림↓, 반경↓(또렷) ===
-    // emph: 0(멀리) ~ 1(가깝게)
-    const radiusScale = lerp(1.0, 0.65, emph);           // 가까울수록 반경 65%까지 축소 → 또렷
-    const blurScale   = lerp(1.0, 0.55, emph);           // 가까울수록 블러 55%
-    const alphaBoost  = lerp(1.0, 1.8, emph);            // 가까울수록 알파 1.8배
-    const gamma       = lerp(1.0, 0.75, emph);           // 가까울수록 색 대비(감마<1)↑
+    const MPP = Math.max(0.01, effectiveDistance); // effectiveDistance를 MPP로 사용
 
-    const BASE_R = BASE_RADIUS * radiusScale;
-    const BLUR_R = BLUR_RADIUS * radiusScale;
+    // 원하는 '지상 반경'(미터) — 줌 아웃하면 픽셀 반경이 자연스럽게 줄어듦
+    const GROUND_RADIUS_M = 420;  // 핵심 영향 반경(예: 80m)
+    const FEATHER_RATIO   = 1.0; // 외곽 그라디언트 반경 비율
+    const BLUR_RATIO      = 1.0; // 이미지 블러 강도 비율
 
+    // px로 환산 (기존 그대로)
+    let PX_RADIUS  = GROUND_RADIUS_M / MPP;
+    let PX_BLUR_R  = PX_RADIUS * FEATHER_RATIO;
+    let PX_BLUR_PX = PX_RADIUS * BLUR_RATIO;
+
+    // 가드 (기존 그대로)
+    const MIN_PX = 60;
+    const MAX_PX = 420;
+    PX_RADIUS  = Math.max(MIN_PX, Math.min(MAX_PX, PX_RADIUS));
+    PX_BLUR_R  = Math.max(MIN_PX * FEATHER_RATIO, Math.min(MAX_PX * FEATHER_RATIO, PX_BLUR_R));
+    PX_BLUR_PX = Math.max(8, Math.min(120, PX_BLUR_PX));
+
+    // === 🔸 추가: 화면 밀도 보정 계수 (줌아웃할수록 ↓)
+    // PX_RADIUS가 기준 픽셀(REF_PX)보다 작아질수록 덜 진하게 그리기
+    const REF_PX = 80; // 기준 두께(취향대로 80~120)
+    const densityK = Math.min(1.75, Math.max(0.6, REF_PX / PX_RADIUS)); // 0.6~1.75
+
+    const NEAR_REF = 250; // 근접 기준 픽셀 두께(80~160 사이에서 취향대로)
+    const nearK = Math.max(0.35, Math.min(1, Math.pow(NEAR_REF / PX_RADIUS, 0.7))); 
+
+    const alphaK = densityK * nearK; // 최종 알파 스케일
+
+    // 기존 변수에 매핑
+    const BASE_R = PX_RADIUS;
+    const BLUR_R = PX_BLUR_R;
+
+    // 알파/강조: 줌 영향 제거 + 밀도 보정
+    const ALPHA_BASE = 0.9 * alphaK; // 👈 밀도에 따라 알파 낮춤
+    const ALPHA_GAIN = 1.0 * alphaK; // 👈 밀도에 따라 알파 낮춤
+    const alphaBoost  = 1.0;
 
     // 1) 누적 레이어 초기화
     accCtx.setTransform(1, 0, 0, 1, 0, 0);
     accCtx.clearRect(0, 0, accCanvas.width, accCanvas.height);
     accCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     accCtx.globalCompositeOperation = 'source-over';
+    // accCtx.globalCompositeOperation = 'lighten'; // 겹칠 때 큰 값 유지
 
     // points.forEach(({ x, y, value }) => {
     //   const a = ALPHA_BASE + ALPHA_GAIN * Math.max(0, Math.min(1, value / 100));
@@ -357,12 +398,21 @@ const SimulationStationHtmlRenderer = () => {
     //   accCtx.fill();
     // });
     points.forEach(({ x, y, value }) => {
+      // const v01 = clamp01(value / 100);
+      // const a = (ALPHA_BASE + ALPHA_GAIN * v01) * alphaBoost;
+      // const grd = accCtx.createRadialGradient(x, y, 0, x, y, BLUR_R);
+      // grd.addColorStop(0, `rgba(255,255,255,${a})`);
+      // grd.addColorStop(BASE_R / BLUR_R, `rgba(255,255,255,${a * 0.6})`);
+      // grd.addColorStop(1, `rgba(255,255,255,0)`);
+      // accCtx.fillStyle = grd;
+      
       const v01 = clamp01(value / 100);
-      const a = (ALPHA_BASE + ALPHA_GAIN * v01) * alphaBoost;
+      const a = (ALPHA_BASE + ALPHA_GAIN * v01) * alphaBoost; // 기존 불투명도 로직 유지
+      const V   = Math.round(v01 * 255); // 이 픽셀의 '값'을 밝기로 인코딩
       const grd = accCtx.createRadialGradient(x, y, 0, x, y, BLUR_R);
-      grd.addColorStop(0, `rgba(255,255,255,${a})`);
-      grd.addColorStop(BASE_R / BLUR_R, `rgba(255,255,255,${a * 0.6})`);
-      grd.addColorStop(1, `rgba(255,255,255,0)`);
+      grd.addColorStop(0, `rgba(${V},${V},${V},${a})`);          // 값은 RGB, 알파는 기존
+      grd.addColorStop(BASE_R / BLUR_R, `rgba(${V},${V},${V},${a * 0.6})`);
+      grd.addColorStop(1, `rgba(0,0,0,0)`);
       accCtx.fillStyle = grd;
       accCtx.beginPath();
       accCtx.arc(x, y, BLUR_R, 0, Math.PI * 2);
@@ -373,9 +423,10 @@ const SimulationStationHtmlRenderer = () => {
     blurCtx.setTransform(1, 0, 0, 1, 0, 0);
     blurCtx.clearRect(0, 0, blurCanvas.width, blurCanvas.height);
     //blurCtx.filter = `blur(${Math.round(BLUR_PX * dpr)}px)`;
-    blurCtx.filter = `blur(${Math.round(BLUR_PX * blurScale * dpr)}px)`;
+    blurCtx.filter = `blur(${Math.round(PX_BLUR_PX * dpr)}px)`;
+    
     blurCtx.drawImage(accCanvas, 0, 0);
-    blurCtx.filter = 'none';
+    // blurCtx.filter = 'none';
 
     // 3) LUT 색상화
     colorCtx.setTransform(1, 0, 0, 1, 0, 0);
@@ -387,18 +438,24 @@ const SimulationStationHtmlRenderer = () => {
     const dst = out.data;
 
     for (let i = 0; i < src.length; i += 4) {
-      const a = src[i + 3];
-      if (a === 0) continue;
+      // const a = src[i + 3];
+      // if (a === 0) continue;
 
       //const lutIdx = a << 2;
       // 감마 보정: 가까울수록 하이라이트쪽으로(감마<1)
-      const na = Math.pow(a / 255, gamma) * 255;
-      const lutIdx = (na & 255) << 2;
+      // const na = Math.pow(a / 255, gamma) * 255;
+      // const lutIdx = (na & 255) << 2;
+
+      const r = src[i];         // 값(0~255)
+      const a = src[i + 3];     // 기존 알파 유지
+      if (a === 0) continue;
+      const lutIdx = (r & 255) << 2;
 
       dst[i] = lut[lutIdx];
       dst[i + 1] = lut[lutIdx + 1];
       dst[i + 2] = lut[lutIdx + 2];
-      dst[i + 3] = Math.min(255, na);
+      // dst[i + 3] = Math.min(255, na);
+      dst[i + 3] = a;
     }
     colorCtx.putImageData(out, 0, 0);
 
@@ -408,10 +465,34 @@ const SimulationStationHtmlRenderer = () => {
     const cssH = viewCanvas.height / dpr;
     viewCtx.clearRect(0, 0, cssW, cssH);
     viewCtx.globalCompositeOperation = 'source-over';
-    viewCtx.globalAlpha = lerp(1.0, 1.15, emph); // 가까울수록 15% 더 강하게
+    viewCtx.globalAlpha = 1.0;
     viewCtx.drawImage(colorCanvas, 0, 0, cssW, cssH);
     viewCtx.restore();
   }, []);
+
+  const pickGround = (viewer: Viewer, x: number, y: number): Cartesian3 | null => {
+    const ray = viewer.camera.getPickRay(new Cartesian2(x, y));
+    if (!ray) return null;
+    const hit = viewer.scene.globe.pick(ray, viewer.scene);
+    return hit ?? null;
+  };
+
+  /** 화면 중앙 기준 1px이 지상에서 몇 m인지(MPP: meters per pixel) */
+  const getMetersPerPixel = (viewer: Viewer): number => {
+    try {
+      const { canvas } = viewer;
+      const cx = canvas.clientWidth / 2;
+      const cy = canvas.clientHeight / 2;
+      const p0 = pickGround(viewer, cx, cy);
+      const p1 = pickGround(viewer, cx + 1, cy); // x방향 1px
+      if (p0 && p1) return Cartesian3.distance(p0, p1);
+      // 못 맞추면 카메라 고도로 대체(대략치)
+      const carto = viewer.scene.globe.ellipsoid.cartesianToCartographic(viewer.camera.position);
+      return Math.max(1, carto?.height ?? 1000);
+    } catch {
+      return 1000;
+    }
+  };
 
   // ===== 포지션 업데이트(히트맵 포인트 수집 포함) =====
   const updateStationPositions = useCallback(() => {
@@ -428,8 +509,8 @@ const SimulationStationHtmlRenderer = () => {
       const currentSensorIds = new Set<string>();
 
       // 디버깅: 메모리 누적 체크
-      console.log('[DEBUG] Station elements:', stationElementsRef.current.size);
-      console.log('[DEBUG] Sensor elements:', sensorElementsRef.current.size);
+      // console.log('[DEBUG] Station elements:', stationElementsRef.current.size);
+      // console.log('[DEBUG] Sensor elements:', sensorElementsRef.current.size);
 
       for (let i = 0; i < viewer.dataSources.length; i++) {
         const dataSource = viewer.dataSources.get(i);
@@ -490,22 +571,10 @@ const SimulationStationHtmlRenderer = () => {
 
       // 히트맵 그리기
       ensureHeatCanvas();
-      const viewerAny = window.cviewer;
-      const emph = viewerAny ? getZoomEmphasis(viewerAny) : 0; // 0~1
+      const metersPerPixel = getMetersPerPixel(viewer);
 
-      // 카메라 pitch를 고려한 실제 거리 계산
-      const carto = viewer.scene.globe.ellipsoid.cartesianToCartographic(viewer.camera.position);
-      const height = carto?.height ?? 0;
-      const pitch = viewer.camera.pitch; // 라디안 단위 (수평=0, 수직 아래=-π/2)
-
-      // pitch를 고려한 유효 거리 계산
-      // pitch가 수평에 가까우면 거리가 멀어지고, 수직에 가까우면 height와 동일
-      const pitchAngle = Math.abs(pitch);
-      const minPitch = Math.PI / 18; // 약 10도, 너무 수평일 때 무한대 방지
-      const effectiveDistance = height / Math.max(Math.sin(pitchAngle), Math.sin(minPitch));
-
-      drawHeatmap(heatPoints, emph, effectiveDistance);
-
+      // drawHeatmap의 세 번째 인자는 이제 MPP로 전달
+      drawHeatmap(heatPoints, metersPerPixel);
       // 정리
       stationElementsRef.current.forEach((element, entityId) => {
         if (!currentEntityIds.has(entityId)) {
