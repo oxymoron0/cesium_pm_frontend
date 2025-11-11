@@ -241,7 +241,7 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
         <InfoField label="측정일시" value={measuredAtText} />
         <InfoField label="측정위치" value="부산진구 정류장" />
         <InfoField label="위치수" value={locationCountText} />
-        <InfoField label="고도" value="1.5m" />
+        {/* <InfoField label="고도" value="1.5m" /> */}
         <InfoField label="기상" value={weatherText} />
       </div>
 
