@@ -1,9 +1,34 @@
 import { makeAutoObservable } from 'mobx';
 import type { PriorityConfig, NearbyStation, NearbyRoad, VulnerableFacility } from '../pages/Priority/types';
+import { API_PATHS } from '../utils/api/config';
 
 // ============================================================================
 // API Response Types (향후 백엔드 API 연동용)
 // ============================================================================
+
+/**
+ * 우선순위 취약시설 검색 API 응답
+ * GET /api/v1/priority/search
+ */
+export interface PrioritySearchResponse {
+  simulation_uuid: string;
+  total_count: number;
+  facilities: PriorityFacilityItem[];
+}
+
+export interface PriorityFacilityItem {
+  order: number;
+  type: 'senior' | 'childcare';
+  id: number;
+  name: string;
+  address: string;
+  location: {
+    type: 'Point';
+    coordinates: [number, number];
+  };
+  pm_value: number;
+  pm_grade: string;
+}
 
 /**
  * 읍면동 목록 API 응답
@@ -330,6 +355,11 @@ class PriorityStore {
   isLoadingDongs: boolean = false;
   isLoadingStations: boolean = false;
   isLoadingRoads: boolean = false;
+  isLoadingFacilities: boolean = false;
+
+  // 취약시설 검색 결과
+  vulnerableFacilities: VulnerableFacility[] = [];
+  simulationUuid: string | null = null;
 
   constructor() {
     makeAutoObservable(this);
@@ -521,6 +551,10 @@ class PriorityStore {
     return this.nearbyStationsCache.get(facilityId) || [];
   }
 
+  setNearbyStations(facilityId: string, stations: NearbyStation[]) {
+    this.nearbyStationsCache.set(facilityId, stations);
+  }
+
   get selectedStations(): NearbyStation[] {
     const stations: NearbyStation[] = [];
     this.selectedFacilityIds.forEach(facilityId => {
@@ -605,6 +639,111 @@ class PriorityStore {
     this.nearbyStationsCache.clear();
     this.nearbyRoadsCache.clear();
     this.initializeMockData();
+  }
+
+  // ============================================================================
+  // 우선순위 취약시설 검색
+  // ============================================================================
+
+  /**
+   * PM 등급 한글 → 영문 변환
+   */
+  private convertPmGradeToLevel(pmGrade: string): 'good' | 'normal' | 'bad' | 'very-bad' {
+    switch (pmGrade) {
+      case '좋음':
+        return 'good';
+      case '보통':
+        return 'normal';
+      case '나쁨':
+        return 'bad';
+      case '매우나쁨':
+        return 'very-bad';
+      default:
+        return 'normal';
+    }
+  }
+
+  /**
+   * 날짜/시간 문자열을 API 형식으로 변환
+   * @param dateStr - "YYYY.MM.DD" 형식
+   * @param timeStr - "HH시 ~ HH시" 형식
+   * @returns "YYYY-MM-DD HH" 형식
+   */
+  private formatDateTimeForApi(dateStr: string, timeStr: string): string {
+    // "2025.11.10" → "2025-11-10"
+    const date = dateStr.replace(/\./g, '-');
+
+    // "14시 ~ 15시" → "14"
+    const hour = timeStr.split('시')[0].trim().padStart(2, '0');
+
+    return `${date} ${hour}`;
+  }
+
+  /**
+   * 우선순위 취약시설 검색
+   * GET /api/v1/priority/search
+   */
+  async searchPriorityFacilities(
+    provinceCode: string,
+    districtCode: string,
+    neighborhoodCode: string | null
+  ): Promise<void> {
+    if (!this.config) {
+      console.error('[PriorityStore] No config set for search');
+      return;
+    }
+
+    this.isLoadingFacilities = true;
+
+    try {
+      // API 요청 파라미터 생성
+      const dateTime = this.formatDateTimeForApi(this.config.date, this.config.time);
+      const params = new URLSearchParams({
+        date: dateTime,
+        province_code: provinceCode,
+        district_code: districtCode
+      });
+
+      // neighborhood_code는 선택적 (전체가 아닌 경우에만 추가)
+      if (neighborhoodCode && neighborhoodCode !== 'all') {
+        params.append('neighborhood_code', neighborhoodCode);
+      }
+
+      const url = API_PATHS.PRIORITY_SEARCH + '?' + params.toString();
+      console.log('[PriorityStore] Searching priority facilities:', url);
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      const data: PrioritySearchResponse = await response.json();
+
+      // 응답 데이터를 VulnerableFacility 형식으로 변환
+      this.vulnerableFacilities = data.facilities.map((item) => ({
+        id: item.id.toString(),
+        rank: item.order,
+        name: item.name,
+        address: item.address,
+        predictedConcentration: item.pm_value,
+        predictedLevel: this.convertPmGradeToLevel(item.pm_grade),
+        geometry: {
+          type: 'Point',
+          coordinates: item.location.coordinates
+        }
+      }));
+
+      this.simulationUuid = data.simulation_uuid;
+
+      console.log(`[PriorityStore] Found ${data.total_count} facilities`);
+    } catch (error) {
+      console.error('[PriorityStore] Failed to search priority facilities:', error);
+      this.vulnerableFacilities = [];
+      this.simulationUuid = null;
+    } finally {
+      this.isLoadingFacilities = false;
+    }
   }
 
   // ============================================================================

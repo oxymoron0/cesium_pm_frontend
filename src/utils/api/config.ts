@@ -83,6 +83,13 @@ export const API_PATHS = {
   STATISTICS_FACILITY_TODAY: getApiPath('api/v1/statistics/facility/today'),
   STATISTICS_FACILITY_WEEK: getApiPath('api/v1/statistics/facility/week'),
   STATISTICS_FACILITY_MONTH: getApiPath('api/v1/statistics/facility/month'),
+
+  // 주소 조회 API (PM Backend)
+  ADDRESS_SEARCH: getApiPath('/api/v1/address/search'),
+  ADDRESS_REVERSE: getApiPath('/api/v1/address/reverse'),
+
+  // 우선순위 API (PM Backend)
+  PRIORITY_SEARCH: getApiPath('api/v1/priority/search'),
 } as const;
 
 /**

@@ -177,18 +177,47 @@ function createFacilityBillboardEntity(
     element.id = `html_tag_${entityId}`;
     element.style.position = 'absolute';
     // Pointer Events 변경: 기본적으로 마우스 이벤트를 통과시킵니다.
-    element.style.pointerEvents = 'none'; 
+    element.style.pointerEvents = 'none';
     element.style.whiteSpace = 'nowrap';
     element.style.overflow = 'visible';
     element.style.display = 'none';
     // z-index: Cesium Canvas 위에서 다른 UI 요소보다 높게 설정 (Cesium 3D 순위와는 무관)
     element.style.zIndex = '3';
 
-    // HTML 구조 (화살표 추가)
+    // 노란색 네모 박스 HTML
+    const yellowSquareMarker = `
+        <div style="position: absolute;
+                    bottom: -15px; /* 화살표 높이 + 네모와의 간격 고려 */
+                    left: 50%;
+                    width: 6px;
+                    height: 6px;
+                    background: none;
+                    border: 2px solid #FFD700; /* 노란색 테두리 */
+                    transform: translateX(-50%);
+                    ">
+        </div>
+    `;
+
+    // selectedDong이 '전체'일 경우 yellowSquareMarker만 표시
+    // if (selectedDong === '전체') {
+    //   element.innerHTML = `
+    //     <div class="absolute top-0 left-0 z-10 w-full h-full overflow-visible pointer-events-none whitespace-nowrap"
+    //          data-facility-id="${facilityId}"
+    //          style="position: relative;
+    //                 display: flex;
+    //                 flex-direction: column;
+    //                 align-items: center;
+    //                 transform: translate(-50%, -50%);
+    //                 user-select: none;">
+    //       ${yellowSquareMarker}
+    //     </div>
+    //   `;
+    // } else {
+      // HTML 구조 (화살표 추가)
     element.innerHTML = `
       <div class="absolute top-0 left-0 z-10 w-full h-full overflow-visible pointer-events-none whitespace-nowrap"
-           data-facility-id="${facilityId}"
-           style="position: relative;
+            data-facility-id="${facilityId}"
+            style="position: relative;
                   display: flex;
                   flex-direction: column;
                   align-items: center;
@@ -199,34 +228,37 @@ function createFacilityBillboardEntity(
                     color: white;
                     border: 1px solid #C4C6C6;
                     border-radius: 12px;
-                    padding: 0px 0px 8px 0;
+                    padding: 4px 16px 8px 24px;
                     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
                     /* 화살표와의 간격 */
-                    margin-bottom: 0; 
-                    min-width: 110px;
+                    margin-bottom: 0;
+                    min-width: 140px;
                     display: flex;
                     flex-direction: column;
-                    font-family: Pretendard, sans-serif;">
-          <span style="background: white; position: absolute;
+                    font-family: Pretendard, sans-serif;
+                    position: relative;">
+          <span style="background: white;
+                          position: absolute;
                           color: black;
                           border: 1px solid #C4C6C6;
                           border-radius: 50%;
                           width: 22px;
                           height: 22px;
-                          line-height: 20px; top: 0px; left 0px;
+                          line-height: 20px;
+                          top: -1px;
+                          left: -1px;
                           text-align: center;
                           font-weight: 700;
-                          font-size: 12px;
-                          margin-right: 8px;">
+                          font-size: 12px;">
               ${facility.rank}
           </span>
-          <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 4px; padding-left: 12px;">
-            <span style="font-weight: 700; font-size: 14px; line-height: 22px;">
+          <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 8px;">
+            <span style="font-weight: 700; font-size: 14px; line-height: 22px; text-align: center; word-break: keep-all;">
               ${facility.name}
             </span>
           </div>
           <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 4px;">
-            <div style="font-size: 12px; color: #ccc; margin-bottom: 8px;">
+            <div style="font-size: 12px; color: #ccc; margin: 0 0 8px -6px;">
                 미세먼지
             </div>
             <div style="background: ${styles.borderColor};
@@ -235,6 +267,7 @@ function createFacilityBillboardEntity(
                         border-radius: 50%;
                         width: 50px;
                         height: 50px;
+                        margin: 0 0 0 -6px;
                         line-height: 50px;
                         text-align: center;
                         font-weight: 700;
@@ -243,7 +276,7 @@ function createFacilityBillboardEntity(
             </div>
           </div>
         </div>
-        
+
         <div style="width: 0;
                     height: 0;
                     border-left: 8px solid transparent; /* 삼각형 너비 조절 */
@@ -256,18 +289,10 @@ function createFacilityBillboardEntity(
                     z-index: 1;">
         </div>
 
-        <div style="position: absolute; 
-                    bottom: -15px; /* 화살표 높이 + 네모와의 간격 고려 */
-                    left: 50%; 
-                    width: 6px; 
-                    height: 6px; 
-                    background: none; 
-                    border: 2px solid #FFD700; /* 노란색 테두리 */
-                    transform: translateX(-50%); 
-                    ">
-        </div>
+        ${yellowSquareMarker}
       </div>
     `;
+    // }
 
     facilityElementsCache.set(entityId, element);
     if (viewer && viewer.container) {
