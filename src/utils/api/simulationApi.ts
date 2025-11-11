@@ -16,6 +16,7 @@ import type {
   SimulationInProgressResponse,
 } from '../../types/simulation_request_types';
 import type { AddressSearchResponse, ReverseGeocodeResponse } from '@/pages/Simulation/types';
+import type { VulnerableFacilitiesResponse } from './types';
 
 /**
  * 시뮬레이션 프로세스 요청
@@ -350,7 +351,7 @@ export async function searchAddressAPI(
  * @param latitude - 위도 (y)
  */
 export async function reverseGeocodeAPI(
-  longitude: number, 
+  longitude: number,
   latitude: number
 ): Promise<ReverseGeocodeResponse> {
   try {
@@ -360,7 +361,7 @@ export async function reverseGeocodeAPI(
     });
 
     const url = `${API_PATHS.ADDRESS_REVERSE}?${params.toString()}`;
-    
+
     const response = await get<ReverseGeocodeResponse>(url);
 
     if (!response.ok) {
@@ -370,6 +371,37 @@ export async function reverseGeocodeAPI(
 
   } catch (error) {
     console.error('[reverseGeocodeAPI] API 호출 실패:', error);
+    throw error;
+  }
+}
+
+/**
+ * 시뮬레이션 결과 요약 조회 (취약시설 영향)
+ * GET /api/v1/simulation/{uuid}/vulnerable-facilities
+ *
+ * @param uuid - 시뮬레이션 UUID
+ * @returns 취약시설 영향 요약 정보
+ */
+export async function getVulnerableFacilities(
+  uuid: string
+): Promise<VulnerableFacilitiesResponse> {
+  try {
+    const response = await get<VulnerableFacilitiesResponse>(
+      API_PATHS.SIMULATION_DETAIL_SUMMARY(uuid)
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Vulnerable facilities API failed with status ${response.status}`
+      );
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error(
+      `[getVulnerableFacilities] API 호출 실패 (UUID: ${uuid}):`,
+      error
+    );
     throw error;
   }
 }

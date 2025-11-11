@@ -11,7 +11,8 @@ import type {
   PMType,
   Weather
 } from '../types/simulation_request_types';
-import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck, reverseGeocodeAPI, searchAddressAPI } from '@/utils/api';
+import type { VulnerableFacilitiesResponse } from '@/utils/api/types';
+import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck, reverseGeocodeAPI, searchAddressAPI, getVulnerableFacilities } from '@/utils/api';
 import { userStore } from './UserStore';
 import { administrativeStore } from './AdministrativeStore';
 // import { randomizeSimulationConcentration, ENABLE_MOCK_CONCENTRATION } from '@/utils/mockData/simulationConcentration';
@@ -74,6 +75,11 @@ class SimulationStore {
   simulationDetail: SimulationDetail | null = null;
   isLoadingDetail: boolean = false;
   detailError: string | null = null;
+
+  // 시뮬레이션 결과 요약 (취약시설)
+  vulnerableFacilities: VulnerableFacilitiesResponse | null = null;
+  isLoadingVulnerableFacilities: boolean = false;
+  vulnerableFacilitiesError: string | null = null;
 
   // 지역 정보
   isLoadingDistricts: boolean = false;
@@ -679,6 +685,9 @@ class SimulationStore {
     try {
       const detail = await getSimulationDetail(uuid);
       this.simulationDetail = detail;
+
+      // 상세 정보 로드 성공 시 취약시설 정보도 로드
+      await this.loadVulnerableFacilities(uuid);
     } catch (error) {
       console.error(`[SimulationStore] Failed to load simulation detail (${uuid}):`, error);
       this.detailError = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -689,12 +698,40 @@ class SimulationStore {
   }
 
   /**
+   * 시뮬레이션 결과 요약 조회 (취약시설)
+   * GET /api/v1/simulation/{uuid}/vulnerable-facilities
+   */
+  async loadVulnerableFacilities(uuid: string): Promise<void> {
+    this.isLoadingVulnerableFacilities = true;
+    this.vulnerableFacilitiesError = null;
+
+    try {
+      const data = await getVulnerableFacilities(uuid);
+      runInAction(() => {
+        this.vulnerableFacilities = data;
+      });
+    } catch (error) {
+      console.error(`[SimulationStore] Failed to load vulnerable facilities (${uuid}):`, error);
+      runInAction(() => {
+        this.vulnerableFacilitiesError = error instanceof Error ? error.message : 'Unknown error occurred';
+        this.vulnerableFacilities = null;
+      });
+    } finally {
+      runInAction(() => {
+        this.isLoadingVulnerableFacilities = false;
+      });
+    }
+  }
+
+  /**
    * 선택 해제 및 상세 패널 닫기
    */
   closeSimulationDetail() {
     this.selectedSimulationUuid = null;
     this.simulationDetail = null;
     this.detailError = null;
+    this.vulnerableFacilities = null;
+    this.vulnerableFacilitiesError = null;
   }
 
   /**
