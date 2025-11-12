@@ -67,8 +67,10 @@ const StationDetail = observer(function StationDetail({
   }
 
   useEffect(() => {
-    // 정류장이 변경되면 캐시 초기화
-    if (cachedStationId !== stationId) {
+    // 정류장이 변경되었는지 확인
+    const isStationChanged = cachedStationId !== stationId
+
+    if (isStationChanged) {
       console.log('[StationDetail] 정류장 변경 감지, 캐시 초기화:', { prev: cachedStationId, new: stationId })
       setCachedStationId(stationId)
       setCachedTodayData(null)
@@ -194,7 +196,10 @@ const StationDetail = observer(function StationDetail({
       }
     }
 
-    fetchAllSensorData()
+    // 정류장 변경 시에만 데이터 로딩
+    if (isStationChanged) {
+      fetchAllSensorData()
+    }
   }, [stationId, cachedStationId])
 
   return (

@@ -44,6 +44,8 @@ export function TodayContent({ cachedData }: TodayContentProps) {
     if (!cachedData) {
       console.log('[TodayContent] 캐시 데이터 대기 중...')
       setIsLoading(true)
+      setChartData([])
+      setHourlyData([])
       return
     }
 
@@ -51,8 +53,6 @@ export function TodayContent({ cachedData }: TodayContentProps) {
       hourlyCount: cachedData.hourlyData.length,
       hasLatest: !!cachedData.latestData
     })
-
-    setIsLoading(false)
 
     // Store raw hourly data for StatsContent
     setHourlyData(cachedData.hourlyData)
@@ -68,6 +68,8 @@ export function TodayContent({ cachedData }: TodayContentProps) {
     } else {
       setChartData(hourlyTransformed)
     }
+
+    setIsLoading(false)
   }, [cachedData])
 
   return (
@@ -131,6 +133,9 @@ export function WeekContent({ cachedData }: WeekContentProps) {
     if (!cachedData) {
       console.log('[WeekContent] 캐시 데이터 대기 중...')
       setIsLoading(true)
+      setChartData([])
+      setDailyData([])
+      setHourlyData([])
       return
     }
 
@@ -139,12 +144,13 @@ export function WeekContent({ cachedData }: WeekContentProps) {
       hourlyCount: cachedData.hourlyData.length
     })
 
-    setIsLoading(false)
     setDailyData(cachedData.dailyData)
     setHourlyData(cachedData.hourlyData)
 
     const transformed = transformDailyData(cachedData.dailyData)
     setChartData(transformed)
+
+    setIsLoading(false)
   }, [cachedData])
 
   return (
@@ -210,6 +216,9 @@ export function MonthContent({ cachedData }: MonthContentProps) {
     if (!cachedData) {
       console.log('[MonthContent] 캐시 데이터 대기 중...')
       setIsLoading(true)
+      setChartData([])
+      setDailyData([])
+      setHourlyData([])
       return
     }
 
@@ -218,12 +227,13 @@ export function MonthContent({ cachedData }: MonthContentProps) {
       hourlyCount: cachedData.hourlyData.length
     })
 
-    setIsLoading(false)
     setDailyData(cachedData.dailyData)
     setHourlyData(cachedData.hourlyData)
 
     const transformed = transformDailyData(cachedData.dailyData)
     setChartData(transformed)
+
+    setIsLoading(false)
   }, [cachedData])
 
   return (
