@@ -4,8 +4,14 @@ import StatsSummaryContainer from '@/components/chart/StatsSummaryContainer'
 import ChartHeader from '@/components/chart/ChartHeader'
 import ChartController from '@/components/chart/ChartController'
 import SensorLineChart from '@/components/chart/SensorLineChart'
-import { getHourlySensorData, getDailySensorData } from '@/utils/api'
-import { transformHourlyData, transformDailyData, type ChartDataPoint } from '@/utils/chart/sensorDataTransform'
+import { getHourlySensorData, getDailySensorData, getLatestSensorData } from '@/utils/api'
+import {
+  transformHourlyData,
+  transformDailyData,
+  transformLatestDataToChartPoint,
+  mergeHourlyWithLatest,
+  type ChartDataPoint
+} from '@/utils/chart/sensorDataTransform'
 import { stationDetailStore } from '@/stores/StationDetailStore'
 
 /**
@@ -32,13 +38,38 @@ export function TodayContent() {
 
       setIsLoading(true)
       try {
-        const response = await getHourlySensorData(stationId, 24)
-        if (response.status === 'success' && response.data) {
-          const transformed = transformHourlyData(response.data.hourly_data)
-          setChartData(transformed)
+        // Parallel fetch: Hourly + Latest sensor data
+        const [hourlyResponse, latestResponse] = await Promise.all([
+          getHourlySensorData(stationId, 24),
+          getLatestSensorData()
+        ])
+
+        if (hourlyResponse.status === 'success' && hourlyResponse.data) {
+          // Transform hourly data
+          const hourlyTransformed = transformHourlyData(hourlyResponse.data.hourly_data)
+
+          // Find latest data for this station
+          const stationLatestData = latestResponse?.data?.find(data => data.station_id === stationId)
+
+          // Merge latest data point if available
+          if (stationLatestData) {
+            const latestPoint = transformLatestDataToChartPoint(stationLatestData)
+            const mergedData = mergeHourlyWithLatest(hourlyTransformed, latestPoint)
+            setChartData(mergedData)
+
+            console.log('[TodayContent] Chart data merged:', {
+              hourlyPoints: hourlyTransformed.length,
+              latestTimestamp: latestPoint.timestamp,
+              totalPoints: mergedData.length
+            })
+          } else {
+            // No latest data available, use hourly only
+            setChartData(hourlyTransformed)
+            console.log('[TodayContent] Using hourly data only (no latest data found)')
+          }
         }
       } catch (error) {
-        console.error('[TodayContent] Failed to fetch hourly data:', error)
+        console.error('[TodayContent] Failed to fetch sensor data:', error)
         setChartData([])
       } finally {
         setIsLoading(false)
