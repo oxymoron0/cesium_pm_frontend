@@ -79,7 +79,7 @@ const StatisticsContent = observer(function StatisticsContent({ period }: { peri
               데이터 로딩 중...
             </div>
           ) : (
-            <StationConcentrationChart data={toJS(stationData)} />
+            <StationConcentrationChart data={toJS(stationData)} period={period} />
           )}
         </div>
       </PriorityChartContainer>

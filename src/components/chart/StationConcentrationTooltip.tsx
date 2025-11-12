@@ -8,11 +8,17 @@ interface StationConcentrationTooltipProps {
 }
 
 // 농도 기준 레벨 판단
-function getAirQualityLevel(value: number): { label: string; color: string } {
-  if (value > 150) return { label: '매우나쁨', color: '#D32F2F' }
-  if (value > 80) return { label: '나쁨', color: '#FF6B00' }
-  if (value > 30) return { label: '보통', color: '#FFD040' }
-  return { label: '좋음', color: '#4CAF50' }
+// function getAirQualityLevel(value: number): { label: string; color: string } {
+//   if (value > 150) return { label: '매우나쁨', color: '#D32F2F' }
+//   if (value > 80) return { label: '나쁨', color: '#FF6B00' }
+//   if (value > 30) return { label: '보통', color: '#FFD040' }
+//   return { label: '좋음', color: '#4CAF50' }
+// }
+
+// 농도 기준 레벨 판단
+function getAirQualityLevel(value: number): { label: '매우나쁨' | '나쁨'; color: string } {
+  if (value > 150) return { label: '매우나쁨', color: '#D32F2F' };
+  return { label: '나쁨', color: '#FF6B00' };
 }
 
 /**

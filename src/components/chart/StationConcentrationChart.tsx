@@ -1,12 +1,14 @@
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import type { StationConcentrationData } from '@/types/statistics'
 import StationConcentrationTooltip from './StationConcentrationTooltip'
+import type { TimePeriod } from '@/stores/PriorityStatisticsStore'
 
 interface StationConcentrationChartProps {
   data: StationConcentrationData[]
+  period: TimePeriod
 }
 
-const StationConcentrationChart = function StationConcentrationChart({ data }: StationConcentrationChartProps) {
+const StationConcentrationChart = function StationConcentrationChart({ data, period }: StationConcentrationChartProps) {
   if (!data || data.length === 0) {
     return (
       <div style={{
@@ -83,8 +85,10 @@ const StationConcentrationChart = function StationConcentrationChart({ data }: S
           left: 0,
           right: 0,
           bottom: 0,
-          overflowX: 'auto',
-          overflowY: 'hidden'
+          maxHeight: "calc(-50px + 100vh)",
+          overflowY: "auto",
+          scrollbarWidth: "thin",
+          scrollbarColor: "#FFD040 transparent",
         }}
       >
         <div style={{ width: calculatedWidth, height: '100%' }}>
@@ -112,14 +116,16 @@ const StationConcentrationChart = function StationConcentrationChart({ data }: S
                 name="최고농도"
                 radius={[20, 20, 0, 0]}
               />
-              <Line
-                type="linear"
-                dataKey="avgConcentration"
-                stroke="#D32F2F"
-                strokeWidth={2}
-                name="평균농도"
-                dot={{ fill: '#D32F2F', r: 7, stroke: '#FFFFFF', strokeWidth: 2 }}
-              />
+              {period !== 'realtime' && (
+                <Line
+                  type="linear"
+                  dataKey="avgConcentration"
+                  stroke="#D32F2F"
+                  strokeWidth={2}
+                  name="평균농도"
+                  dot={{ fill: '#D32F2F', r: 7, stroke: '#FFFFFF', strokeWidth: 2 }}
+                />
+              )}
             </ComposedChart>
           </ResponsiveContainer>
         </div>
