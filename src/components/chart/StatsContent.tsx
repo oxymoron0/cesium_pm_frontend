@@ -53,6 +53,11 @@ const StatsContent = observer(function StatsContent({
   const highConcentrationData: ConcentrationRankingItem[] = useMemo(() => {
     if (!hourlyData || hourlyData.length === 0) return []
 
+    // Get today's date (Korea time, start of day)
+    const now = new Date()
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+
     const sensorType = isVOCsMode ? 'vocs' : (pmType === 'PM10' ? 'pm10' : 'pm25')
     const thresholds = {
       pm10: 80,   // Bad threshold for PM10
@@ -62,8 +67,12 @@ const StatsContent = observer(function StatsContent({
 
     const threshold = thresholds[sensorType]
 
-    // Extract values and filter by threshold
+    // Filter by today's data only, then extract values and filter by threshold
     const dataPoints = hourlyData
+      .filter((point) => {
+        const date = new Date(point.hour)
+        return date >= todayStart && date <= todayEnd
+      })
       .map((point) => {
         const date = new Date(point.hour)
         const hour = date.getHours()
@@ -77,7 +86,7 @@ const StatsContent = observer(function StatsContent({
           value = point.average_readings.fpm
         }
 
-        return { hour: `${hour}:00`, value }
+        return { hour: `${hour}:00`, value, timestamp: date }
       })
       .filter(point => point.value >= threshold)
       .sort((a, b) => b.value - a.value)
@@ -94,6 +103,11 @@ const StatsContent = observer(function StatsContent({
   const lowConcentrationData: ConcentrationRankingItem[] = useMemo(() => {
     if (!hourlyData || hourlyData.length === 0) return []
 
+    // Get today's date (Korea time, start of day)
+    const now = new Date()
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+
     const sensorType = isVOCsMode ? 'vocs' : (pmType === 'PM10' ? 'pm10' : 'pm25')
     const thresholds = {
       pm10: 30,   // Good threshold for PM10
@@ -103,8 +117,12 @@ const StatsContent = observer(function StatsContent({
 
     const threshold = thresholds[sensorType]
 
-    // Extract values and filter by threshold
+    // Filter by today's data only, then extract values and filter by threshold
     const dataPoints = hourlyData
+      .filter((point) => {
+        const date = new Date(point.hour)
+        return date >= todayStart && date <= todayEnd
+      })
       .map((point) => {
         const date = new Date(point.hour)
         const hour = date.getHours()
@@ -118,7 +136,7 @@ const StatsContent = observer(function StatsContent({
           value = point.average_readings.fpm
         }
 
-        return { hour: `${hour}:00`, value }
+        return { hour: `${hour}:00`, value, timestamp: date }
       })
       .filter(point => point.value <= threshold)
       .sort((a, b) => a.value - b.value)
