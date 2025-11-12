@@ -197,7 +197,6 @@ const StatsContent = observer(function StatsContent({
     <div
       style={{
         display: 'flex',
-        width: '256px',
         padding: '0 6px',
         flexDirection: 'column',
         alignItems: 'flex-start',
