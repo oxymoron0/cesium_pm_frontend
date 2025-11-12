@@ -24,6 +24,7 @@ import { stationDetailStore } from '@/stores/StationDetailStore'
 // 오늘 탭 콘텐츠 컴포넌트
 export function TodayContent() {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([])
+  const [hourlyData, setHourlyData] = useState<import('@/utils/api/types').HourlyDataPoint[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [selectedPMType, setSelectedPMType] = useState<'PM10' | 'PM25'>('PM10')
 
@@ -47,7 +48,10 @@ export function TodayContent() {
         ])
 
         if (hourlyResponse.status === 'success' && hourlyResponse.data) {
-          // Transform hourly data
+          // Store raw hourly data for StatsContent
+          setHourlyData(hourlyResponse.data.hourly_data)
+
+          // Transform hourly data for chart
           const hourlyTransformed = transformHourlyData(hourlyResponse.data.hourly_data)
 
           // Find latest data for this station
@@ -73,6 +77,7 @@ export function TodayContent() {
       } catch (error) {
         console.error('[TodayContent] Failed to fetch sensor data:', error)
         setChartData([])
+        setHourlyData([])
       } finally {
         setIsLoading(false)
       }
@@ -113,7 +118,11 @@ export function TodayContent() {
         </div>
       </LineChartContainer>
       <StatsSummaryContainer>
-        <StatsContent pmType={selectedPMType} onPMTypeChange={setSelectedPMType} />
+        <StatsContent
+          pmType={selectedPMType}
+          onPMTypeChange={setSelectedPMType}
+          hourlyData={hourlyData}
+        />
       </StatsSummaryContainer>
     </div>
   )

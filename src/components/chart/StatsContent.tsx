@@ -5,10 +5,12 @@ import TabNavigation from '@/components/basic/TabNavigation'
 import HourlyDistributionChart from './HourlyDistributionChart'
 import ConcentrationRankings, { type ConcentrationRankingItem } from './ConcentrationRankings'
 import { sensorSelectionStore } from '@/stores/SensorSelectionStore'
+import type { HourlyDataPoint } from '@/utils/api/types'
 
 interface StatsContentProps {
   pmType?: 'PM10' | 'PM25'
   onPMTypeChange?: (type: 'PM10' | 'PM25') => void
+  hourlyData?: HourlyDataPoint[]
 }
 
 /**
@@ -17,78 +19,117 @@ interface StatsContentProps {
  * Displays hourly distribution chart and TOP3 rankings
  * - SubTitle changes based on PM/VOCs mode
  * - TabNavigation hidden in VOCs mode
- * - Mock data for initial implementation
+ * - Uses real hourly sensor data from API
  */
 const StatsContent = observer(function StatsContent({
   pmType = 'PM10',
-  onPMTypeChange
+  onPMTypeChange,
+  hourlyData = []
 }: StatsContentProps) {
   const isVOCsMode = sensorSelectionStore.isVOCsSelected
 
-  // Mock hourly distribution data (0-23 hours)
+  // Transform hourly data for distribution chart
   const hourlyDistributionData = useMemo(() => {
-    const baseValues = [45, 38, 52, 48, 55, 62, 58, 75, 85, 92, 90, 88,
-                        95, 82, 68, 72, 78, 85, 80, 70, 65, 58, 50, 48]
+    if (!hourlyData || hourlyData.length === 0) return []
 
-    return Array.from({ length: 24 }, (_, i) => ({
-      hour: i,
-      value: isVOCsMode
-        ? baseValues[i] * 3.5  // VOCs scale (ppb)
-        : pmType === 'PM10'
-          ? baseValues[i]       // PM10 (μg/m³)
-          : baseValues[i] * 0.6 // PM25 (μg/m³)
-    }))
-  }, [isVOCsMode, pmType])
+    return hourlyData.map((point) => {
+      const date = new Date(point.hour)
+      const hour = date.getHours()
 
-  // Mock high concentration rankings
+      let value = 0
+      if (isVOCsMode) {
+        value = point.average_readings.voc
+      } else if (pmType === 'PM10') {
+        value = point.average_readings.pm
+      } else {
+        value = point.average_readings.fpm
+      }
+
+      return { hour, value }
+    })
+  }, [hourlyData, isVOCsMode, pmType])
+
+  // Calculate high concentration rankings (TOP3)
   const highConcentrationData: ConcentrationRankingItem[] = useMemo(() => {
-    if (isVOCsMode) {
-      return [
-        { rank: 1, hour: '11:00', value: 322 },
-        { rank: 2, hour: '8:00', value: 298 },
-        { rank: 3, hour: '5:00', value: 284 }
-      ]
+    if (!hourlyData || hourlyData.length === 0) return []
+
+    const sensorType = isVOCsMode ? 'vocs' : (pmType === 'PM10' ? 'pm10' : 'pm25')
+    const thresholds = {
+      pm10: 80,   // Bad threshold for PM10
+      pm25: 35,   // Bad threshold for PM25
+      vocs: 500   // Assumed threshold for VOCs
     }
 
-    if (pmType === 'PM10') {
-      return [
-        { rank: 1, hour: '11:00', value: 92 },
-        { rank: 2, hour: '8:00', value: 85 },
-        { rank: 3, hour: '5:00', value: 81 }
-      ]
-    }
+    const threshold = thresholds[sensorType]
 
-    return [
-      { rank: 1, hour: '11:00', value: 55 },
-      { rank: 2, hour: '8:00', value: 51 },
-      { rank: 3, hour: '5:00', value: 49 }
-    ]
-  }, [isVOCsMode, pmType])
+    // Extract values and filter by threshold
+    const dataPoints = hourlyData
+      .map((point) => {
+        const date = new Date(point.hour)
+        const hour = date.getHours()
+        let value = 0
 
-  // Mock low concentration rankings
+        if (isVOCsMode) {
+          value = point.average_readings.voc
+        } else if (pmType === 'PM10') {
+          value = point.average_readings.pm
+        } else {
+          value = point.average_readings.fpm
+        }
+
+        return { hour: `${hour}:00`, value }
+      })
+      .filter(point => point.value >= threshold)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 3)
+
+    return dataPoints.map((point, index) => ({
+      rank: index + 1,
+      hour: point.hour,
+      value: point.value
+    }))
+  }, [hourlyData, isVOCsMode, pmType])
+
+  // Calculate low concentration rankings (TOP3)
   const lowConcentrationData: ConcentrationRankingItem[] = useMemo(() => {
-    if (isVOCsMode) {
-      return [
-        { rank: 1, hour: '4:00', value: 133 },
-        { rank: 2, hour: '1:00', value: 158 },
-        { rank: 3, hour: '23:00', value: 168 }
-      ]
+    if (!hourlyData || hourlyData.length === 0) return []
+
+    const sensorType = isVOCsMode ? 'vocs' : (pmType === 'PM10' ? 'pm10' : 'pm25')
+    const thresholds = {
+      pm10: 30,   // Good threshold for PM10
+      pm25: 15,   // Good threshold for PM25
+      vocs: 200   // Assumed threshold for VOCs
     }
 
-    if (pmType === 'PM10') {
-      return [
-        { rank: 1, hour: '4:00', value: 38 },
-        { rank: 2, hour: '1:00', value: 45 },
-        { rank: 3, hour: '23:00', value: 48 }
-      ]
-    }
+    const threshold = thresholds[sensorType]
 
-    return [
-      { rank: 1, hour: '4:00', value: 23 },
-      { rank: 2, hour: '1:00', value: 27 },
-      { rank: 3, hour: '23:00', value: 29 }
-    ]
-  }, [isVOCsMode, pmType])
+    // Extract values and filter by threshold
+    const dataPoints = hourlyData
+      .map((point) => {
+        const date = new Date(point.hour)
+        const hour = date.getHours()
+        let value = 0
+
+        if (isVOCsMode) {
+          value = point.average_readings.voc
+        } else if (pmType === 'PM10') {
+          value = point.average_readings.pm
+        } else {
+          value = point.average_readings.fpm
+        }
+
+        return { hour: `${hour}:00`, value }
+      })
+      .filter(point => point.value <= threshold)
+      .sort((a, b) => a.value - b.value)
+      .slice(0, 3)
+
+    return dataPoints.map((point, index) => ({
+      rank: index + 1,
+      hour: point.hour,
+      value: point.value
+    }))
+  }, [hourlyData, isVOCsMode, pmType])
 
   const title = isVOCsMode
     ? '시간대별 VOCs 농도 분포'
