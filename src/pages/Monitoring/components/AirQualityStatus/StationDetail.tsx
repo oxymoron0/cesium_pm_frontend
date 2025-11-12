@@ -4,15 +4,11 @@ import Title from '@/components/basic/Title'
 import Icon from '@/components/basic/Icon'
 import TabNavigation from '@/components/basic/TabNavigation'
 import SensorInfoContainer from '@/components/service/sensor/SensorInfoContainer'
-import { getHourlySensorData, getLatestSensorData } from '@/utils/api'
-import type { HourlyDataPoint, StationSensorApiData } from '@/utils/api/types'
+import { getHourlySensorData, getDailySensorData, getLatestSensorData } from '@/utils/api'
+import type { HourlyDataPoint, DailyDataPoint, StationSensorApiData } from '@/utils/api/types'
 import { formatUTCToKoreaTime, getCurrentKoreaTime, formatTimeDifference } from '@/utils/dateTime'
 import { stationDetailStore } from '@/stores/StationDetailStore'
-import {
-  TodayContent,
-  WeekContent,
-  MonthContent
-} from './StationSensorMetric'
+import UnifiedStationSensorMetric from './StationSensorMetric'
 
 interface StationDetailProps {
   stationId: string
@@ -37,40 +33,95 @@ const StationDetail = observer(function StationDetail({
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [activeTab, setActiveTab] = useState<number>(0)
 
-  // 활성 탭에 따른 콘텐츠 렌더링
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 0:
-        return <TodayContent />
-      case 1:
-        return <WeekContent />
-      case 2:
-        return <MonthContent />
-      default:
-        return <TodayContent />
-    }
-  }
+  // 캐시된 데이터 상태 (정류장별로 캐싱)
+  const [cachedStationId, setCachedStationId] = useState<string | null>(null)
+  const [cachedTodayData, setCachedTodayData] = useState<{
+    hourlyData: HourlyDataPoint[]
+    latestData: StationSensorApiData | null
+  } | null>(null)
+  const [cachedWeekData, setCachedWeekData] = useState<{
+    dailyData: DailyDataPoint[]
+    hourlyData: HourlyDataPoint[]
+  } | null>(null)
+  const [cachedMonthData, setCachedMonthData] = useState<{
+    dailyData: DailyDataPoint[]
+    hourlyData: HourlyDataPoint[]
+  } | null>(null)
+
+  // No need for renderTabContent - using unified component
 
   useEffect(() => {
-    const fetchSensorData = async () => {
+    // 정류장이 변경되었는지 확인
+    const isStationChanged = cachedStationId !== stationId
+
+    if (isStationChanged) {
+      console.log('[StationDetail] 정류장 변경 감지, 캐시 초기화:', { prev: cachedStationId, new: stationId })
+      setCachedStationId(stationId)
+      setCachedTodayData(null)
+      setCachedWeekData(null)
+      setCachedMonthData(null)
+    }
+
+    const fetchAllSensorData = async () => {
       setIsLoading(true)
       try {
-        // Latest Data + Hourly Data 병렬 호출
-        const [latestResponse, hourlyResponse] = await Promise.all([
+        // 모든 기간의 데이터를 병렬로 가져오기 (우선순위: 오늘 > 7일 > 1개월)
+        console.log('[StationDetail] 모든 탭 데이터 병렬 로딩 시작')
+        const [
+          latestResponse,
+          hourly24Response,
+          hourly7daysResponse,
+          hourly10daysResponse,
+          daily7Response,
+          daily10Response
+        ] = await Promise.all([
           getLatestSensorData(),
-          getHourlySensorData(stationId, 24)
+          getHourlySensorData(stationId, 24),        // 오늘
+          getHourlySensorData(stationId, 24 * 7),    // 7일
+          getHourlySensorData(stationId, 24 * 10),   // 10일
+          getDailySensorData(stationId, 7),          // 7일
+          getDailySensorData(stationId, 10)          // 10일
         ])
 
-        console.log('[StationDetail] 병렬 API 응답:', {
+        console.log('[StationDetail] 모든 API 응답 완료:', {
           stationId,
-          latestStatus: latestResponse?.data?.length || 0,
-          hourlyStatus: hourlyResponse?.status
+          latestCount: latestResponse?.data?.length || 0,
+          hourly24: hourly24Response?.status,
+          hourly7days: hourly7daysResponse?.status,
+          hourly10days: hourly10daysResponse?.status,
+          daily7: daily7Response?.status,
+          daily10: daily10Response?.status
         })
 
         // Latest Data에서 해당 station 찾기
         const stationLatestData = latestResponse?.data?.find(data => data.station_id === stationId)
-        const hourlyData = hourlyResponse?.status === 'success' ? hourlyResponse.data?.hourly_data : []
+        const hourly24Data = hourly24Response?.status === 'success' ? hourly24Response.data?.hourly_data || [] : []
+        const hourly7daysData = hourly7daysResponse?.status === 'success' ? hourly7daysResponse.data?.hourly_data || [] : []
+        const hourly10daysData = hourly10daysResponse?.status === 'success' ? hourly10daysResponse.data?.hourly_data || [] : []
+        const daily7Data = daily7Response?.status === 'success' ? daily7Response.data?.daily_data || [] : []
+        const daily10Data = daily10Response?.status === 'success' ? daily10Response.data?.daily_data || [] : []
 
+        // 캐시에 데이터 저장
+        setCachedTodayData({
+          hourlyData: hourly24Data,
+          latestData: stationLatestData || null
+        })
+        setCachedWeekData({
+          dailyData: daily7Data,
+          hourlyData: hourly7daysData
+        })
+        setCachedMonthData({
+          dailyData: daily10Data,
+          hourlyData: hourly10daysData
+        })
+
+        console.log('[StationDetail] 캐시 저장 완료:', {
+          todayCached: hourly24Data.length > 0,
+          weekCached: daily7Data.length > 0,
+          monthCached: daily10Data.length > 0
+        })
+
+        // 좌측 센서 정보 업데이트 (오늘 데이터 기준)
         if (stationLatestData) {
           // Latest Data를 Hourly 형식으로 변환 (현재값)
           const latestAsHourly: HourlyDataPoint = {
@@ -90,18 +141,8 @@ const StationDetail = observer(function StationDetail({
           setCurrentSensorData(latestAsHourly)
 
           // Hourly 데이터가 있는 경우 비교 처리
-          if (hourlyData && hourlyData.length > 0) {
-            console.log('[StationDetail] Latest + Hourly 데이터 성공:', {
-              latestTime: stationLatestData.recorded_at,
-              hourlyTime: hourlyData[hourlyData.length - 1].hour,
-              latestPm: stationLatestData.sensor_data.pm,
-              hourlyPm: hourlyData[hourlyData.length - 1].average_readings.pm
-            })
-
-            // 가장 최신 Hourly Data (비교값)
-            const latestHourlyData = hourlyData[hourlyData.length - 1]
-
-            // 시간 차이 계산
+          if (hourly24Data.length > 0) {
+            const latestHourlyData = hourly24Data[hourly24Data.length - 1]
             const timeDiff = formatTimeDifference(stationLatestData.recorded_at, latestHourlyData.hour)
 
             setPreviousSensorData(latestHourlyData)
@@ -111,46 +152,39 @@ const StationDetail = observer(function StationDetail({
               hourlyTimestamp: latestHourlyData.hour
             })
           } else {
-            console.log('[StationDetail] Latest 데이터만 사용 (Hourly 데이터 없음)')
             setPreviousSensorData(null)
             setTimeComparisonData(null)
           }
 
-          // 실제 측정 시간 표시 (Latest Data 기준)
           const timeString = formatUTCToKoreaTime(stationLatestData.recorded_at)
           setLastUpdated(timeString)
 
         } else {
           console.warn('[StationDetail] Latest 데이터 없음')
-
-          // 완전 실패 시 초기화
           setLatestSensorData(null)
           setCurrentSensorData(null)
           setPreviousSensorData(null)
           setTimeComparisonData(null)
-
-          const timeString = getCurrentKoreaTime()
-          setLastUpdated(timeString)
+          setLastUpdated(getCurrentKoreaTime())
         }
 
       } catch (error) {
         console.error('[StationDetail] API 호출 실패:', error)
-
-        // 에러 발생 시 초기화
         setLatestSensorData(null)
         setCurrentSensorData(null)
         setPreviousSensorData(null)
         setTimeComparisonData(null)
-
-        const timeString = getCurrentKoreaTime()
-        setLastUpdated(timeString)
+        setLastUpdated(getCurrentKoreaTime())
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchSensorData()
-  }, [stationId])
+    // 정류장 변경 시에만 데이터 로딩
+    if (isStationChanged) {
+      fetchAllSensorData()
+    }
+  }, [stationId, cachedStationId])
 
   return (
     <>
@@ -305,8 +339,13 @@ const StationDetail = observer(function StationDetail({
             onTabChange={setActiveTab}
           />
 
-          {/* 탭 콘텐츠 영역 */}
-          {renderTabContent()}
+          {/* 통합 차트 컴포넌트 - 탭 전환 시 리렌더링 없이 데이터만 변경 */}
+          <UnifiedStationSensorMetric
+            activeTab={activeTab as 0 | 1 | 2}
+            cachedTodayData={cachedTodayData}
+            cachedWeekData={cachedWeekData}
+            cachedMonthData={cachedMonthData}
+          />
         </div>
       </div>
     </div>

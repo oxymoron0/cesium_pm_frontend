@@ -1,4 +1,4 @@
-import type { HourlyDataPoint, DailyDataPoint } from '@/utils/api/types'
+import type { HourlyDataPoint, DailyDataPoint, StationSensorApiData } from '@/utils/api/types'
 
 /**
  * Chart Data Point
@@ -98,6 +98,109 @@ export function formatTimeLabel(isoString: string, period: 'today' | 'week' | 'm
     default:
       return isoString
   }
+}
+
+/**
+ * Transform Latest sensor data to chart format
+ *
+ * @param latestData - Latest sensor data from API
+ * @returns Single chart data point
+ */
+export function transformLatestDataToChartPoint(latestData: StationSensorApiData): ChartDataPoint {
+  return {
+    time: formatTimeLabel(latestData.recorded_at, 'today'),
+    timestamp: latestData.recorded_at,
+    pm10: latestData.sensor_data.pm,
+    pm25: latestData.sensor_data.fpm,
+    voc: latestData.sensor_data.voc
+  }
+}
+
+/**
+ * Merge hourly data with latest sensor reading
+ * Prevents duplicate timestamps and ensures chronological order
+ *
+ * @param hourlyData - Hourly average data points
+ * @param latestData - Latest sensor reading (optional)
+ * @returns Combined and sorted chart data
+ */
+export function mergeHourlyWithLatest(
+  hourlyData: ChartDataPoint[],
+  latestData?: ChartDataPoint
+): ChartDataPoint[] {
+  if (!latestData) {
+    return hourlyData
+  }
+
+  // Check if Latest timestamp already exists in Hourly data
+  const latestExists = hourlyData.some(point =>
+    new Date(point.timestamp).getTime() === new Date(latestData.timestamp).getTime()
+  )
+
+  // If Latest is duplicate, skip merging
+  if (latestExists) {
+    return hourlyData
+  }
+
+  // Merge and sort by timestamp
+  const combined = [...hourlyData, latestData]
+  return combined.sort((a, b) =>
+    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  )
+}
+
+/**
+ * Daily Bar Chart Data Point
+ * Format for DailyBarChart component
+ */
+export interface DailyBarDataPoint {
+  date: string      // ISO date string
+  dateLabel: string // MM.DD format
+  dayOfWeek: string // 요일 (일/월/화/수/목/금/토)
+  value: number
+}
+
+/**
+ * Get Korean day of week
+ *
+ * @param date - Date object
+ * @returns Korean day of week string
+ */
+function getKoreanDayOfWeek(date: Date): string {
+  const days = ['일', '월', '화', '수', '목', '금', '토']
+  return days[date.getDay()]
+}
+
+/**
+ * Transform daily data to bar chart format with date labels and day of week
+ *
+ * @param dailyData - Array of daily data points from API
+ * @param sensorType - 'pm' (PM10), 'fpm' (PM25), or 'voc'
+ * @returns Transformed data for DailyBarChart
+ */
+export function transformDailyDataToBarChart(
+  dailyData: DailyDataPoint[],
+  sensorType: 'pm' | 'fpm' | 'voc'
+): DailyBarDataPoint[] {
+  // Sort by timestamp first, then transform
+  const sorted = [...dailyData].sort((a, b) =>
+    new Date(a.date).getTime() - new Date(b.date).getTime()
+  )
+
+  return sorted.map(point => {
+    const date = new Date(point.date)
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const day = date.getDate().toString().padStart(2, '0')
+    const dateLabel = `${month}.${day}`
+    const dayOfWeek = getKoreanDayOfWeek(date)
+
+    return {
+      date: point.date,
+      dateLabel,
+      dayOfWeek,
+      value: point.average_readings[sensorType]
+    }
+  })
 }
 
 /**

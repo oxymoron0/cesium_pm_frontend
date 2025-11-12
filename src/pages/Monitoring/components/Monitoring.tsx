@@ -484,7 +484,14 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
         <Spacer height={16} />
         <Divider height="h-[2px]"></Divider>
         <Spacer height={32} />
-        <Button onClick={() => stationDetailStore.openModal()}>노선별 실시간 공기질 현황</Button>
+        <Button onClick={() => {
+          stationDetailStore.openModal()
+          // 노선 리스트의 첫 번째 값을 자동 선택
+          if (routeStore.routeInfoList.length > 0) {
+            const firstRouteName = routeStore.routeInfoList[0].route_name
+            stationDetailStore.selectRoute(firstRouteName)
+          }
+        }}>노선별 실시간 공기질 현황</Button>
       </>
   )
 });
