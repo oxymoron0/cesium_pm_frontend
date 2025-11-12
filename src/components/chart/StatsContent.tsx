@@ -215,7 +215,7 @@ const StatsContent = observer(function StatsContent({
         {period === 'today' ? (
           <HourlyDistributionChart data={distributionData} />
         ) : (
-          <DailyBarChart data={dailyBarData} pmType={pmType} />
+          <DailyBarChart data={dailyBarData} />
         )}
       </div>
 

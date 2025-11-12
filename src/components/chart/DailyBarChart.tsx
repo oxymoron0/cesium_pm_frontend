@@ -20,7 +20,6 @@ interface DailyBarDataPoint {
 
 interface DailyBarChartProps {
   data: DailyBarDataPoint[]
-  pmType?: 'PM10' | 'PM25'
 }
 
 /**
@@ -30,11 +29,10 @@ interface DailyBarChartProps {
  * - Fixed dimensions: 244px × 122px
  * - X-axis shows date (MM.DD) with day of week
  * - Y-axis adapts to data values
- * - Bar colors based on air quality thresholds
+ * - Bar colors based on min/max values: Max=#FFD040, Min=#FFF, Others=#555
  */
 const DailyBarChart = observer(function DailyBarChart({
-  data,
-  pmType = 'PM10'
+  data
 }: DailyBarChartProps) {
   const isVOCsMode = sensorSelectionStore.isVOCsSelected
 
@@ -82,22 +80,15 @@ const DailyBarChart = observer(function DailyBarChart({
 
   const ticks = generateTicks(yMax)
 
-  // Air quality thresholds for color determination
+  // Determine bar color based on min/max values in dataset
   const getBarColor = (value: number): string => {
-    if (isVOCsMode) {
-      // VOCs thresholds: Good ≤200, Normal ≤500, Bad >500
-      if (value <= 200) return '#18A274' // Good - green
-      if (value <= 500) return '#555555' // Normal - gray
-      return '#FFD040' // Bad - yellow
-    } else {
-      const thresholds = pmType === 'PM10'
-        ? { good: 30, bad: 80 }
-        : { good: 15, bad: 35 }
+    const values = data.map(d => d.value)
+    const maxValue = Math.max(...values)
+    const minValue = Math.min(...values)
 
-      if (value <= thresholds.good) return '#18A274' // Good - green
-      if (value <= thresholds.bad) return '#555555' // Normal - gray
-      return '#FFD040' // Bad - yellow
-    }
+    if (value === maxValue) return '#FFD040' // Max - yellow
+    if (value === minValue) return '#FFF'    // Min - white
+    return '#555555'                         // Others - gray
   }
 
   // Custom X-axis tick component with date + day of week
