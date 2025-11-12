@@ -25,3 +25,6 @@ dist-ssr
 
 # Development env Token
 .env.development
+
+# Tmp Models
+public/results
