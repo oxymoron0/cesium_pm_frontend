@@ -43,10 +43,11 @@ const ConcentrationRankings = observer(function ConcentrationRankings({
     <div
       style={{
         display: 'flex',
-        width: '244px',
+        padding: '10px',
         flexDirection: 'column',
         alignItems: 'flex-start',
-        gap: '8px'
+        gap: '12px',
+        alignSelf: 'stretch'
       }}
     >
       {/* Header */}
@@ -77,10 +78,11 @@ const ConcentrationRankings = observer(function ConcentrationRankings({
       <div
         style={{
           display: 'flex',
-          padding: '10px',
+          padding: '12px',
           flexDirection: 'column',
-          alignItems: 'flex-start',
-          gap: '12px',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '10px',
           alignSelf: 'stretch',
           borderRadius: '8px',
           border: '1px solid rgba(196, 198, 198, 0.20)',
@@ -118,6 +120,7 @@ const ConcentrationRankings = observer(function ConcentrationRankings({
             <div
               style={{
                 display: 'flex',
+                padding: '10px',
                 alignItems: 'center',
                 alignSelf: 'stretch'
               }}
@@ -168,6 +171,7 @@ const ConcentrationRankings = observer(function ConcentrationRankings({
                 key={item.rank}
                 style={{
                   display: 'flex',
+                  padding: '10px',
                   alignItems: 'center',
                   alignSelf: 'stretch'
                 }}
