@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import LineChartContainer from '@/components/chart/LineChartContainer'
 import StatsSummaryContainer from '@/components/chart/StatsSummaryContainer'
+import StatsContent from '@/components/chart/StatsContent'
 import ChartHeader from '@/components/chart/ChartHeader'
 import ChartController from '@/components/chart/ChartController'
 import SensorLineChart from '@/components/chart/SensorLineChart'
@@ -24,6 +25,7 @@ import { stationDetailStore } from '@/stores/StationDetailStore'
 export function TodayContent() {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [selectedPMType, setSelectedPMType] = useState<'PM10' | 'PM25'>('PM10')
 
   // Get current date in MM/DD format
   const now = new Date()
@@ -111,7 +113,7 @@ export function TodayContent() {
         </div>
       </LineChartContainer>
       <StatsSummaryContainer>
-        {/* TODO: 오늘 통계 요약 */}
+        <StatsContent pmType={selectedPMType} onPMTypeChange={setSelectedPMType} />
       </StatsSummaryContainer>
     </div>
   )
