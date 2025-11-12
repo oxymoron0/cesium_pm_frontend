@@ -143,7 +143,8 @@ const ConcentrationRankings = observer(function ConcentrationRankings({
                   fontFamily: 'Pretendard',
                   fontSize: '12px',
                   fontWeight: 600,
-                  lineHeight: '14px'
+                  lineHeight: '14px',
+                  textAlign: 'center'
                 }}
               >
                 시간
@@ -193,7 +194,8 @@ const ConcentrationRankings = observer(function ConcentrationRankings({
                     fontFamily: 'Pretendard',
                     fontSize: '14px',
                     fontWeight: 400,
-                    lineHeight: '14px'
+                    lineHeight: '14px',
+                    textAlign: 'center'
                   }}
                 >
                   {item.hour}
