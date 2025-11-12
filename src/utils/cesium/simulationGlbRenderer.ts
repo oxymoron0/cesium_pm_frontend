@@ -1,6 +1,7 @@
 import { Entity, ModelGraphics, Cartesian3, HeightReference, ConstantPositionProperty, Cartographic, sampleTerrainMostDetailed, Color, CustomDataSource, ColorBlendMode, ConstantProperty } from 'cesium'
 import { createDataSource, removeDataSource, clearDataSource } from './datasources'
 import { flyToStationSmooth } from './cameraUtils'
+import { getCachedGlbUrl, clearGlbCache } from './glbPreloader'
 
 const DATASOURCE_NAME = 'simulation_glb_result'
 
@@ -8,8 +9,10 @@ const DATASOURCE_NAME = 'simulation_glb_result'
  * 시뮬레이션 GLB 렌더링 컨텍스트
  * - entity0, entity1: 크로스 페이드를 위한 두 개의 Entity (핑퐁 방식)
  * - currentEntityIndex: 현재 표시 중인 Entity (0 또는 1)
+ * - uuid: 시뮬레이션 UUID (캐싱 키)
  */
 type PreparedContext = {
+  uuid: string
   centerLongitude: number
   centerLatitude: number
   terrainHeight: number
@@ -47,6 +50,10 @@ export function clearSimulationGlbs(): void {
 
   clearDataSource(DATASOURCE_NAME)
   removeDataSource(DATASOURCE_NAME)
+
+  // GLB 캐시 정리
+  clearGlbCache()
+
   preparedCtx = null
 }
 
@@ -55,8 +62,10 @@ export function clearSimulationGlbs(): void {
  * - DataSource 생성
  * - 지형 높이 샘플링
  * - 크로스 페이드용 Entity 2개 생성 (entity0, entity1)
+ * - UUID 기반 캐싱 컨텍스트 설정
  */
 export async function prepareSimulationGlbSequence(params: {
+  uuid: string
   centerLongitude: number
   centerLatitude: number
   resultPath: string
@@ -66,7 +75,7 @@ export async function prepareSimulationGlbSequence(params: {
   const viewer = getViewer()
   if (!viewer) return
 
-  const { centerLongitude, centerLatitude, resultPath, totalCount, frameIntervalMs } = params
+  const { uuid, centerLongitude, centerLatitude, resultPath, totalCount, frameIntervalMs } = params
 
   if (!totalCount || totalCount <= 0) {
     console.warn('[simulationGlbRenderer] Invalid totalCount:', totalCount)
@@ -78,6 +87,7 @@ export async function prepareSimulationGlbSequence(params: {
 
   // 이미 준비된 컨텍스트와 동일하면 스킵
   if (preparedCtx &&
+      preparedCtx.uuid === uuid &&
       preparedCtx.centerLongitude === centerLongitude &&
       preparedCtx.centerLatitude === centerLatitude &&
       preparedCtx.resultPath === resultPath &&
@@ -144,6 +154,7 @@ export async function prepareSimulationGlbSequence(params: {
   dataSource.entities.add(entity1)
 
   preparedCtx = {
+    uuid,
     centerLongitude,
     centerLatitude,
     terrainHeight,
@@ -282,7 +293,7 @@ export async function renderSimulationGlbFrame(index: number, skipFade: boolean 
     return
   }
 
-  const { normalizedPath, totalCount, entity0, entity1, currentEntityIndex } = preparedCtx
+  const { uuid, normalizedPath, totalCount, entity0, entity1, currentEntityIndex } = preparedCtx
 
   // 유효성 검사
   if (index < 0 || index >= totalCount) {
@@ -295,9 +306,13 @@ export async function renderSimulationGlbFrame(index: number, skipFade: boolean 
     return
   }
 
-  // GLB 파일명 생성 (0001.glb, 0002.glb, ...)
-  const fileNumber = String(index + 1).padStart(4, '0')
-  const glbUrl = `${normalizedPath}Finedust_${fileNumber}.glb`
+  // 캐시에서 GLB URL 가져오기 (프리로드 완료 후에만 호출되므로 항상 존재)
+  const glbUrl = getCachedGlbUrl(uuid, index)
+
+  if (!glbUrl) {
+    console.error(`[simulationGlbRenderer] Cache miss for frame ${index} - should not happen`)
+    return
+  }
 
   // 즉시 전환 (첫 프레임 or Seek)
   if (skipFade) {
