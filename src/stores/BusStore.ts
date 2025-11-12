@@ -508,8 +508,8 @@ class BusStore {
         const targetProgressPercent = latestPosition.progress_percent
 
         if (targetProgressPercent !== undefined && targetProgressPercent !== null) {
-          // 초기 애니메이션 duration: 3초 (부드러운 시작)
-          const initialDuration = 3.0
+          // 초기 애니메이션 duration: 10초 (천천히 부드러운 시작)
+          const initialDuration = 10.0
           setBusTargetProgress(bus.vehicle_number, targetProgressPercent, initialDuration)
 
           // 애니메이션 완료 후 상태 업데이트
