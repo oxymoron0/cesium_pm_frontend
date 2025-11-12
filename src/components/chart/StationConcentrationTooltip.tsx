@@ -1,3 +1,4 @@
+import type { TimePeriod } from '@/stores/PriorityStatisticsStore'
 import type { StationConcentrationData } from '@/types/statistics'
 
 interface StationConcentrationTooltipProps {
@@ -5,6 +6,7 @@ interface StationConcentrationTooltipProps {
   payload?: Array<{
     payload: StationConcentrationData
   }>
+  period?: TimePeriod
 }
 
 // 농도 기준 레벨 판단
@@ -27,7 +29,7 @@ function getAirQualityLevel(value: number): { label: '매우나쁨' | '나쁨'; 
  * Displays station name, max concentration, and average concentration
  * with air quality level indicators
  */
-export default function StationConcentrationTooltip({ active, payload }: StationConcentrationTooltipProps) {
+export default function StationConcentrationTooltip({ active, payload, period }: StationConcentrationTooltipProps) {
   if (!active || !payload || payload.length === 0) return null
 
   const stationName = payload[0]?.payload?.stationName || ''
@@ -89,40 +91,41 @@ export default function StationConcentrationTooltip({ active, payload }: Station
           {maxConcentration} μg/m³
         </span>
       </div>
-
       {/* 평균농도 */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        marginTop: '8px'
-      }}>
-        <span style={{
-          color: '#999',
-          fontSize: '14px',
-          fontFamily: 'Pretendard',
-          minWidth: '60px'
-        }}>평균</span>
+      {period !== 'realtime' && (
         <div style={{
-          backgroundColor: avgLevel.color,
-          color: '#FFFFFF',
-          fontSize: '12px',
-          fontWeight: '600',
-          fontFamily: 'Pretendard',
-          padding: '2px 8px',
-          borderRadius: '4px'
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          marginTop: '8px'
         }}>
-          {avgLevel.label}
+          <span style={{
+            color: '#999',
+            fontSize: '14px',
+            fontFamily: 'Pretendard',
+            minWidth: '60px'
+          }}>평균</span>
+          <div style={{
+            backgroundColor: avgLevel.color,
+            color: '#FFFFFF',
+            fontSize: '12px',
+            fontWeight: '600',
+            fontFamily: 'Pretendard',
+            padding: '2px 8px',
+            borderRadius: '4px'
+          }}>
+            {avgLevel.label}
+          </div>
+          <span style={{
+            color: '#FFFFFF',
+            fontSize: '14px',
+            fontWeight: '600',
+            fontFamily: 'Pretendard'
+          }}>
+            {avgConcentration} μg/m³
+          </span>
         </div>
-        <span style={{
-          color: '#FFFFFF',
-          fontSize: '14px',
-          fontWeight: '600',
-          fontFamily: 'Pretendard'
-        }}>
-          {avgConcentration} μg/m³
-        </span>
-      </div>
+      )}
     </div>
   )
 }

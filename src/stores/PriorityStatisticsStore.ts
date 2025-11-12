@@ -229,6 +229,11 @@ class PriorityStatisticsStore {
    * @default true
    */
   useMockData = true
+  
+    /**
+   * Statistics popup minimize state
+   */
+  isStatisticsPopupMinimized = false
 
   constructor() {
     makeAutoObservable(this)
@@ -454,6 +459,17 @@ class PriorityStatisticsStore {
     this.dataMap.forEach((_, period) => {
       this.clearPeriodData(period)
     })
+  }
+
+  // ============================================================================
+  // Popup Minimize Management
+  // ============================================================================
+
+  /**
+   * Toggle statistics popup minimize/maximize
+   */
+  toggleStatisticsPopupMinimize = () => {
+    this.isStatisticsPopupMinimized = !this.isStatisticsPopupMinimized
   }
 
   /**

@@ -64,18 +64,21 @@ const StationConcentrationChart = function StationConcentrationChart({ data, per
         gap: '6px',
         zIndex: 10
       }}>
-        <div style={{
-          width: '14px',
-          height: '2px',
-          backgroundColor: '#D32F2F'
-        }} />
-        <span style={{
-          color: '#999',
-          fontSize: '12px',
-          fontFamily: 'Pretendard'
-        }}>평균농도</span>
+      {period !== 'realtime' && (
+        <div>
+          <div style={{
+            width: '14px',
+            height: '2px',
+            backgroundColor: '#D32F2F'
+          }} />
+          <span style={{
+            color: '#999',
+            fontSize: '12px',
+            fontFamily: 'Pretendard'
+          }}>평균농도</span>
+        </div>
+      )}
       </div>
-
       {/* 스크롤 영역 */}
       <div
         className="custom-scrollbar"
@@ -108,7 +111,7 @@ const StationConcentrationChart = function StationConcentrationChart({ data, per
                 stroke="#999"
                 tick={{ fill: '#999', fontSize: 12 }}
               />
-              <Tooltip content={<StationConcentrationTooltip />} />
+              <Tooltip content={<StationConcentrationTooltip  period={period}/>} />
               <Bar
                 dataKey="maxConcentration"
                 fill="#FFD040"

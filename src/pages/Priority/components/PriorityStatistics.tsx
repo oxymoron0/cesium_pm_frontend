@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import Panel from '@/components/basic/Panel';
+import { observer } from 'mobx-react-lite';
 import Title from '@/components/basic/Title';
 import TabNavigation from '@/components/basic/TabNavigation';
 import {
@@ -8,12 +8,13 @@ import {
   WeekContent,
   MonthContent
 } from './PriorityStatisticsContent';
+import { priorityStatisticsStore } from '@/stores/PriorityStatisticsStore';
 
 interface PriorityStatisticsProps {
   onClose: () => void;
 }
 
-const PriorityStatistics = function PriorityStatistics({ onClose }: PriorityStatisticsProps) {
+const PriorityStatistics = observer(function PriorityStatistics({ onClose }: PriorityStatisticsProps) {
   const [activeTab, setActiveTab] = useState<number>(0);
 
   // 활성 탭에 따른 콘텐츠 렌더링
@@ -32,30 +33,42 @@ const PriorityStatistics = function PriorityStatistics({ onClose }: PriorityStat
     }
   };
 
+  const { isStatisticsPopupMinimized } = priorityStatisticsStore;
+
   return (
-    <Panel
-      className="flex flex-col items-center gap-4"
-      position="center"
-      marginHorizontal={20}
-      marginVertical={32}
+    <div
+      className="fixed z-[1002] flex flex-col items-center overflow-hidden rounded-[10px] border-t-[1.25px] border-t-yellow-400 pb-8 px-5 pt-8 text-white text-sm"
+      style={{
+        width: 'calc(100vw - 40px)',
+        height: isStatisticsPopupMinimized ? 'auto' : 'calc(100vh - 64px)',
+        top: '32px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        backgroundColor: 'rgba(0, 0, 0, 0.65)',
+        gap: isStatisticsPopupMinimized ? '0' : '1rem'
+      }}
     >
-      <Title onClose={onClose}>
+      <Title
+        onClose={onClose}
+        onMinimize={() => priorityStatisticsStore.toggleStatisticsPopupMinimize()}
+      >
         통계
       </Title>
 
+      <div style={{ display: isStatisticsPopupMinimized ? 'none' : 'contents' }}>
+        <TabNavigation
+          tabs={['실시간', '오늘', '최근 7일', '최근 1개월']}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
 
-      <TabNavigation
-        tabs={['실시간', '오늘', '최근 7일', '최근 1개월']}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-      />
-
-      {/* 탭 콘텐츠 영역 */}
-      <div className="flex flex-1 w-full" style={{ minHeight: '500px' }}>
-        {renderTabContent()}
+        {/* 탭 콘텐츠 영역 */}
+        <div className="flex flex-1 w-full" style={{ minHeight: '500px' }}>
+          {renderTabContent()}
+        </div>
       </div>
-    </Panel>
+    </div>
   );
-};
+});
 
 export default PriorityStatistics;

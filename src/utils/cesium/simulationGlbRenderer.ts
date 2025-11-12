@@ -293,7 +293,7 @@ export async function renderSimulationGlbFrame(index: number, skipFade: boolean 
     return
   }
 
-  const { uuid, normalizedPath, totalCount, entity0, entity1, currentEntityIndex } = preparedCtx
+  const { uuid, totalCount, entity0, entity1, currentEntityIndex } = preparedCtx
 
   // 유효성 검사
   if (index < 0 || index >= totalCount) {
