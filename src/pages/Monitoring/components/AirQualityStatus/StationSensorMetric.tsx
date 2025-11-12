@@ -5,7 +5,6 @@ import StatsContent from '@/components/chart/StatsContent'
 import ChartHeader from '@/components/chart/ChartHeader'
 import ChartController from '@/components/chart/ChartController'
 import SensorLineChart from '@/components/chart/SensorLineChart'
-import { getHourlySensorData, getDailySensorData, getLatestSensorData } from '@/utils/api'
 import {
   transformHourlyData,
   transformDailyData,
@@ -13,18 +12,25 @@ import {
   mergeHourlyWithLatest,
   type ChartDataPoint
 } from '@/utils/chart/sensorDataTransform'
-import { stationDetailStore } from '@/stores/StationDetailStore'
+import type { HourlyDataPoint, DailyDataPoint, StationSensorApiData } from '@/utils/api/types'
 
 /**
  * Tab Content Components for StationDetail
  *
- * Separated for better readability and maintainability
+ * Uses cached data passed from parent to avoid redundant API calls on tab switches
  */
 
+interface TodayContentProps {
+  cachedData: {
+    hourlyData: HourlyDataPoint[]
+    latestData: StationSensorApiData | null
+  } | null
+}
+
 // 오늘 탭 콘텐츠 컴포넌트
-export function TodayContent() {
+export function TodayContent({ cachedData }: TodayContentProps) {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([])
-  const [hourlyData, setHourlyData] = useState<import('@/utils/api/types').HourlyDataPoint[]>([])
+  const [hourlyData, setHourlyData] = useState<HourlyDataPoint[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [selectedPMType, setSelectedPMType] = useState<'PM10' | 'PM25'>('PM10')
 
@@ -35,56 +41,34 @@ export function TodayContent() {
   const currentDate = `${month}/${day}`
 
   useEffect(() => {
-    const fetchData = async () => {
-      const stationId = stationDetailStore.selectedStationId
-      if (!stationId) return
-
+    if (!cachedData) {
+      console.log('[TodayContent] 캐시 데이터 대기 중...')
       setIsLoading(true)
-      try {
-        // Parallel fetch: Hourly + Latest sensor data
-        const [hourlyResponse, latestResponse] = await Promise.all([
-          getHourlySensorData(stationId, 24),
-          getLatestSensorData()
-        ])
-
-        if (hourlyResponse.status === 'success' && hourlyResponse.data) {
-          // Store raw hourly data for StatsContent
-          setHourlyData(hourlyResponse.data.hourly_data)
-
-          // Transform hourly data for chart
-          const hourlyTransformed = transformHourlyData(hourlyResponse.data.hourly_data)
-
-          // Find latest data for this station
-          const stationLatestData = latestResponse?.data?.find(data => data.station_id === stationId)
-
-          // Merge latest data point if available
-          if (stationLatestData) {
-            const latestPoint = transformLatestDataToChartPoint(stationLatestData)
-            const mergedData = mergeHourlyWithLatest(hourlyTransformed, latestPoint)
-            setChartData(mergedData)
-
-            console.log('[TodayContent] Chart data merged:', {
-              hourlyPoints: hourlyTransformed.length,
-              latestTimestamp: latestPoint.timestamp,
-              totalPoints: mergedData.length
-            })
-          } else {
-            // No latest data available, use hourly only
-            setChartData(hourlyTransformed)
-            console.log('[TodayContent] Using hourly data only (no latest data found)')
-          }
-        }
-      } catch (error) {
-        console.error('[TodayContent] Failed to fetch sensor data:', error)
-        setChartData([])
-        setHourlyData([])
-      } finally {
-        setIsLoading(false)
-      }
+      return
     }
 
-    fetchData()
-  }, [])
+    console.log('[TodayContent] 캐시 데이터 사용:', {
+      hourlyCount: cachedData.hourlyData.length,
+      hasLatest: !!cachedData.latestData
+    })
+
+    setIsLoading(false)
+
+    // Store raw hourly data for StatsContent
+    setHourlyData(cachedData.hourlyData)
+
+    // Transform hourly data for chart
+    const hourlyTransformed = transformHourlyData(cachedData.hourlyData)
+
+    // Merge latest data point if available
+    if (cachedData.latestData) {
+      const latestPoint = transformLatestDataToChartPoint(cachedData.latestData)
+      const mergedData = mergeHourlyWithLatest(hourlyTransformed, latestPoint)
+      setChartData(mergedData)
+    } else {
+      setChartData(hourlyTransformed)
+    }
+  }, [cachedData])
 
   return (
     <div
@@ -128,48 +112,40 @@ export function TodayContent() {
   )
 }
 
+interface WeekContentProps {
+  cachedData: {
+    dailyData: DailyDataPoint[]
+    hourlyData: HourlyDataPoint[]
+  } | null
+}
+
 // 최근 7일 탭 콘텐츠 컴포넌트
-export function WeekContent() {
+export function WeekContent({ cachedData }: WeekContentProps) {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([])
-  const [dailyData, setDailyData] = useState<import('@/utils/api/types').DailyDataPoint[]>([])
-  const [hourlyData, setHourlyData] = useState<import('@/utils/api/types').HourlyDataPoint[]>([])
+  const [dailyData, setDailyData] = useState<DailyDataPoint[]>([])
+  const [hourlyData, setHourlyData] = useState<HourlyDataPoint[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [selectedPMType, setSelectedPMType] = useState<'PM10' | 'PM25'>('PM10')
 
   useEffect(() => {
-    const fetchData = async () => {
-      const stationId = stationDetailStore.selectedStationId
-      if (!stationId) return
-
+    if (!cachedData) {
+      console.log('[WeekContent] 캐시 데이터 대기 중...')
       setIsLoading(true)
-      try {
-        // Fetch both daily and hourly data in parallel
-        const [dailyResponse, hourlyResponse] = await Promise.all([
-          getDailySensorData(stationId, 7),
-          getHourlySensorData(stationId, 24 * 7) // 7 days of hourly data
-        ])
-
-        if (dailyResponse.status === 'success' && dailyResponse.data) {
-          setDailyData(dailyResponse.data.daily_data)
-          const transformed = transformDailyData(dailyResponse.data.daily_data)
-          setChartData(transformed)
-        }
-
-        if (hourlyResponse.status === 'success' && hourlyResponse.data) {
-          setHourlyData(hourlyResponse.data.hourly_data)
-        }
-      } catch (error) {
-        console.error('[WeekContent] Failed to fetch weekly data:', error)
-        setChartData([])
-        setDailyData([])
-        setHourlyData([])
-      } finally {
-        setIsLoading(false)
-      }
+      return
     }
 
-    fetchData()
-  }, [])
+    console.log('[WeekContent] 캐시 데이터 사용:', {
+      dailyCount: cachedData.dailyData.length,
+      hourlyCount: cachedData.hourlyData.length
+    })
+
+    setIsLoading(false)
+    setDailyData(cachedData.dailyData)
+    setHourlyData(cachedData.hourlyData)
+
+    const transformed = transformDailyData(cachedData.dailyData)
+    setChartData(transformed)
+  }, [cachedData])
 
   return (
     <div
@@ -215,48 +191,40 @@ export function WeekContent() {
   )
 }
 
+interface MonthContentProps {
+  cachedData: {
+    dailyData: DailyDataPoint[]
+    hourlyData: HourlyDataPoint[]
+  } | null
+}
+
 // 최근 1개월 탭 콘텐츠 컴포넌트
-export function MonthContent() {
+export function MonthContent({ cachedData }: MonthContentProps) {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([])
-  const [dailyData, setDailyData] = useState<import('@/utils/api/types').DailyDataPoint[]>([])
-  const [hourlyData, setHourlyData] = useState<import('@/utils/api/types').HourlyDataPoint[]>([])
+  const [dailyData, setDailyData] = useState<DailyDataPoint[]>([])
+  const [hourlyData, setHourlyData] = useState<HourlyDataPoint[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [selectedPMType, setSelectedPMType] = useState<'PM10' | 'PM25'>('PM10')
 
   useEffect(() => {
-    const fetchData = async () => {
-      const stationId = stationDetailStore.selectedStationId
-      if (!stationId) return
-
+    if (!cachedData) {
+      console.log('[MonthContent] 캐시 데이터 대기 중...')
       setIsLoading(true)
-      try {
-        // Fetch both daily and hourly data in parallel
-        const [dailyResponse, hourlyResponse] = await Promise.all([
-          getDailySensorData(stationId, 10), // Recent 10 days only
-          getHourlySensorData(stationId, 24 * 10) // 10 days of hourly data
-        ])
-
-        if (dailyResponse.status === 'success' && dailyResponse.data) {
-          setDailyData(dailyResponse.data.daily_data)
-          const transformed = transformDailyData(dailyResponse.data.daily_data)
-          setChartData(transformed)
-        }
-
-        if (hourlyResponse.status === 'success' && hourlyResponse.data) {
-          setHourlyData(hourlyResponse.data.hourly_data)
-        }
-      } catch (error) {
-        console.error('[MonthContent] Failed to fetch monthly data:', error)
-        setChartData([])
-        setDailyData([])
-        setHourlyData([])
-      } finally {
-        setIsLoading(false)
-      }
+      return
     }
 
-    fetchData()
-  }, [])
+    console.log('[MonthContent] 캐시 데이터 사용:', {
+      dailyCount: cachedData.dailyData.length,
+      hourlyCount: cachedData.hourlyData.length
+    })
+
+    setIsLoading(false)
+    setDailyData(cachedData.dailyData)
+    setHourlyData(cachedData.hourlyData)
+
+    const transformed = transformDailyData(cachedData.dailyData)
+    setChartData(transformed)
+  }, [cachedData])
 
   return (
     <div
