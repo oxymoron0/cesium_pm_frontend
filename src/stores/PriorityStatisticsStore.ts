@@ -46,15 +46,12 @@ function randomBadCount(): number {
 // ============================================================================
 
 export const MOCK_STATION_CONCENTRATION_DATA: StationConcentrationData[] = [
-  { stationName: '연제공용버스차고지(13179)', stationId: '13179', maxConcentration: 85, avgConcentration: 52 },
-  { stationName: '초읍고개(13183)', stationId: '13183', maxConcentration: 92, avgConcentration: 58 },
-  { stationName: '서면한전(05713)', stationId: '05713', maxConcentration: 78, avgConcentration: 48 },
-  { stationName: '범내골역(05715)', stationId: '05715', maxConcentration: 95, avgConcentration: 61 },
-  { stationName: '당감초교앞(05720)', stationId: '05720', maxConcentration: 68, avgConcentration: 42 },
-  { stationName: '초읍역(05725)', stationId: '05725', maxConcentration: 72, avgConcentration: 45 },
   { stationName: '부전역(05730)', stationId: '05730', maxConcentration: 105, avgConcentration: 72 },
-  { stationName: '전포동(05735)', stationId: '05735', maxConcentration: 88, avgConcentration: 55 },
   { stationName: '서면역(05740)', stationId: '05740', maxConcentration: 98, avgConcentration: 65 },
+  { stationName: '범내골역(05715)', stationId: '05715', maxConcentration: 95, avgConcentration: 61 },
+  { stationName: '초읍고개(13183)', stationId: '13183', maxConcentration: 92, avgConcentration: 58 },
+  { stationName: '전포동(05735)', stationId: '05735', maxConcentration: 88, avgConcentration: 55 },
+  { stationName: '연제공용버스차고지(13179)', stationId: '13179', maxConcentration: 85, avgConcentration: 52 },
   { stationName: '범천동(05745)', stationId: '05745', maxConcentration: 82, avgConcentration: 51 }
 ]
 
@@ -232,8 +229,8 @@ class PriorityStatisticsStore {
    * @default true
    */
   useMockData = true
-
-  /**
+  
+    /**
    * Statistics popup minimize state
    */
   isStatisticsPopupMinimized = false
@@ -464,14 +461,6 @@ class PriorityStatisticsStore {
     })
   }
 
-  /**
-   * Reset store to initial state
-   */
-  reset() {
-    this.clearAllData()
-    this.facilityType = 'bad'
-  }
-
   // ============================================================================
   // Popup Minimize Management
   // ============================================================================
@@ -481,6 +470,14 @@ class PriorityStatisticsStore {
    */
   toggleStatisticsPopupMinimize = () => {
     this.isStatisticsPopupMinimized = !this.isStatisticsPopupMinimized
+  }
+
+  /**
+   * Reset store to initial state
+   */
+  reset() {
+    this.clearAllData()
+    this.facilityType = 'bad'
   }
 }
 
