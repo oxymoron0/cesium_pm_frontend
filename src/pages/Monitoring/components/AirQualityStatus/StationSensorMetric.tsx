@@ -232,8 +232,8 @@ export function MonthContent() {
       try {
         // Fetch both daily and hourly data in parallel
         const [dailyResponse, hourlyResponse] = await Promise.all([
-          getDailySensorData(stationId),
-          getHourlySensorData(stationId, 24 * 30) // 30 days of hourly data
+          getDailySensorData(stationId, 10), // Recent 10 days only
+          getHourlySensorData(stationId, 24 * 10) // 10 days of hourly data
         ])
 
         if (dailyResponse.status === 'success' && dailyResponse.data) {
