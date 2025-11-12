@@ -112,7 +112,7 @@ const ConcentrationRankings = observer(function ConcentrationRankings({
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'flex-start',
-              gap: '8px',
+              gap: '12px',
               alignSelf: 'stretch'
             }}
           >
@@ -120,7 +120,6 @@ const ConcentrationRankings = observer(function ConcentrationRankings({
             <div
               style={{
                 display: 'flex',
-                padding: '10px',
                 alignItems: 'center',
                 alignSelf: 'stretch'
               }}
@@ -166,14 +165,14 @@ const ConcentrationRankings = observer(function ConcentrationRankings({
             </div>
 
             {/* Table Rows */}
-            {data.slice(0, 3).map((item) => (
+            {data.slice(0, 3).map((item, index) => (
               <div
                 key={item.rank}
                 style={{
                   display: 'flex',
-                  padding: '10px',
                   alignItems: 'center',
-                  alignSelf: 'stretch'
+                  alignSelf: 'stretch',
+                  marginBottom: index < 2 ? '12px' : '0'
                 }}
               >
                 <div
