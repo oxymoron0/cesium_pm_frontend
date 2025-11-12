@@ -40,7 +40,6 @@ export async function renderNearbyStations(
     // 기존 검색 결과 정리
     await clearNearStations();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
     if (!viewer) {
       console.warn('[near by station] Cesium viewer not available');

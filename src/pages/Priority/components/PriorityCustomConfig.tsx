@@ -18,7 +18,7 @@ import { Cartesian3 } from 'cesium';
 
 interface PriorityCustomConfigProps {
   onBack: () => void;
-  onSearch: (config: { date: string; time: string; city: string; district: string; dong: string }) => void;
+  onSearch: (config: { date: string; time: string; city: string; district: string }) => void;
   locationMode: 'address' | 'point';
   setLocationMode: (mode: 'address' | 'point') => void;
 }
@@ -608,23 +608,12 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
           onClick={() => {
             if (!config) return;
 
-            // 위치 지정 모드일 때는 선택된 읍면동으로 업데이트
-            if (locationMode === 'point' && administrativeStore.selectedNeighborhoodCode) {
-              const selectedNeighborhood = administrativeStore.neighborhoods.find(
-                n => n.code.substring(5) === administrativeStore.selectedNeighborhoodCode
-              );
-              if (selectedNeighborhood) {
-                priorityStore.updateDong(selectedNeighborhood.name);
-              }
-            }
-
             // config 데이터 전달
             onSearch({
               date: config.date,
               time: config.time,
               city: config.city,
-              district: config.district,
-              dong: config.dong
+              district: config.district
             });
           }}
         >

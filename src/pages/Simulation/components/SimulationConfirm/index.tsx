@@ -46,7 +46,6 @@ const SimulationConfirm = observer(function SimulationConfirm() {
     if (needsData && !dataForConfirm) {
       simulationStore.cancelModal();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [needsData, dataForConfirm]);
 
   // 모달 open 상태가 아니면 렌더하지 않음

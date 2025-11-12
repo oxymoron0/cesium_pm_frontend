@@ -36,6 +36,7 @@ let isFacilityPostRenderListenerAttached = false;
 
 /**
  * 미세먼지 레벨에 따른 스타일(색상/텍스트)을 반환합니다.
+ * PriorityResult.tsx의 getLevelStyle과 동일한 색상 사용
  */
 function getLevelStyle(level: VulnerableFacility['predictedLevel']): {
   text: string;
@@ -44,14 +45,14 @@ function getLevelStyle(level: VulnerableFacility['predictedLevel']): {
   backgroundColor: string;
 } {
   switch (level) {
-    case 'good':
-      return { text: '좋음', color: '#FFF', borderColor: '#1E90FF', backgroundColor: '#87CEEB' };
-    case 'normal':
-      return { text: '보통', color: '#FFF', borderColor: '#FF7700', backgroundColor: '#FF7700' };
-    case 'bad':
-      return { text: '나쁨', color: '#FFF', borderColor: '#FF4500', backgroundColor: '#FF8C00' };
     case 'very-bad':
-      return { text: '매우 나쁨', color: '#FFF', borderColor: '#D32F2D', backgroundColor: '#D32F2D' };
+      return { text: '매우나쁨', color: '#FFFFFF', borderColor: '#D32F2D', backgroundColor: '#D32F2D' };
+    case 'bad':
+      return { text: '나쁨', color: '#FFFFFF', borderColor: '#FF7700', backgroundColor: '#FF7700' };
+    case 'normal':
+      return { text: '보통', color: '#000000', borderColor: '#FFD040', backgroundColor: '#FFD040' };
+    case 'good':
+      return { text: '좋음', color: '#FFFFFF', borderColor: '#00C851', backgroundColor: '#00C851' };
     default:
       return { text: '미확인', color: 'gray', borderColor: 'gray', backgroundColor: 'lightgray' };
   }
@@ -62,7 +63,6 @@ function getLevelStyle(level: VulnerableFacility['predictedLevel']): {
  */
 async function sampleTerrainForVulnerableFacilities(facilities: VulnerableFacility[]): Promise<void> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const viewer = (window as unknown as { cviewer: { terrainProvider: TerrainProvider } }).cviewer;
     if (!viewer?.terrainProvider) return;
 
@@ -89,7 +89,6 @@ async function sampleTerrainForVulnerableFacilities(facilities: VulnerableFacili
  * 취약 시설의 HTML 엘리먼트 위치를 업데이트 (매 프레임 실행, 핵심 로직)
  */
 function updateFacilityHtmlElementPositions(): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
   if (!viewer) return;
 
@@ -140,7 +139,6 @@ function updateFacilityHtmlElementPositions(): void {
  * postRender 리스너를 뷰어에 한 번만 등록합니다.
  */
 function attachFacilityPostRenderListener(): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
   if (!viewer || isFacilityPostRenderListenerAttached) return;
 
@@ -154,8 +152,7 @@ function attachFacilityPostRenderListener(): void {
  * - 박스를 살짝 올리고 표시용 화살표 추가 반영
  */
 function createFacilityBillboardEntity(
-  facility: VulnerableFacility,
-  selectedDong: string
+  facility: VulnerableFacility
 ): Entity {
   const [lng, lat] = facility.geometry.coordinates;
   const facilityId = facility.id;
@@ -166,7 +163,6 @@ function createFacilityBillboardEntity(
   const cachedHeight = terrainHeightCache.get(key) || 0;
   const position = Cartesian3.fromDegrees(lng, lat, cachedHeight + 1); // 지면보다 살짝 위에
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
 
   // 1. HTML 엘리먼트 생성 및 캐시
@@ -185,23 +181,25 @@ function createFacilityBillboardEntity(
     // z-index: Cesium Canvas 위에서 다른 UI 요소보다 높게 설정 (Cesium 3D 순위와는 무관)
     element.style.zIndex = '3';
 
-    // 노란색 네모 박스 HTML
-    const yellowSquareMarker = `
+    // 예측 등급에 따른 색상의 네모 박스 HTML
+    const squareMarker = `
         <div style="position: absolute;
-                    bottom: -15px; /* 화살표 높이 + 네모와의 간격 고려 */
+                    bottom: -15px;
                     left: 50%;
                     width: 6px;
                     height: 6px;
                     background: none;
-                    border: 2px solid #FFD700; /* 노란색 테두리 */
-                    transform: translateX(-50%);
+                    border: 2px solid ${styles.borderColor};
+                    transform: translate3d(-50%, 0, 0);
+                    will-change: transform;
+                    backface-visibility: hidden;
+                    -webkit-backface-visibility: hidden;
                     ">
         </div>
     `;
-    // }
 
-    // selectedDong이 '전체'일 경우 yellowSquareMarker만 표시
-    // if (selectedDong === '전체') {
+    // selectedNeighborhood이 '전체'일 경우 squareMarker만 표시
+    // if (selectedNeighborhood === '전체') {
     //   element.innerHTML = `
     //     <div class="absolute top-0 left-0 z-10 w-full h-full overflow-visible pointer-events-none whitespace-nowrap"
     //          data-facility-id="${facilityId}"
@@ -209,21 +207,27 @@ function createFacilityBillboardEntity(
     //                 display: flex;
     //                 flex-direction: column;
     //                 align-items: center;
-    //                 transform: translate(-50%, -50%);
+    //                 transform: translate3d(-50%, -50%, 0);
+    //                 will-change: transform;
+    //                 backface-visibility: hidden;
+    //                 -webkit-backface-visibility: hidden;
     //                 user-select: none;">
-    //       ${yellowSquareMarker}
+    //       ${squareMarker}
     //     </div>
     //   `;
     // } else {
       // HTML 구조 (화살표 추가)
-    element.innerHTML = `
+      element.innerHTML = `
       <div class="absolute top-0 left-0 z-10 w-full h-full overflow-visible pointer-events-none whitespace-nowrap"
             data-facility-id="${facilityId}"
             style="position: relative;
                   display: flex;
                   flex-direction: column;
                   align-items: center;
-                  transform: translate(-50%, calc(-100% - 12px)); /* 박스 + 화살표 높이 고려 */
+                  transform: translate3d(-50%, calc(-100% - 12px), 0);
+                  will-change: transform;
+                  backface-visibility: hidden;
+                  -webkit-backface-visibility: hidden;
                   user-select: none;">
 
         <div style="background: rgba(0, 0, 0, 0.8);
@@ -232,13 +236,16 @@ function createFacilityBillboardEntity(
                     border-radius: 12px;
                     padding: 4px 16px 8px 24px;
                     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-                    /* 화살표와의 간격 */
                     margin-bottom: 0;
                     min-width: 140px;
                     display: flex;
                     flex-direction: column;
                     font-family: Pretendard, sans-serif;
-                    position: relative;">
+                    position: relative;
+                    will-change: transform;
+                    backface-visibility: hidden;
+                    -webkit-backface-visibility: hidden;
+                    transform: translateZ(0);">
           <span style="background: white;
                           position: absolute;
                           color: black;
@@ -291,7 +298,7 @@ function createFacilityBillboardEntity(
                     z-index: 1;">
         </div>
 
-        ${yellowSquareMarker}
+        ${squareMarker}
       </div>
     `;
     // }
@@ -328,13 +335,9 @@ function createFacilityBillboardEntity(
  * 취약 시설들을 Cesium에 렌더링 (Billboard Entity + postRender HTML 태그)
  */
 export async function renderVulnerableFacilities(
-  facilities: VulnerableFacility[],
-  selectedDong: string
+  facilities: VulnerableFacility[]
 ): Promise<void> {
   try {
-    await clearVulnerableFacilities();
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
     if (!viewer) {
       console.warn('[Vulnerable Facility] Cesium viewer not available');
@@ -346,15 +349,20 @@ export async function renderVulnerableFacilities(
       return;
     }
 
-    // DataSource 생성
+    // DataSource 생성 또는 재사용
     const dataSource = await createGeoJsonDataSource(FACILITY_DATASOURCE_NAME);
+
+    // 기존 entities 완전 제거 (중복 방지)
+    dataSource.entities.removeAll();
+
+    // HTML elements cache는 유지 (재사용)
 
     // Terrain 높이 샘플링
     await sampleTerrainForVulnerableFacilities(facilities);
 
     // Entity 및 HTML 엘리먼트 생성
     facilities.forEach(facility => {
-      const entity = createFacilityBillboardEntity(facility, selectedDong);
+      const entity = createFacilityBillboardEntity(facility);
       dataSource.entities.add(entity);
     });
 
@@ -375,7 +383,6 @@ export async function clearVulnerableFacilities(): Promise<void> {
   try {
     console.log('[clearVulnerableFacilities] Clearing facility rendering');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
     if (viewer && viewer.container) {
       // HTML 엘리먼트 제거

@@ -7,14 +7,12 @@ export interface PriorityConfig {
   time: string;
   city: string;
   district: string;
-  dong: string;
 }
 
 export interface VulnerableFacility {
   id: string;
   rank: number;
   name: string;
-  dong: string;
   address: string;
   predictedConcentration: number;
   predictedLevel: 'good' | 'normal' | 'bad' | 'very-bad';
@@ -48,3 +46,67 @@ export interface NearbyRoad {
 }
 
 export type PriorityView = 'config' | 'customConfig' | 'result';
+
+// 정류장 통계 API 응답 타입
+export interface StationStatisticsItem {
+  station_id: string;
+  station_name: string;
+  route_name: string;
+  max_pm10: number;
+  max_pm25: number;
+  max_pm10_recorded_at: string; // ISO 8601
+  max_pm25_recorded_at: string; // ISO 8601
+  measurement_count: number;
+}
+
+export interface StationStatisticsResponse {
+  period: {
+    start: string; // ISO 8601
+    end: string; // ISO 8601
+  };
+  stations: StationStatisticsItem[];
+  total: number;
+  sort_criteria: 'pm10' | 'pm25';
+}
+
+// Road Search API types
+export interface RoadSearchRequest {
+  longitude: number;
+  latitude: number;
+}
+
+export interface RoadFeatureProperties {
+  ogc_fid: number;
+  rn_cd: string; // 도로명 코드
+  sig_cd: string; // 지역 코드
+  rn: string; // 도로명 (한글)
+  eng_rn: string; // 도로명 (영문)
+}
+
+export interface RoadFeature {
+  type: 'Feature';
+  geometry: {
+    type: 'MultiLineString';
+    coordinates: number[][][]; // [[[lng, lat], [lng, lat], ...]]
+  };
+  properties: RoadFeatureProperties;
+}
+
+export interface SearchAreaFeature {
+  type: 'Feature';
+  geometry: {
+    type: 'Polygon';
+    coordinates: number[][][]; // [[[lng, lat], ...]]
+  };
+  properties: {
+    radius_meters: number;
+    description: string;
+  };
+}
+
+export interface RoadSearchResponse {
+  type: 'FeatureCollection';
+  features: RoadFeature[];
+  total: number;
+  search_area: SearchAreaFeature;
+}

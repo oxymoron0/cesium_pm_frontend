@@ -91,8 +91,11 @@ export const API_PATHS = {
   ADDRESS_SEARCH: getApiPath('/api/v1/address/search'),
   ADDRESS_REVERSE: getApiPath('/api/v1/address/reverse'),
 
-  // 우선순위 API (PM Backend)
+  // 우선순위에 사용한 API (PM Backend)
   PRIORITY_SEARCH: getApiPath('api/v1/priority/search'),
+  STATION_STATISTICS: getApiPath('api/v1/stations/statistics/'),
+  ROAD_SEARCH: getApiPath('api/v1/road/search'),
+  
 } as const;
 
 /**

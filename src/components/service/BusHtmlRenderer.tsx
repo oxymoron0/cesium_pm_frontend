@@ -342,6 +342,7 @@ const BusHtmlRenderer = observer(() => {
 
   useEffect(() => {
     let postRenderCallback: (() => void) | null = null;
+    const busElements = busElementsRef.current;
 
     // postRender 이벤트 등록
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -370,10 +371,10 @@ const BusHtmlRenderer = observer(() => {
       }
 
       // 모든 DOM 요소 정리
-      busElementsRef.current.forEach(busInfo => {
+      busElements.forEach(busInfo => {
         busInfo.element.remove();
       });
-      busElementsRef.current.clear();
+      busElements.clear();
     };
   }, [updateBusPositions]);
 

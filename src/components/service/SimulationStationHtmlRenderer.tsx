@@ -227,7 +227,7 @@ const SimulationStationHtmlRenderer = () => {
     heatColorCtxRef.current = col.getContext('2d', { willReadFrequently: false });
 
     ensureColorLUT();
-  }, []);
+  }, [ensureColorLUT]);
 
   useEffect(() => {
     ensureHeatCanvas();
@@ -605,6 +605,9 @@ const SimulationStationHtmlRenderer = () => {
     const viewer = window.cviewer;
     if (!viewer?.scene?.postRender) return;
 
+    const stationElements = stationElementsRef.current;
+    const sensorElements = sensorElementsRef.current;
+
     try {
       viewer.scene.postRender.addEventListener(updateStationPositions);
       // console.log('[SimulationStationHtmlRenderer] PostRender callback registered');
@@ -622,10 +625,10 @@ const SimulationStationHtmlRenderer = () => {
         }
       }
 
-      stationElementsRef.current.forEach(element => element.remove());
-      stationElementsRef.current.clear();
-      sensorElementsRef.current.forEach(element => element.remove());
-      sensorElementsRef.current.clear();
+      stationElements.forEach(element => element.remove());
+      stationElements.clear();
+      sensorElements.forEach(element => element.remove());
+      sensorElements.clear();
 
       if (heatCanvasRef.current) {
         heatCanvasRef.current.remove();
@@ -670,7 +673,7 @@ const SimulationStationHtmlRenderer = () => {
     `;
     containerRef.current.appendChild(legend);
     return () => legend.remove();
-  }, []);
+  }, [LEGEND_COLORS]);
 
   return (
     <div
