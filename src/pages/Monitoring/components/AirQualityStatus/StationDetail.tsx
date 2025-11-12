@@ -8,11 +8,7 @@ import { getHourlySensorData, getDailySensorData, getLatestSensorData } from '@/
 import type { HourlyDataPoint, DailyDataPoint, StationSensorApiData } from '@/utils/api/types'
 import { formatUTCToKoreaTime, getCurrentKoreaTime, formatTimeDifference } from '@/utils/dateTime'
 import { stationDetailStore } from '@/stores/StationDetailStore'
-import {
-  TodayContent,
-  WeekContent,
-  MonthContent
-} from './StationSensorMetric'
+import UnifiedStationSensorMetric from './StationSensorMetric'
 
 interface StationDetailProps {
   stationId: string
@@ -52,19 +48,7 @@ const StationDetail = observer(function StationDetail({
     hourlyData: HourlyDataPoint[]
   } | null>(null)
 
-  // 활성 탭에 따른 콘텐츠 렌더링 (캐시된 데이터 전달)
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 0:
-        return <TodayContent cachedData={cachedTodayData} />
-      case 1:
-        return <WeekContent cachedData={cachedWeekData} />
-      case 2:
-        return <MonthContent cachedData={cachedMonthData} />
-      default:
-        return <TodayContent cachedData={cachedTodayData} />
-    }
-  }
+  // No need for renderTabContent - using unified component
 
   useEffect(() => {
     // 정류장이 변경되었는지 확인
@@ -355,8 +339,13 @@ const StationDetail = observer(function StationDetail({
             onTabChange={setActiveTab}
           />
 
-          {/* 탭 콘텐츠 영역 */}
-          {renderTabContent()}
+          {/* 통합 차트 컴포넌트 - 탭 전환 시 리렌더링 없이 데이터만 변경 */}
+          <UnifiedStationSensorMetric
+            activeTab={activeTab as 0 | 1 | 2}
+            cachedTodayData={cachedTodayData}
+            cachedWeekData={cachedWeekData}
+            cachedMonthData={cachedMonthData}
+          />
         </div>
       </div>
     </div>
