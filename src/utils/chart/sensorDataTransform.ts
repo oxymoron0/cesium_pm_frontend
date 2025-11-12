@@ -150,6 +150,60 @@ export function mergeHourlyWithLatest(
 }
 
 /**
+ * Daily Bar Chart Data Point
+ * Format for DailyBarChart component
+ */
+export interface DailyBarDataPoint {
+  date: string      // ISO date string
+  dateLabel: string // MM.DD format
+  dayOfWeek: string // 요일 (일/월/화/수/목/금/토)
+  value: number
+}
+
+/**
+ * Get Korean day of week
+ *
+ * @param date - Date object
+ * @returns Korean day of week string
+ */
+function getKoreanDayOfWeek(date: Date): string {
+  const days = ['일', '월', '화', '수', '목', '금', '토']
+  return days[date.getDay()]
+}
+
+/**
+ * Transform daily data to bar chart format with date labels and day of week
+ *
+ * @param dailyData - Array of daily data points from API
+ * @param sensorType - 'pm' (PM10), 'fpm' (PM25), or 'voc'
+ * @returns Transformed data for DailyBarChart
+ */
+export function transformDailyDataToBarChart(
+  dailyData: DailyDataPoint[],
+  sensorType: 'pm' | 'fpm' | 'voc'
+): DailyBarDataPoint[] {
+  // Sort by timestamp first, then transform
+  const sorted = [...dailyData].sort((a, b) =>
+    new Date(a.date).getTime() - new Date(b.date).getTime()
+  )
+
+  return sorted.map(point => {
+    const date = new Date(point.date)
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const day = date.getDate().toString().padStart(2, '0')
+    const dateLabel = `${month}.${day}`
+    const dayOfWeek = getKoreanDayOfWeek(date)
+
+    return {
+      date: point.date,
+      dateLabel,
+      dayOfWeek,
+      value: point.average_readings[sensorType]
+    }
+  })
+}
+
+/**
  * Get Y-axis domain based on sensor values
  *
  * @param data - Chart data points

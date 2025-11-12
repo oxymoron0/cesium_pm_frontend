@@ -3,9 +3,11 @@ import { useMemo } from 'react'
 import SubTitle from '@/components/basic/SubTitle'
 import TabNavigation from '@/components/basic/TabNavigation'
 import HourlyDistributionChart from './HourlyDistributionChart'
+import DailyBarChart from './DailyBarChart'
 import ConcentrationRankings, { type ConcentrationRankingItem } from './ConcentrationRankings'
 import { sensorSelectionStore } from '@/stores/SensorSelectionStore'
 import type { HourlyDataPoint, DailyDataPoint } from '@/utils/api/types'
+import { transformDailyDataToBarChart } from '@/utils/chart/sensorDataTransform'
 
 interface StatsContentProps {
   pmType?: 'PM10' | 'PM25'
@@ -55,27 +57,17 @@ const StatsContent = observer(function StatsContent({
 
         return { hour, value }
       })
-    } else {
-      // Use daily data for week/month
-      if (!dailyData || dailyData.length === 0) return []
-
-      return dailyData.map((point) => {
-        const date = new Date(point.date)
-        const hour = date.getDate() // Use day of month as x-axis value
-
-        let value = 0
-        if (isVOCsMode) {
-          value = point.average_readings.voc
-        } else if (pmType === 'PM10') {
-          value = point.average_readings.pm
-        } else {
-          value = point.average_readings.fpm
-        }
-
-        return { hour, value }
-      })
     }
-  }, [hourlyData, dailyData, period, isVOCsMode, pmType])
+    return []
+  }, [hourlyData, period, isVOCsMode, pmType])
+
+  // Transform daily data for bar chart (week/month periods)
+  const dailyBarData = useMemo(() => {
+    if (period === 'today' || !dailyData || dailyData.length === 0) return []
+
+    const sensorType = isVOCsMode ? 'voc' : (pmType === 'PM10' ? 'pm' : 'fpm')
+    return transformDailyDataToBarChart(dailyData, sensorType)
+  }, [dailyData, period, isVOCsMode, pmType])
 
   // Calculate high concentration rankings (TOP3)
   const highConcentrationData: ConcentrationRankingItem[] = useMemo(() => {
@@ -220,7 +212,11 @@ const StatsContent = observer(function StatsContent({
           alignSelf: 'stretch'
         }}
       >
-        <HourlyDistributionChart data={distributionData} />
+        {period === 'today' ? (
+          <HourlyDistributionChart data={distributionData} />
+        ) : (
+          <DailyBarChart data={dailyBarData} pmType={pmType} />
+        )}
       </div>
 
       {/* High Concentration Rankings */}
