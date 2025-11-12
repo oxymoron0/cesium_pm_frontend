@@ -14,6 +14,7 @@ import { administrativeStore } from '@/stores/AdministrativeStore'
 import { routeStore } from '@/stores/RouteStore'
 import { stationStore } from '@/stores/StationStore'
 import type { PriorityView, PriorityConfig as PriorityConfigData } from './types'
+import { priorityStatisticsStore } from '@/stores/PriorityStatisticsStore'
 
 interface AppProps {
   onCloseMicroApp?: () => void;
@@ -184,7 +185,11 @@ const App = observer(function App(props: AppProps) {
 
       {/* Priority Statistics Popup */}
       {isStatisticsPopupOpen && (
-        <PriorityStatistics onClose={() => setIsStatisticsPopupOpen(false)} />
+        <PriorityStatistics onClose={() =>  {
+          priorityStatisticsStore.isStatisticsPopupMinimized = false
+          setIsStatisticsPopupOpen(false)}
+        }
+        />
       )}
 
       {/* Loading State */}
