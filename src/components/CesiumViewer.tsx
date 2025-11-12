@@ -102,7 +102,7 @@ const CesiumViewer = () => {
           webgl: {
             alpha: true,                 // 불필요한 알파 채널 제거
             depth: true,                  // 깊이 테스트 유지
-            stencil: false,               // 스텐실 버퍼 미사용
+            stencil: true,               // 스텐실 버퍼 미사용
             antialias: false,             // MSAA 비활성화 → 대역폭 절감
             premultipliedAlpha: false,    // alpha 사용 안 하므로 무의미
             preserveDrawingBuffer: false, // 프레임 제출 후 버퍼 자동 초기화

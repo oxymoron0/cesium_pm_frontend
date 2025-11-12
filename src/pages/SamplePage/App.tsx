@@ -10,6 +10,7 @@ import BusHtmlRenderer from '@/components/service/BusHtmlRenderer'
 import SimulationTestButton from './components/SimulationTestButton'
 import SimulationList from './components/SimulationList'
 import SimulationDetailPanel from './components/SimulationDetailPanel'
+import PolygonDrawer from './components/PolygonDrawer'
 import { initializePMFrontend } from '@/utils/cesiumControls'
 import { routeStore } from '@/stores/RouteStore'
 import { stationStore } from '@/stores/StationStore'
@@ -207,6 +208,14 @@ const App = observer(function App(props: AppProps) {
               </div>
               <SimulationTestButton />
               <SimulationList />
+            </div>
+
+            {/* Polygon Test System */}
+            <div className="p-3 pt-6 border-t border-gray-600 rounded-lg bg-gray-900/30">
+              <div className="pb-2 mb-4 text-lg font-semibold border-b border-purple-400">
+                Polygon 테스트 시스템
+              </div>
+              <PolygonDrawer />
             </div>
 
             {/* Vulnerability System */}
