@@ -131,7 +131,10 @@ export function TodayContent() {
 // 최근 7일 탭 콘텐츠 컴포넌트
 export function WeekContent() {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([])
+  const [dailyData, setDailyData] = useState<import('@/utils/api/types').DailyDataPoint[]>([])
+  const [hourlyData, setHourlyData] = useState<import('@/utils/api/types').HourlyDataPoint[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [selectedPMType, setSelectedPMType] = useState<'PM10' | 'PM25'>('PM10')
 
   useEffect(() => {
     const fetchData = async () => {
@@ -140,14 +143,26 @@ export function WeekContent() {
 
       setIsLoading(true)
       try {
-        const response = await getDailySensorData(stationId, 7)
-        if (response.status === 'success' && response.data) {
-          const transformed = transformDailyData(response.data.daily_data)
+        // Fetch both daily and hourly data in parallel
+        const [dailyResponse, hourlyResponse] = await Promise.all([
+          getDailySensorData(stationId, 7),
+          getHourlySensorData(stationId, 24 * 7) // 7 days of hourly data
+        ])
+
+        if (dailyResponse.status === 'success' && dailyResponse.data) {
+          setDailyData(dailyResponse.data.daily_data)
+          const transformed = transformDailyData(dailyResponse.data.daily_data)
           setChartData(transformed)
+        }
+
+        if (hourlyResponse.status === 'success' && hourlyResponse.data) {
+          setHourlyData(hourlyResponse.data.hourly_data)
         }
       } catch (error) {
         console.error('[WeekContent] Failed to fetch weekly data:', error)
         setChartData([])
+        setDailyData([])
+        setHourlyData([])
       } finally {
         setIsLoading(false)
       }
@@ -188,7 +203,13 @@ export function WeekContent() {
         </div>
       </LineChartContainer>
       <StatsSummaryContainer>
-        {/* TODO: 최근 7일 통계 요약 */}
+        <StatsContent
+          pmType={selectedPMType}
+          onPMTypeChange={setSelectedPMType}
+          hourlyData={hourlyData}
+          dailyData={dailyData}
+          period="week"
+        />
       </StatsSummaryContainer>
     </div>
   )
@@ -197,7 +218,10 @@ export function WeekContent() {
 // 최근 1개월 탭 콘텐츠 컴포넌트
 export function MonthContent() {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([])
+  const [dailyData, setDailyData] = useState<import('@/utils/api/types').DailyDataPoint[]>([])
+  const [hourlyData, setHourlyData] = useState<import('@/utils/api/types').HourlyDataPoint[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [selectedPMType, setSelectedPMType] = useState<'PM10' | 'PM25'>('PM10')
 
   useEffect(() => {
     const fetchData = async () => {
@@ -206,14 +230,26 @@ export function MonthContent() {
 
       setIsLoading(true)
       try {
-        const response = await getDailySensorData(stationId)
-        if (response.status === 'success' && response.data) {
-          const transformed = transformDailyData(response.data.daily_data)
+        // Fetch both daily and hourly data in parallel
+        const [dailyResponse, hourlyResponse] = await Promise.all([
+          getDailySensorData(stationId),
+          getHourlySensorData(stationId, 24 * 30) // 30 days of hourly data
+        ])
+
+        if (dailyResponse.status === 'success' && dailyResponse.data) {
+          setDailyData(dailyResponse.data.daily_data)
+          const transformed = transformDailyData(dailyResponse.data.daily_data)
           setChartData(transformed)
+        }
+
+        if (hourlyResponse.status === 'success' && hourlyResponse.data) {
+          setHourlyData(hourlyResponse.data.hourly_data)
         }
       } catch (error) {
         console.error('[MonthContent] Failed to fetch monthly data:', error)
         setChartData([])
+        setDailyData([])
+        setHourlyData([])
       } finally {
         setIsLoading(false)
       }
@@ -254,7 +290,13 @@ export function MonthContent() {
         </div>
       </LineChartContainer>
       <StatsSummaryContainer>
-        {/* TODO: 최근 1개월 통계 요약 */}
+        <StatsContent
+          pmType={selectedPMType}
+          onPMTypeChange={setSelectedPMType}
+          hourlyData={hourlyData}
+          dailyData={dailyData}
+          period="month"
+        />
       </StatsSummaryContainer>
     </div>
   )

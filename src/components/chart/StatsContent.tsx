@@ -5,49 +5,77 @@ import TabNavigation from '@/components/basic/TabNavigation'
 import HourlyDistributionChart from './HourlyDistributionChart'
 import ConcentrationRankings, { type ConcentrationRankingItem } from './ConcentrationRankings'
 import { sensorSelectionStore } from '@/stores/SensorSelectionStore'
-import type { HourlyDataPoint } from '@/utils/api/types'
+import type { HourlyDataPoint, DailyDataPoint } from '@/utils/api/types'
 
 interface StatsContentProps {
   pmType?: 'PM10' | 'PM25'
   onPMTypeChange?: (type: 'PM10' | 'PM25') => void
   hourlyData?: HourlyDataPoint[]
+  dailyData?: DailyDataPoint[]
+  period?: 'today' | 'week' | 'month'
 }
 
 /**
  * Stats Content Component
  *
- * Displays hourly distribution chart and TOP3 rankings
+ * Displays distribution chart and TOP3 rankings
  * - SubTitle changes based on PM/VOCs mode
  * - TabNavigation hidden in VOCs mode
- * - Uses real hourly sensor data from API
+ * - Supports both hourly (today) and daily (week/month) data
+ * - Chart uses appropriate data based on period
+ * - Rankings always use hourly data for time-based TOP3
  */
 const StatsContent = observer(function StatsContent({
   pmType = 'PM10',
   onPMTypeChange,
-  hourlyData = []
+  hourlyData = [],
+  dailyData = [],
+  period = 'today'
 }: StatsContentProps) {
   const isVOCsMode = sensorSelectionStore.isVOCsSelected
 
-  // Transform hourly data for distribution chart
-  const hourlyDistributionData = useMemo(() => {
-    if (!hourlyData || hourlyData.length === 0) return []
+  // Transform data for distribution chart based on period
+  const distributionData = useMemo(() => {
+    if (period === 'today') {
+      // Use hourly data for today
+      if (!hourlyData || hourlyData.length === 0) return []
 
-    return hourlyData.map((point) => {
-      const date = new Date(point.hour)
-      const hour = date.getHours()
+      return hourlyData.map((point) => {
+        const date = new Date(point.hour)
+        const hour = date.getHours()
 
-      let value = 0
-      if (isVOCsMode) {
-        value = point.average_readings.voc
-      } else if (pmType === 'PM10') {
-        value = point.average_readings.pm
-      } else {
-        value = point.average_readings.fpm
-      }
+        let value = 0
+        if (isVOCsMode) {
+          value = point.average_readings.voc
+        } else if (pmType === 'PM10') {
+          value = point.average_readings.pm
+        } else {
+          value = point.average_readings.fpm
+        }
 
-      return { hour, value }
-    })
-  }, [hourlyData, isVOCsMode, pmType])
+        return { hour, value }
+      })
+    } else {
+      // Use daily data for week/month
+      if (!dailyData || dailyData.length === 0) return []
+
+      return dailyData.map((point) => {
+        const date = new Date(point.date)
+        const hour = date.getDate() // Use day of month as x-axis value
+
+        let value = 0
+        if (isVOCsMode) {
+          value = point.average_readings.voc
+        } else if (pmType === 'PM10') {
+          value = point.average_readings.pm
+        } else {
+          value = point.average_readings.fpm
+        }
+
+        return { hour, value }
+      })
+    }
+  }, [hourlyData, dailyData, period, isVOCsMode, pmType])
 
   // Calculate high concentration rankings (TOP3)
   const highConcentrationData: ConcentrationRankingItem[] = useMemo(() => {
@@ -183,7 +211,7 @@ const StatsContent = observer(function StatsContent({
         />
       )}
 
-      {/* Hourly Distribution Chart */}
+      {/* Distribution Chart */}
       <div
         style={{
           display: 'flex',
@@ -192,7 +220,7 @@ const StatsContent = observer(function StatsContent({
           alignSelf: 'stretch'
         }}
       >
-        <HourlyDistributionChart data={hourlyDistributionData} />
+        <HourlyDistributionChart data={distributionData} />
       </div>
 
       {/* High Concentration Rankings */}
