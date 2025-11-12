@@ -495,8 +495,34 @@ class BusStore {
 
     console.log('[BusStore] Animation system started')
 
-    // 기존 데이터로 초기 애니메이션 시작
-    this.processNewPositionData()
+    // 초기 로딩 시: 각 버스가 -3% 위치에서 최신 위치로 애니메이션 시작
+    // renderBusModels()에서 이미 targetProgress가 최신 위치로 설정되어 있음
+    this.busData.forEach(bus => {
+      const animationState = this.busAnimations.get(bus.vehicle_number)
+      if (!animationState) return
+
+      // 애니메이션 상태가 초기화되어 있고, targetProgress가 설정되어 있으면
+      // 즉시 애니메이션 시작 (초기 로딩용)
+      if (!animationState.isAnimating && bus.positions.length >= 1) {
+        const latestPosition = bus.positions[bus.positions.length - 1]
+        const targetProgressPercent = latestPosition.progress_percent
+
+        if (targetProgressPercent !== undefined && targetProgressPercent !== null) {
+          // 초기 애니메이션 duration: 3초 (부드러운 시작)
+          const initialDuration = 3.0
+          setBusTargetProgress(bus.vehicle_number, targetProgressPercent, initialDuration)
+
+          // 애니메이션 완료 후 상태 업데이트
+          setTimeout(() => {
+            runInAction(() => {
+              animationState.isAnimating = false
+            })
+          }, initialDuration * 1000)
+
+          console.log(`[BusStore] Initial animation started for bus ${bus.vehicle_number}: ${targetProgressPercent.toFixed(2)}% (${initialDuration}s)`)
+        }
+      }
+    })
   }
 
   /**
