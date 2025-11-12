@@ -47,7 +47,7 @@ export interface DongOption {
 
 /**
  * 취약시설 우선순위 조회 API 응답
- * POST /api/priority/facilities
+ * POST /api/priority/search
  * Request Body: { date, time, city, district, dong }
  */
 export interface VulnerableFacilitiesResponse {
@@ -58,7 +58,6 @@ export interface VulnerableFacilitiesResponse {
     time: string;
     city: string;
     district: string;
-    dong: string;
   };
 }
 
@@ -133,197 +132,7 @@ const MOCK_ADMIN_REGIONS: AdminRegion[] = [
   }
 ];
 
-const MOCK_NEARBY_STATIONS: Record<string, NearbyStation[]> = {
-  '1': [ // 백병원
-    {
-      id: 'station_1',
-      stationName: '서면한전',
-      stationId: '05713',
-      measurements: [
-        { time: '05:53', concentration: 59, level: 'normal' },
-        { time: '07:18', concentration: 68, level: 'normal' }
-      ],
-      geometry: {
-        type: 'Point',
-        coordinates: [129.0592867, 35.15241336]
-      }
-    },
-    {
-      id: 'station_2',
-      stationName: '범내골역',
-      stationId: '05715',
-      measurements: [
-        { time: '05:23', concentration: 68, level: 'normal' },
-        { time: '06:18', concentration: 65, level: 'normal' },
-        { time: '07:27', concentration: 71, level: 'normal' },
-        { time: '08:15', concentration: 59, level: 'normal' }
-      ],
-      geometry: {
-        type: 'Point',
-        coordinates: [129.0593354, 35.14977663]
-      }
-    }
-  ],
-  '2': [ // 당감초등학교
-    {
-      id: 'station_3',
-      stationName: '당감초교앞',
-      stationId: '05720',
-      measurements: [
-        { time: '06:15', concentration: 55, level: 'normal' },
-        { time: '07:30', concentration: 62, level: 'normal' }
-      ],
-      geometry: {
-        type: 'Point',
-        coordinates: [129.0397679, 35.16346526]
-      }
-    }
-  ],
-  '3': [ // 초읍초등학교
-    {
-      id: 'station_4',
-      stationName: '초읍역',
-      stationId: '05725',
-      measurements: [
-        { time: '06:00', concentration: 48, level: 'normal' },
-        { time: '07:45', concentration: 52, level: 'normal' }
-      ],
-      geometry: {
-        type: 'Point',
-        coordinates: [129.054089, 35.18547513]
-      }
-    }
-  ]
-};
-
-const MOCK_NEARBY_ROADS: Record<string, NearbyRoad[]> = {
-  '1': [ // 백병원
-    {
-      id: 'road_1',
-      roadName: '도로명',
-      roadAddress: '부산광역시 부산진구 복지로 75번길 10',
-      lotNumber: '지번',
-      lotAddress: '부산광역시 부산진구 전포동 10-28',
-      startPoint: '부산광역시 부산진구 정보 10-번지 28'
-    },
-    {
-      id: 'road_2',
-      lotNumber: '지번',
-      lotAddress: '부산광역시 부산진구 초읍동 5-11',
-      startPoint: '부산광역시 부산진구 초읍동 5-번'
-    },
-    {
-      id: 'road_3',
-      roadName: '도로명',
-      roadAddress: '부산광역시 부산진구 복지로 402-11',
-      startPoint: '부산광역시 부산진구 초읍동 402-11'
-    },
-    {
-      id: 'road_4',
-      lotNumber: '지번',
-      lotAddress: '부산광역시 부산진구 초읍동 506-6',
-      startPoint: '부산광역시 부산진구 초읍동 506-6'
-    },
-    {
-      id: 'road_5',
-      roadName: '도로명',
-      roadAddress: '부산광역시 부산진구 전포대로 833',
-      lotNumber: '지번',
-      lotAddress: '부산광역시 부산진구 개금동 833-179',
-      startPoint: '부산광역시 부산진구 개금동 833-179'
-    }
-  ],
-  '2': [ // 당감초등학교
-    {
-      id: 'road_6',
-      roadName: '도로명',
-      roadAddress: '부산광역시 부산진구 당감로 100-1',
-      startPoint: '부산광역시 부산진구 당감동 100-1'
-    },
-    {
-      id: 'road_7',
-      roadName: '도로명',
-      roadAddress: '부산광역시 부산진구 당감중앙로 55',
-      lotNumber: '지번',
-      lotAddress: '부산광역시 부산진구 당감동 55-3',
-      startPoint: '부산광역시 부산진구 당감동 55-3'
-    },
-    {
-      id: 'road_8',
-      lotNumber: '지번',
-      lotAddress: '부산광역시 부산진구 당감동 22-5',
-      startPoint: '부산광역시 부산진구 당감동 22-5'
-    }
-  ],
-  '3': [ // 초읍초등학교
-    {
-      id: 'road_9',
-      roadName: '도로명',
-      roadAddress: '부산광역시 부산진구 성지로104번길 26',
-      lotNumber: '지번',
-      lotAddress: '부산광역시 부산진구 초읍동 88-15',
-      startPoint: '부산광역시 부산진구 초읍동 104번길 26'
-    },
-    {
-      id: 'road_10',
-      roadName: '도로명',
-      roadAddress: '부산광역시 부산진구 초읍중앙로 88-7',
-      startPoint: '부산광역시 부산진구 초읍동 88-7'
-    },
-    {
-      id: 'road_11',
-      lotNumber: '지번',
-      lotAddress: '부산광역시 부산진구 초읍동 256-8',
-      startPoint: '부산광역시 부산진구 초읍동 256-8'
-    }
-  ],
-  '4': [ // 부전역
-    {
-      id: 'road_12',
-      roadName: '도로명',
-      roadAddress: '부산광역시 부산진구 부전로 181',
-      lotNumber: '지번',
-      lotAddress: '부산광역시 부산진구 부전동 88-3',
-      startPoint: '부산광역시 부산진구 부전동 181'
-    },
-    {
-      id: 'road_13',
-      roadName: '도로명',
-      roadAddress: '부산광역시 부산진구 중앙대로 255',
-      lotNumber: '지번',
-      lotAddress: '부산광역시 부산진구 부전동 255-6',
-      startPoint: '부산광역시 부산진구 부전동 255-6'
-    },
-    {
-      id: 'road_14',
-      lotNumber: '지번',
-      lotAddress: '부산광역시 부산진구 부전동 88-12',
-      startPoint: '부산광역시 부산진구 부전동 88-12'
-    }
-  ],
-  '5': [ // 범내골역
-    {
-      id: 'road_15',
-      roadName: '도로명',
-      roadAddress: '부산광역시 부산진구 중앙대로 612',
-      startPoint: '부산광역시 부산진구 범천동 612'
-    },
-    {
-      id: 'road_16',
-      roadName: '도로명',
-      roadAddress: '부산광역시 부산진구 범내골로 45',
-      lotNumber: '지번',
-      lotAddress: '부산광역시 부산진구 범천동 45-2',
-      startPoint: '부산광역시 부산진구 범천동 45-2'
-    },
-    {
-      id: 'road_17',
-      lotNumber: '지번',
-      lotAddress: '부산광역시 부산진구 범천동 123-7',
-      startPoint: '부산광역시 부산진구 범천동 123-7'
-    }
-  ]
-};
+// Mock data removed - now using real API data
 
 // ============================================================================
 // PriorityStore Class
@@ -379,14 +188,14 @@ class PriorityStore {
     });
 
     // Mock 주변 정류장 데이터 초기화
-    Object.entries(MOCK_NEARBY_STATIONS).forEach(([facilityId, stations]) => {
-      this.nearbyStationsCache.set(facilityId, stations);
-    });
+    // Object.entries(MOCK_NEARBY_STATIONS).forEach(([facilityId, stations]) => {
+    //   this.nearbyStationsCache.set(facilityId, stations);
+    // });
 
-    // Mock 근방 도로 데이터 초기화
-    Object.entries(MOCK_NEARBY_ROADS).forEach(([facilityId, roads]) => {
-      this.nearbyRoadsCache.set(facilityId, roads);
-    });
+    // // Mock 근방 도로 데이터 초기화
+    // Object.entries(MOCK_NEARBY_ROADS).forEach(([facilityId, roads]) => {
+    //   this.nearbyRoadsCache.set(facilityId, roads);
+    // });
   }
 
   // ============================================================================
@@ -429,15 +238,6 @@ class PriorityStore {
       this.config = {
         ...this.config,
         district
-      };
-    }
-  }
-
-  updateDong(dong: string) {
-    if (this.config) {
-      this.config = {
-        ...this.config,
-        dong
       };
     }
   }
@@ -559,7 +359,16 @@ class PriorityStore {
     const stations: NearbyStation[] = [];
     this.selectedFacilityIds.forEach(facilityId => {
       const nearby = this.getNearbyStations(facilityId);
-      stations.push(...nearby);
+      nearby.forEach(newStation => {
+        stations.forEach(ss => {
+          console.log(17, ss.id, newStation.id);
+        });
+        const isDuplicate = stations.some(existingStation => existingStation.id === newStation.id);
+        if (!isDuplicate) {
+            stations.push(newStation);
+        }
+      });
+      // stations.push(...nearby);
     });
     return stations;
   }
@@ -777,10 +586,6 @@ class PriorityStore {
 
   get hasConfig(): boolean {
     return this.config !== null;
-  }
-
-  get selectedDong(): string {
-    return this.config?.dong || '전체';
   }
 
   get hasSelectedFacilities(): boolean {

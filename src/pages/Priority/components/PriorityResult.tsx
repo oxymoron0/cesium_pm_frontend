@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { observer } from 'mobx-react-lite';
 import Title from '@/components/basic/Title';
 import Spacer from '@/components/basic/Spacer';
@@ -7,15 +7,18 @@ import DongDropdown from './DongDropdown';
 import NearbyStationList from './NearbyStationList';
 import { renderNearbyStations } from '@/utils/cesium/nearbyStationRenderer';
 import { renderVulnerableFacilities, clearVulnerableFacilities } from '@/utils/cesium/nearbyFacilitiesRenderer';
+import { renderPriorityConcentration, clearPriorityConcentration } from '@/utils/cesium/priorityConcentrationRenderer';
+import { renderNearbyRoadsForFacility, clearNearbyRoadsForFacility, clearAllNearbyRoads } from '@/utils/cesium/nearbyRoadRenderer';
+import { searchNearbyRoads } from '../api/roadSearch';
 import { priorityStore } from '@/stores/PriorityStore';
 import { administrativeStore } from '@/stores/AdministrativeStore';
 import { renderAdministrativeBoundary, clearAdministrativeBoundary } from '@/utils/cesium/administrativeRenderer';
 import { isGeometrySuccess } from '@/types/administrative';
 import { stationStore } from '@/stores/StationStore';
 import { routeStore } from '@/stores/RouteStore';
-import { vulnerabilityStore, type ChildcareCenter, type SeniorCenter } from '@/stores/VulnerabilityStore';
-import type { PriorityConfig, VulnerableFacility, NearbyStation, StationMeasurement } from '../types';
+import type { PriorityConfig, VulnerableFacility, NearbyStation, StationMeasurement, StationStatisticsResponse } from '../types';
 import type { RouteStationFeature } from '@/utils/api/types';
+import { API_PATHS } from '@/utils/api/config';
 
 interface PriorityResultProps {
   config: PriorityConfig;
@@ -58,100 +61,20 @@ const getLevelStyle = (level: VulnerableFacility['predictedLevel']) => {
       };
   }
 };
-const transformToVulnerableFacility = (
-  facility: ChildcareCenter | SeniorCenter,
-  index: number
-): VulnerableFacility | null => {
-  const { geom, id, name } = facility;
-
-  // 지오메트리 데이터가 없는 시설은 제외
-  if (!geom || !geom.longitude || !geom.latitude) {
-    return null;
-  }
-
-  // ID 충돌 방지: 타입별 prefix 추가
-  let uniqueId: string;
-  let address: string;
-  let dong: string;
-
-  if ('address' in facility) {
-    // ChildcareCenter
-    uniqueId = `childcare_${id}`;
-    address = facility.address;
-
-    // address에서 동 정보 추출 시도 (예: "부산광역시 부산진구 전포동 123-45")
-    const dongMatch = address.match(/([가-힣0-9]+동|[가-힣0-9]+읍|[가-힣0-9]+면)/);
-    dong = dongMatch ? dongMatch[1].replace(/\d+/g, '') : '정보 없음';
-  } else {
-    // SeniorCenter
-    uniqueId = `senior_${id}`;
-    address = facility.road_address || facility.lot_address || '주소 정보 없음';
-    dong = facility.dong ? facility.dong.replace(/\d+/g, '') : '정보 없음';
-  }
-
-  // 예측 데이터 Mock 값 (실제 모델 예측 결과로 대체되어야 함)
-  const mockConcentrations = [160, 135, 58, 55, 48];
-  const mockLevels: VulnerableFacility['predictedLevel'][] = [
-    'very-bad',
-    'bad',
-    'normal',
-    'normal',
-    'normal'
-  ];
-
-  const concentration = mockConcentrations[index % mockConcentrations.length];
-  const level = mockLevels[index % mockLevels.length];
-
-  return {
-    id: uniqueId,
-    rank: index + 1,
-    name,
-    dong,
-    address,
-    predictedConcentration: concentration,
-    predictedLevel: level,
-    geometry: {
-      type: 'Point',
-      coordinates: [geom.longitude, geom.latitude]
-    }
-  };
-};
 
 const PriorityResult = observer(function PriorityResult({ config, onBack, onClose }: PriorityResultProps) {
   const [selectedFacilities, setSelectedFacilities] = useState<Set<string>>(new Set());
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('전체');
+  const [stationStatisticsData, setStationStatisticsData] = useState<StationStatisticsResponse | null>(null);
 
-  // 선택된 동에 따라 시설 필터링
-  const facilities = useMemo(() => {
-    const allFacilities = vulnerabilityStore.facilitiesWithGeometry
-      .map(transformToVulnerableFacility)
-      .filter((f): f is VulnerableFacility => f !== null);
+  // API에서 가져온 취약시설 데이터 사용 (very-bad, bad 등급만 필터링)
+  // observer 컴포넌트는 MobX가 자동으로 추적하므로 useMemo 불필요
+  const facilities = priorityStore.vulnerableFacilities.filter(
+    facility => facility.predictedLevel === 'very-bad' || facility.predictedLevel === 'bad'
+  );
 
-    // "전체" 선택 시 모든 시설 반환
-    if (priorityStore.selectedDong === '전체') {
-      return allFacilities;
-    }
-
-    // 특정 동 선택 시 해당 동의 시설만 필터링
-    return allFacilities.filter(f => f.dong === priorityStore.selectedDong);
-  }, [vulnerabilityStore.facilitiesWithGeometry, priorityStore.selectedDong]);
-
-  
-
-  useEffect(() => {
-    const loadFacilities = async () => {
-      await vulnerabilityStore.loadFacilitiesByRadius({ radius: 100 });
-    };
-
-    loadFacilities();
-
-    // const facilities = vulnerabilityStore.facilitiesWithGeometry;
-    // facilities = facilities;
-    // PriorityFacilities = facilities.map(transformToVulnerableFacility).filter((f): f is VulnerableFacility => f !== null);
-    
-    return () => {
-      clearVulnerableFacilities();
-    };
-  }, []);
+  // facilities의 변경을 안정적으로 추적하기 위한 키
+  const facilitiesKey = `${facilities.length}-${facilities.map(f => f.id).join(',')}`;
 
   // Store에 config 설정
   useEffect(() => {
@@ -167,11 +90,6 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       }
       if (!administrativeStore.selectedDistrictCode) {
         await administrativeStore.selectDistrict('230');
-      }
-
-      // config.dong 값이 없으면 "전체"로 설정
-      if (!config.dong) {
-        priorityStore.updateDong('전체');
       }
 
       // RouteStore와 StationStore 초기화 (주변 정류장 검색을 위해 필요)
@@ -191,6 +109,35 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
           console.log('[PriorityResult] StationStore initialization completed');
         }
       }
+
+      // 정류장 통계 API 호출 (한 번만 호출하고 캐시)
+      try {
+        const endDate = new Date(config.date);
+        const startDate = new Date(endDate);
+        startDate.setDate(startDate.getDate() - 7); // 7일 전
+
+        const startDateStr = startDate.toISOString().split('T')[0];
+        const endDateStr = endDate.toISOString().split('T')[0];
+
+        const queryParams = new URLSearchParams({
+          start_date: startDateStr,
+          end_date: endDateStr,
+          limit: '100',
+          sort_by: 'pm10'
+        });
+
+        console.log('[PriorityResult] Fetching station statistics API...');
+        const response = await fetch(`${API_PATHS.STATION_STATISTICS}?${queryParams.toString()}`);
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status}`);
+        }
+
+        const apiData: StationStatisticsResponse = await response.json();
+        setStationStatisticsData(apiData);
+        console.log(`[PriorityResult] Station statistics API loaded: ${apiData.stations.length} stations`);
+      } catch (error) {
+        console.error('[PriorityResult] Failed to load station statistics:', error);
+      }
     };
 
     initialize();
@@ -199,14 +146,14 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       priorityStore.closeDropdown();
       clearAdministrativeBoundary();
       clearVulnerableFacilities();
+      clearPriorityConcentration();
+      clearAllNearbyRoads();
     };
   }, [config]);
 
   // 읍면동 드롭다운 선택에 따라 경계 렌더링
   useEffect(() => {
     const renderBoundary = async () => {
-      const selectedDong = priorityStore.selectedDong;
-
       // Clear existing boundary
       clearAdministrativeBoundary();
 
@@ -215,7 +162,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       }
 
       // "전체" 선택 시 부산진구 경계 표시
-      if (selectedDong === '전체') {
+      if (selectedNeighborhood === '전체') {
         try {
           const response = await administrativeStore.loadGeometry({
             province_code: '26',
@@ -230,7 +177,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
         }
       } else {
         // 특정 읍면동 선택 시 해당 경계 표시
-        const neighborhood = administrativeStore.neighborhoods.find(n => n.name === selectedDong);
+        const neighborhood = administrativeStore.neighborhoods.find(n => n.name === selectedNeighborhood);
         if (neighborhood) {
           try {
             const response = await administrativeStore.loadGeometry({
@@ -250,24 +197,36 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
     };
 
     renderBoundary();
-    // renderVulnerableFacilities(mockFacilities);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [priorityStore.selectedDong]);
+  }, [selectedNeighborhood]);
 
-  // 동이 변경되면 체크박스 선택 상태 초기화
+  // 시설 데이터가 변경되면 체크박스 선택 상태 초기화
   useEffect(() => {
     setSelectedFacilities(new Set());
     priorityStore.clearFacilitySelection();
-  }, [priorityStore.selectedDong]);
+  }, [facilitiesKey]);
 
   // 필터링된 시설들을 Cesium에 렌더링
   useEffect(() => {
     if (facilities.length > 0) {
-      renderVulnerableFacilities(facilities, priorityStore.selectedDong);
-    } else {
-      clearVulnerableFacilities();
+      renderVulnerableFacilities(facilities);
     }
-  }, [facilities]);
+    // cleanup은 컴포넌트 unmount 시에만 실행
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facilitiesKey, selectedNeighborhood]);
+
+  // 농도 분포 heatmap 렌더링
+  useEffect(() => {
+    if (facilities.length > 0) {
+      const concentrationPoints = facilities.map(facility => ({
+        longitude: facility.geometry.coordinates[0],
+        latitude: facility.geometry.coordinates[1],
+        concentration: facility.predictedConcentration
+      }));
+      renderPriorityConcentration(concentrationPoints);
+    }
+    // cleanup은 컴포넌트 unmount 시에만 실행
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facilitiesKey]);
 
   // 두 좌표 간 거리 계산 (Haversine formula, 단위: km)
   const calculateDistance = (
@@ -290,7 +249,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
   };
 
   // 시설 주변 정류장 데이터 로드
-  const loadStationsForFacility = async (facility: VulnerableFacility) => {
+  const loadStationsForFacility = useCallback(async (facility: VulnerableFacility) => {
     try {
       // 이미 캐시에 있으면 스킵
       if (priorityStore.getNearbyStations(facility.id).length > 0) {
@@ -339,25 +298,72 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
       console.log(`[loadStationsForFacility] Found ${nearbyStations.length} stations within ${MAX_DISTANCE_KM}km for facility ${facility.id}`);
 
+      // 캐시된 API 데이터가 없으면 리턴
+      if (!stationStatisticsData) {
+        console.log('[loadStationsForFacility] Station statistics data not loaded yet');
+        return;
+      }
 
-      // 각 정류장에 대해 랜덤 센서 데이터 생성
-      const stationPromises = nearbyStations.map(async (feature) => {
-        return {
-          id: `${facility.id}_${feature.properties.station_id}`,
-          stationName: feature.properties.station_name,
-          stationId: feature.properties.station_id,
-          measurements: generateRandomMeasurements(4), // 4개의 랜덤 측정값 생성
-          geometry: feature.geometry
-        } as NearbyStation;
-      });
+      // nearbyStations에 있는 station_id만 필터링
+      const nearbyStationIds = new Set(nearbyStations.map(s => s.properties.station_id));
+      const filteredApiStations = stationStatisticsData.stations.filter(apiStation =>
+        nearbyStationIds.has(apiStation.station_id)
+      );
 
-      const stations = await Promise.all(stationPromises);
-      priorityStore.setNearbyStations(facility.id, stations);
+      console.log(`[loadStationsForFacility] Filtered to ${filteredApiStations.length} nearby stations with data`);
+
+      // 각 정류장에 대해 API 데이터 사용하여 NearbyStation 생성
+      // max_pm10 값이 있고, 등급이 bad 또는 very-bad인 것만 필터링
+      const validStations = nearbyStations
+        .map((feature) => {
+          const apiStation = filteredApiStations.find(s => s.station_id === feature.properties.station_id);
+
+          // API 데이터가 없거나 max_pm10 값이 없으면 제외
+          if (!apiStation || !apiStation.max_pm10) {
+            console.log(`[loadStationsForFacility] No max_pm10 data for station ${feature.properties.station_id}`);
+            return null;
+          }
+
+          const level = getPM10Level(apiStation.max_pm10);
+
+          // 등급이 bad 또는 very-bad가 아니면 제외
+          if (level !== 'bad' && level !== 'very-bad') {
+            console.log(`[loadStationsForFacility] Station ${feature.properties.station_id} has level ${level}, excluding`);
+            return null;
+          }
+
+          const recordedTime = new Date(apiStation.max_pm10_recorded_at);
+          const hours = recordedTime.getHours().toString().padStart(2, '0');
+          const minutes = recordedTime.getMinutes().toString().padStart(2, '0');
+
+          const measurements: StationMeasurement[] = [{
+            time: `${hours}:${minutes}`,
+            concentration: Math.round(apiStation.max_pm10),
+            level
+          }];
+
+          return {
+            id: `${feature.properties.station_id}`,
+            stationName: feature.properties.station_name,
+            stationId: feature.properties.station_id,
+            measurements,
+            geometry: feature.geometry
+          } as NearbyStation;
+        })
+        .filter((station): station is NearbyStation => station !== null);
+
+      console.log(`[loadStationsForFacility] Final stations with bad/very-bad levels: ${validStations.length}`);
+      priorityStore.setNearbyStations(facility.id, validStations);
 
     } catch (error) {
       console.error(`[loadStationsForFacility] Failed to load stations for facility ${facility.id}:`, error);
     }
-  };
+  }, [
+      priorityStore,
+      stationStore,
+      calculateDistance,
+      stationStatisticsData
+  ]);
 
   // PM10 농도에 따른 등급 계산
   const getPM10Level = (concentration: number): 'good' | 'normal' | 'bad' | 'very-bad' => {
@@ -367,42 +373,36 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
     return 'very-bad';
   };
 
-  // 랜덤 StationMeasurement 생성
-  const generateRandomMeasurements = (count: number = 4): StationMeasurement[] => {
-    const measurements: StationMeasurement[] = [];
-    const now = new Date();
-
-    for (let i = 0; i < count; i++) {
-      // 현재 시간에서 i시간 전
-      const measurementTime = new Date(now.getTime() - i * 60 * 60 * 1000);
-      const hours = measurementTime.getHours().toString().padStart(2, '0');
-      const minutes = measurementTime.getMinutes().toString().padStart(2, '0');
-
-      // 랜덤 농도 생성 (0-200 μg/m³)
-      const concentration = Math.floor(Math.random() * 200);
-      const level = getPM10Level(concentration);
-
-      measurements.push({
-        time: `${hours}:${minutes}`,
-        concentration,
-        level
-      });
-    }
-
-    return measurements;
-  };
-
   const toggleFacility = async (id: string) => {
     const newSet = new Set(selectedFacilities);
+    const facility = facilities.find(f => f.id === id);
+
     if (newSet.has(id)) {
+      // 선택 해제
       newSet.delete(id);
+
+      // 해당 시설의 도로 렌더링 제거
+      clearNearbyRoadsForFacility(id);
     } else {
+      // 선택 추가
       newSet.add(id);
 
-      // 선택된 시설의 주변 정류장 데이터 로드
-      const facility = facilities.find(f => f.id === id);
       if (facility) {
+        // 선택된 시설의 주변 정류장 데이터 로드
         await loadStationsForFacility(facility);
+
+        // 선택된 시설의 주변 도로 검색 및 렌더링
+        try {
+          const [longitude, latitude] = facility.geometry.coordinates;
+          console.log(`[toggleFacility] Searching roads near facility ${id} at (${longitude}, ${latitude})`);
+
+          const roadData = await searchNearbyRoads(longitude, latitude);
+          await renderNearbyRoadsForFacility(id, roadData);
+
+          console.log(`[toggleFacility] Rendered ${roadData.total} road segments for facility ${id}`);
+        } catch (error) {
+          console.error(`[toggleFacility] Failed to search/render roads for facility ${id}:`, error);
+        }
       }
     }
     setSelectedFacilities(newSet);
@@ -414,16 +414,32 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
   const toggleAll = async () => {
     if (selectedFacilities.size === facilities.length) {
+      // 전체 해제
       setSelectedFacilities(new Set());
       priorityStore.clearFacilitySelection();
       renderNearbyStations([]);
+      clearAllNearbyRoads();
     } else {
+      // 전체 선택
       const allIds = facilities.map(f => f.id);
       setSelectedFacilities(new Set(allIds));
 
       // 모든 시설에 대해 정류장 데이터 로드 (병렬 처리)
-      const loadPromises = facilities.map(facility => loadStationsForFacility(facility));
-      await Promise.all(loadPromises);
+      const stationLoadPromises = facilities.map(facility => loadStationsForFacility(facility));
+      await Promise.all(stationLoadPromises);
+
+      // 모든 시설에 대해 도로 검색 및 렌더링 (병렬 처리)
+      const roadSearchPromises = facilities.map(async (facility) => {
+        try {
+          const [longitude, latitude] = facility.geometry.coordinates;
+          const roadData = await searchNearbyRoads(longitude, latitude);
+          await renderNearbyRoadsForFacility(facility.id, roadData);
+          console.log(`[toggleAll] Rendered ${roadData.total} roads for facility ${facility.id}`);
+        } catch (error) {
+          console.error(`[toggleAll] Failed to search/render roads for facility ${facility.id}:`, error);
+        }
+      });
+      await Promise.all(roadSearchPromises);
 
       // Store에도 반영
       allIds.forEach(id => {
@@ -510,13 +526,23 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
           </div>
           {/* 동 드롭다운 */}
           <DongDropdown
-            selectedValue={priorityStore.selectedDong}
+            selectedValue={selectedNeighborhood}
             options={getDongOptions()}
             isOpen={priorityStore.isDropdownOpen}
             onToggle={() => priorityStore.toggleDropdown()}
             onSelect={async (value) => {
-              // Store의 selectedDong 업데이트
-              priorityStore.updateDong(value);
+              // 기존 렌더링 클리어
+              clearVulnerableFacilities();
+              clearPriorityConcentration();
+              clearAllNearbyRoads();
+              renderNearbyStations([]);
+
+              // 선택 상태 초기화
+              setSelectedFacilities(new Set());
+              priorityStore.clearFacilitySelection();
+
+              // 로컬 상태 업데이트
+              setSelectedNeighborhood(value);
 
               // neighborhood_code 결정
               let neighborhoodCode: string | null = null;

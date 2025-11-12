@@ -31,8 +31,8 @@ export default function TimePicker({ value, onChange, onClose }: TimePickerProps
 
   const currentHour = getCurrentHour();
 
-  // 시간 리스트 (00시 ~ 23시)
-  const hours = Array.from({ length: 24 }, (_, i) => i);
+  // 시간 리스트 (04시 ~ 23시)
+  const hours = Array.from({ length: 20 }, (_, i) => i + 4);
 
   const handleHourClick = (hour: number) => {
     const nextHour = (hour + 1) % 24;

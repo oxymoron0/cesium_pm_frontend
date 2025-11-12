@@ -152,13 +152,7 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
     return '부산진구'; // 부산진구로 고정
   };
 
-  const getNeighborhoodName = (shortCode: string) => {
-    if (shortCode === 'all') return '전체';
-    const neighborhood = administrativeStore.neighborhoods.find(n => n.code.substring(5) === shortCode);
-    return neighborhood?.name || '';
-  };
-
-    // config.date 문자열을 Date 객체로 변환
+  // config.date 문자열을 Date 객체로 변환
   const parseDate = (dateStr: string): Date => {
     const parts = dateStr.split('.');
     if (parts.length === 3) {
@@ -404,8 +398,7 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
               date: dateStr,
               time: timeStr,
               city: getProvinceName(),
-              district: getDistrictName(),
-              dong: getNeighborhoodName(neighborhoodCode)
+              district: getDistrictName()
             });
             if (onCustomConfig) {
               onCustomConfig();
@@ -423,8 +416,7 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
               date: dateStr,
               time: timeStr,
               city: getProvinceName(),
-              district: getDistrictName(),
-              dong: getNeighborhoodName(neighborhoodCode)
+              district: getDistrictName()
             });
 
             // API 호출하여 취약시설 검색
@@ -440,8 +432,7 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
                 date: dateStr,
                 time: timeStr,
                 city: getProvinceName(),
-                district: getDistrictName(),
-                dong: getNeighborhoodName(neighborhoodCode)
+                district: getDistrictName()
               });
             }
           }}

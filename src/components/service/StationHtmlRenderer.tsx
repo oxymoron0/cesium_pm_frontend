@@ -302,6 +302,7 @@ const StationHtmlRenderer = observer(() => {
 
   useEffect(() => {
     let postRenderCallback: (() => void) | null = null;
+    const stationElements = stationElementsRef.current;
 
     // postRender 이벤트 등록
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -330,8 +331,8 @@ const StationHtmlRenderer = observer(() => {
       }
 
       // 모든 DOM 요소 정리
-      stationElementsRef.current.forEach(element => element.remove());
-      stationElementsRef.current.clear();
+      stationElements.forEach(element => element.remove());
+      stationElements.clear();
     };
   }, [updateStationPositions]);
 
