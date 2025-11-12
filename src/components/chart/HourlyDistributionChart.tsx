@@ -33,10 +33,6 @@ const HourlyDistributionChart = observer(function HourlyDistributionChart({
 }: HourlyDistributionChartProps) {
   const isVOCsMode = sensorSelectionStore.isVOCsSelected
 
-  // Calculate Y-axis domain
-  const maxValue = Math.max(...data.map(d => d.value), 100)
-  const yMax = Math.ceil(maxValue / 10) * 10
-
   // Empty state
   if (!data || data.length === 0) {
     return (
@@ -56,6 +52,34 @@ const HourlyDistributionChart = observer(function HourlyDistributionChart({
       </div>
     )
   }
+
+  // Calculate Y-axis domain dynamically based on data
+  const values = data.map(d => d.value)
+  const maxValue = Math.max(...values)
+  const minValue = Math.min(...values)
+
+  // Add 10% padding to max for better visualization
+  const padding = (maxValue - minValue) * 0.1
+  const yMax = Math.ceil(maxValue + padding)
+
+  // Generate dynamic ticks based on data range
+  const generateTicks = (max: number): number[] => {
+    if (max <= 50) {
+      // Small values: 0, 10, 20, 30, 40, 50
+      return Array.from({ length: Math.ceil(max / 10) + 1 }, (_, i) => i * 10)
+    } else if (max <= 100) {
+      // Medium values: 0, 20, 40, 60, 80, 100
+      return Array.from({ length: Math.ceil(max / 20) + 1 }, (_, i) => i * 20)
+    } else if (max <= 200) {
+      // Large values: 0, 50, 100, 150, 200
+      return Array.from({ length: Math.ceil(max / 50) + 1 }, (_, i) => i * 50)
+    } else {
+      // Very large values: 0, 100, 200, 300...
+      return Array.from({ length: Math.ceil(max / 100) + 1 }, (_, i) => i * 100)
+    }
+  }
+
+  const ticks = generateTicks(yMax)
 
   return (
     <ResponsiveContainer width={244} height={122}>
@@ -78,10 +102,10 @@ const HourlyDistributionChart = observer(function HourlyDistributionChart({
           tickLine={false}
         />
 
-        {/* Y Axis - Adaptive scale */}
+        {/* Y Axis - Dynamic scale based on data */}
         <YAxis
           domain={[0, yMax]}
-          ticks={[0, 10, 20, 50, 100].filter(t => t <= yMax)}
+          ticks={ticks}
           tick={{
             fill: '#FFF',
             fontFamily: 'Pretendard',
