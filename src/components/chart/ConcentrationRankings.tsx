@@ -157,7 +157,7 @@ const ConcentrationRankings = observer(function ConcentrationRankings({
                   fontSize: '12px',
                   fontWeight: 600,
                   lineHeight: '14px',
-                  textAlign: 'right'
+                  textAlign: 'center'
                 }}
               >
                 농도 수치 ({unit})
@@ -208,7 +208,7 @@ const ConcentrationRankings = observer(function ConcentrationRankings({
                     fontSize: '14px',
                     fontWeight: 400,
                     lineHeight: '14px',
-                    textAlign: 'right'
+                    textAlign: 'center'
                   }}
                 >
                   {type === 'high' ? '나쁨' : '좋음'}({item.value.toFixed(0)} {unit})
