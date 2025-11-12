@@ -90,6 +90,9 @@ export const API_PATHS = {
   // 주소 조회 API (PM Backend)
   ADDRESS_SEARCH: getApiPath('/api/v1/address/search'),
   ADDRESS_REVERSE: getApiPath('/api/v1/address/reverse'),
+
+  // 우선순위 API (PM Backend)
+  PRIORITY_SEARCH: getApiPath('api/v1/priority/search'),
 } as const;
 
 /**

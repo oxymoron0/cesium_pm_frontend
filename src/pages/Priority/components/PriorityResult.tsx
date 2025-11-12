@@ -11,8 +11,9 @@ import { priorityStore } from '@/stores/PriorityStore';
 import { administrativeStore } from '@/stores/AdministrativeStore';
 import { renderAdministrativeBoundary, clearAdministrativeBoundary } from '@/utils/cesium/administrativeRenderer';
 import { isGeometrySuccess } from '@/types/administrative';
-import { vulnerabilityStore, type ChildcareCenter, type SeniorCenter } from '@/stores/VulnerabilityStore';
 import { stationStore } from '@/stores/StationStore';
+import { routeStore } from '@/stores/RouteStore';
+import { vulnerabilityStore, type ChildcareCenter, type SeniorCenter } from '@/stores/VulnerabilityStore';
 import type { PriorityConfig, VulnerableFacility, NearbyStation, StationMeasurement } from '../types';
 import type { RouteStationFeature } from '@/utils/api/types';
 
@@ -171,6 +172,24 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       // config.dong 값이 없으면 "전체"로 설정
       if (!config.dong) {
         priorityStore.updateDong('전체');
+      }
+
+      // RouteStore와 StationStore 초기화 (주변 정류장 검색을 위해 필요)
+      if (routeStore.routeInfoList.length === 0) {
+        console.log('[PriorityResult] Initializing RouteStore and StationStore');
+        await routeStore.initializeRouteData();
+
+        // 모든 노선에 대해 정류장 데이터 로드
+        const routeNames = Array.from(routeStore.routeGeomMap.keys());
+        if (routeNames.length > 0) {
+          console.log(`[PriorityResult] Loading station data for ${routeNames.length} routes`);
+          const stationLoadPromises = routeNames.flatMap(routeName => [
+            stationStore.loadStations(routeName, 'inbound'),
+            stationStore.loadStations(routeName, 'outbound')
+          ]);
+          await Promise.all(stationLoadPromises);
+          console.log('[PriorityResult] StationStore initialization completed');
+        }
       }
     };
 
@@ -495,7 +514,26 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
             options={getDongOptions()}
             isOpen={priorityStore.isDropdownOpen}
             onToggle={() => priorityStore.toggleDropdown()}
-            onSelect={(value) => priorityStore.updateDong(value)}
+            onSelect={async (value) => {
+              // Store의 selectedDong 업데이트
+              priorityStore.updateDong(value);
+
+              // neighborhood_code 결정
+              let neighborhoodCode: string | null = null;
+              if (value !== '전체') {
+                const neighborhood = administrativeStore.neighborhoods.find(n => n.name === value);
+                if (neighborhood) {
+                  neighborhoodCode = neighborhood.code.substring(5); // Full code to short code
+                }
+              }
+
+              // API 재호출하여 취약시설 데이터 갱신
+              await priorityStore.searchPriorityFacilities(
+                administrativeStore.selectedProvinceCode || '26',
+                administrativeStore.selectedDistrictCode || '230',
+                neighborhoodCode
+              );
+            }}
           />
         </div>
       </div>
@@ -550,12 +588,12 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
               >
                 주소
               </div>
-              <div
+              {/* <div
                 className="flex items-center justify-center text-white font-pretendard text-[14px] font-bold text-center"
                 style={{ width: '72px', height: '54px', flexShrink: 0 }}
               >
                 예측 농도
-              </div>
+              </div> */}
               <div
                 className="flex items-center justify-center text-white font-pretendard text-[14px] font-bold text-center"
                 style={{ width: '80px', height: '54px', flexShrink: 0 }}
@@ -606,12 +644,12 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
                   >
                     {facility.address}
                   </div>
-                  <div
+                  {/* <div
                     className="flex items-center justify-center text-white font-pretendard text-[14px] text-center"
                     style={{ width: '72px', height: '40px', flexShrink: 0 }}
                   >
                     {facility.predictedConcentration} ㎍/㎥
-                  </div>
+                  </div> */}
                   <div
                     className="flex items-center justify-center"
                     style={{ width: '80px', height: '40px', flexShrink: 0 }}

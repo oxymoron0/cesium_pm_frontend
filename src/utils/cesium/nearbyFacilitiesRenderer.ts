@@ -198,6 +198,7 @@ function createFacilityBillboardEntity(
                     ">
         </div>
     `;
+    // }
 
     // selectedDong이 '전체'일 경우 yellowSquareMarker만 표시
     if (selectedDong === '전체') {
