@@ -1,4 +1,4 @@
-import type { HourlyDataPoint, DailyDataPoint } from '@/utils/api/types'
+import type { HourlyDataPoint, DailyDataPoint, StationSensorApiData } from '@/utils/api/types'
 
 /**
  * Chart Data Point
@@ -98,6 +98,55 @@ export function formatTimeLabel(isoString: string, period: 'today' | 'week' | 'm
     default:
       return isoString
   }
+}
+
+/**
+ * Transform Latest sensor data to chart format
+ *
+ * @param latestData - Latest sensor data from API
+ * @returns Single chart data point
+ */
+export function transformLatestDataToChartPoint(latestData: StationSensorApiData): ChartDataPoint {
+  return {
+    time: formatTimeLabel(latestData.recorded_at, 'today'),
+    timestamp: latestData.recorded_at,
+    pm10: latestData.sensor_data.pm,
+    pm25: latestData.sensor_data.fpm,
+    voc: latestData.sensor_data.voc
+  }
+}
+
+/**
+ * Merge hourly data with latest sensor reading
+ * Prevents duplicate timestamps and ensures chronological order
+ *
+ * @param hourlyData - Hourly average data points
+ * @param latestData - Latest sensor reading (optional)
+ * @returns Combined and sorted chart data
+ */
+export function mergeHourlyWithLatest(
+  hourlyData: ChartDataPoint[],
+  latestData?: ChartDataPoint
+): ChartDataPoint[] {
+  if (!latestData) {
+    return hourlyData
+  }
+
+  // Check if Latest timestamp already exists in Hourly data
+  const latestExists = hourlyData.some(point =>
+    new Date(point.timestamp).getTime() === new Date(latestData.timestamp).getTime()
+  )
+
+  // If Latest is duplicate, skip merging
+  if (latestExists) {
+    return hourlyData
+  }
+
+  // Merge and sort by timestamp
+  const combined = [...hourlyData, latestData]
+  return combined.sort((a, b) =>
+    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  )
 }
 
 /**
