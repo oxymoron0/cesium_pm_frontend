@@ -47,30 +47,42 @@ export async function renderBusModels(busData: BusTrajectoryData[]): Promise<voi
   removeDataSource(DATASOURCE_NAME)
   const dataSource = createDataSource(DATASOURCE_NAME)
 
-  // 각 버스의 첫 번째 위치에 GLB 모델 배치
+  // 각 버스의 초기 위치 계산 및 GLB 모델 배치
   busData.forEach((bus) => {
     if (bus.positions.length === 0) return
 
-    const firstPosition = bus.positions[0]
-    const progressPercent = firstPosition.progress_percent || 0
+    // 최신 위치(마지막 위치) 사용
+    const latestPosition = bus.positions[bus.positions.length - 1]
+    const latestProgressPercent = latestPosition.progress_percent || 0
 
-    // 노선 좌표에서 위치 계산
+    // 초기 배치 위치: 최신 위치에서 -1.5% (단, 99~1% 구간은 동일 값 유지)
+    let initialProgressPercent = latestProgressPercent
+    if (latestProgressPercent >= 1 && latestProgressPercent <= 99) {
+      // 일반 구간: -1.5% 적용
+      initialProgressPercent = latestProgressPercent - 1.5
+      if (initialProgressPercent < 0) {
+        initialProgressPercent = 100 + initialProgressPercent // wrap-around
+      }
+    }
+    // 99~1% 구간(99, 100, 0, 1)은 동일한 값 사용
+
+    // 노선 좌표에서 위치 계산 (초기 배치 위치 기준)
     const routeGeom = routeStore.getRouteGeom(bus.route_name)
     let position: Cartesian3
     let heading = 0
 
     if (routeGeom?.entire?.coordinates) {
-      const routePosition = getPositionOnRoute(routeGeom.entire.coordinates, progressPercent)
+      const routePosition = getPositionOnRoute(routeGeom.entire.coordinates, initialProgressPercent)
       if (routePosition) {
         position = Cartesian3.fromDegrees(routePosition.longitude, routePosition.latitude, 0)
         heading = routePosition.heading
       } else {
         // fallback: 직접 좌표 사용
-        position = Cartesian3.fromDegrees(firstPosition.position.longitude, firstPosition.position.latitude, 0)
+        position = Cartesian3.fromDegrees(latestPosition.position.longitude, latestPosition.position.latitude, 0)
       }
     } else {
       // fallback: 직접 좌표 사용
-      position = Cartesian3.fromDegrees(firstPosition.position.longitude, firstPosition.position.latitude, 0)
+      position = Cartesian3.fromDegrees(latestPosition.position.longitude, latestPosition.position.latitude, 0)
     }
 
     const colorHex = ROUTE_COLOR_MAP[bus.route_name] || '#888888'
@@ -100,14 +112,20 @@ export async function renderBusModels(busData: BusTrajectoryData[]): Promise<voi
     dataSource.entities.add(entity)
 
     // 버스 애니메이션 상태 초기화
-    const progressNormalized = progressPercent / 100
+    // animationProgress: 초기 배치 위치 (-3%)
+    // targetProgress: 최신 위치 (애니메이션 목표)
+    const initialProgressNormalized = initialProgressPercent / 100
+    const latestProgressNormalized = latestProgressPercent / 100
+
     busProgressAnimations.set(bus.vehicle_number, {
       vehicleNumber: bus.vehicle_number,
       routeName: bus.route_name,
-      animationProgress: progressNormalized,
-      targetProgress: progressNormalized,
+      animationProgress: initialProgressNormalized,
+      targetProgress: latestProgressNormalized,
       isAnimating: false
     })
+
+    console.log(`[renderBusModels] Bus ${bus.vehicle_number}: Initial position ${initialProgressPercent.toFixed(2)}% → Latest ${latestProgressPercent.toFixed(2)}%`)
   })
 }
 
