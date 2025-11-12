@@ -15,7 +15,6 @@ export default function StatsSummaryContainer({ children }: StatsSummaryContaine
     <div
       style={{
         display: 'flex',
-        width: '280px',
         padding: '16px 12px',
         flexDirection: 'column',
         alignItems: 'center',
