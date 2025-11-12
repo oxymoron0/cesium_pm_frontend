@@ -169,10 +169,28 @@ const StatsContent = observer(function StatsContent({
     }))
   }, [hourlyData, isVOCsMode, pmType])
 
-  const title = isVOCsMode
-    ? '시간대별 VOCs 농도 분포'
-    : `시간대별 ${pmType === 'PM10' ? '미세먼지' : '초미세먼지'} 농도 분포`
+  // Title and info text based on period and sensor type
+  const getTitleAndInfo = () => {
+    if (period === 'today') {
+      const title = isVOCsMode
+        ? '시간대별 VOCs 농도 분포'
+        : `시간대별 ${pmType === 'PM10' ? '미세먼지' : '초미세먼지'} 농도 분포`
+      return { title, info: undefined }
+    }
 
+    // Week or Month period
+    const baseTitle = isVOCsMode
+      ? '일자별 VOCs 농도 분포'
+      : `일자별 ${pmType === 'PM10' ? '미세먼지' : '초미세먼지'} 농도 분포`
+
+    const periodText = period === 'week' ? '최근 1주일간' : '최근 1개월간'
+    const sensorText = isVOCsMode ? 'VOCs' : (pmType === 'PM10' ? '미세먼지' : '초미세먼지')
+    const info = `${periodText}의 ${sensorText} 평균 농도 변화를 비교 분석해, 시기별 공기질 추이 정보를 제공합니다.`
+
+    return { title: baseTitle, info }
+  }
+
+  const { title, info } = getTitleAndInfo()
   const activeTab = pmType === 'PM10' ? 0 : 1
 
   return (
@@ -188,7 +206,7 @@ const StatsContent = observer(function StatsContent({
       }}
     >
       {/* SubTitle */}
-      <SubTitle>{title}</SubTitle>
+      <SubTitle info={info}>{title}</SubTitle>
 
       {/* Tab Navigation (hidden in VOCs mode) */}
       {!isVOCsMode && (
