@@ -215,15 +215,17 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
       <Title
         onClose={onCloseMicroApp}
         onBack={() => simulationStore.setCurrentView("quick")}
+        onMinimize={() => simulationStore.toggleMinimize()}
       >
         <span className="font-pretendard text-[24px] font-bold text-white">
           시뮬레이션 설정 정보
         </span>
       </Title>
 
-      <Spacer height={8} />
+      <div style={{ display: simulationStore.isMinimized ? 'none' : 'contents' }}>
+        <Spacer height={8} />
 
-      <div className="w-full flex items-center py-[20px] border-b border-b-[rgba(255,255,255,1)]">
+        <div className="w-full flex items-center py-[20px] border-b border-b-[rgba(255,255,255,1)]">
         <div className="w-[120px] text-white font-pretendard font-bold text-[16px]">
           현재 시간
         </div>
@@ -239,7 +241,7 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
         <InfoField label="측정일시" value={measuredAtText} />
         <InfoField label="측정위치" value="부산진구 정류장" />
         <InfoField label="위치수" value={locationCountText} />
-        <InfoField label="고도" value="1.5m" />
+        {/* <InfoField label="고도" value="1.5m" /> */}
         <InfoField label="기상" value={weatherText} />
       </div>
 
@@ -313,15 +315,16 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
 
       <Spacer height={20} />
 
-      <div className="self-stretch">
-        <Button
-          variant="solid"
-          showIcon={false}
-          className="w-full"
-          onClick={() => simulationStore.setCurrentView("quick")}
-        >
-          시뮬레이션 종료
-        </Button>
+        <div className="self-stretch">
+          <Button
+            variant="solid"
+            showIcon={false}
+            className="w-full"
+            onClick={() => simulationStore.setCurrentView("quick")}
+          >
+            시뮬레이션 종료
+          </Button>
+        </div>
       </div>
     </>
   );

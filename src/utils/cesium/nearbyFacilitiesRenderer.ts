@@ -154,7 +154,8 @@ function attachFacilityPostRenderListener(): void {
  * - 박스를 살짝 올리고 표시용 화살표 추가 반영
  */
 function createFacilityBillboardEntity(
-  facility: VulnerableFacility
+  facility: VulnerableFacility,
+  selectedDong: string
 ): Entity {
   const [lng, lat] = facility.geometry.coordinates;
   const facilityId = facility.id;
@@ -197,102 +198,103 @@ function createFacilityBillboardEntity(
                     ">
         </div>
     `;
+    // }
 
     // selectedDong이 '전체'일 경우 yellowSquareMarker만 표시
-    // if (selectedDong === '전체') {
-    //   element.innerHTML = `
-    //     <div class="absolute top-0 left-0 z-10 w-full h-full overflow-visible pointer-events-none whitespace-nowrap"
-    //          data-facility-id="${facilityId}"
-    //          style="position: relative;
-    //                 display: flex;
-    //                 flex-direction: column;
-    //                 align-items: center;
-    //                 transform: translate(-50%, -50%);
-    //                 user-select: none;">
-    //       ${yellowSquareMarker}
-    //     </div>
-    //   `;
-    // } else {
-      // HTML 구조 (화살표 추가)
-    element.innerHTML = `
-      <div class="absolute top-0 left-0 z-10 w-full h-full overflow-visible pointer-events-none whitespace-nowrap"
-            data-facility-id="${facilityId}"
-            style="position: relative;
-                  display: flex;
-                  flex-direction: column;
-                  align-items: center;
-                  transform: translate(-50%, calc(-100% - 12px)); /* 박스 + 화살표 높이 고려 */
-                  user-select: none;">
-
-        <div style="background: rgba(0, 0, 0, 0.8);
-                    color: white;
-                    border: 1px solid #C4C6C6;
-                    border-radius: 12px;
-                    padding: 4px 16px 8px 24px;
-                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-                    /* 화살표와의 간격 */
-                    margin-bottom: 0;
-                    min-width: 140px;
+    if (selectedDong === '전체') {
+      element.innerHTML = `
+        <div class="absolute top-0 left-0 z-10 w-full h-full overflow-visible pointer-events-none whitespace-nowrap"
+             data-facility-id="${facilityId}"
+             style="position: relative;
                     display: flex;
                     flex-direction: column;
-                    font-family: Pretendard, sans-serif;
-                    position: relative;">
-          <span style="background: white;
-                          position: absolute;
+                    align-items: center;
+                    transform: translate(-50%, -50%);
+                    user-select: none;">
+          ${yellowSquareMarker}
+        </div>
+      `;
+    } else {
+      // HTML 구조 (화살표 추가)
+      element.innerHTML = `
+        <div class="absolute top-0 left-0 z-10 w-full h-full overflow-visible pointer-events-none whitespace-nowrap"
+             data-facility-id="${facilityId}"
+             style="position: relative;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    transform: translate(-50%, calc(-100% - 12px)); /* 박스 + 화살표 높이 고려 */
+                    user-select: none;">
+
+          <div style="background: rgba(0, 0, 0, 0.8);
+                      color: white;
+                      border: 1px solid #C4C6C6;
+                      border-radius: 12px;
+                      padding: 4px 16px 8px 24px;
+                      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+                      /* 화살표와의 간격 */
+                      margin-bottom: 0;
+                      min-width: 140px;
+                      display: flex;
+                      flex-direction: column;
+                      font-family: Pretendard, sans-serif;
+                      position: relative;">
+            <span style="background: white;
+                            position: absolute;
+                            color: black;
+                            border: 1px solid #C4C6C6;
+                            border-radius: 50%;
+                            width: 22px;
+                            height: 22px;
+                            line-height: 20px;
+                            top: -1px;
+                            left: -1px;
+                            text-align: center;
+                            font-weight: 700;
+                            font-size: 12px;">
+                ${facility.rank}
+            </span>
+            <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 8px;">
+              <span style="font-weight: 700; font-size: 14px; line-height: 22px; text-align: center; word-break: keep-all;">
+                ${facility.name}
+              </span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 4px;">
+              <div style="font-size: 12px; color: #ccc; margin: 0 0 8px -6px;">
+                  미세먼지
+              </div>
+              <div style="background: ${styles.borderColor};
                           color: black;
-                          border: 1px solid #C4C6C6;
+                          border: 2px solid ${styles.borderColor};
                           border-radius: 50%;
-                          width: 22px;
-                          height: 22px;
-                          line-height: 20px;
-                          top: -1px;
-                          left: -1px;
+                          width: 50px;
+                          height: 50px;
+                          margin: 0 0 0 -6px;
+                          line-height: 50px;
                           text-align: center;
                           font-weight: 700;
                           font-size: 12px;">
-              ${facility.rank}
-          </span>
-          <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 8px;">
-            <span style="font-weight: 700; font-size: 14px; line-height: 22px; text-align: center; word-break: keep-all;">
-              ${facility.name}
-            </span>
-          </div>
-          <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 4px;">
-            <div style="font-size: 12px; color: #ccc; margin: 0 0 8px -6px;">
-                미세먼지
-            </div>
-            <div style="background: ${styles.borderColor};
-                        color: black;
-                        border: 2px solid ${styles.borderColor};
-                        border-radius: 50%;
-                        width: 50px;
-                        height: 50px;
-                        margin: 0 0 0 -6px;
-                        line-height: 50px;
-                        text-align: center;
-                        font-weight: 700;
-                        font-size: 12px;">
-                ${styles.text}
+                  ${styles.text}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div style="width: 0;
-                    height: 0;
-                    border-left: 8px solid transparent; /* 삼각형 너비 조절 */
-                    border-right: 8px solid transparent; /* 삼각형 너비 조절 */
-                    border-top: 10px solid #C4C6C6; /* 삼각형 높이, 배경색과 동일 */
-                    /* position: absolute; */ /* 부모 요소가 flex이므로 필요 없음 */
-                    /* bottom: -10px; */ /* 부모 요소의 transform에 의해 위치 조정 */
-                    /* left: 50%; */
-                    /* transform: translateX(-50%); */
-                    z-index: 1;">
-        </div>
+          <div style="width: 0;
+                      height: 0;
+                      border-left: 8px solid transparent; /* 삼각형 너비 조절 */
+                      border-right: 8px solid transparent; /* 삼각형 너비 조절 */
+                      border-top: 10px solid #C4C6C6; /* 삼각형 높이, 배경색과 동일 */
+                      /* position: absolute; */ /* 부모 요소가 flex이므로 필요 없음 */
+                      /* bottom: -10px; */ /* 부모 요소의 transform에 의해 위치 조정 */
+                      /* left: 50%; */
+                      /* transform: translateX(-50%); */
+                      z-index: 1;">
+          </div>
 
-        ${yellowSquareMarker}
-      </div>
-    `;
-    // }
+          ${yellowSquareMarker}
+        </div>
+      `;
+    }
 
     facilityElementsCache.set(entityId, element);
     if (viewer && viewer.container) {
@@ -326,7 +328,8 @@ function createFacilityBillboardEntity(
  * 취약 시설들을 Cesium에 렌더링 (Billboard Entity + postRender HTML 태그)
  */
 export async function renderVulnerableFacilities(
-  facilities: VulnerableFacility[]
+  facilities: VulnerableFacility[],
+  selectedDong: string
 ): Promise<void> {
   try {
     await clearVulnerableFacilities();
@@ -351,7 +354,7 @@ export async function renderVulnerableFacilities(
 
     // Entity 및 HTML 엘리먼트 생성
     facilities.forEach(facility => {
-      const entity = createFacilityBillboardEntity(facility);
+      const entity = createFacilityBillboardEntity(facility, selectedDong);
       dataSource.entities.add(entity);
     });
 

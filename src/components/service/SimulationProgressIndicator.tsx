@@ -11,7 +11,8 @@ import {
 const SimulationProgressIndicator = observer(function SimulationProgressIndicator() {
   // TODO: API에서 totalFrames 받아오도록 수정 필요
   const totalFrames = 101; // 총 프레임의 '개수'
-  const delayMs = 500;
+  // 총 재생 시간: 101프레임 × 300ms ≈ 30초
+  const delayMs = 300;
 
   const [isPlaying, setIsPlaying] = useState(false);
   // currentFrame: 항상 0-based index (0부터 totalFrames - 1 까지)
@@ -56,14 +57,15 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
       centerLongitude: firstPoint?.location.longitude || 129.0634,
       centerLatitude: firstPoint?.location.latitude || 35.1598,
       resultPath: simulationDetail.resultPath || '',
-      totalCount: totalFrames
+      totalCount: totalFrames,
+      frameIntervalMs: delayMs
     };
   };
 
-  const playSimulation = (startFrame: number) => {
+  const playSimulation = async (startFrame: number, skipInitialFade: boolean = false) => {
     setIsPlaying(true);
-    // [수정] renderSimulationGlbFrame은 이제 0-based 인덱스를 받으므로 +1 제거
-    renderSimulationGlbFrame(startFrame);
+    // 첫 프레임은 페이드 없이 즉시 표시
+    await renderSimulationGlbFrame(startFrame, skipInitialFade);
 
     if (playIntervalRef.current) window.clearInterval(playIntervalRef.current);
 
@@ -74,8 +76,8 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
           handleStop();
           return totalFrames - 1;
         }
-        // [수정] renderSimulationGlbFrame은 이제 0-based 인덱스를 받으므로 +1 제거
-        renderSimulationGlbFrame(nextFrame);
+        // 재생 중에는 크로스 페이드 전환 적용
+        renderSimulationGlbFrame(nextFrame, false);
         return nextFrame;
       });
     }, delayMs);
@@ -88,12 +90,14 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
     if (!params) return;
 
     await prepareSimulationGlbSequence(params);
-    
+
     if (currentFrame >= totalFrames - 1) {
       setCurrentFrame(0);
-      playSimulation(0);
+      // 처음부터 재생 시에는 첫 프레임을 페이드 없이 즉시 표시
+      playSimulation(0, true);
     } else {
-      playSimulation(currentFrame);
+      // 이어서 재생 시에는 페이드 적용
+      playSimulation(currentFrame, false);
     }
   };
 
@@ -132,9 +136,9 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
     if (!params) return;
 
     await prepareSimulationGlbSequence(params);
-    
-    // [수정] renderSimulationGlbFrame은 이제 0-based 인덱스를 받으므로 +1 제거
-    renderSimulationGlbFrame(val);
+
+    // Seek 시에는 페이드 없이 즉시 전환
+    await renderSimulationGlbFrame(val, true);
   };
 
   return (

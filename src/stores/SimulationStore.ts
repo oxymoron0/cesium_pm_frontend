@@ -11,258 +11,11 @@ import type {
   PMType,
   Weather
 } from '../types/simulation_request_types';
-import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck } from '@/utils/api';
+import type { VulnerableFacilitiesResponse } from '@/utils/api/types';
+import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck, reverseGeocodeAPI, searchAddressAPI, getVulnerableFacilities } from '@/utils/api';
 import { userStore } from './UserStore';
-
-// ============================================================================
-// Mock Data
-// ============================================================================
-
-const MOCK_ADDRESS_RESULTS: AddressSearchResult[] = [
-  // 전포동 지역
-  {
-    id: 'addr_1',
-    roadAddress: '부산광역시 부산진구 중앙대로 749가길 7',
-    jibunAddress: '부산광역시 부산진구 전포동 579-1',
-    detailAddress: '예덕빌딩',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0634, 35.1598]
-    }
-  },
-  {
-    id: 'addr_2',
-    jibunAddress: '부산광역시 부산진구 전포동 579-3',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0635, 35.1599]
-    }
-  },
-  {
-    id: 'addr_3',
-    roadAddress: '부산광역시 부산진구 중앙대로 749가길 9',
-    jibunAddress: '부산광역시 부산진구 전포동 580-5',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0636, 35.1600]
-    }
-  },
-  {
-    id: 'addr_4',
-    roadAddress: '부산광역시 부산진구 서면로 10',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0637, 35.1601]
-    }
-  },
-  {
-    id: 'addr_5',
-    jibunAddress: '부산광역시 부산진구 전포동 580-12',
-    detailAddress: '서면메디컬빌딩',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0638, 35.1602]
-    }
-  },
-  // 당감동 지역
-  {
-    id: 'addr_6',
-    roadAddress: '부산광역시 부산진구 당감로 51',
-    jibunAddress: '부산광역시 부산진구 당감동 100-1',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0545, 35.1486]
-    }
-  },
-  {
-    id: 'addr_7',
-    jibunAddress: '부산광역시 부산진구 당감동 102-7',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0546, 35.1487]
-    }
-  },
-  {
-    id: 'addr_8',
-    roadAddress: '부산광역시 부산진구 당감중앙로 17',
-    jibunAddress: '부산광역시 부산진구 당감동 55-3',
-    detailAddress: '당감초등학교',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0547, 35.1488]
-    }
-  },
-  {
-    id: 'addr_9',
-    roadAddress: '부산광역시 부산진구 당감로 88',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0548, 35.1489]
-    }
-  },
-  {
-    id: 'addr_10',
-    jibunAddress: '부산광역시 부산진구 당감동 22-5',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0549, 35.1490]
-    }
-  },
-  // 초읍동 지역
-  {
-    id: 'addr_11',
-    roadAddress: '부산광역시 부산진구 성지로 10번지 28',
-    jibunAddress: '부산광역시 부산진구 초읍동 5-번',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0745, 35.1612]
-    }
-  },
-  {
-    id: 'addr_12',
-    jibunAddress: '부산광역시 부산진구 초읍동 402-11',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0746, 35.1613]
-    }
-  },
-  {
-    id: 'addr_13',
-    roadAddress: '부산광역시 부산진구 성지로 104번길 26',
-    jibunAddress: '부산광역시 부산진구 초읍동 506-6',
-    detailAddress: '초읍초등학교',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0747, 35.1614]
-    }
-  },
-  {
-    id: 'addr_14',
-    roadAddress: '부산광역시 부산진구 초읍중앙로 88-7',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0748, 35.1615]
-    }
-  },
-  {
-    id: 'addr_15',
-    jibunAddress: '부산광역시 부산진구 초읍동 615-3',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0749, 35.1616]
-    }
-  },
-  {
-    id: 'addr_16',
-    roadAddress: '부산광역시 부산진구 초읍로 25',
-    jibunAddress: '부산광역시 부산진구 초읍동 712-8',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0750, 35.1617]
-    }
-  },
-  // 부전동 지역
-  {
-    id: 'addr_17',
-    roadAddress: '부산광역시 부산진구 부전로 181',
-    jibunAddress: '부산광역시 부산진구 부전동 255-6',
-    detailAddress: '부전역',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0603, 35.1639]
-    }
-  },
-  {
-    id: 'addr_18',
-    jibunAddress: '부산광역시 부산진구 부전동 312-1',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0604, 35.1640]
-    }
-  },
-  {
-    id: 'addr_19',
-    roadAddress: '부산광역시 부산진구 중앙대로 692번길 10',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0605, 35.1641]
-    }
-  },
-  // 범천동 지역
-  {
-    id: 'addr_20',
-    roadAddress: '부산광역시 부산진구 중앙대로 612',
-    jibunAddress: '부산광역시 부산진구 범천동 45-2',
-    detailAddress: '범내골역',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0587, 35.1711]
-    }
-  },
-  {
-    id: 'addr_21',
-    jibunAddress: '부산광역시 부산진구 범천동 88-9',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0588, 35.1712]
-    }
-  },
-  {
-    id: 'addr_22',
-    roadAddress: '부산광역시 부산진구 범내골로 29',
-    jibunAddress: '부산광역시 부산진구 범천동 102-3',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0589, 35.1713]
-    }
-  },
-  // 개금동 지역
-  {
-    id: 'addr_23',
-    roadAddress: '부산광역시 부산진구 개금로 15',
-    jibunAddress: '부산광역시 부산진구 개금동 833-179',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0234, 35.1543]
-    }
-  },
-  {
-    id: 'addr_24',
-    jibunAddress: '부산광역시 부산진구 개금동 701-5',
-    detailAddress: '개금주공아파트',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0235, 35.1544]
-    }
-  },
-  {
-    id: 'addr_25',
-    roadAddress: '부산광역시 부산진구 개금중앙로 88',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0236, 35.1545]
-    }
-  },
-  // 연지동 지역
-  {
-    id: 'addr_26',
-    roadAddress: '부산광역시 부산진구 연지로 25',
-    jibunAddress: '부산광역시 부산진구 연지동 123-8',
-    detailAddress: '연지초등학교',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0456, 35.1589]
-    }
-  },
-  {
-    id: 'addr_27',
-    jibunAddress: '부산광역시 부산진구 연지동 205-11',
-    geometry: {
-      type: 'Point',
-      coordinates: [129.0457, 35.1590]
-    }
-  }
-];
+import { administrativeStore } from './AdministrativeStore';
+// import { randomizeSimulationConcentration, ENABLE_MOCK_CONCENTRATION } from '@/utils/mockData/simulationConcentration';
 
 // ============================================================================
 // SimulationStore Class
@@ -323,6 +76,11 @@ class SimulationStore {
   isLoadingDetail: boolean = false;
   detailError: string | null = null;
 
+  // 시뮬레이션 결과 요약 (취약시설)
+  vulnerableFacilities: VulnerableFacilitiesResponse | null = null;
+  isLoadingVulnerableFacilities: boolean = false;
+  vulnerableFacilitiesError: string | null = null;
+
   // 지역 정보
   isLoadingDistricts: boolean = false;
 
@@ -335,12 +93,17 @@ class SimulationStore {
   isConfigPopupOpen = false
   isResultPopupOpen = false
 
+  // 팝업별 최소화 상태
+  isConfigPopupMinimized = false
+  isResultPopupMinimized = false
+
   // 시뮬레이션 Panel 상태 관리
   currentView: SimulationView = "config"
   pollutantFilter: PMType | 'all' = 'all';
   sortOrder: 'latest' | 'oldest' = 'latest'; // 기본값 'latest'
   isDeleteMode: boolean = false;
   itemsToDelete = new Set<string>();
+  isMinimized: boolean = false;
 
   // 기간 설정 관리
   isDateModalOpen: boolean = false;
@@ -373,6 +136,13 @@ class SimulationStore {
     }
   }
 
+  /**
+   * 패널 최소화/최대화 토글
+   */
+  toggleMinimize() {
+    this.isMinimized = !this.isMinimized;
+  }
+
   // ============================================================================
   // 주소 검색
   // ============================================================================
@@ -382,8 +152,8 @@ class SimulationStore {
   }
 
   /**
-   * 주소 검색 수행 (Mock 데이터 사용)
-   * 실제로는 API 호출: POST /api/simulation/search-address
+   * 주소 검색 수행
+   * GET /api/v1/address/search
    */
   async searchAddress(query: string): Promise<void> {
     if (!query.trim()) {
@@ -394,26 +164,35 @@ class SimulationStore {
     this.isSearching = true;
 
     try {
-      // TODO: 실제 API 호출
-      // const response = await fetch('/api/simulation/search-address', {
-      //   method: 'POST',
-      //   body: JSON.stringify({ query, city: '부산광역시', district: '부산진구' })
-      // });
-      // this.searchResults = await response.json();
+      const districtPrefix = administrativeStore.selectedDivisionName || '';
+      const fixedQuery = districtPrefix? `${districtPrefix} ${query}` : query;
 
-      // Mock: 검색어가 포함된 결과만 필터링
-      await new Promise(resolve => setTimeout(resolve, 300)); // 네트워크 지연 시뮬레이션
+      const response = await searchAddressAPI(fixedQuery, 1, 10);
 
-      this.searchResults = MOCK_ADDRESS_RESULTS.filter(result =>
-        (result.roadAddress && result.roadAddress.includes(query)) ||
-        (result.jibunAddress && result.jibunAddress.includes(query)) ||
-        (result.detailAddress && result.detailAddress.includes(query))
-      );
+        if (response.status === 'success') {
+        // API 타입 -> UI 타입 매핑
+        const mapped = response.items.map(item => ({
+          id: item.id,
+          roadAddress: item.address.road,
+          jibunAddress: item.address.parcel,
+          detailAddress: item.address.bldnm || item.address.bldnmdc,
+          geometry: {
+            type: 'Point' as const,
+            coordinates: [item.point.longitude, item.point.latitude] as [number, number]
+          }
+        }));
+        runInAction(() => { this.searchResults = mapped; });
+
+      } else {
+        // 에러 처리
+        console.error('[SimulationStore] Search failed:', response.error);
+        runInAction(() => { this.searchResults = []; });
+      }
     } catch (error) {
       console.error('[SimulationStore] Address search failed:', error);
-      this.searchResults = [];
+      runInAction(() => { this.searchResults = []; });
     } finally {
-      this.isSearching = false;
+      runInAction(() => { this.isSearching = false; });
     }
   }
 
@@ -509,40 +288,50 @@ class SimulationStore {
 
   /**
    * 직접 위치 지정: 지도 클릭 시 호출
-   * Mock: 도로명/지번 주소를 별도 항목으로 반환 (실제로는 역지오코딩 API 호출)
+   * GET /api/v1/address/reverse
    */
-  addDirectLocationResult(lat: number, lng: number) {
-    this.selectedLocation = { lat, lng };
+  async addDirectLocationResult(lat: number, lng: number) {
+    runInAction(() => {
+      this.selectedLocation = { lat, lng };
+      this.isSearching = true;
+      this.directLocationResults = []
+    });
 
-    // Mock: 첫 번째 주소 결과 사용 (실제로는 역지오코딩 API로 좌표 → 주소 변환)
-    const mockResult = MOCK_ADDRESS_RESULTS[0];
+    try {
+      const response = await reverseGeocodeAPI(lng, lat);
 
-    const results: AddressSearchResult[] = [];
-    const geometry = { type: 'Point' as const, coordinates: [lng, lat] as [number, number] };
+      if (response.status === 'success') {
+        const results: AddressSearchResult[] = [];
+        const geometry = { type: 'Point' as const, coordinates: [lng, lat] as [number, number] };
 
-    // 도로명 주소가 있으면 추가
-    if (mockResult.roadAddress) {
-      results.push({
-        id: `direct_road_${Date.now()}`,
-        roadAddress: mockResult.roadAddress,
-        detailAddress: mockResult.detailAddress,
-        geometry
-      });
+        response.results.forEach(item => {
+          if (item.type === 'road') {
+            results.push({
+              id: `direct_road_${Date.now()}`,
+              roadAddress: item.text,
+              detailAddress: item.structure.detail,
+              geometry
+            });
+          } else if (item.type === 'parcel') {
+            results.push({
+              id: `direct_jibun_${Date.now()}`,
+              jibunAddress: item.text,
+              geometry
+            });
+          }
+        });
+
+        runInAction(() => {
+          this.directLocationResults = results;
+          // 결과 설정 및 첫 번째 항목 자동 선택
+          this.selectedAddressId = results.length > 0 ? results[0].id : null;
+        });
+      }
+    } catch (error) {
+      console.error("[SimulationStore] addDirectLocationResult failed:", error);
+    } finally {
+      runInAction(() => { this.isSearching = false; });
     }
-
-    // 지번 주소가 있으면 추가
-    if (mockResult.jibunAddress) {
-      results.push({
-        id: `direct_jibun_${Date.now()}`,
-        jibunAddress: mockResult.jibunAddress,
-        detailAddress: mockResult.detailAddress,
-        geometry
-      });
-    }
-
-    // 결과 설정 및 첫 번째 항목 자동 선택
-    this.directLocationResults = results;
-    this.selectedAddressId = results.length > 0 ? results[0].id : null;
   }
 
   clearDirectLocationResults() {
@@ -896,6 +685,9 @@ class SimulationStore {
     try {
       const detail = await getSimulationDetail(uuid);
       this.simulationDetail = detail;
+
+      // 상세 정보 로드 성공 시 취약시설 정보도 로드
+      await this.loadVulnerableFacilities(uuid);
     } catch (error) {
       console.error(`[SimulationStore] Failed to load simulation detail (${uuid}):`, error);
       this.detailError = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -906,12 +698,40 @@ class SimulationStore {
   }
 
   /**
+   * 시뮬레이션 결과 요약 조회 (취약시설)
+   * GET /api/v1/simulation/{uuid}/vulnerable-facilities
+   */
+  async loadVulnerableFacilities(uuid: string): Promise<void> {
+    this.isLoadingVulnerableFacilities = true;
+    this.vulnerableFacilitiesError = null;
+
+    try {
+      const data = await getVulnerableFacilities(uuid);
+      runInAction(() => {
+        this.vulnerableFacilities = data;
+      });
+    } catch (error) {
+      console.error(`[SimulationStore] Failed to load vulnerable facilities (${uuid}):`, error);
+      runInAction(() => {
+        this.vulnerableFacilitiesError = error instanceof Error ? error.message : 'Unknown error occurred';
+        this.vulnerableFacilities = null;
+      });
+    } finally {
+      runInAction(() => {
+        this.isLoadingVulnerableFacilities = false;
+      });
+    }
+  }
+
+  /**
    * 선택 해제 및 상세 패널 닫기
    */
   closeSimulationDetail() {
     this.selectedSimulationUuid = null;
     this.simulationDetail = null;
     this.detailError = null;
+    this.vulnerableFacilities = null;
+    this.vulnerableFacilitiesError = null;
   }
 
   /**
@@ -1057,6 +877,11 @@ class SimulationStore {
   setSelectedSimulationQuick(item: SimulationQuckData) {
     this.selectedsimulationQuick = null;
     this.selectedsimulationQuick = item;
+    
+    // 목업 모드가 활성화된 경우 concentration 값을 랜덤화하여 히트맵 시각화 개선
+    // this.selectedsimulationQuick = ENABLE_MOCK_CONCENTRATION
+    //   ? randomizeSimulationConcentration(item)
+    //   : item;
   }
   /**
    * 모달 열기
@@ -1118,6 +943,7 @@ class SimulationStore {
    */
   openConfigPopup = () => {
     this.isConfigPopupOpen = true;
+    this.isConfigPopupMinimized = false; // 팝업 열 때 최소화 해제
   }
 
   /**
@@ -1125,6 +951,14 @@ class SimulationStore {
    */
   closeConfigPopup = () => {
     this.isConfigPopupOpen = false;
+    this.isConfigPopupMinimized = false; // 팝업 닫을 때 최소화 상태 초기화
+  }
+
+  /**
+   * 설정 정보 팝업 최소화/최대화 토글
+   */
+  toggleConfigPopupMinimize = () => {
+    this.isConfigPopupMinimized = !this.isConfigPopupMinimized;
   }
 
   /**
@@ -1132,6 +966,7 @@ class SimulationStore {
    */
   openResultPopup = () => {
     this.isResultPopupOpen = true;
+    this.isResultPopupMinimized = false; // 팝업 열 때 최소화 해제
   }
 
   /**
@@ -1139,6 +974,14 @@ class SimulationStore {
    */
   closeResultPopup = () => {
     this.isResultPopupOpen = false;
+    this.isResultPopupMinimized = false; // 팝업 닫을 때 최소화 상태 초기화
+  }
+
+  /**
+   * 결과 요약 팝업 최소화/최대화 토글
+   */
+  toggleResultPopupMinimize = () => {
+    this.isResultPopupMinimized = !this.isResultPopupMinimized;
   }
 
 }

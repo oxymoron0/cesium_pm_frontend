@@ -42,13 +42,14 @@ export interface GeoJSONPolygon {
 }
 
 /**
- * Route geometry (inbound/outbound separated)
+ * Route geometry (inbound/outbound separated + entire route)
  * GET /api/v1/route/geom/{route_name} response
  */
 export interface RouteGeom {
   route_name: string;
   inbound: GeoJSONLineString;    // Correct: LineString not Polygon
   outbound: GeoJSONLineString;   // Correct: LineString not Polygon
+  entire: GeoJSONLineString;     // Combined route (inbound + outbound)
 }
 
 
@@ -366,4 +367,41 @@ export interface DailySensorDataResponse {
   meta?: SensorDataMeta
   error?: string
   details?: string
+}
+
+// =============================================================================
+// Vulnerable Facilities API Types (시뮬레이션 취약시설 데이터)
+// =============================================================================
+
+/**
+ * 취약시설 단일 항목
+ */
+export interface VulnerableFacility {
+  type: string;
+  id: string;
+  name: string;
+  address: string;
+  location: GeoJSONPoint;
+  pm_value: number;
+}
+
+/**
+ * 등급별 취약시설 배열
+ */
+export interface FacilitiesByGrade {
+  good: VulnerableFacility[];
+  moderate: VulnerableFacility[];
+  bad: VulnerableFacility[];
+  very_bad: VulnerableFacility[];
+}
+
+/**
+ * 시뮬레이션 결과 요약 API 응답
+ * GET /api/v1/simulation/{uuid}/vulnerable-facilities
+ */
+export interface VulnerableFacilitiesResponse {
+  convex_hull_area_sqm: number;
+  total_affected_facilities: number;
+  facilities_by_grade: FacilitiesByGrade;
+  requested_at: string;
 }

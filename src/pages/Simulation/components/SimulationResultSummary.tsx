@@ -1,5 +1,6 @@
 import { observer } from 'mobx-react-lite';
-import { useState, useEffect } from 'react';
+import { toJS } from 'mobx';
+import { useState, useEffect, useMemo } from 'react';
 import Panel from '@/components/basic/Panel';
 import Title from '@/components/basic/Title';
 import Spacer from '@/components/basic/Spacer';
@@ -10,8 +11,7 @@ import {
   Bar,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Cell
+  CartesianGrid
 } from 'recharts';
 import { simulationStore } from '@/stores/SimulationStore';
 import {
@@ -25,9 +25,23 @@ interface SimulationResultSummaryProps {
 }
 
 const SimulationResultSummary = observer(function SimulationResultSummary({ onClose }: SimulationResultSummaryProps) {
-  const { simulationDetail } = simulationStore;
+  const { simulationDetail, isResultPopupMinimized, vulnerableFacilities } = simulationStore;
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(true);
   const [isImpactExpanded, setIsImpactExpanded] = useState(true);
+
+  // API 응답을 차트 배열로 변환
+  const chartData = useMemo(() => {
+    if (!vulnerableFacilities) return [];
+
+    const facilities = toJS(vulnerableFacilities.facilities_by_grade);
+
+    return [
+      { grade: 'good', count: facilities.good.length },
+      { grade: 'moderate', count: facilities.moderate.length },
+      { grade: 'bad', count: facilities.bad.length },
+      { grade: 'very_bad', count: facilities.very_bad.length }
+    ];
+  }, [vulnerableFacilities]);
 
   const firstPoint = simulationDetail?.airQualityData?.points[0];
   const centerLng = firstPoint?.location.longitude || 129.0634;
@@ -56,24 +70,36 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
     return `${year}.${month}.${day} ${hours}:${minutes}`;
   };
 
-  // TODO: 실제 API 데이터로 교체 필요
-  const mockImpactData = [
-    { level: '좋음', count: 18, color: '#FFD040' },
-    { level: '보통', count: 32, color: '#FFD040' },
-    { level: '나쁨', count: 24, color: '#FFD040' },
-    { level: '매우나쁨', count: 35, color: '#FFD040' }
-  ];
+  // 등급별 한글 레이블 매핑
+  const gradeLabels: Record<string, string> = {
+    good: '좋음',
+    moderate: '보통',
+    bad: '나쁨',
+    very_bad: '매우나쁨'
+  };
+
+  // 총 영향 면적 포맷 (m² -> km²)
+  const formatArea = (sqm: number) => {
+    const sqkm = (sqm / 1_000_000).toFixed(2);
+    return `${sqm.toLocaleString()} m² (약 ${sqkm} km²)`;
+  };
 
   return (
     <>
       <Panel width="540px" maxHeight="calc(100vh - 160px)" >
-        <Title onClose={onClose} infoTitle="시뮬레이션 결과 요약" info="※ 시뮬레이션 요청 일시와 오염물질 최대 확산 반경, 총 영향 면적, 영향 시설물 수를 확인할 수 있습니다. 영향 시설물 수의 경우 나쁨 등급 이상 면적에 포함된 취약시설 수를 의미합니다.">
+        <Title
+          onClose={onClose}
+          onMinimize={() => simulationStore.toggleResultPopupMinimize()}
+          infoTitle="시뮬레이션 결과 요약"
+          info="※ 시뮬레이션 요청 일시와 오염물질 최대 확산 반경, 총 영향 면적, 영향 시설물 수를 확인할 수 있습니다. 영향 시설물 수의 경우 나쁨 등급 이상 면적에 포함된 취약시설 수를 의미합니다."
+        >
           시뮬레이션 결과 요약
         </Title>
 
-        <Spacer height={16} />
+        <div style={{ display: isResultPopupMinimized ? 'none' : 'contents' }}>
+          <Spacer height={16} />
 
-        <div className="flex flex-col self-stretch">
+          <div className="flex flex-col self-stretch">
         <button
           onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}
           className="flex items-center justify-between h-[42px] py-[10px] pr-4 border-b border-[#696A6A] cursor-pointer"
@@ -99,7 +125,7 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
                   요청 일시
                 </div>
                 <div className="flex items-center h-8 px-3 py-1 w-[360px] bg-black rounded border border-[#696A6A] text-white font-pretendard text-sm">
-                  {formatDateTime(simulationDetail.requestedAt)}
+                  {vulnerableFacilities?.requested_at || formatDateTime(simulationDetail.requestedAt)}
                 </div>
               </div>
 
@@ -117,7 +143,7 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
                   총 영향 면적 (m²)
                 </div>
                 <div className="flex items-center h-8 px-3 py-1 w-[360px] bg-black rounded border border-[#696A6A] text-white font-pretendard text-sm">
-                  1,130,973 m² (약 1.13 km²)
+                  {vulnerableFacilities ? formatArea(vulnerableFacilities.convex_hull_area_sqm) : '-'}
                 </div>
               </div>
 
@@ -126,7 +152,7 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
                   영향 취약시설 수
                 </div>
                 <div className="flex items-center h-8 px-3 py-1 w-[360px] bg-black rounded border border-[#696A6A] text-white font-pretendard text-sm">
-                  102개
+                  {vulnerableFacilities ? `${vulnerableFacilities.total_affected_facilities}개` : '-'}
                 </div>
               </div>
             </div>
@@ -155,51 +181,55 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
         {isImpactExpanded && (
           <>
             <Spacer height={16} />
-            <div className="flex flex-col self-stretch px-4 py-3">
-              <div className="self-start text-[#C4C6C6] font-pretendard text-xs mb-2">
-                영향 시설 수
+            {vulnerableFacilities && chartData.length > 0 ? (
+              <div className="flex flex-col self-stretch px-4 py-3">
+                <div className="self-start text-[#C4C6C6] font-pretendard text-xs mb-2">
+                  영향 시설 수
+                </div>
+
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart
+                    data={chartData}
+                    margin={{ top: 10, right: 10, left: -35, bottom: 0 }}
+                    barSize={30}
+                  >
+                    <CartesianGrid stroke="#555" strokeOpacity={0.5} vertical={false} />
+
+                    <XAxis
+                      dataKey="grade"
+                      tickFormatter={(grade) => gradeLabels[grade]}
+                      tick={{
+                        fill: '#C4C6C6',
+                        fontFamily: 'Pretendard',
+                        fontSize: 12
+                      }}
+                      stroke="none"
+                      axisLine={true}
+                    />
+
+                    <YAxis
+                      tick={{
+                        fill: '#FFF',
+                        fontFamily: 'Pretendard',
+                        fontSize: 12
+                      }}
+                      stroke="none"
+                      axisLine={false}
+                    />
+
+                    <Bar dataKey="count" fill="#FFD040" radius={[25, 25, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart
-                  data={mockImpactData}
-                  margin={{ top: 10, right: 10, left: -35, bottom: 0 }}
-                  barSize={30}
-                >
-                  <CartesianGrid stroke="#555" strokeOpacity={0.5} vertical={false} />
-
-                  <XAxis
-                    dataKey="level"
-                    tick={{
-                      fill: '#C4C6C6',
-                      fontFamily: 'Pretendard',
-                      fontSize: 12
-                    }}
-                    stroke="none"
-                    axisLine={true}
-                  />
-
-                  <YAxis
-                    tick={{
-                      fill: '#FFF',
-                      fontFamily: 'Pretendard',
-                      fontSize: 12
-                    }}
-                    stroke="none"
-                    axisLine={false}
-                  />
-
-                  <Bar dataKey="count" radius={[25, 25, 0, 0]}>
-                    {mockImpactData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            ) : (
+              <div className="flex items-center justify-center h-[200px] text-[#C4C6C6] font-pretendard text-sm">
+                데이터 로딩 중...
+              </div>
+            )}
           </>
         )}
-      </div>
+        </div>
+        </div>
       </Panel>
 
       <SimulationProgressIndicator />

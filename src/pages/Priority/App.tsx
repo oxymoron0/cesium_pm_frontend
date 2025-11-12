@@ -11,6 +11,8 @@ import PriorityLocationGuide from './components/PriorityLocationGuide'
 import PriorityStatistics from './components/PriorityStatistics'
 import { priorityStore } from '@/stores/PriorityStore'
 import { administrativeStore } from '@/stores/AdministrativeStore'
+import { routeStore } from '@/stores/RouteStore'
+import { stationStore } from '@/stores/StationStore'
 import type { PriorityView, PriorityConfig as PriorityConfigData } from './types'
 
 interface AppProps {
@@ -58,6 +60,39 @@ const App = observer(function App(props: AppProps) {
     return () => {
       administrativeStore.clearSelection()
       console.log('[Priority] Cleared administrative selection on unmount')
+    }
+  }, [cesiumStatus])
+
+  // RouteStore와 StationStore 초기화
+  useEffect(() => {
+    const initializeStores = async () => {
+      try {
+        // RouteStore 초기화 (노선 정보 및 geometry 로드)
+        if (routeStore.routeInfoList.length === 0) {
+          console.log('[Priority] Initializing RouteStore')
+          await routeStore.initializeRouteData()
+        }
+
+        // StationStore 초기화 (모든 노선의 정류장 데이터 로드)
+        if (stationStore.stationDataMap.size === 0 && routeStore.routeInfoList.length > 0) {
+          console.log('[Priority] Initializing StationStore')
+          const routeNames = routeStore.routeInfoList.map(route => route.route_name)
+
+          const stationLoadPromises = routeNames.flatMap(routeName => [
+            stationStore.loadStations(routeName, 'inbound'),
+            stationStore.loadStations(routeName, 'outbound')
+          ])
+
+          await Promise.all(stationLoadPromises)
+          console.log('[Priority] Station data loading completed')
+        }
+      } catch (error) {
+        console.error('[Priority] Store initialization failed:', error)
+      }
+    }
+
+    if (cesiumStatus === 'ready') {
+      initializeStores()
     }
   }, [cesiumStatus])
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import Title from '@/components/basic/Title';
 import Spacer from '@/components/basic/Spacer';
@@ -13,6 +13,7 @@ import { renderAdministrativeBoundary, clearAdministrativeBoundary } from '@/uti
 import { isGeometrySuccess } from '@/types/administrative';
 import { stationStore } from '@/stores/StationStore';
 import { routeStore } from '@/stores/RouteStore';
+import { vulnerabilityStore, type ChildcareCenter, type SeniorCenter } from '@/stores/VulnerabilityStore';
 import type { PriorityConfig, VulnerableFacility, NearbyStation, StationMeasurement } from '../types';
 import type { RouteStationFeature } from '@/utils/api/types';
 
@@ -57,16 +58,96 @@ const getLevelStyle = (level: VulnerableFacility['predictedLevel']) => {
       };
   }
 };
+const transformToVulnerableFacility = (
+  facility: ChildcareCenter | SeniorCenter,
+  index: number
+): VulnerableFacility | null => {
+  const { geom, id, name } = facility;
+
+  // 지오메트리 데이터가 없는 시설은 제외
+  if (!geom || !geom.longitude || !geom.latitude) {
+    return null;
+  }
+
+  // ID 충돌 방지: 타입별 prefix 추가
+  let uniqueId: string;
+  let address: string;
+  let dong: string;
+
+  if ('address' in facility) {
+    // ChildcareCenter
+    uniqueId = `childcare_${id}`;
+    address = facility.address;
+
+    // address에서 동 정보 추출 시도 (예: "부산광역시 부산진구 전포동 123-45")
+    const dongMatch = address.match(/([가-힣0-9]+동|[가-힣0-9]+읍|[가-힣0-9]+면)/);
+    dong = dongMatch ? dongMatch[1].replace(/\d+/g, '') : '정보 없음';
+  } else {
+    // SeniorCenter
+    uniqueId = `senior_${id}`;
+    address = facility.road_address || facility.lot_address || '주소 정보 없음';
+    dong = facility.dong ? facility.dong.replace(/\d+/g, '') : '정보 없음';
+  }
+
+  // 예측 데이터 Mock 값 (실제 모델 예측 결과로 대체되어야 함)
+  const mockConcentrations = [160, 135, 58, 55, 48];
+  const mockLevels: VulnerableFacility['predictedLevel'][] = [
+    'very-bad',
+    'bad',
+    'normal',
+    'normal',
+    'normal'
+  ];
+
+  const concentration = mockConcentrations[index % mockConcentrations.length];
+  const level = mockLevels[index % mockLevels.length];
+
+  return {
+    id: uniqueId,
+    rank: index + 1,
+    name,
+    dong,
+    address,
+    predictedConcentration: concentration,
+    predictedLevel: level,
+    geometry: {
+      type: 'Point',
+      coordinates: [geom.longitude, geom.latitude]
+    }
+  };
+};
 
 const PriorityResult = observer(function PriorityResult({ config, onBack, onClose }: PriorityResultProps) {
   const [selectedFacilities, setSelectedFacilities] = useState<Set<string>>(new Set());
 
-  // priorityStore에서 API로 조회한 취약시설 데이터 사용
-  const facilities = priorityStore.vulnerableFacilities;
+  // 선택된 동에 따라 시설 필터링
+  const facilities = useMemo(() => {
+    const allFacilities = vulnerabilityStore.facilitiesWithGeometry
+      .map(transformToVulnerableFacility)
+      .filter((f): f is VulnerableFacility => f !== null);
 
+    // "전체" 선택 시 모든 시설 반환
+    if (priorityStore.selectedDong === '전체') {
+      return allFacilities;
+    }
 
+    // 특정 동 선택 시 해당 동의 시설만 필터링
+    return allFacilities.filter(f => f.dong === priorityStore.selectedDong);
+  }, [vulnerabilityStore.facilitiesWithGeometry, priorityStore.selectedDong]);
+
+  
 
   useEffect(() => {
+    const loadFacilities = async () => {
+      await vulnerabilityStore.loadFacilitiesByRadius({ radius: 100 });
+    };
+
+    loadFacilities();
+
+    // const facilities = vulnerabilityStore.facilitiesWithGeometry;
+    // facilities = facilities;
+    // PriorityFacilities = facilities.map(transformToVulnerableFacility).filter((f): f is VulnerableFacility => f !== null);
+    
     return () => {
       clearVulnerableFacilities();
     };
@@ -182,7 +263,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
   // 필터링된 시설들을 Cesium에 렌더링
   useEffect(() => {
     if (facilities.length > 0) {
-      renderVulnerableFacilities(facilities);
+      renderVulnerableFacilities(facilities, priorityStore.selectedDong);
     } else {
       clearVulnerableFacilities();
     }

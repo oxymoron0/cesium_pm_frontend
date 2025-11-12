@@ -5,7 +5,8 @@ import {
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
   defined,
-  Cartesian2
+  Cartesian2,
+  Cartesian3
 } from 'cesium';
 
 /**
@@ -48,17 +49,24 @@ export function enableDirectLocationClickHandler(): void {
     // LEFT_CLICK 이벤트 등록
     clickEventHandler.setInputAction((movement: { position: Cartesian2 }) => {
       try {
-        // scene.globe.pick을 사용해서 지구 표면과 ray의 교차점을 직접 계산
-        const ray = viewer.camera.getPickRay(movement.position);
-        if (!ray) {
-          console.warn('[directLocationRenderer] Failed to get pick ray');
-          return;
+        // 1순위: scene.pickPosition (Depth buffer 기반, 지형/3D 타일 고려)
+        let cartesian: Cartesian3 | undefined = viewer.scene.pickPosition(movement.position);
+
+        // 2순위: globe.pick (타원체 표면 교차점 계산)
+        if (!defined(cartesian)) {
+          const ray = viewer.camera.getPickRay(movement.position);
+          if (ray) {
+            cartesian = viewer.scene.globe.pick(ray, viewer.scene);
+          }
         }
 
-        const cartesian = viewer.scene.globe.pick(ray, viewer.scene);
+        // 3순위: camera.pickEllipsoid (타원체 직접 계산)
+        if (!defined(cartesian)) {
+          cartesian = viewer.camera.pickEllipsoid(movement.position, viewer.scene.globe.ellipsoid);
+        }
 
         if (!defined(cartesian)) {
-          console.warn('[directLocationRenderer] Failed to pick position on globe');
+          console.warn('[directLocationRenderer] Failed to pick position');
           return;
         }
 
