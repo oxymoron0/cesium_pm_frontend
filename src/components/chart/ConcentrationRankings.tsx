@@ -119,21 +119,46 @@ const ConcentrationRankings = observer(function ConcentrationRankings({
             <div
               style={{
                 display: 'flex',
-                padding: '8px',
+                padding: '10px',
                 alignItems: 'center',
-                gap: '12px',
-                alignSelf: 'stretch',
-                borderRadius: '4px',
-                background: 'rgba(255, 255, 255, 0.05)'
+                alignSelf: 'stretch'
               }}
             >
-              <div style={{ width: '32px', color: '#C4C6C6', fontSize: '12px', fontWeight: 600 }}>
+              <div
+                style={{
+                  width: '24px',
+                  color: '#C4C6C6',
+                  fontFamily: 'Pretendard',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  lineHeight: '14px'
+                }}
+              >
                 순위
               </div>
-              <div style={{ width: '60px', color: '#C4C6C6', fontSize: '12px', fontWeight: 600 }}>
+              <div
+                style={{
+                  flex: '1 0 0',
+                  color: '#C4C6C6',
+                  fontFamily: 'Pretendard',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  lineHeight: '14px'
+                }}
+              >
                 시간
               </div>
-              <div style={{ flex: 1, color: '#C4C6C6', fontSize: '12px', fontWeight: 600, textAlign: 'right' }}>
+              <div
+                style={{
+                  flex: '1 0 0',
+                  color: '#C4C6C6',
+                  fontFamily: 'Pretendard',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  lineHeight: '14px',
+                  textAlign: 'right'
+                }}
+              >
                 농도 수치 ({unit})
               </div>
             </div>
@@ -144,45 +169,47 @@ const ConcentrationRankings = observer(function ConcentrationRankings({
                 key={item.rank}
                 style={{
                   display: 'flex',
-                  padding: '8px',
+                  padding: '10px',
                   alignItems: 'center',
-                  gap: '12px',
-                  alignSelf: 'stretch',
-                  borderRadius: '4px',
-                  background: 'rgba(255, 255, 255, 0.02)'
+                  alignSelf: 'stretch'
                 }}
               >
                 <div
                   style={{
-                    width: '32px',
+                    width: '24px',
                     color: '#FFF',
+                    fontFamily: 'Pretendard',
                     fontSize: '14px',
                     fontWeight: 600,
-                    textAlign: 'center'
+                    lineHeight: '14px'
                   }}
                 >
                   {item.rank}
                 </div>
                 <div
                   style={{
-                    width: '60px',
+                    flex: '1 0 0',
                     color: '#FFF',
+                    fontFamily: 'Pretendard',
                     fontSize: '14px',
-                    fontWeight: 400
+                    fontWeight: 400,
+                    lineHeight: '14px'
                   }}
                 >
                   {item.hour}
                 </div>
                 <div
                   style={{
-                    flex: 1,
+                    flex: '1 0 0',
                     color: type === 'high' ? '#F70' : '#18A274',
+                    fontFamily: 'Pretendard',
                     fontSize: '14px',
-                    fontWeight: 600,
+                    fontWeight: 400,
+                    lineHeight: '14px',
                     textAlign: 'right'
                   }}
                 >
-                  {type === 'high' ? '나쁨' : '좋음'} ({item.value.toFixed(0)} {unit})
+                  {type === 'high' ? '나쁨' : '좋음'}({item.value.toFixed(0)} {unit})
                 </div>
               </div>
             ))}
