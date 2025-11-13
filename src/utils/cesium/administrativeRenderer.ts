@@ -1,6 +1,6 @@
 import type { GeoJSONMultiPolygon } from '@/types/postgis';
 import { createDataSource, findDataSource, clearDataSource } from './datasources';
-import { Color, ColorMaterialProperty, Cartesian3, Entity, PolygonGraphics, PolygonHierarchy, LabelGraphics, VerticalOrigin, HorizontalOrigin, CallbackProperty, ScreenSpaceEventHandler, ScreenSpaceEventType, defined } from 'cesium';
+import { HeightReference, Color, ColorMaterialProperty, Cartesian3, Entity, PolygonGraphics, PolygonHierarchy, LabelGraphics, VerticalOrigin, HorizontalOrigin, CallbackProperty, ScreenSpaceEventHandler, ScreenSpaceEventType, defined } from 'cesium';
 import { administrativeStore } from '@/stores/AdministrativeStore';
 
 /**
@@ -99,12 +99,14 @@ export async function renderAdministrativeBoundary(
         polygon: new PolygonGraphics({
           hierarchy: new PolygonHierarchy(positions),
           material: Color.fromCssColorString('#0BE300').withAlpha(0.2),
-          outline: true,
-          outlineColor: Color.fromCssColorString('#0BE300'),
-          outlineWidth: 2,
-          height: 0,
-          heightReference: 1 // CLAMP_TO_GROUND
-        })
+          heightReference: HeightReference.CLAMP_TO_GROUND,
+        }),
+        polyline: {
+          clampToGround: true,
+          positions: positions,
+          width: 5,
+          material: Color.fromCssColorString('#0BE300').withAlpha(0.8),
+        },
       });
 
       dataSource.entities.add(entity);
