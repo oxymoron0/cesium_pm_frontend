@@ -28,6 +28,10 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
+  const provinceCode = administrativeStore.selectedProvinceCode || '26';
+  const districtCode = administrativeStore.selectedDistrictCode || '';
+  const neighborhoodCode = administrativeStore.selectedNeighborhoodCode || '';
+
   // Ensure administrative data is loaded
   useEffect(() => {
     const initAdministrativeData = async () => {
@@ -605,10 +609,15 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
               : 'bg-[#696A6A] cursor-not-allowed'
           }`}
           disabled={locationMode === 'point' && !administrativeStore.selectedNeighborhoodCode}
-          onClick={() => {
+          onClick={async () => {
             if (!config) return;
 
-            // config 데이터 전달
+            await priorityStore.searchPriorityFacilities(
+              provinceCode,
+              districtCode,
+              neighborhoodCode
+            );
+
             onSearch({
               date: config.date,
               time: config.time,

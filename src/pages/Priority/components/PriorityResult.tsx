@@ -58,8 +58,9 @@ const getLevelStyle = (level: VulnerableFacility['predictedLevel']) => {
 
 const PriorityResult = observer(function PriorityResult({ config, onBack, onClose }: PriorityResultProps) {
   const [selectedFacilities, setSelectedFacilities] = useState<Set<string>>(new Set());
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('전체');
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('');
   const [stationStatisticsData, setStationStatisticsData] = useState<StationStatisticsResponse | null>(null);
+  const [selectDropdownValue, setSelectDropdownValue] = useState<string>('');
 
   // API에서 가져온 취약시설 데이터 사용 (very-bad, bad 등급만 필터링)
   // observer 컴포넌트는 MobX가 자동으로 추적하므로 useMemo 불필요
@@ -69,6 +70,26 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
   // facilities의 변경을 안정적으로 추적하기 위한 키
   const facilitiesKey = `${facilities.length}-${facilities.map(f => f.id).join(',')}`;
+
+  // 최초 마운트시 행정구역 읍/면/동 설정값 세팅
+  useEffect(() => {
+    const sel = administrativeStore.selectedNeighborhoodCode;
+
+    if (sel === "all") {
+      setSelectedNeighborhood("전체");
+      return;
+    }
+
+    const found = administrativeStore.neighborhoods.find(n => 
+      n.code.slice(-3) === sel
+    );
+
+    if (found) {
+      setSelectedNeighborhood(found.name);
+    } else {
+      setSelectedNeighborhood('');
+    }
+  }, []);
 
   // Store에 config 설정
   useEffect(() => {
@@ -157,6 +178,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
       // "전체" 선택 시 부산진구 경계 표시
       if (selectedNeighborhood === '전체') {
+        setSelectDropdownValue('all');
         try {
           const response = await administrativeStore.loadGeometry({
             province_code: '26',
@@ -173,6 +195,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
         // 특정 읍면동 선택 시 해당 경계 표시
         const neighborhood = administrativeStore.neighborhoods.find(n => n.name === selectedNeighborhood);
         if (neighborhood) {
+          setSelectDropdownValue(neighborhood.code);
           try {
             const response = await administrativeStore.loadGeometry({
               province_code: '26',
@@ -447,11 +470,11 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
   // 읍면동 드롭다운 옵션 생성
   const getDongOptions = () => {
-    const options = [{ value: '전체', label: '전체' }];
+    const options = [{ value: 'all', label: '전체' }];
 
     if (administrativeStore.neighborhoods.length > 0) {
       const dongOptions = administrativeStore.neighborhoods.map(n => ({
-        value: n.name,
+        value: n.code,
         label: n.name
       }));
       options.push(...dongOptions);
@@ -524,6 +547,10 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
             isOpen={priorityStore.isDropdownOpen}
             onToggle={() => priorityStore.toggleDropdown()}
             onChange={async (value) => {
+              //같은 드롭다운 중복 클릭시 방어
+              //ex 가야동 -> 가야동
+              if (selectDropdownValue == value) return;
+
               // 기존 렌더링 클리어 (비동기 작업 완료 대기)
               await clearVulnerableFacilities();
               clearPriorityConcentration();
@@ -536,10 +563,19 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
               // neighborhood_code 결정
               let neighborhoodCode: string | null = null;
-              if (value !== '전체') {
-                const neighborhood = administrativeStore.neighborhoods.find(n => n.name === value);
+              let selectedName: string = value; // 기본값은 전달된 value
+
+              if (value === "all") {
+                neighborhoodCode = null;
+                selectedName = "전체";
+              }
+
+              else {
+                const neighborhood = administrativeStore.neighborhoods.find((n) => n.code === value);
+
                 if (neighborhood) {
                   neighborhoodCode = neighborhood.code.substring(5); // Full code to short code
+                  selectedName = neighborhood.name;
                 }
               }
 
@@ -551,7 +587,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
               );
 
               // API 완료 후 로컬 상태 업데이트 (useEffect 트리거)
-              setSelectedNeighborhood(value);
+              setSelectedNeighborhood(selectedName);
             }}
           />
         </div>
