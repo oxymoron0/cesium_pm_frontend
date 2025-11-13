@@ -178,20 +178,22 @@ export async function renderMultipleAdministrativeBoundaries(
             material: new ColorMaterialProperty(new CallbackProperty(() => {
               const isSelected = administrativeStore.selectedNeighborhoodCode === neighborhoodCode;
               return isSelected
-                ? Color.WHITE.withAlpha(0.8)
+                ? Color.fromCssColorString('#FFFFFF').withAlpha(0.8)
                 : Color.fromCssColorString('#0BE300').withAlpha(0.2);
             }, false)),
-            outline: true,
-            outlineColor: new CallbackProperty(() => {
+            heightReference: HeightReference.CLAMP_TO_GROUND,
+          }),
+          polyline: {
+            clampToGround: true,
+            positions: positions,
+            width: 3,
+            material:  new ColorMaterialProperty(new CallbackProperty(() => {
               const isSelected = administrativeStore.selectedNeighborhoodCode === neighborhoodCode;
               return isSelected
-                ? Color.BLACK
-                : Color.fromCssColorString('#0BE300');
-            }, false),
-            outlineWidth: 2,
-            height: 50,
-            heightReference: 0 // NONE - absolute height from ellipsoid
-          })
+                ? Color.fromCssColorString('#FFFFFF').withAlpha(0.8)
+                : Color.fromCssColorString('#0BE300').withAlpha(0.2);
+            }, false)),
+          },
         });
 
         dataSource.entities.add(entity);
