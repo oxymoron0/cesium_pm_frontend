@@ -1,4 +1,4 @@
-import { createGeoJsonDataSource, clearDataSource } from './datasources'; 
+import { createGeoJsonDataSource, clearDataSource } from './datasources';
 import {
   Cartesian3,
   Entity,
@@ -355,7 +355,13 @@ export async function renderVulnerableFacilities(
     // 기존 entities 완전 제거 (중복 방지)
     dataSource.entities.removeAll();
 
-    // HTML elements cache는 유지 (재사용)
+    // 기존 HTML elements 제거 (중복 방지)
+    facilityElementsCache.forEach((element) => {
+      if (viewer && viewer.container && element.parentNode === viewer.container) {
+        viewer.container.removeChild(element);
+      }
+    });
+    facilityElementsCache.clear();
 
     // Terrain 높이 샘플링
     await sampleTerrainForVulnerableFacilities(facilities);

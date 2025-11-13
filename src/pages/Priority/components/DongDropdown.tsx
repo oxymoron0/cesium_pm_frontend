@@ -7,7 +7,7 @@ interface DongDropdownProps {
   options: DongOption[];
   isOpen: boolean;
   onToggle: () => void;
-  onSelect: (value: string) => void;
+  onChange: (value: string) => void;
 }
 
 const DongDropdown = observer(function DongDropdown({
@@ -15,7 +15,7 @@ const DongDropdown = observer(function DongDropdown({
   options,
   isOpen,
   onToggle,
-  onSelect
+  onChange
 }: DongDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -34,7 +34,7 @@ const DongDropdown = observer(function DongDropdown({
   }, [isOpen, onToggle]);
 
   const handleSelect = (value: string) => {
-    onSelect(value);
+    onChange(value);
     onToggle();
   };
 

@@ -108,7 +108,7 @@ const ensureHeatCanvas = () => {
   const dw = Math.floor(w * dpr);
   const dh = Math.floor(h * dpr);
 
-  console.log('[ensureHeatCanvas] Container size:', w, 'x', h, 'Canvas size:', dw, 'x', dh);
+  // console.log('[ensureHeatCanvas] Container size:', w, 'x', h, 'Canvas size:', dw, 'x', dh);
 
   if (heatCanvas.width !== dw || heatCanvas.height !== dh) {
     heatCanvas.width = dw;
@@ -155,10 +155,10 @@ const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 type HeatPoint = { x: number; y: number; value: number };
 
 const drawHeatmap = (points: HeatPoint[], effectiveDistance: number) => {
-  console.log('[drawHeatmap] Called with', points.length, 'points, MPP:', effectiveDistance);
+  // console.log('[drawHeatmap] Called with', points.length, 'points, MPP:', effectiveDistance);
 
   if (!heatCtx || !heatCanvas || !heatAccumCtx || !heatAccumCanvas || !heatBlurCtx || !heatBlurCanvas || !heatColorCtx || !heatColorCanvas || !colorLUT) {
-    console.warn('[drawHeatmap] Missing canvas contexts or LUT');
+    // console.warn('[drawHeatmap] Missing canvas contexts or LUT');
     return;
   }
 
@@ -255,7 +255,7 @@ const drawHeatmap = (points: HeatPoint[], effectiveDistance: number) => {
   heatCtx.drawImage(heatColorCanvas, 0, 0, cssW, cssH);
   heatCtx.restore();
 
-  console.log('[drawHeatmap] Draw complete, canvas size:', cssW, 'x', cssH);
+  // console.log('[drawHeatmap] Draw complete, canvas size:', cssW, 'x', cssH);
 };
 
 // --- Helper Functions ---
