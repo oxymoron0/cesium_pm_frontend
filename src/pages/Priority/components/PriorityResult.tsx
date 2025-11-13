@@ -26,12 +26,6 @@ interface PriorityResultProps {
   onClose?: () => void;
 }
 
-interface PriorityResultProps {
-  config: PriorityConfig;
-  onBack: () => void;
-  onClose?: () => void;
-}
-
 // 등급별 스타일
 const getLevelStyle = (level: VulnerableFacility['predictedLevel']) => {
   switch (level) {
@@ -199,20 +193,19 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
     renderBoundary();
   }, [selectedNeighborhood]);
 
+  // facilities 변경 시 렌더링
+  useEffect(() => {
+    if (facilities.length > 0) {
+      renderVulnerableFacilities(facilities);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facilitiesKey]);
+
   // 시설 데이터가 변경되면 체크박스 선택 상태 초기화
   useEffect(() => {
     setSelectedFacilities(new Set());
     priorityStore.clearFacilitySelection();
   }, [facilitiesKey]);
-
-  // 필터링된 시설들을 Cesium에 렌더링
-  useEffect(() => {
-    if (facilities.length > 0) {
-      renderVulnerableFacilities(facilities);
-    }
-    // cleanup은 컴포넌트 unmount 시에만 실행
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [facilitiesKey, selectedNeighborhood]);
 
   // 농도 분포 heatmap 렌더링
   useEffect(() => {
@@ -530,9 +523,9 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
             options={getDongOptions()}
             isOpen={priorityStore.isDropdownOpen}
             onToggle={() => priorityStore.toggleDropdown()}
-            onSelect={async (value) => {
-              // 기존 렌더링 클리어
-              clearVulnerableFacilities();
+            onChange={async (value) => {
+              // 기존 렌더링 클리어 (비동기 작업 완료 대기)
+              await clearVulnerableFacilities();
               clearPriorityConcentration();
               clearAllNearbyRoads();
               renderNearbyStations([]);
@@ -540,9 +533,6 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
               // 선택 상태 초기화
               setSelectedFacilities(new Set());
               priorityStore.clearFacilitySelection();
-
-              // 로컬 상태 업데이트
-              setSelectedNeighborhood(value);
 
               // neighborhood_code 결정
               let neighborhoodCode: string | null = null;
@@ -559,6 +549,9 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
                 administrativeStore.selectedDistrictCode || '230',
                 neighborhoodCode
               );
+
+              // API 완료 후 로컬 상태 업데이트 (useEffect 트리거)
+              setSelectedNeighborhood(value);
             }}
           />
         </div>
