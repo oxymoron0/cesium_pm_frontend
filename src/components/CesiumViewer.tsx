@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Viewer, Ion, Color, Cartesian3, Cartesian2, HeightReference, LabelStyle, VerticalOrigin, UrlTemplateImageryProvider, Terrain, Ellipsoid, SkyAtmosphere, Globe, ShadowMode, MapMode2D, ImageryLayer, Rectangle} from 'cesium';
+import { Viewer, Ion, Color, Cartesian3, Cartesian2, HeightReference, LabelStyle, VerticalOrigin, UrlTemplateImageryProvider, Terrain, Ellipsoid, SkyAtmosphere, Globe, ShadowMode, MapMode2D, ImageryLayer, Rectangle, Scene} from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 
 
@@ -44,6 +44,8 @@ const CesiumViewer = () => {
 
       console.log('[PM Frontend] 독립 Cesium Viewer 생성 시작');
       try {
+        Scene.defaultLogDepthBuffer = false;
+
         const viewer = new Viewer(cesiumContainer.current, {
         // WIDGET SETTING
         geocoder: false,
