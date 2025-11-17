@@ -1,4 +1,4 @@
-import { Cartesian3 } from 'cesium';
+import { Cartesian3, HeadingPitchRange, Math as CesiumMath, Model, PerspectiveFrustum } from 'cesium';
 
 /**
  * Camera Utilities
@@ -100,4 +100,54 @@ export function flyToSearchStation(
   } catch (error) {
     console.error('[flyToSearchStation] Failed to find and fly to station:', error);
   }
+}
+
+/**
+ * 모델의 BoundingSphere를 기반으로 최적의 뷰로 비행하는 내부 함수.
+ * 코드 중복을 방지하고 Model.ready 상태에 따라 호출됩니다.
+ */
+export function flyToBoundingSphere(model: Model, duration: number, pitch: number, rangeMultiplier: number, minRange: number): void {
+    const viewer = window.cviewer;
+    
+    if (!viewer || !viewer.camera) {
+      console.warn('[flyToBoundingSphere] Cesium viewer or camera not available');
+      return;
+    }
+  if (!model.boundingSphere) {
+    console.warn('[GLB Camera] 모델의 BoundingSphere가 없습니다. 카메라 이동을 스킵합니다.');
+    return;
+  }
+
+  const { boundingSphere } = model;
+  const radius = boundingSphere.radius;
+
+  // 1. 모델을 화면에 꽉 채우기 위한 최소 거리 계산 (삼각법)
+  let fov: number;
+
+  // 타입 가드(Type Guard) 추가
+  // 카메라의 frustum이 PerspectiveFrustum 타입인지 확인합니다.
+  if (viewer.camera.frustum instanceof PerspectiveFrustum) {
+    fov = viewer.camera.frustum.fov;
+  } else {
+    // 만약 2D 뷰와 같이 다른 모드일 경우, 기본값(e.g., 60도)을 사용합니다.
+    // 이는 런타임 에러를 방지하는 안전장치입니다.
+    console.warn("[GLB Camera] 카메라가 Perspective 모드가 아닙니다. 기본 FOV(60도)를 사용합니다.");
+    fov = CesiumMath.toRadians(60.0);
+  }
+  const distance = radius / Math.sin(fov / 2);
+
+  // 2. 계산된 거리에 배율을 적용하고, 최소 거리를 보장하여 최종 range 결정
+  const range = Math.max(distance * rangeMultiplier, minRange);
+
+  console.log(`[GLB Camera] 동적 거리 계산 완료. 최종 Range: ${range.toFixed(2)}m`);
+
+  // 3. camera.flyToBoundingSphere를 사용하여 정밀하게 비행
+  viewer.camera.flyToBoundingSphere(boundingSphere, {
+    duration: duration,
+    offset: new HeadingPitchRange(
+      0, // Heading: 북쪽 방향에서 바라봄 (0도)
+      CesiumMath.toRadians(pitch), // Pitch: 지정된 각도로 기울임
+      range // Range: 동적으로 계산된 최종 거리
+    ),
+  });
 }
