@@ -260,16 +260,16 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
           </div>
           <div className="flex items-center gap-0.5 mt-2.5">
             <button
-              onClick={handleStop}
-              disabled={totalFrames <= 0 || isPreloading}
+              onClick={handlePause}
+              disabled={!isPlaying || totalFrames <= 0 || isPreloading}
               className="p-0 bg-transparent border-0 cursor-pointer disabled:opacity-50">
               <Icon name="player_stop" className="w-4 h-4" />
             </button>
             <button
-              onClick={isPlaying ? handlePause : handlePlay}
-              disabled={totalFrames <= 0 || isPreloading}
+              onClick={handlePlay}
+              disabled={isPlaying || totalFrames <= 0 || isPreloading}
               className="p-0 bg-transparent border-0 cursor-pointer disabled:opacity-50">
-              <Icon name={isPlaying ? 'player_pause' : 'player_start'} className="w-5 h-5" />
+              <Icon name="player_start" className="w-5 h-5" />
             </button>
           </div>
         </div>
