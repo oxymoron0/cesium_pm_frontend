@@ -367,13 +367,15 @@ function createBuildingOutlineEntity(
       id: `facility_outline_${facilityId}_${index}`,
       polygon: new PolygonGraphics({
         hierarchy: hierarchy,
-        material: Color.TRANSPARENT, // 투명 채우기
-        outline: true,
-        outlineColor: new ColorMaterialProperty(Color.fromCssColorString(borderColor)),
-        outlineWidth: 3,
-        height: 0,
+        material: Color.fromCssColorString('#FF0040').withAlpha(0.4),
         heightReference: HeightReference.CLAMP_TO_GROUND
       }),
+      polyline: {
+        positions: hierarchy.positions,
+        clampToGround: true,
+        width: 8,
+        material: Color.fromCssColorString('#FF0040'),
+      },
       properties: {
         facilityId: facilityId,
         type: 'building_outline'
@@ -381,10 +383,8 @@ function createBuildingOutlineEntity(
     });
     entities.push(entity);
   });
-
   return entities;
 }
-
 /**
  * 취약 시설들을 Cesium에 렌더링 (Billboard Entity + postRender HTML 태그)
  * @param facilities - 취약 시설 목록
