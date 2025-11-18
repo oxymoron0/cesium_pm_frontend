@@ -573,7 +573,8 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
                 } else {
                   administrativeStore.selectNeighborhood(code);
                 }
-                priorityStore.updateDong(getNeighborhoodName(code));
+                //priorityStore.updateDong(getNeighborhoodName(code));
+                getNeighborhoodName(code);
               }}
               className="flex-1"
               hideLabel
