@@ -3,13 +3,17 @@ import {
   Cartesian3,
   Entity,
   BillboardGraphics,
+  PolygonGraphics,
   ConstantProperty,
   HeightReference,
   Cartographic,
   sampleTerrainMostDetailed,
   SceneMode,
   TerrainProvider,
-  Viewer
+  Viewer,
+  Color,
+  ColorMaterialProperty,
+  PolygonHierarchy
 } from 'cesium';
 
 // --- Type Definitions ---
@@ -28,9 +32,16 @@ export type VulnerableFacility = {
 
 // --- Global State and Constants ---
 const FACILITY_DATASOURCE_NAME = 'vulnerable_facilities';
+const FACILITY_BUILDING_OUTLINE_DATASOURCE_NAME = 'facility_building_outlines';
 const terrainHeightCache = new Map<string, number>();
 const facilityElementsCache = new Map<string, HTMLDivElement>();
 let isFacilityPostRenderListenerAttached = false;
+
+// 건물 윤곽선 타입
+export interface BuildingGeomShape {
+  type: 'MultiPolygon';
+  coordinates: number[][][][];
+}
 
 // --- Utility Functions ---
 
@@ -181,22 +192,6 @@ function createFacilityBillboardEntity(
     // z-index: Cesium Canvas 위에서 다른 UI 요소보다 높게 설정 (Cesium 3D 순위와는 무관)
     element.style.zIndex = '3';
 
-    // 예측 등급에 따른 색상의 네모 박스 HTML
-    const squareMarker = `
-        <div style="position: absolute;
-                    bottom: -15px;
-                    left: 50%;
-                    width: 6px;
-                    height: 6px;
-                    background: none;
-                    border: 2px solid ${styles.borderColor};
-                    transform: translate3d(-50%, 0, 0);
-                    will-change: transform;
-                    backface-visibility: hidden;
-                    -webkit-backface-visibility: hidden;
-                    ">
-        </div>
-    `;
 
     // selectedNeighborhood이 '전체'일 경우 squareMarker만 표시
     // if (selectedNeighborhood === '전체') {
@@ -297,8 +292,6 @@ function createFacilityBillboardEntity(
                     /* transform: translateX(-50%); */
                     z-index: 1;">
         </div>
-
-        ${squareMarker}
       </div>
     `;
     // }
@@ -308,18 +301,14 @@ function createFacilityBillboardEntity(
       viewer.container.appendChild(element);
     }
   }
-
-  // 2. Cesium Entity 생성 (Billboard는 Hitbox 또는 작은 아이콘으로 사용)
+  
   return new Entity({
     id: entityId,
     name: facility.name,
     position: position,
-    billboard: new BillboardGraphics({
-      image: new ConstantProperty('./icon/small_yellow_square.svg'), // 적절한 이미지 경로
-      width: new ConstantProperty(1), // 매우 작게 설정하여 HTML이 주도하게 함
-      height: new ConstantProperty(1), // 매우 작게 설정하여 HTML이 주도하게 함
-      heightReference: new ConstantProperty(HeightReference.CLAMP_TO_GROUND),
-    }),
+    polygon: {
+      heightReference: HeightReference.CLAMP_TO_GROUND,
+    },
 
     properties: {
       facilityId: facilityId,
@@ -332,10 +321,78 @@ function createFacilityBillboardEntity(
 // --- Exported Functions ---
 
 /**
+ * MultiPolygon 좌표를 Cesium PolygonHierarchy 배열로 변환
+ */
+function createPolygonHierarchiesFromMultiPolygon(
+  multiPolygonCoords: number[][][][]
+): PolygonHierarchy[] {
+  const hierarchies: PolygonHierarchy[] = [];
+
+  for (const polygonRings of multiPolygonCoords) {
+    if (polygonRings.length === 0) continue;
+
+    // 첫 번째 ring은 외곽선 (exterior)
+    const exteriorRing = polygonRings[0];
+    const exteriorPositions = exteriorRing.map(([lng, lat]) =>
+      Cartesian3.fromDegrees(lng, lat)
+    );
+
+    // 나머지 ring들은 구멍 (holes)
+    const holes = polygonRings.slice(1).map(holeRing =>
+      new PolygonHierarchy(
+        holeRing.map(([lng, lat]) => Cartesian3.fromDegrees(lng, lat))
+      )
+    );
+
+    const hierarchy = new PolygonHierarchy(exteriorPositions, holes);
+    hierarchies.push(hierarchy);
+  }
+
+  return hierarchies;
+}
+
+/**
+ * 주 건물 윤곽선 Entity 생성
+ */
+function createBuildingOutlineEntity(
+  facilityId: string,
+  geomShape: BuildingGeomShape,
+  borderColor: string
+): Entity[] {
+  const entities: Entity[] = [];
+  const hierarchies = createPolygonHierarchiesFromMultiPolygon(geomShape.coordinates);
+
+  hierarchies.forEach((hierarchy, index) => {
+    const entity = new Entity({
+      id: `facility_outline_${facilityId}_${index}`,
+      polygon: new PolygonGraphics({
+        hierarchy: hierarchy,
+        material: Color.TRANSPARENT, // 투명 채우기
+        outline: true,
+        outlineColor: new ColorMaterialProperty(Color.fromCssColorString(borderColor)),
+        outlineWidth: 3,
+        height: 0,
+        heightReference: HeightReference.CLAMP_TO_GROUND
+      }),
+      properties: {
+        facilityId: facilityId,
+        type: 'building_outline'
+      }
+    });
+    entities.push(entity);
+  });
+
+  return entities;
+}
+
+/**
  * 취약 시설들을 Cesium에 렌더링 (Billboard Entity + postRender HTML 태그)
+ * @param facilities - 취약 시설 목록
+ * @param buildingGeomMap - 시설 ID별 건물 형상 맵 (optional)
  */
 export async function renderVulnerableFacilities(
-  facilities: VulnerableFacility[]
+  facilities: VulnerableFacility[],
+  buildingGeomMap?: Map<string, { geomShape: BuildingGeomShape; borderColor: string }>
 ): Promise<void> {
   try {
     const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
@@ -372,6 +429,26 @@ export async function renderVulnerableFacilities(
       dataSource.entities.add(entity);
     });
 
+    // 건물 윤곽선 렌더링 (buildingGeomMap이 제공된 경우)
+    if (buildingGeomMap && buildingGeomMap.size > 0) {
+      const buildingOutlineDataSource = await createGeoJsonDataSource(FACILITY_BUILDING_OUTLINE_DATASOURCE_NAME);
+      buildingOutlineDataSource.entities.removeAll();
+
+      facilities.forEach(facility => {
+        const buildingGeom = buildingGeomMap.get(facility.id);
+        if (buildingGeom) {
+          const outlineEntities = createBuildingOutlineEntity(
+            facility.id,
+            buildingGeom.geomShape,
+            buildingGeom.borderColor
+          );
+          outlineEntities.forEach(entity => buildingOutlineDataSource.entities.add(entity));
+        }
+      });
+
+      console.log(`[renderVulnerableFacilities] Rendered ${buildingOutlineDataSource.entities.values.length} building outlines`);
+    }
+
     // 실시간 위치 업데이트 리스너 등록 (핵심!)
     attachFacilityPostRenderListener();
 
@@ -407,6 +484,7 @@ export async function clearVulnerableFacilities(): Promise<void> {
     // 캐시 및 DataSource 정리
     facilityElementsCache.clear();
     await clearDataSource(FACILITY_DATASOURCE_NAME);
+    await clearDataSource(FACILITY_BUILDING_OUTLINE_DATASOURCE_NAME);
     terrainHeightCache.clear();
 
   } catch (error) {

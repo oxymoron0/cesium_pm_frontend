@@ -56,7 +56,6 @@ function createRoadEntity(feature: RoadFeature, facilityId: string): Entity[] {
         material: new ColorMaterialProperty(ROAD_STYLES.color),
         outline: ROAD_STYLES.outline,
         outlineColor: new ColorMaterialProperty(ROAD_STYLES.outlineColor),
-        height: 0.5, // 지면 위 0.5미터 (z-fighting 방지)
         extrudedHeight: undefined, // 돌출 높이 없음 (평면)
         heightReference: HeightReference.CLAMP_TO_GROUND
       }),
