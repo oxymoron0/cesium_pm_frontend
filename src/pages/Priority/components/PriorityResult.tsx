@@ -59,6 +59,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
   const [selectedFacilities, setSelectedFacilities] = useState<Set<string>>(new Set());
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('');
   const [selectDropdownValue, setSelectDropdownValue] = useState<string>('');
+  const [isRenderingFacilities, setIsRenderingFacilities] = useState(false);
 
   // API에서 가져온 취약시설 데이터 사용 (very-bad, bad 등급만 필터링)
   // observer 컴포넌트는 MobX가 자동으로 추적하므로 useMemo 불필요
@@ -153,7 +154,8 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
         endDateStr
       );
 
-      renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData);
+      await renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData);
+      setIsRenderingFacilities(true);
     };
 
     initialize();
@@ -222,11 +224,14 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
   // facilities 변경 시 렌더링
   useEffect(() => {
-    if (facilities.length > 0) {
-      renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData);
-    } else {
-      console.log('[PriorityResult] No facilities to render');
-    }
+    const render = async () => {
+      if (facilities.length > 0) {
+        await renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData);
+      } else {
+        console.log('[PriorityResult] No facilities to render');
+      }
+    };
+    render();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facilitiesKey]);
 
@@ -535,7 +540,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
             </div>
 
             {/* 테이블 데이터 */}
-            {facilities.map((facility) => {
+            {isRenderingFacilities && facilities.map((facility) => {
               const levelStyle = getLevelStyle(facility.predictedLevel);
               const isSelected = selectedFacilities.has(facility.id);
 
