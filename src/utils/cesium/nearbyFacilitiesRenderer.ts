@@ -128,8 +128,18 @@ function updateFacilityHtmlElementPositions(): void {
       return;
     }
 
-    // 2. 3D 좌표를 2D 화면 좌표로 변환
-    const screenPosition = scene.cartesianToCanvasCoordinates(cartesianPosition);
+    // 건물 높이만큼 위로 올린 위치 계산
+    const cartographic = Cartographic.fromCartesian(cartesianPosition);
+    const buildingHeight = 25; // 건물 높이 (미터)
+    cartographic.height += buildingHeight;
+    const adjustedPosition = Cartesian3.fromRadians(
+      cartographic.longitude,
+      cartographic.latitude,
+      cartographic.height
+    );
+
+    // 2. 조정된 3D 좌표를 2D 화면 좌표로 변환
+    const screenPosition = scene.cartesianToCanvasCoordinates(adjustedPosition);
 
     if (screenPosition) {
       // 3. 화면 좌표 업데이트
@@ -159,10 +169,9 @@ function attachFacilityPostRenderListener(): void {
 }
 
 /**
- * 취약 시설 Billboard Entity 생성 및 HTML 엘리먼트 생성/추가
- * - 박스를 살짝 올리고 표시용 화살표 추가 반영
+ * 취약 시설 Entity 생성 (HTML 제외)
  */
-function createFacilityBillboardEntity(
+function createFacilityEntity(
   facility: VulnerableFacility
 ): Entity {
   const [lng, lat] = facility.geometry.coordinates;
@@ -172,11 +181,33 @@ function createFacilityBillboardEntity(
   // Terrain 높이 적용 + 태그가 지면 위로 뜨도록 약간의 오프셋 (1m)
   const key = `${lng.toFixed(6)}_${lat.toFixed(6)}`;
   const cachedHeight = terrainHeightCache.get(key) || 0;
-  const position = Cartesian3.fromDegrees(lng, lat, cachedHeight + 1); // 지면보다 살짝 위에
+  const position = Cartesian3.fromDegrees(lng, lat, cachedHeight + 1);
 
+  return new Entity({
+    id: entityId,
+    name: facility.name,
+    position: position,
+    polygon: {
+      heightReference: HeightReference.CLAMP_TO_GROUND,
+    },
+    properties: {
+      facilityId: facilityId,
+      facilityName: facility.name,
+      isFacility: true
+    }
+  });
+}
+
+/**
+ * 취약 시설 HTML 엘리먼트 생성
+ */
+function createFacilityHtmlElement(facility: VulnerableFacility): void {
+  const facilityId = facility.id;
+  const entityId = `facility_${facilityId}`;
   const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
 
-  // 1. HTML 엘리먼트 생성 및 캐시
+  if (!viewer) return;
+
   let element = facilityElementsCache.get(entityId);
   const styles = getLevelStyle(facility.predictedLevel);
 
@@ -184,35 +215,13 @@ function createFacilityBillboardEntity(
     element = document.createElement('div');
     element.id = `html_tag_${entityId}`;
     element.style.position = 'absolute';
-    // Pointer Events 변경: 기본적으로 마우스 이벤트를 통과시킵니다.
     element.style.pointerEvents = 'none';
     element.style.whiteSpace = 'nowrap';
     element.style.overflow = 'visible';
     element.style.display = 'none';
-    // z-index: Cesium Canvas 위에서 다른 UI 요소보다 높게 설정 (Cesium 3D 순위와는 무관)
     element.style.zIndex = '3';
 
-
-    // selectedNeighborhood이 '전체'일 경우 squareMarker만 표시
-    // if (selectedNeighborhood === '전체') {
-    //   element.innerHTML = `
-    //     <div class="absolute top-0 left-0 z-10 w-full h-full overflow-visible pointer-events-none whitespace-nowrap"
-    //          data-facility-id="${facilityId}"
-    //          style="position: relative;
-    //                 display: flex;
-    //                 flex-direction: column;
-    //                 align-items: center;
-    //                 transform: translate3d(-50%, -50%, 0);
-    //                 will-change: transform;
-    //                 backface-visibility: hidden;
-    //                 -webkit-backface-visibility: hidden;
-    //                 user-select: none;">
-    //       ${squareMarker}
-    //     </div>
-    //   `;
-    // } else {
-      // HTML 구조 (화살표 추가)
-      element.innerHTML = `
+    element.innerHTML = `
       <div class="absolute top-0 left-0 z-10 w-full h-full overflow-visible pointer-events-none whitespace-nowrap"
             data-facility-id="${facilityId}"
             style="position: relative;
@@ -283,39 +292,19 @@ function createFacilityBillboardEntity(
 
         <div style="width: 0;
                     height: 0;
-                    border-left: 8px solid transparent; /* 삼각형 너비 조절 */
-                    border-right: 8px solid transparent; /* 삼각형 너비 조절 */
-                    border-top: 10px solid #C4C6C6; /* 삼각형 높이, 배경색과 동일 */
-                    /* position: absolute; */ /* 부모 요소가 flex이므로 필요 없음 */
-                    /* bottom: -10px; */ /* 부모 요소의 transform에 의해 위치 조정 */
-                    /* left: 50%; */
-                    /* transform: translateX(-50%); */
+                    border-left: 8px solid transparent;
+                    border-right: 8px solid transparent;
+                    border-top: 10px solid #C4C6C6;
                     z-index: 1;">
         </div>
       </div>
     `;
-    // }
 
     facilityElementsCache.set(entityId, element);
-    if (viewer && viewer.container) {
+    if (viewer.container) {
       viewer.container.appendChild(element);
     }
   }
-  
-  return new Entity({
-    id: entityId,
-    name: facility.name,
-    position: position,
-    polygon: {
-      heightReference: HeightReference.CLAMP_TO_GROUND,
-    },
-
-    properties: {
-      facilityId: facilityId,
-      facilityName: facility.name,
-      isFacility: true
-    }
-  });
 }
 
 // --- Exported Functions ---
@@ -388,11 +377,11 @@ function createBuildingOutlineEntity(
 /**
  * 취약 시설들을 Cesium에 렌더링 (Billboard Entity + postRender HTML 태그)
  * @param facilities - 취약 시설 목록
- * @param buildingGeomMap - 시설 ID별 건물 형상 맵 (optional)
+ * @param vulnerableFacilitiesApiData - 취약시설 API 응답 데이터 (optional)
  */
 export async function renderVulnerableFacilities(
   facilities: VulnerableFacility[],
-  buildingGeomMap?: Map<string, { geomShape: BuildingGeomShape; borderColor: string }>
+  vulnerableFacilitiesApiData?: any
 ): Promise<void> {
   try {
     const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
@@ -412,25 +401,39 @@ export async function renderVulnerableFacilities(
     // 기존 entities 완전 제거 (중복 방지)
     dataSource.entities.removeAll();
 
-    // 기존 HTML elements 제거 (중복 방지)
-    facilityElementsCache.forEach((element) => {
-      if (viewer && viewer.container && element.parentNode === viewer.container) {
-        viewer.container.removeChild(element);
-      }
-    });
-    facilityElementsCache.clear();
-
     // Terrain 높이 샘플링
     await sampleTerrainForVulnerableFacilities(facilities);
 
-    // Entity 및 HTML 엘리먼트 생성
+    // Entity만 생성 (HTML은 별도로 생성)
     facilities.forEach(facility => {
-      const entity = createFacilityBillboardEntity(facility);
+      const entity = createFacilityEntity(facility);
       dataSource.entities.add(entity);
     });
 
-    // 건물 윤곽선 렌더링 (buildingGeomMap이 제공된 경우)
-    if (buildingGeomMap && buildingGeomMap.size > 0) {
+    // 건물 형상 정보 Map 생성 (내부에서 생성)
+    const buildingGeomMap = new Map<string, { geomShape: BuildingGeomShape; borderColor: string }>();
+
+    if (vulnerableFacilitiesApiData) {
+      // 모든 등급에서 건물 형상 정보 추출
+      Object.values(vulnerableFacilitiesApiData.facilities_by_grade).forEach((facilityArray: any) => {
+        facilityArray?.forEach((facility: any) => {
+          if (facility.geom_shape && facility.geom_shape.coordinates) {
+            // 해당 시설의 예측 등급에 따른 색상 가져오기
+            const vulnerableFacility = facilities.find(f => f.id === facility.id.toString());
+            if (vulnerableFacility) {
+              const levelStyle = getLevelStyle(vulnerableFacility.predictedLevel);
+              buildingGeomMap.set(facility.id.toString(), {
+                geomShape: facility.geom_shape,
+                borderColor: levelStyle.borderColor
+              });
+            }
+          }
+        });
+      });
+    }
+
+    // 건물 윤곽선 렌더링 (buildingGeomMap이 생성된 경우)
+    if (buildingGeomMap.size > 0) {
       const buildingOutlineDataSource = await createGeoJsonDataSource(FACILITY_BUILDING_OUTLINE_DATASOURCE_NAME);
       buildingOutlineDataSource.entities.removeAll();
 
@@ -449,10 +452,7 @@ export async function renderVulnerableFacilities(
       console.log(`[renderVulnerableFacilities] Rendered ${buildingOutlineDataSource.entities.values.length} building outlines`);
     }
 
-    // 실시간 위치 업데이트 리스너 등록 (핵심!)
-    attachFacilityPostRenderListener();
-
-    console.log(`[renderVulnerableFacilities] Successfully rendered ${facilities.length} facilities.`);
+    console.log(`[renderVulnerableFacilities] Successfully rendered ${facilities.length} facilities (entities only).`);
 
   } catch (error) {
     console.error('[renderVulnerableFacilities] Failed to render facilities:', error);
@@ -489,5 +489,60 @@ export async function clearVulnerableFacilities(): Promise<void> {
 
   } catch (error) {
     console.error('[clearVulnerableFacilities] Failed to clear facilities:', error);
+  }
+}
+
+/**
+ * 취약 시설 HTML 태그 표시
+ * @param facilities - 표시할 취약 시설 목록
+ */
+export function showFacilityHtmlTags(facilities: VulnerableFacility[]): void {
+  try {
+    console.log('[showFacilityHtmlTags] Showing HTML tags for facilities');
+
+    // HTML 엘리먼트 생성
+    facilities.forEach(facility => {
+      createFacilityHtmlElement(facility);
+    });
+
+    // PostRender 리스너 등록
+    attachFacilityPostRenderListener();
+
+    console.log(`[showFacilityHtmlTags] Successfully showed ${facilities.length} facility HTML tags`);
+  } catch (error) {
+    console.error('[showFacilityHtmlTags] Failed to show facility HTML tags:', error);
+  }
+}
+
+/**
+ * 취약 시설 HTML 태그 숨김
+ */
+export function hideFacilityHtmlTags(): void {
+  try {
+    console.log('[hideFacilityHtmlTags] Hiding facility HTML tags');
+
+    const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
+    if (viewer && viewer.container) {
+      // HTML 엘리먼트 제거
+      facilityElementsCache.forEach(element => {
+        if (element.parentNode === viewer.container) {
+          viewer.container.removeChild(element);
+        }
+      });
+
+      // PostRender 리스너 제거
+      if (isFacilityPostRenderListenerAttached) {
+        viewer.scene.postRender.removeEventListener(updateFacilityHtmlElementPositions);
+        isFacilityPostRenderListenerAttached = false;
+        console.log('[hideFacilityHtmlTags] PostRender listener removed.');
+      }
+    }
+
+    // 캐시 정리
+    facilityElementsCache.clear();
+
+    console.log('[hideFacilityHtmlTags] Successfully hid facility HTML tags');
+  } catch (error) {
+    console.error('[hideFacilityHtmlTags] Failed to hide facility HTML tags:', error);
   }
 }

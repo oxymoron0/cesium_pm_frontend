@@ -225,9 +225,6 @@ export function clearNearbyBuildingFacilitiesForFacility(facilityId: string): vo
       entitiesToRemove.forEach(entity => buildingDataSource.entities.remove(entity));
     }
 
-    // 건물 제거 후 depth test 비활성화
-    viewer.scene.globe.depthTestAgainstTerrain = false;
-
     console.log(`[clearNearbyBuildingFacilitiesForFacility] Cleared building facilities for facility ${facilityId}`);
   } catch (error) {
     console.error('[clearNearbyBuildingFacilitiesForFacility] Failed to clear building facilities:', error);

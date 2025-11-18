@@ -5,8 +5,8 @@ import Spacer from '@/components/basic/Spacer';
 import Button from '@/components/basic/Button';
 import DongDropdown from './DongDropdown';
 import NearbyStationList from './NearbyStationList';
-import { renderNearbyStations } from '@/utils/cesium/nearbyStationRenderer';
-import { renderVulnerableFacilities, clearVulnerableFacilities } from '@/utils/cesium/nearbyFacilitiesRenderer';
+import { renderNearbyStations, clearNearStations } from '@/utils/cesium/nearbyStationRenderer';
+import { renderVulnerableFacilities, clearVulnerableFacilities, showFacilityHtmlTags, hideFacilityHtmlTags } from '@/utils/cesium/nearbyFacilitiesRenderer';
 import { renderPriorityConcentration, clearPriorityConcentration } from '@/utils/cesium/priorityConcentrationRenderer';
 import { renderNearbyRoadsForFacility, clearNearbyRoadsForFacility, clearAllNearbyRoads } from '@/utils/cesium/nearbyRoadRenderer';
 import { renderNearbyBuildingFacilitiesForFacility, clearNearbyBuildingFacilitiesForFacility, clearAllNearbyBuildingFacilities } from '@/utils/cesium/nearbyBuildingFacilitiesRenderer';
@@ -68,6 +68,8 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
   // facilities의 변경을 안정적으로 추적하기 위한 키
   const facilitiesKey = `${facilities.length}-${facilities.map(f => f.id).join(',')}`;
+
+  console.log('[PriorityResult] Render - facilities count:', facilities.length);
 
   // 최초 마운트시 행정구역 읍/면/동 설정값 세팅
   useEffect(() => {
@@ -137,6 +139,13 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       const startDateStr = startDate.toISOString().split('T')[0];
       const endDateStr = endDate.toISOString().split('T')[0];
 
+      // 취약시설 데이터 로드
+      await priorityStore.searchPriorityFacilities(
+        administrativeStore.selectedProvinceCode || '26',
+        administrativeStore.selectedDistrictCode || '230',
+        null // 초기에는 전체 조회
+      );
+
       // PriorityStore의 통합 초기화 메서드 호출
       await priorityStore.initializePriorityResultData(
         allStations,
@@ -144,7 +153,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
         endDateStr
       );
 
-      console.log('[PriorityResult] All data initialization completed');
+      renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData);
     };
 
     initialize();
@@ -153,9 +162,11 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       priorityStore.closeDropdown();
       clearAdministrativeBoundary();
       clearVulnerableFacilities();
-      clearPriorityConcentration();
+      // clearPriorityConcentration();
       clearAllNearbyRoads();
       clearAllNearbyBuildingFacilities();
+      clearNearStations();
+      hideFacilityHtmlTags();
     };
   }, [config]);
 
@@ -212,31 +223,9 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
   // facilities 변경 시 렌더링
   useEffect(() => {
     if (facilities.length > 0) {
-      // 건물 형상 정보 Map 생성
-      const buildingGeomMap = new Map<string, { geomShape: any; borderColor: string }>();
-
-      if (priorityStore.vulnerableFacilitiesApiData) {
-        const apiData = priorityStore.vulnerableFacilitiesApiData;
-
-        // 모든 등급에서 건물 형상 정보 추출
-        Object.values(apiData.facilities_by_grade).forEach(facilityArray => {
-          facilityArray?.forEach(facility => {
-            if (facility.geom_shape && facility.geom_shape.coordinates) {
-              // 해당 시설의 예측 등급에 따른 색상 가져오기
-              const vulnerableFacility = facilities.find(f => f.id === facility.id.toString());
-              if (vulnerableFacility) {
-                const levelStyle = getLevelStyle(vulnerableFacility.predictedLevel);
-                buildingGeomMap.set(facility.id.toString(), {
-                  geomShape: facility.geom_shape,
-                  borderColor: levelStyle.bg
-                });
-              }
-            }
-          });
-        });
-      }
-
-      renderVulnerableFacilities(facilities, buildingGeomMap);
+      renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData);
+    } else {
+      console.log('[PriorityResult] No facilities to render');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facilitiesKey]);
@@ -255,7 +244,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
         latitude: facility.geometry.coordinates[1],
         concentration: facility.predictedConcentration
       }));
-      renderPriorityConcentration(concentrationPoints);
+      // renderPriorityConcentration(concentrationPoints);
     }
     // cleanup은 컴포넌트 unmount 시에만 실행
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -297,6 +286,16 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
     // Store의 선택 상태도 업데이트 (주변 정류장 표시용)
     priorityStore.toggleFacilitySelection(id);
     renderNearbyStations(priorityStore.selectedStations);
+
+    // 선택된 시설들의 HTML 태그 표시/숨김
+    if (newSet.size > 0) {
+      const selectedFacilityObjects = facilities.filter(f => newSet.has(f.id));
+      showFacilityHtmlTags(selectedFacilityObjects);
+    } else {
+      hideFacilityHtmlTags();
+    }
+
+    renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData);
   };
 
   const toggleAll = async () => {
@@ -307,6 +306,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       renderNearbyStations([]);
       clearAllNearbyRoads();
       clearAllNearbyBuildingFacilities();
+      hideFacilityHtmlTags();
     } else {
       // 전체 선택
       const allIds = facilities.map(f => f.id);
@@ -340,6 +340,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       });
 
       renderNearbyStations(priorityStore.selectedStations);
+      showFacilityHtmlTags(facilities);
     }
   };
 
@@ -428,10 +429,10 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
               // 기존 렌더링 클리어 (비동기 작업 완료 대기)
               await clearVulnerableFacilities();
-              clearPriorityConcentration();
+              // clearPriorityConcentration();
               clearAllNearbyRoads();
               clearAllNearbyBuildingFacilities();
-              renderNearbyStations([]);
+              hideFacilityHtmlTags();
 
               // 선택 상태 초기화
               setSelectedFacilities(new Set());
