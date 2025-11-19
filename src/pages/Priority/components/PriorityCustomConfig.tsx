@@ -110,11 +110,11 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
     return '부산진구'; // 부산진구로 고정
   };
 
-  const getNeighborhoodName = (shortCode: string) => {
-    if (shortCode === 'all') return '전체';
-    const neighborhood = administrativeStore.neighborhoods.find(n => n.code.substring(5) === shortCode);
-    return neighborhood?.name || '';
-  };
+  // const getNeighborhoodName = (shortCode: string) => {
+  //   if (shortCode === 'all') return '전체';
+  //   const neighborhood = administrativeStore.neighborhoods.find(n => n.code.substring(5) === shortCode);
+  //   return neighborhood?.name || '';
+  // };
 
   // Render administrative boundary when district or neighborhood changes (주소 조회 모드)
   useEffect(() => {
@@ -272,16 +272,13 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
   }, [locationMode]);
 
   // Helper to calculate center of MultiPolygon
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const calculateCenter = (geometry: any) => {
+  const calculateCenter = (geometry: { coordinates: number[][][][] }) => {
     let totalLng = 0;
     let totalLat = 0;
     let totalPoints = 0;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    geometry.coordinates.forEach((polygon: any) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      polygon[0].forEach((coord: any) => {
+    geometry.coordinates.forEach((polygon) => {
+      polygon[0].forEach((coord) => {
         totalLng += coord[0];
         totalLat += coord[1];
         totalPoints++;
@@ -358,7 +355,7 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
             >
               날짜
             </p>
-            <div className="flex-1 relative">
+            <div className="relative flex-1">
               <div
                 className="flex items-center gap-1 px-3 py-1 bg-black rounded border border-[#696A6A] cursor-pointer"
                 onClick={() => setShowDatePicker(!showDatePicker)}
@@ -400,7 +397,7 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
             >
               시간
             </p>
-            <div className="flex-1 relative">
+            <div className="relative flex-1">
               <div
                 className="flex items-center gap-1 px-3 py-1 bg-black rounded border border-[#696A6A] cursor-pointer"
                 onClick={() => setShowTimePicker(!showTimePicker)}
@@ -456,7 +453,7 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
         </div>
 
         {/* 주소 조회 / 위치 지정 토글 버튼 */}
-        <div className="flex gap-3 h-10 self-stretch">
+        <div className="flex self-stretch h-10 gap-3">
           <button
             className={`flex-1 rounded-[19px] flex items-center justify-center px-4 py-[10px] cursor-pointer ${
               locationMode === 'address'
@@ -501,8 +498,8 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
 
         {/* 행정구역 Select - 주소 조회 모드일 때만 표시 */}
         {locationMode === 'address' && (
-        <div className="flex gap-3 items-center self-stretch">
-          <div className="flex flex-1 gap-2 h-8 items-center">
+        <div className="flex items-center self-stretch gap-3">
+          <div className="flex items-center flex-1 h-8 gap-2">
             <p
               style={{
                 fontFamily: 'Pretendard',
@@ -574,7 +571,7 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
                   administrativeStore.selectNeighborhood(code);
                 }
                 //priorityStore.updateDong(getNeighborhoodName(code));
-                getNeighborhoodName(code);
+                // getNeighborhoodName(code);
               }}
               className="flex-1"
               hideLabel
@@ -595,7 +592,7 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
       {/* 로딩 표시 - 위치 지정 모드에서만 임시사용 */}
       {locationMode === 'point' && administrativeStore.loading && (
         <div className="flex items-center justify-center p-4 bg-[#1A1A1A] rounded-lg">
-          <div className="animate-pulse text-white text-sm">
+          <div className="text-sm text-white animate-pulse">
             읍면동 경계를 불러오는 중...
           </div>
         </div>

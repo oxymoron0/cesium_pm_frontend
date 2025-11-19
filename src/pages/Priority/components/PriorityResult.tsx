@@ -294,6 +294,18 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       if (roadData) {
         await renderNearbyRoadsForFacility(id, roadData);
         console.log(`[toggleFacility] Rendered ${roadData.total} road segments for facility ${id}`);
+        try {
+          // 도로명 추출 및 Store에 저장
+          const roadNames = new Set<string>();
+          roadData.features.forEach(feature => {
+            roadNames.add(feature.properties.rn);
+          });
+          priorityStore.setNearbyRoadNames(id, roadNames);
+
+          console.log(`[toggleFacility] Rendered ${roadData.total} road segments (${roadNames.size} unique roads) for facility ${id}`);
+        } catch (error) {
+          console.error(`[toggleFacility] Failed to search/render roads for facility ${id}:`, error);
+        }
       }
 
       // Store에서 캐시된 건물 데이터 가져와서 렌더링
@@ -341,7 +353,15 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
         const roadData = priorityStore.getRoadData(facility.id);
         if (roadData) {
           await renderNearbyRoadsForFacility(facility.id, roadData);
-          console.log(`[toggleAll] Rendered ${roadData.total} roads for facility ${facility.id}`);
+          
+          // 도로명 추출 및 Store에 저장
+          const roadNames = new Set<string>();
+          roadData.features.forEach(feature => {
+            roadNames.add(feature.properties.rn);
+          });
+          priorityStore.setNearbyRoadNames(facility.id, roadNames);
+
+          console.log(`[toggleAll] Rendered ${roadData.total} roads (${roadNames.size} unique) for facility ${facility.id}`);
         }
       });
       await Promise.all(roadRenderPromises);
