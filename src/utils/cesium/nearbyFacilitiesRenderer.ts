@@ -1,10 +1,9 @@
+import type { BuildingFacilityData, VulnerableFacilitiesApiResponse } from '@/pages/Priority/types';
 import { createGeoJsonDataSource, clearDataSource } from './datasources';
 import {
   Cartesian3,
   Entity,
-  BillboardGraphics,
   PolygonGraphics,
-  ConstantProperty,
   HeightReference,
   Cartographic,
   sampleTerrainMostDetailed,
@@ -12,7 +11,6 @@ import {
   TerrainProvider,
   Viewer,
   Color,
-  ColorMaterialProperty,
   PolygonHierarchy
 } from 'cesium';
 
@@ -346,7 +344,7 @@ function createPolygonHierarchiesFromMultiPolygon(
 function createBuildingOutlineEntity(
   facilityId: string,
   geomShape: BuildingGeomShape,
-  borderColor: string
+  // borderColor: string
 ): Entity[] {
   const entities: Entity[] = [];
   const hierarchies = createPolygonHierarchiesFromMultiPolygon(geomShape.coordinates);
@@ -381,7 +379,7 @@ function createBuildingOutlineEntity(
  */
 export async function renderVulnerableFacilities(
   facilities: VulnerableFacility[],
-  vulnerableFacilitiesApiData?: any
+  vulnerableFacilitiesApiData?: VulnerableFacilitiesApiResponse
 ): Promise<void> {
   try {
     const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
@@ -415,8 +413,8 @@ export async function renderVulnerableFacilities(
 
     if (vulnerableFacilitiesApiData) {
       // 모든 등급에서 건물 형상 정보 추출
-      Object.values(vulnerableFacilitiesApiData.facilities_by_grade).forEach((facilityArray: any) => {
-        facilityArray?.forEach((facility: any) => {
+      Object.values(vulnerableFacilitiesApiData.facilities_by_grade).forEach((facilityArray: BuildingFacilityData[]) => {
+        facilityArray?.forEach((facility: BuildingFacilityData) => {
           if (facility.geom_shape && facility.geom_shape.coordinates) {
             // 해당 시설의 예측 등급에 따른 색상 가져오기
             const vulnerableFacility = facilities.find(f => f.id === facility.id.toString());
@@ -443,7 +441,7 @@ export async function renderVulnerableFacilities(
           const outlineEntities = createBuildingOutlineEntity(
             facility.id,
             buildingGeom.geomShape,
-            buildingGeom.borderColor
+            // buildingGeom.borderColor
           );
           outlineEntities.forEach(entity => buildingOutlineDataSource.entities.add(entity));
         }

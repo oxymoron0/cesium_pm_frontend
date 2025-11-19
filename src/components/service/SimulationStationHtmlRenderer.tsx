@@ -140,41 +140,41 @@ const SimulationStationHtmlRenderer = () => {
   }, []);
 
   // ===== HEX -> RGB / LUT =====
-  const LEGEND_COLORS = [
-    '#253494', // 짙은 파랑 (0)
-    '#2c7fb8', // 밝은 파랑
-    '#41b6c4', // 청록
-    '#a1dab4', // 연한 청록
-    '#ffffcc', // 연노랑 (중간)
-    '#fee391', // 노랑
-    '#fec44f', // 주황
-    '#fe9929', // 진한 주황
-    '#ec7014', // 붉은 주황
-    '#cc4c02', // 짙은 붉은색 (100)
-  ];
-  const hexToRgb = (hex: string) => {
-    const h = hex.replace('#', '');
-    const bigint = parseInt(h, 16);
-    return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255] as const;
-  };
-  const ensureColorLUT = () => {
-    if (colorLUTRef.current) return;
-    const stops = LEGEND_COLORS.map(hexToRgb);
-    const lut = new Uint8ClampedArray(256 * 4);
-    for (let i = 0; i < 256; i++) {
-      const t = i / 255;
-      const seg = Math.min(stops.length - 2, Math.floor(t * (stops.length - 1)));
-      const localT = (t * (stops.length - 1)) - seg;
-      const [r1, g1, b1] = stops[seg];
-      const [r2, g2, b2] = stops[seg + 1];
-      const r = Math.round(r1 + (r2 - r1) * localT);
-      const g = Math.round(g1 + (g2 - g1) * localT);
-      const b = Math.round(b1 + (b2 - b1) * localT);
-      const idx = i * 4;
-      lut[idx] = r; lut[idx + 1] = g; lut[idx + 2] = b; lut[idx + 3] = i; // alpha = index
-    }
-    colorLUTRef.current = lut;
-  };
+  // const LEGEND_COLORS = [
+  //   '#253494', // 짙은 파랑 (0)
+  //   '#2c7fb8', // 밝은 파랑
+  //   '#41b6c4', // 청록
+  //   '#a1dab4', // 연한 청록
+  //   '#ffffcc', // 연노랑 (중간)
+  //   '#fee391', // 노랑
+  //   '#fec44f', // 주황
+  //   '#fe9929', // 진한 주황
+  //   '#ec7014', // 붉은 주황
+  //   '#cc4c02', // 짙은 붉은색 (100)
+  // ];
+  // const hexToRgb = (hex: string) => {
+  //   const h = hex.replace('#', '');
+  //   const bigint = parseInt(h, 16);
+  //   return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255] as const;
+  // };
+  // const ensureColorLUT = () => {
+  //   if (colorLUTRef.current) return;
+  //   const stops = LEGEND_COLORS.map(hexToRgb);
+  //   const lut = new Uint8ClampedArray(256 * 4);
+  //   for (let i = 0; i < 256; i++) {
+  //     const t = i / 255;
+  //     const seg = Math.min(stops.length - 2, Math.floor(t * (stops.length - 1)));
+  //     const localT = (t * (stops.length - 1)) - seg;
+  //     const [r1, g1, b1] = stops[seg];
+  //     const [r2, g2, b2] = stops[seg + 1];
+  //     const r = Math.round(r1 + (r2 - r1) * localT);
+  //     const g = Math.round(g1 + (g2 - g1) * localT);
+  //     const b = Math.round(b1 + (b2 - b1) * localT);
+  //     const idx = i * 4;
+  //     lut[idx] = r; lut[idx + 1] = g; lut[idx + 2] = b; lut[idx + 3] = i; // alpha = index
+  //   }
+  //   colorLUTRef.current = lut;
+  // };
 
   // ===== 캔버스 준비/리사이즈 =====
   // const ensureHeatCanvas = useCallback(() => {
