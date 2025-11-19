@@ -71,7 +71,6 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
     // 이미 켜져 있으면 → 제거 후 종료
     if (glbModel) {
       viewer!.scene.primitives.remove(glbModel);
-      console.log("[GLB] 제거됨");
       glbModel = null;
       return;
     }
@@ -93,7 +92,6 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
     viewer!.scene.primitives.add(model);
     glbModel = model;
 
-    console.log("[GLB] 생성됨 / 토글 ON");
   };
   // ------------------------------glb 테스트 로직 ------------------------
 
@@ -105,8 +103,6 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
   // facilities의 변경을 안정적으로 추적하기 위한 키
   const facilitiesKey = `${facilities.length}-${facilities.map(f => f.id).join(',')}`;
-
-  console.log('[PriorityResult] Render - facilities count:', facilities.length);
 
   // 최초 마운트시 행정구역 읍/면/동 설정값 세팅
   useEffect(() => {
@@ -146,19 +142,16 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
       // RouteStore와 StationStore 초기화 (주변 정류장 검색을 위해 필요)
       if (routeStore.routeInfoList.length === 0) {
-        console.log('[PriorityResult] Initializing RouteStore and StationStore');
         await routeStore.initializeRouteData();
 
         // 모든 노선에 대해 정류장 데이터 로드
         const routeNames = Array.from(routeStore.routeGeomMap.keys());
         if (routeNames.length > 0) {
-          console.log(`[PriorityResult] Loading station data for ${routeNames.length} routes`);
           const stationLoadPromises = routeNames.flatMap(routeName => [
             stationStore.loadStations(routeName, 'inbound'),
             stationStore.loadStations(routeName, 'outbound')
           ]);
           await Promise.all(stationLoadPromises);
-          console.log('[PriorityResult] StationStore initialization completed');
         }
       }
 
@@ -190,7 +183,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
         endDateStr
       );
 
-      await renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData);
+      await renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData ?? undefined);
       setIsRenderingFacilities(true);
     };
 
@@ -256,7 +249,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
     };
 
     renderBoundary();
-    renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData);
+    renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData ?? undefined);
 
   }, [selectedNeighborhood]);
 
@@ -266,9 +259,9 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       setSelectedFacilities(new Set());
       priorityStore.clearFacilitySelection();
       if (facilities.length > 0) {
-        await renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData);
+        await renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData ?? undefined);
       } else {
-        console.log('[PriorityResult] No facilities to render');
+        
       }
       // renderPriorityConcentration(concentrationPoints);
     };
@@ -295,7 +288,6 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       const roadData = priorityStore.getRoadData(id);
       if (roadData) {
         await renderNearbyRoadsForFacility(id, roadData);
-        console.log(`[toggleFacility] Rendered ${roadData.total} road segments for facility ${id}`);
         try {
           // 도로명 추출 및 Store에 저장
           const roadNames = new Set<string>();
@@ -303,8 +295,6 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
             roadNames.add(feature.properties.rn);
           });
           priorityStore.setNearbyRoadNames(id, roadNames);
-
-          console.log(`[toggleFacility] Rendered ${roadData.total} road segments (${roadNames.size} unique roads) for facility ${id}`);
         } catch (error) {
           console.error(`[toggleFacility] Failed to search/render roads for facility ${id}:`, error);
         }
@@ -313,9 +303,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       // Store에서 캐시된 건물 데이터 가져와서 렌더링
       const buildingData = priorityStore.getBuildingFacilitiesData(id);
       if (buildingData) {
-        console.log(`sdfasdfas`, buildingData);
         await renderNearbyBuildingFacilitiesForFacility(id, buildingData);
-        console.log(`[toggleFacility] Rendered ${buildingData.total} building facilities for facility ${id}`);
       }
     }
 
@@ -360,8 +348,6 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
             roadNames.add(feature.properties.rn);
           });
           priorityStore.setNearbyRoadNames(facility.id, roadNames);
-
-          console.log(`[toggleAll] Rendered ${roadData.total} roads (${roadNames.size} unique) for facility ${facility.id}`);
         }
       });
       await Promise.all(roadRenderPromises);
@@ -371,7 +357,6 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
         const buildingData = priorityStore.getBuildingFacilitiesData(facility.id);
         if (buildingData) {
           await renderNearbyBuildingFacilitiesForFacility(facility.id, buildingData);
-          console.log(`[toggleAll] Rendered ${buildingData.total} building facilities for facility ${facility.id}`);
         }
       });
       await Promise.all(buildingRenderPromises);
@@ -472,11 +457,12 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
               if (selectDropdownValue == value) return;
 
               // 기존 렌더링 클리어 (비동기 작업 완료 대기)
-              await clearVulnerableFacilities();
               // clearPriorityConcentration();
               clearAllNearbyRoads();
               clearAllNearbyBuildingFacilities();
+              clearNearStations();
               hideFacilityHtmlTags();
+              await clearVulnerableFacilities();
 
               // 선택 상태 초기화
               setSelectedFacilities(new Set());
