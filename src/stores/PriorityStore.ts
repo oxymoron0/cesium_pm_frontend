@@ -170,7 +170,7 @@ class PriorityStore {
   // 데이터 캐시
   private adminRegionsCache: Map<string, AdminRegion> = new Map();
   private nearbyStationsCache: Map<string, NearbyStation[]> = new Map();
-  private nearbyRoadsCache: Map<string, NearbyRoad[]> = new Map();
+  private nearbyRoadsCache: Map<string, Set<string>> = new Map(); // facilityId -> Set<roadName>
 
   // 로딩 상태
   isLoadingDongs: boolean = false;
@@ -424,17 +424,41 @@ class PriorityStore {
   // 근방 도로 데이터 조회
   // ============================================================================
 
-  getNearbyRoads(facilityId: string): NearbyRoad[] {
-    return this.nearbyRoadsCache.get(facilityId) || [];
+  /**
+   * 시설의 도로명 목록 가져오기
+   */
+  getNearbyRoadNames(facilityId: string): Set<string> {
+    return this.nearbyRoadsCache.get(facilityId) || new Set();
   }
 
-  get selectedRoads(): NearbyRoad[] {
-    const roads: NearbyRoad[] = [];
+  /**
+   * 시설에 도로명 저장
+   */
+  setNearbyRoadNames(facilityId: string, roadNames: Set<string>) {
+    this.nearbyRoadsCache.set(facilityId, roadNames);
+  }
+
+  /**
+   * 선택된 시설들의 모든 도로명 목록 (중복 제거)
+   */
+  get selectedRoadNames(): string[] {
+    const roadNamesSet = new Set<string>();
     this.selectedFacilityIds.forEach(facilityId => {
-      const nearby = this.getNearbyRoads(facilityId);
-      roads.push(...nearby);
+      const roadNames = this.getNearbyRoadNames(facilityId);
+      roadNames.forEach(name => roadNamesSet.add(name));
     });
-    return roads;
+    return Array.from(roadNamesSet).sort();
+  }
+
+  /**
+   * 선택된 시설들의 도로 목록 (UI 표시용)
+   */
+  get selectedRoads(): NearbyRoad[] {
+    return this.selectedRoadNames.map(roadName => ({
+      id: roadName,
+      roadName: roadName,
+      startPoint: '' // Not used in current UI
+    }));
   }
 
   /**
