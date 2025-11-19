@@ -256,6 +256,8 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
     };
 
     renderBoundary();
+    renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData);
+
   }, [selectedNeighborhood]);
 
   // facilities 변경 시 렌더링
@@ -312,14 +314,12 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
     renderNearbyStations(priorityStore.selectedStations);
 
     // 선택된 시설들의 HTML 태그 표시/숨김
+    hideFacilityHtmlTags();
     if (newSet.size > 0) {
       const selectedFacilityObjects = facilities.filter(f => newSet.has(f.id));
       showFacilityHtmlTags(selectedFacilityObjects);
-    } else {
-      hideFacilityHtmlTags();
     }
-
-    renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData);
+    
   };
 
   const toggleAll = async () => {
