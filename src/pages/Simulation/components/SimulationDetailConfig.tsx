@@ -35,8 +35,9 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
     { value: '', label: '오염물질 선택' },
     { value: 'PM10', label: 'PM10' },
     { value: 'PM25', label: 'PM2.5' },
-    { value: 'SO2', label: 'SO2' },
-    { value: 'NO2', label: 'NO2' }
+    // { value: 'SO2', label: 'SO2' },
+    // { value: 'NO2', label: 'NO2' }
+    { value: 'VOCs', label: 'VOCs' },
   ];
 
   // Get selected location from store
@@ -577,6 +578,7 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
             const selectedPmType: PMType | undefined =
               pollutant === 'PM10' ? 'pm10' :
               pollutant === 'PM25' ? 'pm25' :
+              pollutant === 'VOCs' ? 'vocs' :
               undefined;
             if (!selectedPmType) return alert('오염 물질 타입 유효하지 않음')// 오염물질 타입 유효성 검사
 

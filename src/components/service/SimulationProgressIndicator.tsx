@@ -11,7 +11,7 @@ import {
 import { preloadSimulationGlbs, getGlbCacheStatus, type PreloadProgress } from '@/utils/cesium/glbPreloader';
 
 const SimulationProgressIndicator = observer(function SimulationProgressIndicator() {
-  const totalFrames = 18;
+  const totalFrames = simulationStore.glbCount || 0;
   const delayMs = 300;
   
   // 프레임당 실제 소요 시간을 기반으로 시간 표시를 위한 계산
@@ -220,7 +220,7 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-auto">
+    <div className="fixed bottom-[64px] left-0 right-0 pointer-events-auto" style={{ zIndex: 2003 }}>
       {isPreloading && preloadProgress && (
         <div className="absolute bottom-[65px] left-1/2 transform -translate-x-1/2 mb-2 px-4 py-2 bg-black/80 text-white text-sm rounded-lg">
           시뮬레이션 재생 준비 중... {preloadProgress.percentage}% ({preloadProgress.loaded}/{preloadProgress.total})
@@ -278,11 +278,11 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
           disabled={totalFrames <= 0 || isPreloading}
           className="flex items-center justify-center gap-2 min-w-[160px] px-4 py-2 bg-[#CFFF40] text-black text-sm font-bold font-pretendard rounded-md border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
           {isPreloading ? (
-            <><Icon name="play" className="w-4 h-4" /><span>로딩 중...</span></>
+            <><Icon name="play" className="w-4 h-4" /><span className="text-black">로딩 중...</span></>
           ) : isPlaying ? (
-            <><Icon name="stop" className="w-4 h-4" /><span>일시정지</span></>
+            <><Icon name="stop" className="w-4 h-4" /><span className="text-black">일시정지</span></>
           ) : (
-            <><Icon name="play" className="w-4 h-4" /><span>시뮬레이션 재생</span></>
+            <><Icon name="play" className="w-4 h-4" /><span className="text-black">시뮬레이션 재생</span></>
           )}
         </button>
       </div>
