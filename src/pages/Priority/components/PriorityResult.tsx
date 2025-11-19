@@ -340,30 +340,29 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       const allIds = facilities.map(f => f.id);
       setSelectedFacilities(new Set(allIds));
 
-      // 모든 시설에 대해 도로 렌더링 (병렬 처리)
-      const roadRenderPromises = facilities.map(async (facility) => {
+      // 1) 도로 렌더링 (순차 처리)
+      for (const facility of facilities) {
         const roadData = priorityStore.getRoadData(facility.id);
-        if (roadData) {
-          await renderNearbyRoadsForFacility(facility.id, roadData);
-          
-          // 도로명 추출 및 Store에 저장
-          const roadNames = new Set<string>();
-          roadData.features.forEach(feature => {
-            roadNames.add(feature.properties.rn);
-          });
-          priorityStore.setNearbyRoadNames(facility.id, roadNames);
-        }
-      });
-      await Promise.all(roadRenderPromises);
+        if (!roadData) continue;
 
-      // 모든 시설에 대해 건물 시설물 렌더링 (병렬 처리)
-      const buildingRenderPromises = facilities.map(async (facility) => {
+        await renderNearbyRoadsForFacility(facility.id, roadData);
+
+        // 도로명 추출 및 Store에 저장
+        const roadNames = new Set<string>();
+        roadData.features.forEach(feature => {
+          roadNames.add(feature.properties.rn);
+        });
+        priorityStore.setNearbyRoadNames(facility.id, roadNames);
+      }
+
+      // 2) 건물 시설물 렌더링 (순차 처리)
+      for (const facility of facilities) {
         const buildingData = priorityStore.getBuildingFacilitiesData(facility.id);
         if (buildingData) {
+          console.log('renderNearbyBuildingFacilitiesForFacility ...', facility.id);
           await renderNearbyBuildingFacilitiesForFacility(facility.id, buildingData);
         }
-      });
-      await Promise.all(buildingRenderPromises);
+      }
 
       // Store에도 반영
       allIds.forEach(id => {
