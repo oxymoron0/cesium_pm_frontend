@@ -321,6 +321,8 @@ const SimulationQuick = observer(function SimulationQuick() {
               const timeStr = toLocalHM(s.measured_at);
               const pmLabel = formatPollutant(s.pm_type as PMType);
               const isOpen = openRowIndex === i; // ▼▼▼ 여기서 isOpen 사용
+              const selectedUUID = 'aabc67b9-1ff3-40b1-92c4-1a32676565eb' // 시연용 임시 UUID값
+              
 
               return (
                 <div key={`${s.index}-${s.measured_at}-${i}`}>
@@ -337,6 +339,7 @@ const SimulationQuick = observer(function SimulationQuick() {
                         onClick={() => {
                           simulationStore.setCurrentView("quickResult");
                           simulationStore.setSelectedSimulationQuick(s);
+                          simulationStore.selectSimulation(selectedUUID)
                         }}
                       >
                         시뮬레이션 실행

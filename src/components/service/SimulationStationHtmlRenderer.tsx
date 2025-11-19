@@ -112,21 +112,22 @@ const SimulationStationHtmlRenderer = () => {
     const pm10Color = isNaN(numericValue) ? '#999' : getPM10Color(numericValue);
     const displayValue = isNaN(numericValue) ? '---' : numericValue.toString();
     const formattedTime = formatTime(timeValue);
-
+    
+  /* 정류장 시뮬레이션 실행 버튼 */
+    // <button data-role="run-sim" style="display:flex;height:40px;padding:5px 8px;justify-content:center;align-items:center;gap:4px;align-self:stretch;border-radius:4px;background:#CFFF40;border:none;cursor:pointer;">
+    //   <div style="color:#000;text-align:center;font-family:Pretendard;font-size:16px;font-weight:700;line-height:normal;">정류장 시뮬레이션 실행</div>
+    // </button>
+  /*                         */
     return `
-      <div style="display:flex;padding:8px;flex-direction:column;justify-content:center;align-items:center;gap:8px;border-radius:4px;background:rgba(30,30,30,0.90);">
+      <div style="display:flex;padding:8px;flex-direction:column;justify-content:center;align-items:center;gap:8px;border-radius:4px;background:rgba(30,30,30,0.90);min-width:150px;">
         <div style="display:flex;flex-direction:column;align-items:center;">
           <div style="color:#FFF;text-align:center;font-family:Pretendard;font-size:17px;font-weight:400;">미세먼지</div>
           <div style="color:#A6A6A6;text-align:center;font-family:Pretendard;font-size:12px;font-weight:400;">${formattedTime}</div>
           <div style="color:${pm10Color};text-align:center;font-family:Pretendard;font-size:36px;font-weight:800;letter-spacing:-0.8px;">${displayValue}</div>
         </div>
-        <button data-role="run-sim" style="display:flex;height:40px;padding:5px 8px;justify-content:center;align-items:center;gap:4px;align-self:stretch;border-radius:4px;background:#CFFF40;border:none;cursor:pointer;">
-          <div style="color:#000;text-align:center;font-family:Pretendard;font-size:16px;font-weight:700;line-height:normal;">정류장 시뮬레이션 실행</div>
-        </button>
       </div>
     `;
   }, [getPM10Color, formatTime]);
-
   const createStationIdHTML = useCallback((displayText: string, isSelected: boolean) => {
     const backgroundColor = isSelected ? 'black' : 'white';
     return `
@@ -176,65 +177,65 @@ const SimulationStationHtmlRenderer = () => {
   };
 
   // ===== 캔버스 준비/리사이즈 =====
-  const ensureHeatCanvas = useCallback(() => {
-    if (!containerRef.current) return;
+  // const ensureHeatCanvas = useCallback(() => {
+  //   if (!containerRef.current) return;
 
-    // main
-    let canvas = heatCanvasRef.current;
-    if (!canvas) {
-      canvas = document.createElement('canvas');
-      heatCanvasRef.current = canvas;
-      canvas.style.position = 'absolute';
-      canvas.style.left = '0';
-      canvas.style.top = '0';
-      canvas.style.width = '100%';
-      canvas.style.height = '100%';
-      canvas.style.pointerEvents = 'none';
-      canvas.style.zIndex = '1000';
-      containerRef.current.appendChild(canvas);
-    }
+  //   // main
+  //   let canvas = heatCanvasRef.current;
+  //   if (!canvas) {
+  //     canvas = document.createElement('canvas');
+  //     heatCanvasRef.current = canvas;
+  //     canvas.style.position = 'absolute';
+  //     canvas.style.left = '0';
+  //     canvas.style.top = '0';
+  //     canvas.style.width = '100%';
+  //     canvas.style.height = '100%';
+  //     canvas.style.pointerEvents = 'none';
+  //     canvas.style.zIndex = '1000';
+  //     containerRef.current.appendChild(canvas);
+  //   }
 
-    // 히트맵 전용 낮은 해상도 (성능 최적화)
-    const dpr = 0.05;  // 고정 DPR (원래 devicePixelRatio 무시)
-    dprRef.current = dpr;
-    const w = containerRef.current.clientWidth;
-    const h = containerRef.current.clientHeight;
-    const dw = Math.floor(w * dpr);
-    const dh = Math.floor(h * dpr);
-    // console.log(`[Heatmap] Low-res mode: ${dw}x${dh} (DPR: ${dpr})`);
+  //   // 히트맵 전용 낮은 해상도 (성능 최적화)
+  //   const dpr = 0.05;  // 고정 DPR (원래 devicePixelRatio 무시)
+  //   dprRef.current = dpr;
+  //   const w = containerRef.current.clientWidth;
+  //   const h = containerRef.current.clientHeight;
+  //   const dw = Math.floor(w * dpr);
+  //   const dh = Math.floor(h * dpr);
+  //   // console.log(`[Heatmap] Low-res mode: ${dw}x${dh} (DPR: ${dpr})`);
 
-    if (canvas.width !== dw || canvas.height !== dh) {
-      canvas.width = dw; canvas.height = dh;
-    }
-    const ctx = canvas.getContext('2d', { willReadFrequently: false });
-    heatCtxRef.current = ctx;
-    if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  //   if (canvas.width !== dw || canvas.height !== dh) {
+  //     canvas.width = dw; canvas.height = dh;
+  //   }
+  //   const ctx = canvas.getContext('2d', { willReadFrequently: false });
+  //   heatCtxRef.current = ctx;
+  //   if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // offscreens
-    let acc = heatAccumCanvasRef.current;
-    if (!acc) { acc = document.createElement('canvas'); heatAccumCanvasRef.current = acc; }
-    if (acc.width !== dw || acc.height !== dh) { acc.width = dw; acc.height = dh; }
-    heatAccumCtxRef.current = acc.getContext('2d', { willReadFrequently: false });
+  //   // offscreens
+  //   let acc = heatAccumCanvasRef.current;
+  //   if (!acc) { acc = document.createElement('canvas'); heatAccumCanvasRef.current = acc; }
+  //   if (acc.width !== dw || acc.height !== dh) { acc.width = dw; acc.height = dh; }
+  //   heatAccumCtxRef.current = acc.getContext('2d', { willReadFrequently: false });
 
-    let blur = heatBlurCanvasRef.current;
-    if (!blur) { blur = document.createElement('canvas'); heatBlurCanvasRef.current = blur; }
-    if (blur.width !== dw || blur.height !== dh) { blur.width = dw; blur.height = dh; }
-    heatBlurCtxRef.current = blur.getContext('2d', { willReadFrequently: false });
+  //   let blur = heatBlurCanvasRef.current;
+  //   if (!blur) { blur = document.createElement('canvas'); heatBlurCanvasRef.current = blur; }
+  //   if (blur.width !== dw || blur.height !== dh) { blur.width = dw; blur.height = dh; }
+  //   heatBlurCtxRef.current = blur.getContext('2d', { willReadFrequently: false });
 
-    let col = heatColorCanvasRef.current;
-    if (!col) { col = document.createElement('canvas'); heatColorCanvasRef.current = col; }
-    if (col.width !== dw || col.height !== dh) { col.width = dw; col.height = dh; }
-    heatColorCtxRef.current = col.getContext('2d', { willReadFrequently: false });
+  //   let col = heatColorCanvasRef.current;
+  //   if (!col) { col = document.createElement('canvas'); heatColorCanvasRef.current = col; }
+  //   if (col.width !== dw || col.height !== dh) { col.width = dw; col.height = dh; }
+  //   heatColorCtxRef.current = col.getContext('2d', { willReadFrequently: false });
 
-    ensureColorLUT();
-  }, [ensureColorLUT]);
+  //   ensureColorLUT();
+  // }, [ensureColorLUT]);
 
-  useEffect(() => {
-    ensureHeatCanvas();
-    const onResize = () => ensureHeatCanvas();
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, [ensureHeatCanvas]);
+  // useEffect(() => {
+  //   ensureHeatCanvas();
+  //   const onResize = () => ensureHeatCanvas();
+  //   window.addEventListener('resize', onResize);
+  //   return () => window.removeEventListener('resize', onResize);
+  // }, [ensureHeatCanvas]);
 
   // ===== PM10 팝업 생성/업데이트 (버튼 flyTo 포함) =====
   const createOrUpdateSensorElement = useCallback((
@@ -570,7 +571,7 @@ const SimulationStationHtmlRenderer = () => {
       }
 
       // 히트맵 그리기
-      ensureHeatCanvas();
+      // ensureHeatCanvas();
       const metersPerPixel = getMetersPerPixel(viewer);
 
       // drawHeatmap의 세 번째 인자는 이제 MPP로 전달
@@ -597,7 +598,7 @@ const SimulationStationHtmlRenderer = () => {
     createOrUpdateStationElement,
     createOrUpdateSensorElement,
     selectedStationId,
-    ensureHeatCanvas,
+    // ensureHeatCanvas,
     drawHeatmap,
   ]);
 
@@ -646,34 +647,34 @@ const SimulationStationHtmlRenderer = () => {
   }, [updateStationPositions]);
 
   // ===== 우측 하단 범례 =====
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const legend = document.createElement('div');
-    legend.style.position = 'absolute';
-    legend.style.right = '12px';
-    legend.style.bottom = '12px';
-    legend.style.padding = '8px 10px';
-    legend.style.background = 'rgba(20,20,20,0.7)';
-    legend.style.borderRadius = '6px';
-    legend.style.color = '#fff';
-    legend.style.fontSize = '12px';
-    legend.style.zIndex = '1400';
-    legend.style.pointerEvents = 'none';
-    legend.style.lineHeight = '1.2';
-    legend.innerHTML = `
-      <div style="font-weight:700;margin-bottom:6px;">PM10 (μg/m³)</div>
-      <div style="display:flex;gap:4px;align-items:flex-end;">
-        ${LEGEND_COLORS.map((c, i) => `
-          <div title="${i*10}–${i===9?100:(i*10+9)}" style="width:16px;height:12px;background:${c};border-radius:2px;"></div>
-        `).join('')}
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-top:4px;">
-        <span>0</span><span>50</span><span>100</span>
-      </div>
-    `;
-    containerRef.current.appendChild(legend);
-    return () => legend.remove();
-  }, [LEGEND_COLORS]);
+  // useEffect(() => {
+  //   if (!containerRef.current) return;
+  //   const legend = document.createElement('div');
+  //   legend.style.position = 'absolute';
+  //   legend.style.right = '12px';
+  //   legend.style.bottom = '75px';
+  //   legend.style.padding = '8px 10px';
+  //   legend.style.background = 'rgba(20,20,20,0.7)';
+  //   legend.style.borderRadius = '6px';
+  //   legend.style.color = '#fff';
+  //   legend.style.fontSize = '12px';
+  //   legend.style.zIndex = '1400';
+  //   legend.style.pointerEvents = 'none';
+  //   legend.style.lineHeight = '1.2';
+  //   legend.innerHTML = `
+  //     <div style="font-weight:700;margin-bottom:6px;">PM10 (μg/m³)</div>
+  //     <div style="display:flex;gap:4px;align-items:flex-end;">
+  //       ${LEGEND_COLORS.map((c, i) => `
+  //         <div title="${i*10}–${i===9?100:(i*10+9)}" style="width:16px;height:12px;background:${c};border-radius:2px;"></div>
+  //       `).join('')}
+  //     </div>
+  //     <div style="display:flex;justify-content:space-between;margin-top:4px;">
+  //       <span>0</span><span>50</span><span>100</span>
+  //     </div>
+  //   `;
+  //   containerRef.current.appendChild(legend);
+  //   return () => legend.remove();
+  // }, [LEGEND_COLORS]);
 
   return (
     <div

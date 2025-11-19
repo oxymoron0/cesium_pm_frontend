@@ -11,6 +11,7 @@ import {
   clearSimulationResultStations,
   getSelectedSimulationStationId,
 } from "@/utils/cesium/simulationResultRenderer";
+import SimulationProgressIndicator from "@/components/service/SimulationProgressIndicator";
 
 interface SimulationQuickResultProps {
   onCloseMicroApp?: () => void;
@@ -113,7 +114,7 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
   // 빠른 폴링(60fps)로 CESIUM 선택 상태 반영
   useEffect(() => {
     //가이드 문구 active
-    simulationStore.isSimulationQuickGuideMode = true;
+    // simulationStore.isSimulationQuickGuideMode = true;
     const intervalId = setInterval(() => {
       const raw = getSelectedSimulationStationId();
       const normalized =
@@ -326,6 +327,8 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
           </Button>
         </div>
       </div>
+
+      <SimulationProgressIndicator />
     </>
   );
 });
