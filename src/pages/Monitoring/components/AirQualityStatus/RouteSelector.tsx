@@ -31,6 +31,7 @@ const RouteSelector = observer(function RouteSelector({ onRouteSelect }: RouteSe
     if (routeStore.routeInfoList.length > 0) {
       setRoutes(routeStore.routeInfoList)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeStore.routeInfoList])
 
   const handleRouteSelect = (routeName: string) => {

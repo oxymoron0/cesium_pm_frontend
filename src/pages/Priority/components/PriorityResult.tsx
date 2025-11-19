@@ -190,7 +190,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
         endDateStr
       );
 
-      await renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData);
+      await renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData ?? undefined);
       setIsRenderingFacilities(true);
     };
 
@@ -206,6 +206,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       clearNearStations();
       hideFacilityHtmlTags();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config]);
 
   // 읍면동 드롭다운 선택에 따라 경계 렌더링
@@ -264,7 +265,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       setSelectedFacilities(new Set());
       priorityStore.clearFacilitySelection();
       if (facilities.length > 0) {
-        await renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData);
+        await renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData ?? undefined);
       } else {
         console.log('[PriorityResult] No facilities to render');
       }
@@ -331,7 +332,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       hideFacilityHtmlTags();
     }
 
-    renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData);
+    renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData ?? undefined);
   };
 
   const toggleAll = async () => {

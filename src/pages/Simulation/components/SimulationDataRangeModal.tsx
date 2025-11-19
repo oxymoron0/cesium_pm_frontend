@@ -58,6 +58,7 @@ export const SimulationDataRangeModal = observer(() => {
   useEffect(() => {
     setTempStartDate(simulationStore.startDate ? new Date(simulationStore.startDate) : new Date());
     setTempEndDate(simulationStore.endDate ? new Date(simulationStore.endDate) : new Date());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [simulationStore.startDate, simulationStore.endDate]);
 
   const handleStartDateChange = (date: Date) => {

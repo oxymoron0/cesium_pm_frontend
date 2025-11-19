@@ -47,6 +47,7 @@ const MonitoringPanel = observer(function MonitoringPanel(props: MonitoringPanel
       };
       renderAll();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeStore.isLoading, routeStore.routeGeomMap.size, stationStore.stationDataMap.size]);
 
   // 노선 선택 핸들러
