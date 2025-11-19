@@ -18,7 +18,7 @@ import { stationStore } from '@/stores/StationStore';
 import { routeStore } from '@/stores/RouteStore';
 import type { PriorityConfig, VulnerableFacility } from '../types';
 import type { RouteStationFeature } from '@/utils/api/types';
-import { Matrix4, Model } from 'cesium';
+import { Color, ColorBlendMode, Matrix4, Model } from 'cesium';
 
 interface PriorityResultProps {
   config: PriorityConfig;
@@ -87,6 +87,9 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
     const model = await Model.fromGltfAsync({
       url,
       modelMatrix: axisSwapMatrix,
+      color: Color.fromCssColorString('#CCCCCC').withAlpha(1.0),
+      colorBlendMode: ColorBlendMode.MIX,
+      colorBlendAmount: 0.9      
     });
 
     viewer!.scene.primitives.add(model);
@@ -251,7 +254,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
     renderBoundary();
     renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData ?? undefined);
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedNeighborhood]);
 
   // facilities 변경 시 렌더링
@@ -261,9 +264,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       priorityStore.clearFacilitySelection();
       if (facilities.length > 0) {
         await renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData ?? undefined);
-      } else {
-        
-      }
+      } 
       // renderPriorityConcentration(concentrationPoints);
     };
     render();
