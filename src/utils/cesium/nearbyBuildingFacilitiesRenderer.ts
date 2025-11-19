@@ -106,12 +106,15 @@ function createBuildingFacilityEntity(
   // 각 폴리곤을 별도 Entity로 생성
   hierarchies.forEach((hierarchy, index) => {
     const entityId = `building_${facilityId}_${feature.properties.id}_${index}`;
+    const isMain = feature.properties.id.includes("main");
 
     const entity = new Entity({
       id: entityId,
       polygon: new PolygonGraphics({
         hierarchy: hierarchy,
-        material: new ColorMaterialProperty(BUILDING_STYLES.color),
+        material: new ColorMaterialProperty(
+          isMain ? Color.fromCssColorString('#FF0040') : BUILDING_STYLES.color
+        ),
         outline: BUILDING_STYLES.outline,
         outlineColor: new ColorMaterialProperty(BUILDING_STYLES.outlineColor),
         outlineWidth: BUILDING_STYLES.outlineWidth,
