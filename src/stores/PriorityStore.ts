@@ -792,11 +792,11 @@ class PriorityStore {
 
     console.log(`[PriorityStore] Loading buildings for ${facilities.length} facilities in parallel`);
 
-    const promises = facilities.map(facility =>
+    facilities.map(facility =>
       this.loadBuildingFacilitiesForFacility(facility.id)
     );
 
-    const results = await Promise.all(promises);
+    // const results = await Promise.all(promises);
 
     console.log('[PriorityStore] All building searches completed');
     console.log('[PriorityStore] Building cache summary:',

@@ -62,7 +62,7 @@ export interface CoordinateLocation {
 /**
  * Particulate matter type constants
  */
-export type PMType = 'pm10' | 'pm25';
+export type PMType = 'pm10' | 'pm25' | 'vocs';
 
 /**
  * Backend response after submitting simulation request

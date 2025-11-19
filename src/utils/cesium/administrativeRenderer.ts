@@ -1,6 +1,6 @@
 import type { GeoJSONMultiPolygon } from '@/types/postgis';
 import { createDataSource, findDataSource, clearDataSource } from './datasources';
-import { HeightReference, Color, ColorMaterialProperty, Cartesian3, Entity, PolygonGraphics, PolygonHierarchy, LabelGraphics, VerticalOrigin, HorizontalOrigin, CallbackProperty, ScreenSpaceEventHandler, ScreenSpaceEventType, defined } from 'cesium';
+import { HeightReference, Color, ColorMaterialProperty, Cartesian3, Entity, PolygonGraphics, PolygonHierarchy, LabelGraphics, VerticalOrigin, HorizontalOrigin, CallbackProperty, ScreenSpaceEventHandler, ScreenSpaceEventType, defined, Viewer, Cartesian2 } from 'cesium';
 import { administrativeStore } from '@/stores/AdministrativeStore';
 
 /**
@@ -38,8 +38,7 @@ function calculateMultiPolygonCenter(geometry: GeoJSONMultiPolygon): [number, nu
  */
 function flyToBoundary(geometry: GeoJSONMultiPolygon, duration: number = 0): void {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const viewer = (window as unknown as { cviewer: any }).cviewer;
+    const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
     if (!viewer || !viewer.camera) {
       console.warn('[flyToBoundary] Cesium viewer or camera not available');
       return;
@@ -244,8 +243,7 @@ let administrativeBoundaryClickHandler: ScreenSpaceEventHandler | null = null;
  */
 export function setupAdministrativeBoundaryClickHandler(): void {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const viewer = (window as unknown as { cviewer: any }).cviewer;
+    const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
     if (!viewer) {
       console.warn('[administrativeRenderer] Cesium viewer not available');
       return;
@@ -258,8 +256,7 @@ export function setupAdministrativeBoundaryClickHandler(): void {
     administrativeBoundaryClickHandler = new ScreenSpaceEventHandler(viewer.scene.canvas);
 
     // Register LEFT_CLICK event
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    administrativeBoundaryClickHandler.setInputAction((movement: any) => {
+    administrativeBoundaryClickHandler.setInputAction((movement: { position: Cartesian2 }) => {
       const pickedObject = viewer.scene.pick(movement.position);
 
       if (defined(pickedObject) && defined(pickedObject.id)) {

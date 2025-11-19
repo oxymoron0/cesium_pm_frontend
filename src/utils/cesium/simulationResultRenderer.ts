@@ -1,4 +1,4 @@
-import { Cartesian3, Entity, BillboardGraphics, HeightReference, ConstantProperty, Color, Cartographic, sampleTerrainMostDetailed } from 'cesium';
+import { Cartesian3, Entity, BillboardGraphics, HeightReference, ConstantProperty, Color, Cartographic, sampleTerrainMostDetailed, Viewer } from 'cesium';
 import { createGeoJsonDataSource, findDataSource } from './datasources';
 import type { StationRow } from '@/pages/Simulation/components/SimulationQuickResult';
 
@@ -29,8 +29,7 @@ function getCachedTerrainHeight(longitude: number, latitude: number): number {
 
 async function sampleTerrainForSimulationStations(rows: StationRow[]): Promise<void> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const viewer = (window as unknown as { cviewer: { terrainProvider: any } }).cviewer;
+    const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
     if (!viewer?.terrainProvider || rows.length === 0) return;
 
     const positions = rows.map(row => Cartographic.fromDegrees(row.point[0], row.point[1]));

@@ -406,3 +406,40 @@ export async function getVulnerableFacilities(
   }
 }
 
+/**
+ * 시뮬레이션 GLB 개수 조회
+ * GET /api/v1/simulation/{uuid}/glb/count
+ *
+ * @param uuid - 시뮬레이션 UUID
+ * @returns GLB 파일 개수
+ */
+export async function getSimulationGlbCount(
+  uuid: string
+): Promise<number> {
+  try {
+    const response = await get<{ success: boolean; message: string; data: { uuid: string; count: number } }>(
+      API_PATHS.SIMULATION_GLB_COUNT(uuid)
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `GLB count API failed with status ${response.status}`
+      );
+    }
+
+    if (!response.data.success) {
+      throw new Error(
+        `GLB count API failed: ${response.data.message}`
+      );
+    }
+
+    return response.data.data.count;
+  } catch (error) {
+    console.error(
+      `[getSimulationGlbCount] API 호출 실패 (UUID: ${uuid}):`,
+      error
+    );
+    throw error;
+  }
+}
+
