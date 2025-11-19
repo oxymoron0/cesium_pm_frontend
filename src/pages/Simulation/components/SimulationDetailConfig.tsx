@@ -59,6 +59,7 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
       setWindDirection('270');
       setWindSpeed('2.31');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [useCurrentWeather, simulationStore.currentWeather])
 
   // 선택된 위치(selectedLocation)에 따라 마커 표시

@@ -199,6 +199,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       clearNearStations();
       hideFacilityHtmlTags();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config]);
 
   // 읍면동 드롭다운 선택에 따라 경계 렌더링
@@ -320,6 +321,8 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       showFacilityHtmlTags(selectedFacilityObjects);
     }
     
+
+    renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData ?? undefined);
   };
 
   const toggleAll = async () => {

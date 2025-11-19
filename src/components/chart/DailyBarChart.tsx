@@ -92,9 +92,9 @@ const DailyBarChart = observer(function DailyBarChart({
   }
 
   // Custom X-axis tick component with date + day of week
-  const CustomXAxisTick = (props: any) => {
+  const CustomXAxisTick = (props: { x?: number; y?: number; payload?: { value: string } }) => {
     const { x, y, payload } = props
-    const dataPoint = data.find(d => d.dateLabel === payload.value)
+    const dataPoint = data.find(d => d.dateLabel === payload?.value)
     if (!dataPoint) return null
 
     return (

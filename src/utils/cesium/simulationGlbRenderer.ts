@@ -320,7 +320,7 @@ export async function renderSimulationGlbFrame(index: number, skipFade: boolean 
     const newModel = await Model.fromGltfAsync({
       url: glbUrl,
       modelMatrix: axisSwapMatrix,
-      color: Color.fromCssColorString('#FF0000').withAlpha(skipFade ? 1.0 : 0.0),
+      color: Color.fromCssColorString('#CCCCCC').withAlpha(skipFade ? 1.0 : 0.0),
       colorBlendMode: ColorBlendMode.MIX,
       colorBlendAmount: 0.9
     })
@@ -455,9 +455,9 @@ async function executeCrossFade(
 
       // 알파값 동시 변경 (크로스 페이드)
       if (fromModel) {
-        fromModel.color = Color.fromCssColorString('#FF0000').withAlpha(1.0 - easedProgress)
+        fromModel.color = Color.fromCssColorString('#CCCCCC').withAlpha(1.0 - easedProgress)
       }
-      toModel.color = Color.fromCssColorString('#FF0000').withAlpha(easedProgress)
+      toModel.color = Color.fromCssColorString('#CCCCCC').withAlpha(easedProgress)
 
       // 전환 진행 중
       if (progress < 1.0) {
@@ -466,9 +466,9 @@ async function executeCrossFade(
       // 전환 완료
       else {
         if (fromModel) {
-          fromModel.color = Color.fromCssColorString('#FF0000').withAlpha(0.0)
+          fromModel.color = Color.fromCssColorString('#CCCCCC').withAlpha(0.0)
         }
-        toModel.color = Color.fromCssColorString('#FF0000').withAlpha(1.0)
+        toModel.color = Color.fromCssColorString('#CCCCCC').withAlpha(1.0)
         fadeAnimationId = null
         resolve()
       }
