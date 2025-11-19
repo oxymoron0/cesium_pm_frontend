@@ -66,7 +66,8 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
   let glbModel: Model | null = null;
   const glbTest = async () => {
     const viewer = window.cviewer;
-    const url = 'results/aabc67b9-1ff3-40b1-92c4-1a32676565eb/Finedust_0001.glb';
+    const basePath = import.meta.env.VITE_BASE_PATH || '/';
+    const url = `${basePath}results/aabc67b9-1ff3-40b1-92c4-1a32676565eb/Finedust_0001.glb`;
 
     // 이미 켜져 있으면 → 제거 후 종료
     if (glbModel) {
@@ -400,7 +401,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       <Spacer height={16} />
 
       {/* 관찰 일시 */}
-      <div className="flex gap-2 h-8 items-start self-stretch">
+      <div className="flex items-start self-stretch h-8 gap-2">
         <div className="flex flex-1 gap-[7px] items-center">
           <p className="text-white font-pretendard text-[14px] font-bold">
             관찰 일시
@@ -435,7 +436,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       <Spacer height={8} />
 
       {/* 행정 구역 */}
-      <div className="flex h-8 items-center self-stretch">
+      <div className="flex items-center self-stretch h-8">
         <div className="flex flex-1 gap-[10px] items-center">
           <p className="text-white font-pretendard text-[14px] font-bold">
             행정 구역
@@ -513,7 +514,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
         </div>
 
         {/* 테이블 컨테이너 */}
-        <div className="flex gap-2 items-start self-stretch">
+        <div className="flex items-start self-stretch gap-2">
           {/* 테이블 */}
           <div
             className="flex-1 custom-scrollbar"
