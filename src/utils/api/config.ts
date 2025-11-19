@@ -45,9 +45,8 @@ export const API_PATHS = {
   SIMULATION_CHECK: getApiPath('api/v1/simulation/check'),
   SIMULATION_QUICK_LIST: getApiPath('api/v1/simulation_auto/list'),
   SIMULATION_DETAIL: (uuid: string) => getApiPath(`api/v1/simulation/${uuid}`),
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  SIMULATION_DETAIL_SUMMARY: (_uuid: string) => getApiPath(`api/v1/simulation/00000000-0000-0000-0000-000000000001/vulnerable-facilities`),
-  //SIMULATION_DETAIL_SUMMARY: (uuid: string) => getApiPath(`api/v1/simulation/${uuid}/vulnerable-facilities`),
+  SIMULATION_DETAIL_SUMMARY: (uuid: string) => getApiPath(`api/v1/simulation/${uuid}/vulnerable-facilities`),
+  SIMULATION_GLB_COUNT: (uuid: string) => getApiPath(`api/v1/simulation/${uuid}/glb/count`),
   SIMULATION_DELETE: getApiPath(`/api/v1/simulation`),
   SIMULATION_UPDATE_PRIVACY: (uuid: string) => getApiPath(`/api/v1/simulation/${uuid}/privacy`),
   SIMULATION_CURRENT_WEATHER: getApiPath('/api/v1/weather/current'),

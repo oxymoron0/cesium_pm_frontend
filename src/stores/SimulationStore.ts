@@ -12,7 +12,7 @@ import type {
   Weather
 } from '../types/simulation_request_types';
 import type { VulnerableFacilitiesResponse } from '@/utils/api/types';
-import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck, reverseGeocodeAPI, searchAddressAPI, getVulnerableFacilities } from '@/utils/api';
+import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck, reverseGeocodeAPI, searchAddressAPI, getVulnerableFacilities, getSimulationGlbCount } from '@/utils/api';
 import { userStore } from './UserStore';
 import { administrativeStore } from './AdministrativeStore';
 // import { randomizeSimulationConcentration, ENABLE_MOCK_CONCENTRATION } from '@/utils/mockData/simulationConcentration';
@@ -80,6 +80,10 @@ class SimulationStore {
   vulnerableFacilities: VulnerableFacilitiesResponse | null = null;
   isLoadingVulnerableFacilities: boolean = false;
   vulnerableFacilitiesError: string | null = null;
+
+  // 시뮬레이션 GLB 개수
+  glbCount: number | null = null;
+  isLoadingGlbCount: boolean = false;
 
   // 지역 정보
   isLoadingDistricts: boolean = false;
@@ -686,8 +690,11 @@ class SimulationStore {
       const detail = await getSimulationDetail(uuid);
       this.simulationDetail = detail;
 
-      // 상세 정보 로드 성공 시 취약시설 정보도 로드
-      await this.loadVulnerableFacilities(uuid);
+      // 상세 정보 로드 성공 시 취약시설 정보와 GLB 개수 로드
+      await Promise.all([
+        this.loadVulnerableFacilities(uuid),
+        this.loadGlbCount(uuid)
+      ]);
     } catch (error) {
       console.error(`[SimulationStore] Failed to load simulation detail (${uuid}):`, error);
       this.detailError = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -724,6 +731,31 @@ class SimulationStore {
   }
 
   /**
+   * 시뮬레이션 GLB 개수 조회
+   * GET /api/v1/simulation/{uuid}/glb/count
+   */
+  async loadGlbCount(uuid: string): Promise<void> {
+    this.isLoadingGlbCount = true;
+
+    try {
+      const count = await getSimulationGlbCount(uuid);
+      console.log("glb 개수조회하기 :", count)
+      runInAction(() => {
+        this.glbCount = count;
+      });
+    } catch (error) {
+      console.error(`[SimulationStore] Failed to load GLB count (${uuid}):`, error);
+      runInAction(() => {
+        this.glbCount = null;
+      });
+    } finally {
+      runInAction(() => {
+        this.isLoadingGlbCount = false;
+      });
+    }
+  }
+
+  /**
    * 선택 해제 및 상세 패널 닫기
    */
   closeSimulationDetail() {
@@ -732,6 +764,7 @@ class SimulationStore {
     this.detailError = null;
     this.vulnerableFacilities = null;
     this.vulnerableFacilitiesError = null;
+    this.glbCount = null;
   }
 
   /**
