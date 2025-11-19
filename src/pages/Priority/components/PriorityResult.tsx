@@ -7,7 +7,7 @@ import DongDropdown from './DongDropdown';
 import NearbyStationList from './NearbyStationList';
 import { renderNearbyStations, clearNearStations } from '@/utils/cesium/nearbyStationRenderer';
 import { renderVulnerableFacilities, clearVulnerableFacilities, showFacilityHtmlTags, hideFacilityHtmlTags } from '@/utils/cesium/nearbyFacilitiesRenderer';
-import { renderPriorityConcentration, clearPriorityConcentration } from '@/utils/cesium/priorityConcentrationRenderer';
+// import { renderPriorityConcentration, clearPriorityConcentration } from '@/utils/cesium/priorityConcentrationRenderer';
 import { renderNearbyRoadsForFacility, clearNearbyRoadsForFacility, clearAllNearbyRoads } from '@/utils/cesium/nearbyRoadRenderer';
 import { renderNearbyBuildingFacilitiesForFacility, clearNearbyBuildingFacilitiesForFacility, clearAllNearbyBuildingFacilities } from '@/utils/cesium/nearbyBuildingFacilitiesRenderer';
 import { priorityStore } from '@/stores/PriorityStore';
@@ -261,33 +261,16 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
   // facilities 변경 시 렌더링
   useEffect(() => {
     const render = async () => {
+      setSelectedFacilities(new Set());
+      priorityStore.clearFacilitySelection();
       if (facilities.length > 0) {
         await renderVulnerableFacilities(facilities, priorityStore.vulnerableFacilitiesApiData);
       } else {
         console.log('[PriorityResult] No facilities to render');
       }
+      // renderPriorityConcentration(concentrationPoints);
     };
     render();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [facilitiesKey]);
-
-  // 시설 데이터가 변경되면 체크박스 선택 상태 초기화
-  useEffect(() => {
-    setSelectedFacilities(new Set());
-    priorityStore.clearFacilitySelection();
-  }, [facilitiesKey]);
-
-  // 농도 분포 heatmap 렌더링
-  useEffect(() => {
-    if (facilities.length > 0) {
-      const concentrationPoints = facilities.map(facility => ({
-        longitude: facility.geometry.coordinates[0],
-        latitude: facility.geometry.coordinates[1],
-        concentration: facility.predictedConcentration
-      }));
-      // renderPriorityConcentration(concentrationPoints);
-    }
-    // cleanup은 컴포넌트 unmount 시에만 실행
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facilitiesKey]);
 
