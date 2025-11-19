@@ -110,3 +110,46 @@ export interface RoadSearchResponse {
   total: number;
   search_area: SearchAreaFeature;
 }
+
+// Building Facilities API types (from simulation vulnerable-facilities endpoint)
+export interface NearbyBuildingGeometry {
+  lod1_shape_id: number;
+  geom: {
+    coordinates: number[][][][]; // MultiPolygon
+    type: 'MultiPolygon';
+  };
+  height: number;
+  ground_level: number;
+  distance_m: number;
+}
+
+export interface BuildingFacilityData {
+  type: string; // 'childcare', 'senior', etc.
+  id: number;
+  name: string;
+  address: string;
+  location: {
+    type: 'Point';
+    coordinates: [number, number]; // [lng, lat]
+  };
+  pm_value: number;
+  geom_shape: {
+    coordinates: number[][][][]; // MultiPolygon
+    type: 'MultiPolygon';
+  };
+  geom_height: number;
+  geom_ground_level: number;
+  lod1_shape_id: number;
+  nearby_buildings: NearbyBuildingGeometry[];
+}
+
+export interface VulnerableFacilitiesApiResponse {
+  convex_hull_area_sqm: number;
+  total_affected_facilities: number;
+  facilities_by_grade: {
+    good?: BuildingFacilityData[];
+    normal?: BuildingFacilityData[];
+    bad?: BuildingFacilityData[];
+    very_bad?: BuildingFacilityData[];
+  };
+}
