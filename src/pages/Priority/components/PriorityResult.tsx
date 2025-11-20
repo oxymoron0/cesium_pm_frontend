@@ -394,11 +394,12 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
   return (
     <>
-      <Title onBack={onBack} onClose={onClose}>
+      <Title onBack={onBack} onClose={onClose} onMinimize={() => priorityStore.toggleMinimize()}>
         우선순위 조회
       </Title>
 
-      <Spacer height={16} />
+      <div style={{ display: priorityStore.isMinimized ? 'none' : 'contents' }}>
+        <Spacer height={16} />
 
       {/* 관찰 일시 */}
       <div className="flex items-start self-stretch h-8 gap-2">
@@ -660,6 +661,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
         >
           리포트 다운로드
         </Button>
+      </div>
       </div>
     </>
   );
