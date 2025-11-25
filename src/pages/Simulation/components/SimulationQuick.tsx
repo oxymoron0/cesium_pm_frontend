@@ -5,6 +5,8 @@ import DatePicker from "@/components/basic/DatePicker";
 import Button from "@/components/basic/Button";
 import { simulationStore } from "@/stores/SimulationStore";
 import type { PMType, SimulationQuckData } from "@/types/simulation_request_types";
+// import { getSimulationQuickGlbDetail } from "@/utils/api/simulationApi";
+import { MOCK_GLB_DATA } from "@/utils/mockData/simulationQuickGlbDetail";
 
 const formatPollutant = (t: PMType) =>
   t === "pm10" ? "미세먼지(PM-10)" : t === "pm25" ? "초미세먼지(PM-2.5)" : t;
@@ -321,7 +323,6 @@ const SimulationQuick = observer(function SimulationQuick() {
               const timeStr = toLocalHM(s.measured_at);
               const pmLabel = formatPollutant(s.pm_type as PMType);
               const isOpen = openRowIndex === i; // ▼▼▼ 여기서 isOpen 사용
-              const selectedUUID = 'aabc67b9-1ff3-40b1-92c4-1a32676565eb' // 시연용 임시 UUID값
               
 
               return (
@@ -339,7 +340,13 @@ const SimulationQuick = observer(function SimulationQuick() {
                         onClick={() => {
                           simulationStore.setCurrentView("quickResult");
                           simulationStore.setSelectedSimulationQuick(s);
-                          simulationStore.selectSimulation(selectedUUID)
+
+                          // 목업 데이터 사용 (API 연결 전)
+                          console.log('[SimulationQuick] GLB Detail Data (MOCK):', MOCK_GLB_DATA);
+
+                          // TODO: API 연결 시 아래 코드 활성화
+                          // const glbData = await getSimulationQuickGlbDetail(s.uuid);
+                          // console.log('[SimulationQuick] GLB Detail Data:', glbData);
                         }}
                       >
                         시뮬레이션 실행

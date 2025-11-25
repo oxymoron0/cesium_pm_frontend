@@ -151,6 +151,7 @@ export interface SimulationDetail {
  */
 export interface SimulationQuckData {
   index: number;
+  uuid: string;
   measured_at: string;
   pm_type: "pm10" | "pm25";
   result_path: string;

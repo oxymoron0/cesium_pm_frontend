@@ -14,6 +14,7 @@ import SimulationQuickResult from "./components/SimulationQuickResult";
 import { clearLocationMarker } from "@/utils/cesium/locationMarker";
 import { disableDirectLocationClickHandler } from "@/utils/cesium/directLocationRenderer";
 import SimulationStationHtmlRenderer from "@/components/service/SimulationStationHtmlRenderer";
+import SimulationGlbHeatmapRender from "@/components/service/SimulationGlbHeatmapRender";
 
 interface AppProps {
   onCloseMicroApp?: () => void;
@@ -79,7 +80,10 @@ const App = observer(function App(props: AppProps) {
 
       {cesiumStatus === "ready" &&
         simulationStore.currentView == "quickResult" && (
-        <SimulationStationHtmlRenderer />
+        <>
+          <SimulationStationHtmlRenderer />
+          <SimulationGlbHeatmapRender />
+        </>
       )}
 
       {cesiumStatus === "ready" && 

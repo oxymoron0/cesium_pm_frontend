@@ -188,6 +188,33 @@ export async function getSimulationQuickList(
 }
 
 /**
+ * 빠른실행 시뮬레이션 GLB 상세 정보 조회
+ * GET /api/v1/simulation_auto/:uuid
+ *
+ * @param uuid - 시뮬레이션 UUID
+ * @returns GLB 18개에 대한 포인트 50개씩 포함된 배열
+ */
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function getSimulationQuickGlbDetail(uuid: string): Promise<any> {
+  try {
+    const url = API_PATHS.SIMULATION_QUICK_GLB_IFNOLIST(uuid);
+     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const response = await get<any>(url);
+
+    if (!response.ok) {
+      throw new Error(
+        `Simulation quick GLB detail API failed with status ${response.status}`
+      );
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error(`[getSimulationQuickGlbDetail] API 호출 실패 (UUID: ${uuid}):`, error);
+    throw error;
+  }
+}
+
+/**
  * 시뮬레이션 상세 정보 조회
  * GET /api/v1/simulation/:uuid
  *

@@ -22,7 +22,7 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
   const [currentFrame, setCurrentFrame] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekValue, setSeekValue] = useState<number>(0);
-  
+
   const [isPreloading, setIsPreloading] = useState(false);
   const [preloadProgress, setPreloadProgress] = useState<PreloadProgress | null>(null);
 
@@ -52,6 +52,21 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
     };
   }, []);
 
+  // 시뮬레이션 데이터 변경 시 상태 초기화
+  useEffect(() => {
+    setIsPlaying(false);
+    setCurrentFrame(0);
+    simulationStore.setCurrentGlbFrame(0);
+    setIsSeeking(false);
+    setSeekValue(0);
+    if (playIntervalRef.current) {
+      clearTimeout(playIntervalRef.current);
+      playIntervalRef.current = null;
+    }
+    clearSimulationGlbs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [simulationStore.selectedSimulationUuid, simulationStore.selectedsimulationQuick?.uuid]);
+
   const currentTimeSeconds = Math.floor((currentFrame * actualFrameIntervalMs) / 1000);
   const totalTimeSeconds = Math.floor(((totalFrames - 1) * actualFrameIntervalMs) / 1000);
 
@@ -65,13 +80,25 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
   const progress = totalFrames > 1 ? (shownFrame / (totalFrames - 1)) * 100 : 0;
 
   const getSimulationParams = () => {
+    const currentView = simulationStore.currentView;
+    // 빠른실행 결과 화면
+    if (currentView === 'quickResult') {
+      const { selectedsimulationQuick } = simulationStore;
+      if (!selectedsimulationQuick) return null;
+      return {
+        uuid: selectedsimulationQuick.uuid,
+        //resultPath: selectedsimulationQuick.result_path || '',
+        resultPath: '/results/aabc67b9-1ff3-40b1-92c4-1a32676565eb/',
+        totalCount: totalFrames,
+        frameIntervalMs: delayMs
+      };
+    } 
+
+    // 맞춤실행 결과 화면
     const { simulationDetail } = simulationStore;
     if (!simulationDetail) return null;
-    const firstPoint = simulationDetail.airQualityData?.points[0];
     return {
       uuid: simulationDetail.uuid,
-      centerLongitude: firstPoint?.location.longitude || 129.0634,
-      centerLatitude: firstPoint?.location.latitude || 35.1598,
       resultPath: simulationDetail.resultPath || '',
       totalCount: totalFrames,
       frameIntervalMs: delayMs
@@ -84,6 +111,7 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
     if (!cacheStatus.isCached || cacheStatus.loadedFrames < totalFrames) {
       setIsPreloading(true);
       try {
+        console.log("GLB 경로 : ", params.resultPath)
         await preloadSimulationGlbs(params.uuid, params.resultPath, totalFrames, setPreloadProgress);
       } catch (error) {
         console.error('Preload failed:', error);
@@ -113,9 +141,10 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
       }
 
       await renderSimulationGlbFrame(frameIndex, false);
-      
+
       if (isPlayingRef.current) {
         setCurrentFrame(frameIndex);
+        simulationStore.setCurrentGlbFrame(frameIndex);
         playIntervalRef.current = window.setTimeout(playNextFrame, delayMs);
       }
     };
@@ -146,6 +175,7 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
         // 1. 첫 프레임 렌더링을 'await'하여 완료 보장
         await renderSimulationGlbFrame(0, true);
         setCurrentFrame(0);
+        simulationStore.setCurrentGlbFrame(0);
 
         // 2. 렌더링 완료 후 flyTo 호출 (currentModel 보장됨)
         flyToSimulationGlb();
@@ -183,6 +213,7 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
       playIntervalRef.current = null;
     }
     setCurrentFrame(0);
+    simulationStore.setCurrentGlbFrame(0);
     renderSimulationGlbFrame(0, true);
   };
   
@@ -210,6 +241,7 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
 
     setIsSeeking(false);
     setCurrentFrame(val);
+    simulationStore.setCurrentGlbFrame(val);
 
     const params = getSimulationParams();
     if (!params) return;
