@@ -43,54 +43,61 @@ export function enableDirectLocationClickHandler(): void {
   if (!viewer) return;
 
   try {
+    // 깊이 테스트 활성화
+    if (!viewer.scene.globe.depthTestAgainstTerrain) {
+      viewer.scene.globe.depthTestAgainstTerrain = true;
+    }
+
     // ScreenSpaceEventHandler 생성
     clickEventHandler = new ScreenSpaceEventHandler(viewer.scene.canvas);
 
-    // LEFT_CLICK 이벤트 등록
     clickEventHandler.setInputAction((movement: { position: Cartesian2 }) => {
       try {
-        // 1순위: scene.pickPosition (Depth buffer 기반, 지형/3D 타일 고려)
-        let cartesian: Cartesian3 | undefined = viewer.scene.pickPosition(movement.position);
+        let cartesian: Cartesian3 | undefined;
 
-        // 2순위: globe.pick (타원체 표면 교차점 계산)
-        if (!defined(cartesian)) {
+        // 1. 마우스 위치에 3D 객체(건물, 모델 등)가 있는지 먼저 확인
+        const pickedObject = viewer.scene.pick(movement.position);
+
+        if (defined(pickedObject)) {
+          // Case A: 3D 건물/모델을 클릭함 -> pickPosition 사용
+          // pickPosition은 화면 픽셀의 깊이값을 사용하므로 건물 선택에 유리합니다.
+          cartesian = viewer.scene.pickPosition(movement.position);
+        } else {
+          // Case B: 맨땅(지형)을 클릭함 -> Ray Casting 사용
+          // 카메라에서 광선을 쏘아 지형과 만나는 점을 수학적으로 계산합니다.
+          // 줌 레벨이나 카메라 각도에 상관없이 항상 지형 표면을 정확히 잡아냅니다.
           const ray = viewer.camera.getPickRay(movement.position);
           if (ray) {
             cartesian = viewer.scene.globe.pick(ray, viewer.scene);
           }
         }
 
-        // 3순위: camera.pickEllipsoid (타원체 직접 계산)
+        // Case C: 위 방법들이 실패했을 경우 (허공 등) -> 타원체 기준 (Fallback)
         if (!defined(cartesian)) {
           cartesian = viewer.camera.pickEllipsoid(movement.position, viewer.scene.globe.ellipsoid);
         }
 
-        if (!defined(cartesian)) {
-          console.warn('[directLocationRenderer] Failed to pick position');
-          return;
+        // 최종 좌표 변환 및 저장
+        if (defined(cartesian)) {
+          const cartographic = Cartographic.fromCartesian(cartesian);
+          const longitude = CesiumMath.toDegrees(cartographic.longitude);
+          const latitude = CesiumMath.toDegrees(cartographic.latitude);
+          
+          // 높이(Height) 값은 로그로 확인 가능 (검증용)
+          // console.log(`[DirectLocation] Height: ${cartographic.height.toFixed(2)}m`);
+
+          simulationStore.addDirectLocationResult(latitude, longitude);
         }
-
-        // Cartesian3 → Cartographic → 경위도 변환
-        const cartographic = Cartographic.fromCartesian(cartesian);
-        const longitude = CesiumMath.toDegrees(cartographic.longitude);
-        const latitude = CesiumMath.toDegrees(cartographic.latitude);
-        const height = cartographic.height;
-
-        console.log(`[directLocationRenderer] Clicked location: [${longitude.toFixed(6)}, ${latitude.toFixed(6)}, ${height.toFixed(2)}m]`);
-
-        // SimulationStore에 위치 추가
-        simulationStore.addDirectLocationResult(latitude, longitude);
-
       } catch (error) {
-        console.error('[directLocationRenderer] Click handler error:', error);
+        console.error('[directLocationRenderer] Click error:', error);
       }
     }, ScreenSpaceEventType.LEFT_CLICK);
 
     isClickHandlerActive = true;
-    console.log('[enableDirectLocationClickHandler] Direct location click handler enabled');
+    console.log('[directLocationRenderer] Handler Enabled');
 
   } catch (error) {
-    console.error('[enableDirectLocationClickHandler] Failed to setup click handler:', error);
+    console.error('[directLocationRenderer] Failed to enable:', error);
   }
 }
 
@@ -109,6 +116,13 @@ export function disableDirectLocationClickHandler(): void {
     clickEventHandler.destroy();
     clickEventHandler = null;
     isClickHandlerActive = false;
+    
+    // 지형 깊이 테스트 끄기
+    const viewer = getViewer();
+    if(viewer) {
+      viewer.scene.globe.depthTestAgainstTerrain = false;
+      console.log('[directLocationRenderer] DepthTest disabled');
+    }
 
     // 마커는 제거하지 않음 - 화면 전환 시에도 유지되어야 함
 
