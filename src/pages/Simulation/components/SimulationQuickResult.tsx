@@ -12,6 +12,7 @@ import {
   getSelectedSimulationStationId,
 } from "@/utils/cesium/simulationResultRenderer";
 import SimulationProgressIndicator from "@/components/service/SimulationProgressIndicator";
+import SimulationProgressIndicatorCsv from "@/components/service/SimulationProgressIndicatorCsv";
 
 interface SimulationQuickResultProps {
   onCloseMicroApp?: () => void;
@@ -111,8 +112,13 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
   const listRef = useRef<HTMLDivElement | null>(null);
   const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
+   const [indicatorType, setIndicatorType] = useState('default');
+
   // 빠른 폴링(60fps)로 CESIUM 선택 상태 반영
   useEffect(() => {
+
+    setIndicatorType('csv');
+
     //가이드 문구 active
     // simulationStore.isSimulationQuickGuideMode = true;
     const intervalId = setInterval(() => {
@@ -316,19 +322,22 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
 
       <Spacer height={20} />
 
-        <div className="self-stretch">
+        <div className="self-stretch flex flex-col gap-2">
           <Button
             variant="solid"
             showIcon={false}
             className="w-full"
-            onClick={() => simulationStore.setCurrentView("quick")}
+            onClick={() => {
+              simulationStore.setCurrentView("quick");
+            }}
           >
             시뮬레이션 종료
           </Button>
         </div>
       </div>
 
-      <SimulationProgressIndicator />
+      {indicatorType === 'default' && <SimulationProgressIndicator />}
+      {indicatorType === 'csv' && <SimulationProgressIndicatorCsv />}
     </>
   );
 });
