@@ -351,7 +351,8 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
                 lineHeight: 'normal',
                 color: '#FFFFFF',
                 width: '48px',
-                flexShrink: 0
+                flexShrink: 0,
+                marginBottom: '0px'
               }}
             >
               날짜
@@ -369,7 +370,8 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
                     fontSize: '14px',
                     fontWeight: '400',
                     lineHeight: 'normal',
-                    color: config?.date ? '#FFFFFF' : '#A6A6A6'
+                    color: config?.date ? '#FFFFFF' : '#A6A6A6',
+                    marginBottom: '0px'
                   }}
                 >
                   {config?.date || '날짜 선택'}
@@ -393,7 +395,8 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
                 lineHeight: 'normal',
                 color: '#FFFFFF',
                 width: '48px',
-                flexShrink: 0
+                flexShrink: 0,
+                marginBottom: '0px'
               }}
             >
               시간
@@ -411,7 +414,8 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
                     fontSize: '14px',
                     fontWeight: '400',
                     lineHeight: 'normal',
-                    color: config?.time ? '#FFFFFF' : '#A6A6A6'
+                    color: config?.time ? '#FFFFFF' : '#A6A6A6',
+                    marginBottom: '0px'
                   }}
                 >
                   {config?.time || '시간 선택'}
@@ -469,7 +473,8 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
                 fontSize: '16px',
                 fontWeight: locationMode === 'address' ? '700' : '400',
                 lineHeight: 'normal',
-                color: '#000000'
+                color: '#000000',
+                marginBottom: '0px'
               }}
             >
               주소 조회
@@ -489,7 +494,8 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
                 fontSize: '16px',
                 fontWeight: locationMode === 'point' ? '700' : '400',
                 lineHeight: 'normal',
-                color: '#000000'
+                color: '#000000',
+                marginBottom: '0px'
               }}
             >
               위치 지정
@@ -631,7 +637,8 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
               fontSize: '16px',
               fontWeight: '700',
               lineHeight: 'normal',
-              color: '#000000'
+              color: '#000000',
+              marginBottom: '0px'
             }}
           >
             우선순위 조회
