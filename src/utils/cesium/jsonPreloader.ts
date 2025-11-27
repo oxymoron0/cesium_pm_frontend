@@ -1,6 +1,6 @@
-/* eslint-disable */
-// @ts-nocheck
-// JSON 파티클 데이터 프리로더
+/**
+ * JSON 파티클 데이터 프리로더
+ */
 
 import { Cartesian3, Cartographic, Math as CesiumMath } from 'cesium';
 
@@ -109,11 +109,21 @@ export async function preloadJson(
   const frameCache = new Map<number, JsonCacheEntry>();
   jsonCacheMap.set(uuid, frameCache);
 
+  const basePath = import.meta.env.VITE_BASE_PATH || '/';
+  // TODO: 실제 경로에 맞게 수정 필요. 현재는 CSV Preloader와 동일한 로직 적용
+  resultPath = `/results/aabc67b9-1ff3-40b1-92c4-1a32676565eb/`; // 테스트용 하드코딩이 필요하다면 여기에
+  
+  const normalizedPath = basePath.endsWith('/') && resultPath.startsWith('/')
+    ? basePath + resultPath.slice(1)
+    : basePath + resultPath;
+    
+  console.log("실제 api 경로 : ", normalizedPath);
+
   let loadedCount = 0;
 
   for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
     const frameNumber = String(frameIndex + 1).padStart(4, '0');
-    const jsonUrl = `${resultPath}Finedust_${frameNumber}.json`;
+    const jsonUrl = `${normalizedPath}Finedust_${frameNumber}.json`;
 
     try {
       console.log(`📥 Frame ${frameIndex}: Fetching ${jsonUrl}`);

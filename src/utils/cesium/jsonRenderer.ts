@@ -1,21 +1,21 @@
-/* eslint-disable */
-// @ts-nocheck
-// JSON 프레임별 렌더러
-
+/**
+ * JSON 프레임별 렌더러
+ */
 import { Color, Cartesian3, PointPrimitiveCollection, NearFarScalar } from 'cesium';
-import { getCachedJsonFrameData, type JsonParticleDataPoint } from './jsonPreloader';
+import { getCachedJsonFrameData } from './jsonPreloader';
+import { createPrimitiveGroup, addPrimitive, removePrimitiveGroup, clearPrimitiveGroup, findPrimitiveGroup } from './primitives';
 
-let primitiveCollection: PointPrimitiveCollection | null = null;
+const JSON_PRIMITIVE_GROUP_NAME = 'simulation_json_result';
 
 // 파티클 설정
 const particleSettings = {
-  opacity: 0.005,
+  opacity: 0.3,
   useAlphaByConcentration: true,
   minAlpha: 0.3,
   maxAlpha: 1.0,
   autoScale: true,
-  minScale: 0.0001,
-  maxScale: 20.0
+  minScale: 0.01,
+  maxScale: 10.0
 };
 
 /**
@@ -28,7 +28,16 @@ export function renderJsonFrame(uuid: string, frameIndex: number): boolean {
     return false;
   }
 
-  clearJsonPrimitives();
+  // 그룹 확인 및 정리
+  if (!findPrimitiveGroup(JSON_PRIMITIVE_GROUP_NAME)) {
+    try {
+      createPrimitiveGroup(JSON_PRIMITIVE_GROUP_NAME);
+    } catch (e) {
+      console.warn('Failed to create primitive group:', e);
+    }
+  } else {
+    clearPrimitiveGroup(JSON_PRIMITIVE_GROUP_NAME);
+  }
 
   const frameData = getCachedJsonFrameData(uuid, frameIndex);
   if (!frameData || frameData.dataPoints.length === 0) {
@@ -38,7 +47,7 @@ export function renderJsonFrame(uuid: string, frameIndex: number): boolean {
 
   const { dataPoints, pointSize } = frameData;
 
-  primitiveCollection = new PointPrimitiveCollection();
+  const primitiveCollection = new PointPrimitiveCollection();
 
   for (const point of dataPoints) {
     const position = point.position ?? Cartesian3.fromDegrees(point.lon, point.lat, point.height);
@@ -64,7 +73,8 @@ export function renderJsonFrame(uuid: string, frameIndex: number): boolean {
     });
   }
 
-  viewer.scene.primitives.add(primitiveCollection);
+  // Primitives 유틸리티를 사용하여 추가
+  addPrimitive(JSON_PRIMITIVE_GROUP_NAME, primitiveCollection);
 
   console.log(`✅ Frame ${frameIndex}: ${dataPoints.length} primitives rendered`);
   return true;
@@ -74,11 +84,7 @@ export function renderJsonFrame(uuid: string, frameIndex: number): boolean {
  * Primitives 제거
  */
 export function clearJsonPrimitives(): void {
-  const viewer = window.cviewer;
-  if (!viewer || !primitiveCollection) return;
-
-  viewer.scene.primitives.remove(primitiveCollection);
-  primitiveCollection = null;
+  removePrimitiveGroup(JSON_PRIMITIVE_GROUP_NAME);
 }
 
 /**

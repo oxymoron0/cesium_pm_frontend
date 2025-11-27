@@ -8,8 +8,9 @@ import {
   getPm10RangeInfo,
   type ParticleDataPoint
 } from './csvPreloader';
+import { createPrimitiveGroup, addPrimitive, removePrimitiveGroup, clearPrimitiveGroup, findPrimitiveGroup } from './primitives';
 
-let primitiveCollection: PointPrimitiveCollection | null = null;
+const CSV_PRIMITIVE_GROUP_NAME = 'simulation_csv_result';
 
 // PM10 색상 매핑 (5단계, 동적 구간)
 function getPM10Color(pm10Value: number, uuid: string): Color {
@@ -83,8 +84,16 @@ export function renderCsvFrame(uuid: string, frameIndex: number): boolean {
     return false;
   }
 
-  // 기존 primitives 제거
-  clearCsvPrimitives();
+  // 그룹 확인 및 정리
+  if (!findPrimitiveGroup(CSV_PRIMITIVE_GROUP_NAME)) {
+    try {
+      createPrimitiveGroup(CSV_PRIMITIVE_GROUP_NAME);
+    } catch (e) {
+      console.warn('Failed to create primitive group:', e);
+    }
+  } else {
+    clearPrimitiveGroup(CSV_PRIMITIVE_GROUP_NAME);
+  }
 
   // 캐시된 데이터 가져오기
   const dataPoints = getCachedFrameData(uuid, frameIndex);
@@ -94,7 +103,7 @@ export function renderCsvFrame(uuid: string, frameIndex: number): boolean {
   }
 
   // PointPrimitiveCollection 생성
-  primitiveCollection = new PointPrimitiveCollection();
+  const primitiveCollection = new PointPrimitiveCollection();
 
   for (const point of dataPoints) {
     const color = getPM10Color(point.pm10_micro, uuid);
@@ -115,7 +124,8 @@ export function renderCsvFrame(uuid: string, frameIndex: number): boolean {
     });
   }
 
-  viewer.scene.primitives.add(primitiveCollection);
+  // Primitives 유틸리티를 사용하여 추가
+  addPrimitive(CSV_PRIMITIVE_GROUP_NAME, primitiveCollection);
 
   console.log(` Frame ${frameIndex}: ${dataPoints.length} primitives rendered`);
   return true;
@@ -125,11 +135,7 @@ export function renderCsvFrame(uuid: string, frameIndex: number): boolean {
  * Primitives 제거
  */
 export function clearCsvPrimitives(): void {
-  const viewer = window.cviewer;
-  if (!viewer || !primitiveCollection) return;
-
-  viewer.scene.primitives.remove(primitiveCollection);
-  primitiveCollection = null;
+  removePrimitiveGroup(CSV_PRIMITIVE_GROUP_NAME);
 }
 
 /**
