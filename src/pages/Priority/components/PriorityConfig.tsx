@@ -242,7 +242,8 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
                 lineHeight: 'normal',
                 color: '#FFFFFF',
                 width: '48px',
-                flexShrink: 0
+                flexShrink: 0,
+                marginBottom: '0px'
               }}
             >
               날짜
@@ -260,6 +261,7 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
                     fontSize: '14px',
                     fontWeight: '400',
                     lineHeight: 'normal',
+                    marginBottom: '0px',
                     color: dateStr ? '#FFFFFF' : '#A6A6A6'
                   }}
                 >
@@ -284,7 +286,8 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
                 lineHeight: 'normal',
                 color: '#FFFFFF',
                 width: '48px',
-                flexShrink: 0
+                flexShrink: 0,
+                marginBottom: '0px'
               }}
             >
               시간
@@ -302,7 +305,8 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
                     fontSize: '14px',
                     fontWeight: '400',
                     lineHeight: 'normal',
-                    color: timeStr ? '#FFFFFF' : '#A6A6A6'
+                    color: timeStr ? '#FFFFFF' : '#A6A6A6',
+                    marginBottom: '0px',
                   }}
                 >
                   {timeStr || '시간 선택'}
