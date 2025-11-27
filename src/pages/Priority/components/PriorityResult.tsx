@@ -18,7 +18,7 @@ import { stationStore } from '@/stores/StationStore';
 import { routeStore } from '@/stores/RouteStore';
 import type { PriorityConfig, VulnerableFacility } from '../types';
 import type { RouteStationFeature } from '@/utils/api/types';
-import { Color, ColorBlendMode, Matrix4, Model } from 'cesium';
+// import { Color, ColorBlendMode, Matrix4, Model } from 'cesium';
 
 interface PriorityResultProps {
   config: PriorityConfig;
