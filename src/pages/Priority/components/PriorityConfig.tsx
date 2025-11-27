@@ -177,17 +177,20 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
       <Title
         info="※ 정류장 공기질 측정 데이터 기반으로, 대기질 취약 시설 순위와 살수차 우선 투입 도로 정보를 제공합니다."
         onClose={onClose}
+        onMinimize={() => priorityStore.toggleMinimize()}
         infoTitle="우선순위"
       >
         우선순위
       </Title>
-      <Spacer height={16} />
-      <span className="font-normal text-[14px] text-[rgba(166,166,166,1)]"> 
-        ※ 현재 시간 기준, 부산진구 전체의 취약시설 및 살수차 투입 우선순위를 조회할 수 있습니다. 원하는 조건으로 변경하려면 [맞춤설정 조회] 버튼을 눌러주세요.
-        </span>
-      <Spacer height={16} />
-      <SubTitle>기본 설정</SubTitle>
-      <Divider />
+
+      <div style={{ display: priorityStore.isMinimized ? 'none' : 'contents' }}>
+        <Spacer height={16} />
+        <span className="font-normal text-[14px] text-[rgba(166,166,166,1)]">
+          ※ 현재 시간 기준, 부산진구 전체의 취약시설 및 살수차 투입 우선순위를 조회할 수 있습니다. 원하는 조건으로 변경하려면 [맞춤설정 조회] 버튼을 눌러주세요.
+          </span>
+        <Spacer height={16} />
+        <SubTitle>기본 설정</SubTitle>
+        <Divider />
 
       <Spacer height={16} />
 
@@ -239,7 +242,8 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
                 lineHeight: 'normal',
                 color: '#FFFFFF',
                 width: '48px',
-                flexShrink: 0
+                flexShrink: 0,
+                marginBottom: '0px'
               }}
             >
               날짜
@@ -257,6 +261,7 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
                     fontSize: '14px',
                     fontWeight: '400',
                     lineHeight: 'normal',
+                    marginBottom: '0px',
                     color: dateStr ? '#FFFFFF' : '#A6A6A6'
                   }}
                 >
@@ -281,7 +286,8 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
                 lineHeight: 'normal',
                 color: '#FFFFFF',
                 width: '48px',
-                flexShrink: 0
+                flexShrink: 0,
+                marginBottom: '0px'
               }}
             >
               시간
@@ -299,7 +305,8 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
                     fontSize: '14px',
                     fontWeight: '400',
                     lineHeight: 'normal',
-                    color: timeStr ? '#FFFFFF' : '#A6A6A6'
+                    color: timeStr ? '#FFFFFF' : '#A6A6A6',
+                    marginBottom: '0px',
                   }}
                 >
                   {timeStr || '시간 선택'}
@@ -439,6 +446,7 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
         >
           우선순위 조회
         </Button>
+      </div>
       </div>
     </>
   );

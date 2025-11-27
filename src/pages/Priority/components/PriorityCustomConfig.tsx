@@ -290,11 +290,12 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
 
   return (
     <>
-      <Title onBack={onBack}>
+      <Title onBack={onBack} onMinimize={() => priorityStore.toggleMinimize()}>
         맞춤설정으로 조회
       </Title>
 
-      <Spacer height={16} />
+      <div style={{ display: priorityStore.isMinimized ? 'none' : 'contents' }}>
+        <Spacer height={16} />
 
       {/* 캡션 */}
       <div className="self-stretch">
@@ -636,6 +637,7 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
             우선순위 조회
           </p>
         </button>
+      </div>
       </div>
     </>
   );
