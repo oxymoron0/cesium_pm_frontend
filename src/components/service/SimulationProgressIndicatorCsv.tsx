@@ -85,16 +85,22 @@ const SimulationProgressIndicatorCsv = observer(function SimulationProgressIndic
 
   const ensurePreloaded = async (params: ReturnType<typeof getSimulationParams>) => {
     if (!params) return;
+
     const cacheStatus = getCsvCacheStatus(params.uuid);
-    if (!cacheStatus.isCached || cacheStatus.loadedFrames < totalFrames) {
-      setIsPreloading(true);
-      try {
-        await preloadCsv(params.uuid, params.resultPath, totalFrames, setPreloadProgress);
-      } catch (error) {
-        console.error('CSV Preload failed:', error);
-      } finally {
-        setIsPreloading(false);
-      }
+
+    // 이미 완전히 로드된 경우 즉시 리턴 (setIsPreloading 호출 없음)
+    if (cacheStatus.isCached && cacheStatus.loadedFrames === totalFrames) {
+      return;
+    }
+
+    // 실제로 로드가 필요한 경우에만 로딩 상태 설정
+    setIsPreloading(true);
+    try {
+      await preloadCsv(params.uuid, params.resultPath, totalFrames, setPreloadProgress);
+    } catch (error) {
+      console.error('CSV Preload failed:', error);
+    } finally {
+      setIsPreloading(false);
     }
   };
 
@@ -197,7 +203,9 @@ const SimulationProgressIndicatorCsv = observer(function SimulationProgressIndic
     const params = getSimulationParams();
     if (!params) return;
 
+    // ensurePreloaded 내부에서 캐시 체크 및 로딩 상태 관리
     await ensurePreloaded(params);
+
     renderCsvFrame(params.uuid, val);
   };
 

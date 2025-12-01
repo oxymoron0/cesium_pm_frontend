@@ -39,7 +39,7 @@ const jsonCacheMap = new Map<string, Map<number, JsonCacheEntry>>();
 /**
  * JSON 파싱
  */
-async function parseJson(jsonUrl: string, sampleRate: number = 1): Promise<JsonFrameData> {
+async function parseJson(jsonUrl: string, sampleRate: number = 5): Promise<JsonFrameData> {
   const response = await fetch(jsonUrl);
 
   if (!response.ok) {
@@ -48,22 +48,20 @@ async function parseJson(jsonUrl: string, sampleRate: number = 1): Promise<JsonF
   }
 
   const data = await response.json();
-  const { pointSize, count, positions, colors } = data;
+  const { pointSize, count, positions, color, alpha, colors } = data;
 
   const dataPoints: JsonParticleDataPoint[] = [];
-  const colorStride = Array.isArray(colors) && colors.length >= count * 4 ? 4 : 3;
 
-  let sampleCounter = 0;
+  // 두 가지 JSON 구조 지원:
+  // 1. colors 배열 (RGB per particle): {colors: [r,g,b,r,g,b,...]}
+  // 2. color + alpha (single color): {color: [r,g,b], alpha: [...]}
+  const hasColorsArray = !!colors;
 
   for (let i = 0; i < count; i++) {
-    if (sampleCounter % sampleRate !== 0) {
-      sampleCounter++;
-      continue;
-    }
-    sampleCounter++;
+    // 샘플링: sampleRate가 5이면 5개 중 1개만 표출
+    if (i % sampleRate !== 0) continue;
 
     const posIdx = i * 3;
-    const colorIdx = i * colorStride;
 
     const x = positions[posIdx];
     const y = positions[posIdx + 1];
@@ -75,10 +73,22 @@ async function parseJson(jsonUrl: string, sampleRate: number = 1): Promise<JsonF
     const lat = CesiumMath.toDegrees(cartographic.latitude);
     const height = cartographic.height;
 
-    const r = colors?.[colorIdx] ?? 1;
-    const g = colors?.[colorIdx + 1] ?? 1;
-    const b = colors?.[colorIdx + 2] ?? 1;
-    const a = colorStride === 4 && colors?.[colorIdx + 3] !== undefined ? colors[colorIdx + 3] : 1;
+    let r: number, g: number, b: number, a: number;
+
+    if (hasColorsArray) {
+      // colors 배열: RGB per particle
+      const colorIdx = i * 3;
+      r = colors[colorIdx] ?? 1;
+      g = colors[colorIdx + 1] ?? 1;
+      b = colors[colorIdx + 2] ?? 1;
+      a = 1; // colors 배열 구조에는 alpha 없음
+    } else {
+      // color + alpha: 단일 색상 + 개별 alpha
+      r = color?.[0] ?? 1;
+      g = color?.[1] ?? 1;
+      b = color?.[2] ?? 1;
+      a = alpha?.[i] ?? 1;
+    }
 
     dataPoints.push({
       lon,
@@ -89,7 +99,7 @@ async function parseJson(jsonUrl: string, sampleRate: number = 1): Promise<JsonF
     });
   }
 
-  console.log(`✅ Parsed JSON: ${dataPoints.length} points (sample rate: 1/${sampleRate})`);
+  console.log(`✅ Parsed JSON: ${dataPoints.length} points (sampled from ${count}, rate: 1/${sampleRate})`);
 
   return { dataPoints, pointSize: pointSize || 1 };
 }
@@ -102,26 +112,55 @@ export async function preloadJson(
   resultPath: string,
   totalFrames: number,
   onProgress?: (progress: JsonPreloadProgress) => void,
-  sampleRate: number = 1
+  sampleRate: number = 5
 ): Promise<void> {
   console.log(` [JSON Preloader] Starting preload for ${uuid} (${totalFrames} frames)`);
 
-  const frameCache = new Map<number, JsonCacheEntry>();
-  jsonCacheMap.set(uuid, frameCache);
+  // 기존 캐시 확인
+  let frameCache = jsonCacheMap.get(uuid);
+
+  // 이미 완전히 로드된 경우 즉시 리턴 (onProgress 호출 없음)
+  if (frameCache) {
+    let loadedCount = 0;
+    frameCache.forEach(entry => {
+      if (entry.loaded) loadedCount++;
+    });
+
+    if (loadedCount === totalFrames) {
+      console.log(` [JSON Preloader] Already fully loaded: ${loadedCount}/${totalFrames} frames`);
+      return;
+    }
+    console.log(` [JSON Preloader] Partially loaded: ${loadedCount}/${totalFrames} frames, continuing...`);
+  } else {
+    // 캐시가 없으면 새로 생성
+    frameCache = new Map<number, JsonCacheEntry>();
+    jsonCacheMap.set(uuid, frameCache);
+  }
 
   const basePath = import.meta.env.VITE_BASE_PATH || '/';
   // TODO: 실제 경로에 맞게 수정 필요. 현재는 CSV Preloader와 동일한 로직 적용
-  resultPath = `/results/aabc67b9-1ff3-40b1-92c4-1a32676565eb/`; // 테스트용 하드코딩이 필요하다면 여기에
-  
+  resultPath = `/results/convert/aabc67b9-1ff3-40b1-92c4-1a32676565eb/`; // 테스트용 하드코딩이 필요하다면 여기에
+
   const normalizedPath = basePath.endsWith('/') && resultPath.startsWith('/')
     ? basePath + resultPath.slice(1)
     : basePath + resultPath;
-    
+
   console.log("실제 api 경로 : ", normalizedPath);
 
+  // 기존에 로드된 프레임 수 계산
   let loadedCount = 0;
+  frameCache.forEach(entry => {
+    if (entry.loaded) loadedCount++;
+  });
 
   for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
+    // 이미 로드된 프레임은 건너뛰기
+    const existingEntry = frameCache.get(frameIndex);
+    if (existingEntry && existingEntry.loaded) {
+      console.log(` Frame ${frameIndex}: Already cached, skipping`);
+      continue;
+    }
+
     const frameNumber = String(frameIndex + 1).padStart(4, '0');
     const jsonUrl = `${normalizedPath}Finedust_${frameNumber}.json`;
 

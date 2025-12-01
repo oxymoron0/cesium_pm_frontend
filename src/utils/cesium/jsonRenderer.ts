@@ -8,15 +8,28 @@ import { createPrimitiveGroup, addPrimitive, removePrimitiveGroup, clearPrimitiv
 const JSON_PRIMITIVE_GROUP_NAME = 'simulation_json_result';
 
 // 파티클 설정
-const particleSettings = {
-  opacity: 0.3,
-  useAlphaByConcentration: true,
-  minAlpha: 0.3,
-  maxAlpha: 1.0,
+export const particleSettings = {
+  opacity: 0.036,
   autoScale: true,
-  minScale: 0.01,
-  maxScale: 10.0
+  nearDistance: 0,
+  nearScale: 45.0,
+  farDistance: 8000,
+  farScale: 2.7
 };
+
+/**
+ * 파티클 설정 업데이트
+ */
+export function updateParticleSettings(newSettings: Partial<typeof particleSettings>): void {
+  Object.assign(particleSettings, newSettings);
+}
+
+/**
+ * 현재 파티클 설정 가져오기
+ */
+export function getParticleSettings(): typeof particleSettings {
+  return { ...particleSettings };
+}
 
 /**
  * 특정 프레임 렌더링
@@ -52,7 +65,7 @@ export function renderJsonFrame(uuid: string, frameIndex: number): boolean {
   for (const point of dataPoints) {
     const position = point.position ?? Cartesian3.fromDegrees(point.lon, point.lat, point.height);
 
-    // JSON에서 제공된 색상 사용
+    // JSON에서 제공된 색상 사용 (RGB + alpha)
     const color = new Color(
       point.color.r,
       point.color.g,
@@ -67,7 +80,12 @@ export function renderJsonFrame(uuid: string, frameIndex: number): boolean {
       outlineColor: Color.BLACK.withAlpha(color.alpha * 0.5),
       outlineWidth: color.alpha > 0.7 ? 1 : 0,
       scaleByDistance: particleSettings.autoScale
-        ? new NearFarScalar(0, particleSettings.maxScale, 5000, particleSettings.minScale)
+        ? new NearFarScalar(
+            particleSettings.nearDistance,
+            particleSettings.nearScale,
+            particleSettings.farDistance,
+            particleSettings.farScale
+          )
         : undefined,
       disableDepthTestDistance: 0
     });

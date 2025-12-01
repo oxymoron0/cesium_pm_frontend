@@ -160,9 +160,26 @@ export async function preloadCsv(
 ): Promise<void> {
   console.log(` [CSV Preloader] Starting preload for ${uuid} (${totalFrames} frames)`);
 
-  // 캐시 초기화
-  const frameCache = new Map<number, CsvCacheEntry>();
-  csvCacheMap.set(uuid, frameCache);
+  // 기존 캐시 확인
+  let frameCache = csvCacheMap.get(uuid);
+
+  // 이미 완전히 로드된 경우 즉시 리턴 (onProgress 호출 없음)
+  if (frameCache) {
+    let loadedCount = 0;
+    frameCache.forEach(entry => {
+      if (entry.loaded) loadedCount++;
+    });
+
+    if (loadedCount === totalFrames) {
+      console.log(` [CSV Preloader] Already fully loaded: ${loadedCount}/${totalFrames} frames`);
+      return;
+    }
+    console.log(` [CSV Preloader] Partially loaded: ${loadedCount}/${totalFrames} frames, continuing...`);
+  } else {
+    // 캐시가 없으면 새로 생성
+    frameCache = new Map<number, CsvCacheEntry>();
+    csvCacheMap.set(uuid, frameCache);
+  }
 
   const basePath = import.meta.env.VITE_BASE_PATH || '/';
   resultPath = `/results/aabc67b9-1ff3-40b1-92c4-1a32676565eb/`;
@@ -171,10 +188,21 @@ export async function preloadCsv(
   : basePath + resultPath
   console.log("실제 api 경로 : ", normalizedPath)
 
+  // 기존에 로드된 프레임 수 계산
   let loadedCount = 0;
+  frameCache.forEach(entry => {
+    if (entry.loaded) loadedCount++;
+  });
 
   // 순차 로딩
   for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
+    // 이미 로드된 프레임은 건너뛰기
+    const existingEntry = frameCache.get(frameIndex);
+    if (existingEntry && existingEntry.loaded) {
+      console.log(` Frame ${frameIndex}: Already cached, skipping`);
+      continue;
+    }
+
     const frameNumber = String(frameIndex + 1).padStart(4, '0');
     const csvUrl = `${normalizedPath}Finedust_${frameNumber}.csv`;
 
