@@ -18,6 +18,7 @@ const BusHtmlRenderer = observer(() => {
     lastRouteName?: string;
     lastTrackingState?: boolean;
     lastSensorVisibility?: string;
+    lastGradeVisibility?: string;
   }>>(new Map());
   const lastUpdateTime = useRef<number>(0);
   const terrainHeightCache = useRef<Map<string, number>>(new Map());
@@ -66,10 +67,11 @@ const BusHtmlRenderer = observer(() => {
     const showPM25 = airConfigStore.isSensorVisible('pm25');
     const showVOCs = airConfigStore.isSensorVisible('vocs');
 
-    // 모든 센서가 비활성화되면 빈 문자열 반환
-    if (!showPM10 && !showPM25 && !showVOCs) {
-      return '';
-    }
+    // 등급 필터 확인 (PM10, PM2.5 기준)
+    const passesGradeFilter = airConfigStore.shouldShowByGrade(pm10Value, pm25Value);
+
+    // 모든 센서가 비활성화되거나 등급 필터를 통과하지 못하면 숨김 처리
+    const shouldHide = (!showPM10 && !showPM25 && !showVOCs) || !passesGradeFilter;
 
     // PM10 색상 계산
     const getPM10Color = (value: number) => {
@@ -130,7 +132,7 @@ const BusHtmlRenderer = observer(() => {
         </div>` : '';
 
     return `
-      <div style="display: flex; padding: 8px; justify-content: center; align-items: center; gap: 8px; border-radius: 8px; border: 1px solid #C4C6C6; background: rgba(30, 30, 30, 0.90); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); pointer-events: none; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
+      <div class="sensor-container" style="display: ${shouldHide ? 'none' : 'flex'}; padding: 8px; justify-content: center; align-items: center; gap: 8px; border-radius: 8px; border: 1px solid #C4C6C6; background: rgba(30, 30, 30, 0.90); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); pointer-events: none; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
         ${pm10HTML}
         ${pm25HTML}
         ${vocsHTML}
@@ -227,8 +229,9 @@ const BusHtmlRenderer = observer(() => {
   ) => {
     let busInfo = busElementsRef.current.get(vehicleNumber);
     const currentTrackingState = busStore.trackedBusId === vehicleNumber;
-    // 센서 표시 상태를 문자열로 직렬화하여 비교
+    // 센서 및 등급 표시 상태를 별도로 직렬화하여 비교
     const currentSensorVisibility = JSON.stringify(airConfigStore.sensorVisibility);
+    const currentGradeVisibility = JSON.stringify(airConfigStore.gradeVisibility);
 
     if (!busInfo) {
       // 새 엘리먼트 생성
@@ -247,30 +250,50 @@ const BusHtmlRenderer = observer(() => {
         lastSensorData: sensorData ? { ...sensorData } : undefined,
         lastRouteName: routeName,
         lastTrackingState: currentTrackingState,
-        lastSensorVisibility: currentSensorVisibility
+        lastSensorVisibility: currentSensorVisibility,
+        lastGradeVisibility: currentGradeVisibility
       };
       busElementsRef.current.set(vehicleNumber, busInfo);
       containerRef.current?.appendChild(element);
 
       registerBusEvents(element, vehicleNumber);
     } else {
-      // 내용 변경 확인 (센서 표시 상태 포함)
-      const contentChanged = (
-        busInfo.lastRouteName !== routeName ||
-        busInfo.lastTrackingState !== currentTrackingState ||
-        busInfo.lastSensorVisibility !== currentSensorVisibility ||
-        JSON.stringify(busInfo.lastSensorData) !== JSON.stringify(sensorData)
+      // 변경 유형 확인
+      const sensorDataChanged = JSON.stringify(busInfo.lastSensorData) !== JSON.stringify(sensorData);
+      const routeChanged = busInfo.lastRouteName !== routeName;
+      const trackingChanged = busInfo.lastTrackingState !== currentTrackingState;
+      const sensorVisibilityChanged = busInfo.lastSensorVisibility !== currentSensorVisibility;
+      const gradeVisibilityChanged = busInfo.lastGradeVisibility !== currentGradeVisibility;
+
+      // 등급 가시성만 변경된 경우 (센서 가시성은 그대로)
+      const onlyGradeVisibilityChanged = (
+        !sensorDataChanged && !routeChanged && !trackingChanged && !sensorVisibilityChanged && gradeVisibilityChanged
       );
 
-      if (contentChanged) {
+      if (onlyGradeVisibilityChanged) {
+        // display 속성만 업데이트 (innerHTML 재생성 없음)
+        const sensorContainer = busInfo.element.querySelector('.sensor-container') as HTMLElement;
+        if (sensorContainer && sensorData) {
+          const pm10Value = Math.round(sensorData.pm * 10) / 10;
+          const pm25Value = Math.round(sensorData.fpm * 10) / 10;
+          const showPM10 = airConfigStore.isSensorVisible('pm10');
+          const showPM25 = airConfigStore.isSensorVisible('pm25');
+          const showVOCs = airConfigStore.isSensorVisible('vocs');
+          const passesGradeFilter = airConfigStore.shouldShowByGrade(pm10Value, pm25Value);
+          const shouldHide = (!showPM10 && !showPM25 && !showVOCs) || !passesGradeFilter;
+          sensorContainer.style.display = shouldHide ? 'none' : 'flex';
+        }
+        busInfo.lastGradeVisibility = currentGradeVisibility;
+      } else if (sensorDataChanged || routeChanged || trackingChanged || sensorVisibilityChanged) {
+        // 전체 HTML 재생성
         busInfo.element.innerHTML = generateContainerHTML(routeName, vehicleNumber, sensorData);
+        registerBusEvents(busInfo.element, vehicleNumber);
 
         busInfo.lastSensorData = sensorData ? { ...sensorData } : undefined;
         busInfo.lastRouteName = routeName;
         busInfo.lastTrackingState = currentTrackingState;
         busInfo.lastSensorVisibility = currentSensorVisibility;
-
-        registerBusEvents(busInfo.element, vehicleNumber);
+        busInfo.lastGradeVisibility = currentGradeVisibility;
       }
     }
 
