@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite';
 import SubTitle from '@/components/basic/SubTitle';
 import Divider from '@/components/basic/Divider';
 import { airConfigStore } from '@/stores/AirConfigStore';
+import type { AirQualityLevel } from '@/utils/api/types';
 
 type SensorType = 'pm10' | 'pm25' | 'vocs';
 
@@ -58,10 +59,59 @@ const SensorButton = memo(function SensorButton({
   );
 });
 
+interface GradeCheckboxProps {
+  label: string;
+  color: string;
+  isChecked: boolean;
+  onClick: () => void;
+}
+
+/**
+ * GradeCheckbox Component
+ * 등급 선택 체크박스
+ */
+const GradeCheckbox = memo(function GradeCheckbox({
+  label,
+  color,
+  isChecked,
+  onClick
+}: GradeCheckboxProps) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-2 transition-opacity duration-200 ease-out"
+      style={{ opacity: isChecked ? 1 : 0.5 }}
+    >
+      {/* 체크박스 */}
+      <div
+        className="w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ease-out"
+        style={{
+          borderColor: isChecked ? color : '#FFFFFF',
+          backgroundColor: isChecked ? color : 'transparent',
+        }}
+      >
+        {isChecked && (
+          <svg width="12" height="10" viewBox="0 0 12 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 5L4.5 8.5L11 1" stroke="#000000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        )}
+      </div>
+      {/* 라벨 */}
+      <span className="text-sm text-white">{label}</span>
+    </button>
+  );
+});
+
 interface SensorConfig {
   type: SensorType;
   icon: string;
   label: string;
+}
+
+interface GradeConfig {
+  type: AirQualityLevel;
+  label: string;
+  color: string;
 }
 
 const SENSOR_CONFIGS: SensorConfig[] = [
@@ -70,13 +120,21 @@ const SENSOR_CONFIGS: SensorConfig[] = [
   { type: 'vocs', icon: 'vocicon.svg', label: 'VOCs' },
 ];
 
+const GRADE_CONFIGS: GradeConfig[] = [
+  { type: 'good', label: '좋음', color: '#18A274' },
+  { type: 'normal', label: '보통', color: '#FFD040' },
+  { type: 'bad', label: '나쁨', color: '#FF7700' },
+  { type: 'very_bad', label: '매우 나쁨', color: '#D32F2D' },
+];
+
 /**
  * AirSettingPanel Component
  * 대기 설정 패널 내용
  * - 대기 항목 선택 (PM10, PM2.5, VOCs)
- * - 등급 선택 (추후 구현)
+ * - 등급 선택 (좋음, 보통, 나쁨, 매우 나쁨)
  */
 const AirSettingPanel = observer(function AirSettingPanel() {
+  // 센서 토글 핸들러
   const handlePM10Click = useCallback(() => {
     airConfigStore.toggleSensor('pm10');
   }, []);
@@ -89,7 +147,26 @@ const AirSettingPanel = observer(function AirSettingPanel() {
     airConfigStore.toggleSensor('vocs');
   }, []);
 
-  const handlers = [handlePM10Click, handlePM25Click, handleVOCsClick];
+  const sensorHandlers = [handlePM10Click, handlePM25Click, handleVOCsClick];
+
+  // 등급 토글 핸들러
+  const handleGoodClick = useCallback(() => {
+    airConfigStore.toggleGrade('good');
+  }, []);
+
+  const handleNormalClick = useCallback(() => {
+    airConfigStore.toggleGrade('normal');
+  }, []);
+
+  const handleBadClick = useCallback(() => {
+    airConfigStore.toggleGrade('bad');
+  }, []);
+
+  const handleVeryBadClick = useCallback(() => {
+    airConfigStore.toggleGrade('very_bad');
+  }, []);
+
+  const gradeHandlers = [handleGoodClick, handleNormalClick, handleBadClick, handleVeryBadClick];
 
   return (
     <div className="flex flex-col w-full">
@@ -104,12 +181,28 @@ const AirSettingPanel = observer(function AirSettingPanel() {
             icon={config.icon}
             label={config.label}
             isActive={airConfigStore.isSensorVisible(config.type)}
-            onClick={handlers[index]}
+            onClick={sensorHandlers[index]}
           />
         ))}
       </div>
 
-      {/* 등급 선택 섹션 - 추후 구현 */}
+      {/* 등급 선택 섹션 */}
+      <div className="mt-6">
+        <SubTitle>등급 선택</SubTitle>
+        <Divider color="bg-white" />
+
+        <div className="flex justify-between gap-4 mt-4">
+          {GRADE_CONFIGS.map((config, index) => (
+            <GradeCheckbox
+              key={config.type}
+              label={config.label}
+              color={config.color}
+              isChecked={airConfigStore.isGradeVisible(config.type)}
+              onClick={gradeHandlers[index]}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 });
