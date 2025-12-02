@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import Panel from '@/components/basic/Panel';
 import Title from '@/components/basic/Title';
 import AirConfigButton from './AirConfigButton';
+import AirSettingPanel from './AirSettingPanel';
 
 type AirConfigType = 'airConfig' | 'nationalSensor' | 'legend' | null;
 
@@ -23,6 +24,7 @@ const BUTTON_BOTTOM = 88;
 const BUTTON_HEIGHT = 72;
 const PANEL_GAP = 14;
 const RIGHT_OFFSET = 90;
+const PANEL_WIDTH = '408px';
 
 /**
  * AirConfig Component
@@ -53,6 +55,20 @@ function AirConfig() {
 
   const activeConfig = BUTTON_CONFIGS.find(config => config.id === activeButton);
 
+  // 패널 내용 렌더링
+  const renderPanelContent = () => {
+    switch (activeButton) {
+      case 'airConfig':
+        return <AirSettingPanel />;
+      case 'nationalSensor':
+        return null; // 추후 구현
+      case 'legend':
+        return null; // 추후 구현
+      default:
+        return null;
+    }
+  };
+
   return (
     <>
       {/* 활성화된 버튼의 Panel */}
@@ -61,11 +77,10 @@ function AirConfig() {
           position="right"
           offset={RIGHT_OFFSET}
           bottom={BUTTON_BOTTOM + BUTTON_HEIGHT + PANEL_GAP}
-          width="300px"
-          height="200px"
+          width={PANEL_WIDTH}
         >
           <Title onClose={handleClosePanel}>{activeConfig.panelTitle}</Title>
-          {/* Panel 내용은 추후 구현 */}
+          {renderPanelContent()}
         </Panel>
       )}
 
