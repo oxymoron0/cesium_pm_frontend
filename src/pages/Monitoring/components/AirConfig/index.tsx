@@ -3,6 +3,7 @@ import Panel from '@/components/basic/Panel';
 import Title from '@/components/basic/Title';
 import AirConfigButton from './AirConfigButton';
 import AirSettingPanel from './AirSettingPanel';
+import LegendPanel from './LegendPanel';
 
 type AirConfigType = 'airConfig' | 'nationalSensor' | 'legend' | null;
 
@@ -63,7 +64,7 @@ function AirConfig() {
       case 'nationalSensor':
         return null; // 추후 구현
       case 'legend':
-        return null; // 추후 구현
+        return <LegendPanel />;
       default:
         return null;
     }
