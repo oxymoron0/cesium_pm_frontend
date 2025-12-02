@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite';
 import { Entity, Cartographic, Cartesian3 } from 'cesium';
 import * as Cesium from 'cesium';
 import { busStore } from '@/stores/BusStore';
+import { airConfigStore } from '@/stores/AirConfigStore';
 
 /**
  * BusHtmlRenderer
@@ -16,6 +17,7 @@ const BusHtmlRenderer = observer(() => {
     lastSensorData?: { pm: number; fpm: number; voc: number };
     lastRouteName?: string;
     lastTrackingState?: boolean;
+    lastSensorVisibility?: string;
   }>>(new Map());
   const lastUpdateTime = useRef<number>(0);
   const terrainHeightCache = useRef<Map<string, number>>(new Map());
@@ -59,6 +61,16 @@ const BusHtmlRenderer = observer(() => {
     const pm25Value = Math.round(sensorData.fpm * 10) / 10;
     const vocsValue = Math.round(sensorData.voc * 10) / 10;
 
+    // 센서 표시 여부 확인
+    const showPM10 = airConfigStore.isSensorVisible('pm10');
+    const showPM25 = airConfigStore.isSensorVisible('pm25');
+    const showVOCs = airConfigStore.isSensorVisible('vocs');
+
+    // 모든 센서가 비활성화되면 빈 문자열 반환
+    if (!showPM10 && !showPM25 && !showVOCs) {
+      return '';
+    }
+
     // PM10 색상 계산
     const getPM10Color = (value: number) => {
       if (value <= 30) return '#18A274';
@@ -92,26 +104,36 @@ const BusHtmlRenderer = observer(() => {
     const pm25TextColor = getPM25TextColor(pm25Color);
     const vocsTextColor = '#000'; // VOCs는 항상 회색 배경이므로 검정 텍스트
 
-    return `
-      <div style="display: flex; padding: 8px; justify-content: center; align-items: center; gap: 8px; border-radius: 8px; border: 1px solid #C4C6C6; background: rgba(30, 30, 30, 0.90); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); pointer-events: none; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
+    // 각 센서 아이템 HTML
+    const pm10HTML = showPM10 ? `
         <div style="display: flex; min-width: 64px; flex-direction: column; align-items: center; gap: 8px;">
           <div style="color: #FFF; text-align: center; font-variant-numeric: lining-nums tabular-nums; font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 14px; font-style: normal; font-weight: 800; line-height: 1; letter-spacing: -0.6px; white-space: nowrap;">미세먼지</div>
           <div style="display: flex; width: 56px; height: 56px; flex-direction: column; justify-content: center; align-items: center; border-radius: 36px; background: ${pm10Color};">
             <div style="color: ${pm10TextColor}; text-align: center; font-variant-numeric: lining-nums tabular-nums; font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 20px; font-style: normal; font-weight: 600; line-height: 1; margin-bottom: 2px;">${pm10Value}</div>
           </div>
-        </div>
+        </div>` : '';
+
+    const pm25HTML = showPM25 ? `
         <div style="display: flex; min-width: 64px; flex-direction: column; align-items: center; gap: 8px;">
           <div style="color: #FFF; text-align: center; font-variant-numeric: lining-nums tabular-nums; font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 14px; font-style: normal; font-weight: 800; line-height: 1; letter-spacing: -0.6px; white-space: nowrap;">초미세먼지</div>
           <div style="display: flex; width: 56px; height: 56px; flex-direction: column; justify-content: center; align-items: center; border-radius: 36px; background: ${pm25Color};">
             <div style="color: ${pm25TextColor}; text-align: center; font-variant-numeric: lining-nums tabular-nums; font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 20px; font-style: normal; font-weight: 600; line-height: 1; margin-bottom: 2px;">${pm25Value}</div>
           </div>
-        </div>
+        </div>` : '';
+
+    const vocsHTML = showVOCs ? `
         <div style="display: flex; min-width: 64px; flex-direction: column; align-items: center; gap: 8px;">
           <div style="color: #FFF; text-align: center; font-variant-numeric: lining-nums tabular-nums; font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 14px; font-style: normal; font-weight: 800; line-height: 1; letter-spacing: -0.6px; white-space: nowrap;">VOCs</div>
           <div style="display: flex; width: 56px; height: 56px; flex-direction: column; justify-content: center; align-items: center; border-radius: 36px; background: ${vocsColor};">
             <div style="color: ${vocsTextColor}; text-align: center; font-variant-numeric: lining-nums tabular-nums; font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 20px; font-style: normal; font-weight: 600; line-height: 1; margin-bottom: 2px;">${vocsValue}</div>
           </div>
-        </div>
+        </div>` : '';
+
+    return `
+      <div style="display: flex; padding: 8px; justify-content: center; align-items: center; gap: 8px; border-radius: 8px; border: 1px solid #C4C6C6; background: rgba(30, 30, 30, 0.90); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); pointer-events: none; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
+        ${pm10HTML}
+        ${pm25HTML}
+        ${vocsHTML}
       </div>
     `;
   }, []);
@@ -205,6 +227,8 @@ const BusHtmlRenderer = observer(() => {
   ) => {
     let busInfo = busElementsRef.current.get(vehicleNumber);
     const currentTrackingState = busStore.trackedBusId === vehicleNumber;
+    // 센서 표시 상태를 문자열로 직렬화하여 비교
+    const currentSensorVisibility = JSON.stringify(airConfigStore.sensorVisibility);
 
     if (!busInfo) {
       // 새 엘리먼트 생성
@@ -222,17 +246,19 @@ const BusHtmlRenderer = observer(() => {
         element,
         lastSensorData: sensorData ? { ...sensorData } : undefined,
         lastRouteName: routeName,
-        lastTrackingState: currentTrackingState
+        lastTrackingState: currentTrackingState,
+        lastSensorVisibility: currentSensorVisibility
       };
       busElementsRef.current.set(vehicleNumber, busInfo);
       containerRef.current?.appendChild(element);
 
       registerBusEvents(element, vehicleNumber);
     } else {
-      // 내용 변경 확인 (단순화)
+      // 내용 변경 확인 (센서 표시 상태 포함)
       const contentChanged = (
         busInfo.lastRouteName !== routeName ||
         busInfo.lastTrackingState !== currentTrackingState ||
+        busInfo.lastSensorVisibility !== currentSensorVisibility ||
         JSON.stringify(busInfo.lastSensorData) !== JSON.stringify(sensorData)
       );
 
@@ -242,6 +268,7 @@ const BusHtmlRenderer = observer(() => {
         busInfo.lastSensorData = sensorData ? { ...sensorData } : undefined;
         busInfo.lastRouteName = routeName;
         busInfo.lastTrackingState = currentTrackingState;
+        busInfo.lastSensorVisibility = currentSensorVisibility;
 
         registerBusEvents(busInfo.element, vehicleNumber);
       }
