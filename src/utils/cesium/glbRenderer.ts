@@ -88,8 +88,8 @@ export async function renderBusModels(busData: BusTrajectoryData[]): Promise<voi
     const colorHex = ROUTE_COLOR_MAP[bus.route_name] || '#888888'
     const color = Color.fromCssColorString(colorHex)
 
-    // GLB 모델의 기본 방향 보정 (+90도)
-    const adjustedHeading = heading + Math.PI / 2
+    // GLB 모델의 기본 방향 보정 (-90도)
+    const adjustedHeading = heading - Math.PI / 2
     const hpr = new HeadingPitchRoll(adjustedHeading, 0, 0)
     const orientation = Transforms.headingPitchRollQuaternion(position, hpr)
 
@@ -238,8 +238,8 @@ function animationLoop() {
       // 위치 업데이트
       entity.position = new ConstantPositionProperty(position)
 
-      // 방향 업데이트 (GLB 모델 기본 방향 보정 +90도)
-      const adjustedHeading = routePosition.heading + Math.PI / 2
+      // 방향 업데이트 (GLB 모델 기본 방향 보정 -90도)
+      const adjustedHeading = routePosition.heading - Math.PI / 2
       const hpr = new HeadingPitchRoll(adjustedHeading, 0, 0)
       const orientation = Transforms.headingPitchRollQuaternion(position, hpr)
       entity.orientation = new ConstantProperty(orientation)
@@ -397,7 +397,7 @@ function calculateHeading(startPosition: Cartesian3, targetPosition: Cartesian3)
  * 위치와 heading으로부터 orientation quaternion 생성
  */
 function createOrientationFromHeading(position: Cartesian3, heading: number) {
-  const adjustedHeading = heading + Math.PI / 2
+  const adjustedHeading = heading - Math.PI / 2
   const hpr = new HeadingPitchRoll(adjustedHeading, 0, 0)
   const quaternion = Transforms.headingPitchRollQuaternion(position, hpr)
   return quaternion
