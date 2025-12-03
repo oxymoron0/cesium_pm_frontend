@@ -741,7 +741,7 @@ class SimulationStore {
 
     try {
       //const count = await getSimulationGlbCount(uuid);
-      const count = 18;
+      const count = 100;
       runInAction(() => {
         this.glbCount = count;
       });

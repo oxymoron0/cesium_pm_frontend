@@ -192,6 +192,9 @@ class PriorityStore {
   vulnerableFacilitiesApiData: VulnerableFacilitiesApiResponse | null = null;
   buildingFacilitiesCache: Map<string, BuildingFacilitiesResponse> = new Map();
 
+  // 패널 최소화 상태
+  isMinimized: boolean = false;
+
   constructor() {
     makeAutoObservable(this);
     // Mock 데이터로 캐시 초기화
@@ -282,6 +285,17 @@ class PriorityStore {
 
   toggleDropdown() {
     this.isDropdownOpen = !this.isDropdownOpen;
+  }
+
+  // ============================================================================
+  // 패널 최소화/최대화
+  // ============================================================================
+
+  /**
+   * 패널 최소화/최대화 토글
+   */
+  toggleMinimize() {
+    this.isMinimized = !this.isMinimized;
   }
 
   // ============================================================================

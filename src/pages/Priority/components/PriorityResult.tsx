@@ -18,7 +18,7 @@ import { stationStore } from '@/stores/StationStore';
 import { routeStore } from '@/stores/RouteStore';
 import type { PriorityConfig, VulnerableFacility } from '../types';
 import type { RouteStationFeature } from '@/utils/api/types';
-import { Color, ColorBlendMode, Matrix4, Model } from 'cesium';
+// import { Color, ColorBlendMode, Matrix4, Model } from 'cesium';
 
 interface PriorityResultProps {
   config: PriorityConfig;
@@ -63,40 +63,40 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
   const [isRenderingFacilities, setIsRenderingFacilities] = useState(false);
 
   // ------------------------------glb 테스트 로직 ------------------------
-  let glbModel: Model | null = null;
-  const glbTest = async () => {
-    const viewer = window.cviewer;
-    const basePath = import.meta.env.VITE_BASE_PATH || '/';
-    const url = `${basePath}results/aabc67b9-1ff3-40b1-92c4-1a32676565eb/Finedust_0001.glb`;
+  // let glbModel: Model | null = null;
+  // const glbTest = async () => {
+  //   const viewer = window.cviewer;
+  //   const basePath = import.meta.env.VITE_BASE_PATH || '/';
+  //   const url = `${basePath}results/aabc67b9-1ff3-40b1-92c4-1a32676565eb/Finedust_0001.glb`;
 
-    // 이미 켜져 있으면 → 제거 후 종료
-    if (glbModel) {
-      viewer!.scene.primitives.remove(glbModel);
-      glbModel = null;
-      return;
-    }
+  //   // 이미 켜져 있으면 → 제거 후 종료
+  //   if (glbModel) {
+  //     viewer!.scene.primitives.remove(glbModel);
+  //     glbModel = null;
+  //     return;
+  //   }
 
-    // 축 재조립 행렬
-    const axisSwapMatrix = new Matrix4(
-      0, 1, 0, 0,
-      0, 0, 1, 0,
-      1, 0, 0, 0,
-      0, 0, 0, 1
-    );
+  //   // 축 재조립 행렬
+  //   const axisSwapMatrix = new Matrix4(
+  //     0, 1, 0, 0,
+  //     0, 0, 1, 0,
+  //     1, 0, 0, 0,
+  //     0, 0, 0, 1
+  //   );
 
-    // 생성
-    const model = await Model.fromGltfAsync({
-      url,
-      modelMatrix: axisSwapMatrix,
-      color: Color.fromCssColorString('#CCCCCC').withAlpha(1.0),
-      colorBlendMode: ColorBlendMode.MIX,
-      colorBlendAmount: 0.9      
-    });
+  //   // 생성
+  //   const model = await Model.fromGltfAsync({
+  //     url,
+  //     modelMatrix: axisSwapMatrix,
+  //     color: Color.fromCssColorString('#CCCCCC').withAlpha(1.0),
+  //     colorBlendMode: ColorBlendMode.MIX,
+  //     colorBlendAmount: 0.9      
+  //   });
 
-    viewer!.scene.primitives.add(model);
-    glbModel = model;
+  //   viewer!.scene.primitives.add(model);
+  //   glbModel = model;
 
-  };
+  // };
   // ------------------------------glb 테스트 로직 ------------------------
 
   // API에서 가져온 취약시설 데이터 사용 (very-bad, bad 등급만 필터링)
@@ -394,38 +394,39 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
   return (
     <>
-      <Title onBack={onBack} onClose={onClose}>
+      <Title onBack={onBack} onClose={onClose} onMinimize={() => priorityStore.toggleMinimize()}>
         우선순위 조회
       </Title>
 
-      <Spacer height={16} />
+      <div style={{ display: priorityStore.isMinimized ? 'none' : 'contents' }}>
+        <Spacer height={16} />
 
       {/* 관찰 일시 */}
       <div className="flex items-start self-stretch h-8 gap-2">
         <div className="flex flex-1 gap-[7px] items-center">
-          <p className="text-white font-pretendard text-[14px] font-bold">
+          <p className="text-white font-pretendard text-[14px] font-bold" style={{ marginBottom: '0px'}}>
             관찰 일시
           </p>
         </div>
         <div className="flex gap-4 w-[360px]">
           {/* 날짜 */}
           <div className="flex flex-1 gap-[7px] items-center">
-            <p className="text-white font-pretendard text-[14px] font-bold w-[48px]">
+            <p className="text-white font-pretendard text-[14px] font-bold w-[48px]" style={{ marginBottom: '0px' }}>
               날짜
             </p>
             <div className="flex-1 h-8 bg-black rounded border border-[#696A6A] flex items-center px-3 py-1">
-              <p className="text-[#A6A6A6] font-pretendard text-[14px]">
+              <p className="text-[#A6A6A6] font-pretendard text-[14px]" style={{ marginBottom: '0px' }}>
                 {config.date}
               </p>
             </div>
           </div>
           {/* 시간 */}
           <div className="flex flex-1 gap-[7px] items-center">
-            <p className="text-white font-pretendard text-[14px] font-bold w-[48px]">
+            <p className="text-white font-pretendard text-[14px] font-bold w-[48px]" style={{ marginBottom: '0px' }}>
               시간
             </p>
             <div className="flex-1 h-8 bg-black rounded border border-[#696A6A] flex items-center px-3 py-1">
-              <p className="text-[#A6A6A6] font-pretendard text-[14px]">
+              <p className="text-[#A6A6A6] font-pretendard text-[14px]" style={{ marginBottom: '0px' }}>
                 {config.time}
               </p>
             </div>
@@ -438,14 +439,14 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       {/* 행정 구역 */}
       <div className="flex items-center self-stretch h-8">
         <div className="flex flex-1 gap-[10px] items-center">
-          <p className="text-white font-pretendard text-[14px] font-bold">
+          <p className="text-white font-pretendard text-[14px] font-bold" style={{ marginBottom: '0px' }}>
             행정 구역
           </p>
         </div>
         <div className="flex gap-2 w-[360px]">
           {/* 시/구 */}
           <div className="flex-1 h-8 bg-black rounded border border-[#696A6A] flex items-center px-3 py-1">
-            <p className="text-[#999999] font-pretendard text-[14px]">
+            <p className="text-[#999999] font-pretendard text-[14px]" style={{ marginBottom: '0px' }}>
               {config.city} {config.district}
             </p>
           </div>
@@ -641,10 +642,10 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
       <Spacer height={16} />
       
-      <Button
+      {/* <Button
         showIcon={false} onClick={glbTest}>
         glb 테스트
-      </Button>
+      </Button> */}
 
       {/* 주변 정류장 섹션 */}
       <NearbyStationList stations={priorityStore.selectedStations} />
@@ -660,6 +661,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
         >
           리포트 다운로드
         </Button>
+      </div>
       </div>
     </>
   );

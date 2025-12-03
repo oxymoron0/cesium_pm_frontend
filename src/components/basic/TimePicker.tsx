@@ -76,7 +76,8 @@ export default function TimePicker({ value, onChange, onClose }: TimePickerProps
                   fontSize: '14px',
                   fontWeight: isSelected ? '700' : '400',
                   lineHeight: 'normal',
-                  color: '#FFFFFF'
+                  color: '#FFFFFF',
+                  marginBottom: 0
                 }}
               >
                 {timeStr}

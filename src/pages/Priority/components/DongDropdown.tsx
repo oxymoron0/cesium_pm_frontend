@@ -45,7 +45,7 @@ const DongDropdown = observer(function DongDropdown({
         className="h-full bg-black rounded border border-[#696A6A] flex items-center px-3 py-1 cursor-pointer"
         onClick={onToggle}
       >
-        <p className="text-white font-pretendard text-[14px] flex-1">
+        <p className="text-white font-pretendard text-[14px] flex-1" style={{marginBottom: '0px'}}>
           {selectedValue}
         </p>
         {/* 드롭다운 화살표 */}
@@ -82,7 +82,7 @@ const DongDropdown = observer(function DongDropdown({
               }`}
               onClick={() => handleSelect(option.value)}
             >
-              <p className="text-[14px] font-pretendard">
+              <p className="text-[14px] font-pretendard" style={{marginBottom: '0px'}}>
                 {option.label}
               </p>
             </div>

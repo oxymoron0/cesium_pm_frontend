@@ -9,7 +9,7 @@ echo "Building new image..."
 docker build -t pm-frontend .
 
 echo "Starting new container..."
-docker run -d --name pm-frontend-test -p 8080:8080 pm-frontend
+docker run -d --name pm-frontend-test -p 17000:8080 pm-frontend
 
 echo "Deployment complete. Container status:"
 docker ps | grep pm-frontend-test

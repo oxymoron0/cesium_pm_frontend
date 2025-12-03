@@ -1,4 +1,26 @@
-import { Model } from 'cesium'
+import {
+  Model,
+  Primitive,
+  PointPrimitiveCollection,
+  BillboardCollection,
+  LabelCollection,
+  Cesium3DTileset,
+  PolylineCollection,
+  PrimitiveCollection
+} from 'cesium';
+
+/**
+ * Cesium에서 Scene.primitives에 추가될 수 있는 일반적인 객체 타입들
+ */
+export type CesiumPrimitive =
+  | Model
+  | Primitive
+  | PointPrimitiveCollection
+  | BillboardCollection
+  | LabelCollection
+  | Cesium3DTileset
+  | PolylineCollection
+  | PrimitiveCollection;
 
 /**
  * Primitive 그룹 관리 유틸리티
@@ -9,7 +31,7 @@ import { Model } from 'cesium'
 
 interface PrimitiveGroup {
   name: string
-  primitives: Model[]
+  primitives: CesiumPrimitive[]
   show: boolean
 }
 
@@ -55,10 +77,10 @@ export function findPrimitiveGroup(name: string): PrimitiveGroup | undefined {
 /**
  * Primitive를 그룹에 추가하는 함수
  * @param groupName - 그룹 이름
- * @param primitive - 추가할 Model 인스턴스
+ * @param primitive - 추가할 Primitive 인스턴스
  * @returns 추가 성공 여부
  */
-export function addPrimitive(groupName: string, primitive: Model): boolean {
+export function addPrimitive(groupName: string, primitive: CesiumPrimitive): boolean {
   const viewer = window.cviewer
 
   if (!viewer) {
@@ -80,7 +102,9 @@ export function addPrimitive(groupName: string, primitive: Model): boolean {
   group.primitives.push(primitive)
   
   // 그룹 show 상태 반영
-  primitive.show = group.show
+  if ('show' in primitive) {
+    primitive.show = group.show
+  }
 
   console.log(`[addPrimitive] Primitive 추가: ${groupName} (총 ${group.primitives.length}개)`)
   return true
@@ -152,10 +176,10 @@ export function clearPrimitiveGroup(name: string): void {
 /**
  * Primitive를 그룹에서 제거하는 함수
  * @param groupName - 그룹 이름
- * @param primitive - 제거할 Model 인스턴스
+ * @param primitive - 제거할 Primitive 인스턴스
  * @returns 제거 성공 여부
  */
-export function removePrimitive(groupName: string, primitive: Model): boolean {
+export function removePrimitive(groupName: string, primitive: CesiumPrimitive): boolean {
   const viewer = window.cviewer
 
   if (!viewer) {

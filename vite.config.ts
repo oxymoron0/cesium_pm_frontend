@@ -27,7 +27,7 @@ export default defineConfig(({ command, mode }) => {
       },
       server: {
         host: '0.0.0.0',
-        port: 5173,
+        port: 17071,
         cors: true,
         headers: {
           'Access-Control-Allow-Origin': '*'
@@ -39,7 +39,7 @@ export default defineConfig(({ command, mode }) => {
             { from: /\/\w+Page\.html/, to: '/index.html' }
           ]
         },
-        allowedHosts: ['pm.leorca.org']
+        allowedHosts: ['pm.astbusan.site']
       },
       css: {
         postcss: './postcss.config.js'
@@ -69,7 +69,7 @@ export default defineConfig(({ command, mode }) => {
     },
     server: {
       host: '0.0.0.0',
-      port: 3333,
+      port: 8080,
       strictPort: true,
       cors: true,
       headers: {
