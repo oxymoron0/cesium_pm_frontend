@@ -12,7 +12,7 @@ export interface AirQualityResult {
 /**
  * 센서 타입별 공기질 기준 정의
  */
-const AIR_QUALITY_STANDARDS = {
+export const AIR_QUALITY_STANDARDS = {
   pm10: {
     good: { max: 30, text: '좋음' },
     normal: { max: 80, text: '보통' },
