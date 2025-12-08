@@ -1,4 +1,4 @@
-import { Cartographic, sampleTerrainMostDetailed, Color, ColorBlendMode, Matrix4, Model } from 'cesium'
+import { Color, ColorBlendMode, Matrix4, Model } from 'cesium'
 import { flyToBoundingSphere } from './cameraUtils'
 import { getCachedGlbUrl, clearGlbCache } from './glbPreloader'
 import { createPrimitiveGroup, addPrimitive, removePrimitive, removePrimitiveGroup, clearPrimitiveGroup, getPrimitiveGroupInfo } from './primitives'
@@ -13,9 +13,6 @@ const PRIMITIVE_GROUP_NAME = 'simulation_glb_result'
  */
 type PreparedContext = {
   uuid: string
-  centerLongitude: number
-  centerLatitude: number
-  terrainHeight: number
   resultPath: string
   basePath: string
   normalizedPath: string
@@ -117,8 +114,6 @@ export function flyToSimulationGlb(
  */
 export async function prepareSimulationGlb(params: {
   uuid: string
-  centerLongitude: number
-  centerLatitude: number
   resultPath: string
   totalCount: number
   frameIntervalMs: number
@@ -126,7 +121,7 @@ export async function prepareSimulationGlb(params: {
   const viewer = getViewer()
   if (!viewer) return
 
-  const { uuid, centerLongitude, centerLatitude, resultPath, totalCount, frameIntervalMs } = params
+  const { uuid, resultPath, totalCount, frameIntervalMs } = params
 
   if (!totalCount || totalCount <= 0) {
     console.warn('[simulationGlbRenderer] Invalid totalCount:', totalCount)
@@ -138,8 +133,6 @@ export async function prepareSimulationGlb(params: {
   // 이미 준비된 컨텍스트와 동일하면 스킵
   if (preparedCtx &&
       preparedCtx.uuid === uuid &&
-      preparedCtx.centerLongitude === centerLongitude &&
-      preparedCtx.centerLatitude === centerLatitude &&
       preparedCtx.resultPath === resultPath &&
       preparedCtx.totalCount === totalCount &&
       preparedCtx.frameIntervalMs === frameIntervalMs) {
@@ -156,21 +149,6 @@ export async function prepareSimulationGlb(params: {
     ? basePath + resultPath.slice(1)
     : basePath + resultPath
 
-  // 지형 높이 샘플링
-  let terrainHeight = 0
-  try {
-    const position = Cartographic.fromDegrees(centerLongitude, centerLatitude)
-    const [sampled] = await sampleTerrainMostDetailed(viewer.terrainProvider, [position])
-    terrainHeight = sampled.height || 0
-  } catch (error) {
-    console.error('[simulationGlbRenderer] Terrain sampling failed:', error)
-  }
-
-  console.log('[GLB Prepare] Center Coordinates (WGS84):')
-  console.log(`  Longitude: ${centerLongitude}°`)
-  console.log(`  Latitude: ${centerLatitude}°`)
-  console.log(`  Terrain Height: ${terrainHeight}m`)
-  console.log('[GLB Prepare] Axis mapping: (X,Y,Z) → (Y,Z,X)')
 
   // Primitive 그룹 생성
   try {
@@ -186,9 +164,6 @@ export async function prepareSimulationGlb(params: {
   // Context 설정
   preparedCtx = {
     uuid,
-    centerLongitude,
-    centerLatitude,
-    terrainHeight,
     resultPath,
     basePath,
     normalizedPath,
@@ -307,13 +282,6 @@ export async function renderSimulationGlbFrame(index: number, skipFade: boolean 
       0, 0, 0, 1
     )
 
-    // // 축 재조립 행렬: (X, Y, Z) → (X, Z, Y)
-    // const axisSwapMatrix = new Matrix4(
-    //   1, 0, 0, 0,  // X' = X
-    //   0, 0, 1, 0,  // Y' = Z
-    //   0, 1, 0, 0,  // Z' = Y
-    //   0, 0, 0, 1
-    // );
     console.log('[GLB Render] Reassembled Matrix (axisSwapMatrix):', axisSwapMatrix)
 
     // 새 Model 생성
@@ -325,17 +293,6 @@ export async function renderSimulationGlbFrame(index: number, skipFade: boolean 
       colorBlendAmount: 0.9
     })
 
-    // // newModel 좌표 확인 (readyEvent 사용)
-    // newModel.readyEvent.addEventListener(() => {
-    //   if (newModel.boundingSphere) {
-    //     const center = newModel.boundingSphere.center
-    //     console.log('[GLB Render] newModel position:', {
-    //       x: center.x,
-    //       y: center.y,
-    //       z: center.z
-    //     })
-    //   }
-    // })
 
     if (skipFade) {
       // ========== 즉시 전환 (첫 프레임, Seek) ==========
@@ -360,20 +317,6 @@ export async function renderSimulationGlbFrame(index: number, skipFade: boolean 
       const inScene = viewer.scene.primitives.contains(newModel)
       console.log('[GLB Render] scene.primitives에 포함 여부:', inScene)
 
-      // //위치체크
-      // setTimeout(()=> {
-      //   //const localCenter = newModel.boundingSphere.center;
-      //   const boundingSphere = newModel.boundingSphere;
-
-      //   if (boundingSphere) {
-      //     // 3. viewer.camera.flyToBoundingSphere를 사용하여 카메라를 이동시킵니다.
-      //     viewer.camera.flyToBoundingSphere(boundingSphere, {
-      //       duration: 2.0, // 2초 동안 비행
-      //       offset: new HeadingPitchRange(0, CesiumMath.toRadians(-45), 0) // 추가 옵션: 모델을 45도 각도에서 내려다보도록 설정
-      //     });
-      //   }
-      // },3000)
-      // Context 업데이트
       preparedCtx.currentModel = newModel
       preparedCtx.previousModel = null
 

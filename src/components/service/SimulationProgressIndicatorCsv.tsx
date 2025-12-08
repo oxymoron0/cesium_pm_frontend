@@ -3,20 +3,18 @@ import { useState, useRef, useEffect } from 'react';
 import Icon from '@/components/basic/Icon';
 import { simulationStore } from '@/stores/SimulationStore';
 import {
-  prepareSimulationGlb,
-  renderSimulationGlbFrame,
-  clearSimulationGlbs,
-  flyToSimulationGlb
-} from '@/utils/cesium/simulationGlbRenderer';
-import { preloadSimulationGlbs, getGlbCacheStatus, type PreloadProgress } from '@/utils/cesium/glbPreloader';
+  renderCsvFrame,
+  clearCsvPrimitives
+} from '@/utils/cesium/csvRenderer';
+import {
+  preloadCsv,
+  getCsvCacheStatus,
+  type CsvPreloadProgress
+} from '@/utils/cesium/csvPreloader';
 
-const SimulationProgressIndicator = observer(function SimulationProgressIndicator() {
+const SimulationProgressIndicatorCsv = observer(function SimulationProgressIndicatorCsv() {
   const totalFrames = simulationStore.glbCount || 0;
-  const delayMs = 300;
-  
-  // 프레임당 실제 소요 시간을 기반으로 시간 표시를 위한 계산
-  const crossFadeDurationMs = delayMs + 50;
-  const actualFrameIntervalMs = crossFadeDurationMs + delayMs;
+  const delayMs = 500; // CSV 프레임 간격 (교차 페이드 없이 즉시 교체)
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentFrame, setCurrentFrame] = useState(0);
@@ -24,51 +22,45 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
   const [seekValue, setSeekValue] = useState<number>(0);
 
   const [isPreloading, setIsPreloading] = useState(false);
-  const [preloadProgress, setPreloadProgress] = useState<PreloadProgress | null>(null);
+  const [preloadProgress, setPreloadProgress] = useState<CsvPreloadProgress | null>(null);
 
-  // 애니메이션 루프 제어를 위한 핵심 Ref들
   const playIntervalRef = useRef<number | null>(null);
   const isPlayingRef = useRef(isPlaying);
 
-  // isPlaying state가 변경될 때마다 isPlayingRef.current 값을 동기화
   useEffect(() => {
     isPlayingRef.current = isPlaying;
   }, [isPlaying]);
 
-  // isSeeking 상태에 따라 seekValue 동기화
   useEffect(() => {
     if (!isSeeking) {
       setSeekValue(currentFrame);
     }
   }, [currentFrame, isSeeking]);
 
-  // 컴포넌트 언마운트 시 모든 리소스 정리
   useEffect(() => {
     return () => {
       if (playIntervalRef.current) {
         clearTimeout(playIntervalRef.current);
       }
-      clearSimulationGlbs();
+      clearCsvPrimitives();
     };
   }, []);
 
-  // 시뮬레이션 데이터 변경 시 상태 초기화
   useEffect(() => {
     setIsPlaying(false);
     setCurrentFrame(0);
-    simulationStore.setCurrentGlbFrame(0);
     setIsSeeking(false);
     setSeekValue(0);
     if (playIntervalRef.current) {
       clearTimeout(playIntervalRef.current);
       playIntervalRef.current = null;
     }
-    clearSimulationGlbs();
+    clearCsvPrimitives();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [simulationStore.selectedSimulationUuid]);
+  }, [simulationStore.selectedsimulationQuick?.uuid]);
 
-  const currentTimeSeconds = Math.floor((currentFrame * actualFrameIntervalMs) / 1000);
-  const totalTimeSeconds = Math.floor(((totalFrames - 1) * actualFrameIntervalMs) / 1000);
+  const currentTimeSeconds = Math.floor((currentFrame * delayMs) / 1000);
+  const totalTimeSeconds = Math.floor(((totalFrames - 1) * delayMs) / 1000);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -80,12 +72,12 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
   const progress = totalFrames > 1 ? (shownFrame / (totalFrames - 1)) * 100 : 0;
 
   const getSimulationParams = () => {
-    // 맞춤실행 전용
-    const { simulationDetail } = simulationStore;
-    if (!simulationDetail) return null;
+    // 빠른실행 전용
+    const { selectedsimulationQuick } = simulationStore;
+    if (!selectedsimulationQuick) return null;
     return {
-      uuid: simulationDetail.uuid,
-      resultPath: simulationDetail.resultPath || '',
+      uuid: selectedsimulationQuick.uuid,
+      resultPath: selectedsimulationQuick.result_path,
       totalCount: totalFrames,
       frameIntervalMs: delayMs
     };
@@ -93,23 +85,25 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
 
   const ensurePreloaded = async (params: ReturnType<typeof getSimulationParams>) => {
     if (!params) return;
-    const cacheStatus = getGlbCacheStatus(params.uuid);
-    if (!cacheStatus.isCached || cacheStatus.loadedFrames < totalFrames) {
-      setIsPreloading(true);
-      try {
-        console.log("GLB 경로 : ", params.resultPath)
-        await preloadSimulationGlbs(params.uuid, params.resultPath, totalFrames, setPreloadProgress);
-      } catch (error) {
-        console.error('Preload failed:', error);
-      } finally {
-        setIsPreloading(false);
-      }
+
+    const cacheStatus = getCsvCacheStatus(params.uuid);
+
+    // 이미 완전히 로드된 경우 즉시 리턴 (setIsPreloading 호출 없음)
+    if (cacheStatus.isCached && cacheStatus.loadedFrames === totalFrames) {
+      return;
+    }
+
+    // 실제로 로드가 필요한 경우에만 로딩 상태 설정
+    setIsPreloading(true);
+    try {
+      await preloadCsv(params.uuid, params.resultPath, totalFrames, setPreloadProgress);
+    } catch (error) {
+      console.error('CSV Preload failed:', error);
+    } finally {
+      setIsPreloading(false);
     }
   };
 
-  /**
-   * 지정된 프레임부터 애니메이션 루프를 시작하는 함수.
-   */
   const startAnimationLoop = (fromFrame: number) => {
     if (playIntervalRef.current) {
       window.clearTimeout(playIntervalRef.current);
@@ -117,20 +111,22 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
 
     let frameIndex = fromFrame;
 
-    const playNextFrame = async () => {
+    const playNextFrame = () => {
       if (!isPlayingRef.current) return;
-      
+
       frameIndex++;
       if (frameIndex >= totalFrames) {
         handleStop();
         return;
       }
 
-      await renderSimulationGlbFrame(frameIndex, false);
+      const params = getSimulationParams();
+      if (!params) return;
+
+      renderCsvFrame(params.uuid, frameIndex);
 
       if (isPlayingRef.current) {
         setCurrentFrame(frameIndex);
-        simulationStore.setCurrentGlbFrame(frameIndex);
         playIntervalRef.current = window.setTimeout(playNextFrame, delayMs);
       }
     };
@@ -138,9 +134,6 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
     playIntervalRef.current = window.setTimeout(playNextFrame, delayMs);
   };
 
-  /**
-   * 재생 버튼 클릭 핸들러
-   */
   const handlePlay = async () => {
     if (isPlaying) return;
     setIsPlaying(true);
@@ -153,34 +146,22 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
       }
 
       await ensurePreloaded(params);
-      await prepareSimulationGlb(params);
-      
+
       const startFrame = (currentFrame === 0 || currentFrame >= totalFrames - 1) ? 0 : currentFrame;
-      
+
       if (startFrame === 0) {
-        // 1. 첫 프레임 렌더링을 'await'하여 완료 보장
-        await renderSimulationGlbFrame(0, true);
+        //renderCsvFrameWithFly(params.uuid, 0);
         setCurrentFrame(0);
-        simulationStore.setCurrentGlbFrame(0);
-
-        // 2. 렌더링 완료 후 flyTo 호출 (currentModel 보장됨)
-        flyToSimulationGlb();
-
-        // 3. 0프레임부터 애니메이션 루프 시작
         startAnimationLoop(0);
       } else {
-        // 이어서 재생
         startAnimationLoop(startFrame);
       }
     } catch (error) {
       console.error("[handlePlay] Error during play setup:", error);
-      setIsPlaying(false); // 에러 발생 시 상태 원복
+      setIsPlaying(false);
     }
   };
 
-  /**
-   * 일시정지 버튼 클릭 핸들러
-   */
   const handlePause = () => {
     setIsPlaying(false);
     if (playIntervalRef.current) {
@@ -189,9 +170,6 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
     }
   };
 
-  /**
-   * 정지 버튼 클릭 핸들러
-   */
   const handleStop = () => {
     setIsPlaying(false);
     if (playIntervalRef.current) {
@@ -199,42 +177,36 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
       playIntervalRef.current = null;
     }
     setCurrentFrame(0);
-    simulationStore.setCurrentGlbFrame(0);
-    renderSimulationGlbFrame(0, true);
+
+    const params = getSimulationParams();
+    if (params) {
+      renderCsvFrame(params.uuid, 0);
+    }
   };
-  
-  /**
-   * 프로그레스 바 드래그 시작 핸들러
-   */
+
   const handleSeekStart = () => {
     if (isPlaying) handlePause();
     setIsSeeking(true);
   };
 
-  /**
-   * 프로그레스 바 값 변경 핸들러
-   */
   const handleSeekChange = (val: number) => {
     setSeekValue(val);
   };
 
-  /**
-   * 프로그레스 바 드래그 완료 핸들러
-   */
   const handleSeekCommit = async (val: number) => {
     if (isPlaying) setIsPlaying(false);
     if (playIntervalRef.current) clearTimeout(playIntervalRef.current);
 
     setIsSeeking(false);
     setCurrentFrame(val);
-    simulationStore.setCurrentGlbFrame(val);
 
     const params = getSimulationParams();
     if (!params) return;
 
+    // ensurePreloaded 내부에서 캐시 체크 및 로딩 상태 관리
     await ensurePreloaded(params);
-    await prepareSimulationGlb(params);
-    await renderSimulationGlbFrame(val, true);
+
+    renderCsvFrame(params.uuid, val);
   };
 
   return (
@@ -308,4 +280,4 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
   );
 });
 
-export default SimulationProgressIndicator;
+export default SimulationProgressIndicatorCsv;

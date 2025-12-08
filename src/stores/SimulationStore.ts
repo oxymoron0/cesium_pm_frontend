@@ -12,7 +12,7 @@ import type {
   Weather
 } from '../types/simulation_request_types';
 import type { VulnerableFacilitiesResponse } from '@/utils/api/types';
-import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck, reverseGeocodeAPI, searchAddressAPI, getVulnerableFacilities, getSimulationGlbCount } from '@/utils/api';
+import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck, reverseGeocodeAPI, searchAddressAPI, getVulnerableFacilities } from '@/utils/api';
 import { userStore } from './UserStore';
 import { administrativeStore } from './AdministrativeStore';
 // import { randomizeSimulationConcentration, ENABLE_MOCK_CONCENTRATION } from '@/utils/mockData/simulationConcentration';
@@ -84,6 +84,9 @@ class SimulationStore {
   // 시뮬레이션 GLB 개수
   glbCount: number | null = null;
   isLoadingGlbCount: boolean = false;
+
+  // 시뮬레이션 GLB 현재 프레임 (SimulationProgressIndicator와 SimulationGlbSampleRender 동기화)
+  currentGlbFrame: number = 0;
 
   // 지역 정보
   isLoadingDistricts: boolean = false;
@@ -590,7 +593,6 @@ class SimulationStore {
 
     try {
       const response = await getSimulationQuickList(startDate, endDate, page, limit);
-      
       this.simulationQuickList = response.simulations;
       this.paginationQuick = response.pagination;
 
@@ -738,8 +740,8 @@ class SimulationStore {
     this.isLoadingGlbCount = true;
 
     try {
-      const count = await getSimulationGlbCount(uuid);
-      console.log("glb 개수조회하기 :", count)
+      //const count = await getSimulationGlbCount(uuid);
+      const count = 100;
       runInAction(() => {
         this.glbCount = count;
       });
@@ -753,6 +755,20 @@ class SimulationStore {
         this.isLoadingGlbCount = false;
       });
     }
+  }
+
+  /**
+   * 현재 GLB 프레임 설정 (SimulationProgressIndicator에서 호출)
+   */
+  setCurrentGlbFrame(frame: number) {
+    this.currentGlbFrame = frame;
+  }
+
+  /**
+   * GLB 프레임 초기화
+   */
+  resetGlbFrame() {
+    this.currentGlbFrame = 0;
   }
 
   /**
@@ -910,11 +926,19 @@ class SimulationStore {
   setSelectedSimulationQuick(item: SimulationQuckData) {
     this.selectedsimulationQuick = null;
     this.selectedsimulationQuick = item;
-    
+
     // 목업 모드가 활성화된 경우 concentration 값을 랜덤화하여 히트맵 시각화 개선
     // this.selectedsimulationQuick = ENABLE_MOCK_CONCENTRATION
     //   ? randomizeSimulationConcentration(item)
     //   : item;
+
+    //MOCK
+    item.uuid = '1a93b766-53e9-41fc-9a8f-39fa53cc520e';
+
+    // GLB 개수 조회
+    if (item.uuid) {
+      this.loadGlbCount(item.uuid);
+    }
   }
   /**
    * 모달 열기

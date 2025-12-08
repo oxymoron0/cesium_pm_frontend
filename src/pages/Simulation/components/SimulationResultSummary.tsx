@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Panel from '@/components/basic/Panel';
 import Title from '@/components/basic/Title';
 import Spacer from '@/components/basic/Spacer';
-import SimulationProgressIndicator from '@/components/service/SimulationProgressIndicator';
+import SimulationProgressIndicatorJson from '@/components/service/SimulationProgressIndicatorJson';
 import {
   ResponsiveContainer,
   BarChart,
@@ -232,7 +232,7 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
         </div>
       </Panel>
 
-      <SimulationProgressIndicator />
+      <SimulationProgressIndicatorJson />
     </>
   );
 });

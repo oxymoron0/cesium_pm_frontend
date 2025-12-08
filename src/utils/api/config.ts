@@ -44,6 +44,7 @@ export const API_PATHS = {
   SIMULATION_LIST: getApiPath('api/v1/simulation/list'),
   SIMULATION_CHECK: getApiPath('api/v1/simulation/check'),
   SIMULATION_QUICK_LIST: getApiPath('api/v1/simulation_auto/list'),
+  SIMULATION_QUICK_GLB_IFNOLIST: (uuid: string) => getApiPath(`api/v1/simulation_auto/${uuid}`),
   SIMULATION_DETAIL: (uuid: string) => getApiPath(`api/v1/simulation/${uuid}`),
   SIMULATION_DETAIL_SUMMARY: (uuid: string) => getApiPath(`api/v1/simulation/${uuid}/vulnerable-facilities`),
   SIMULATION_GLB_COUNT: (uuid: string) => getApiPath(`api/v1/simulation/${uuid}/glb/count`),
