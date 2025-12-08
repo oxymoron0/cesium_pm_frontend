@@ -15,23 +15,23 @@ const StationSensorRenderer = observer(() => {
 
   // 센서 색상 로직 (SensorItem.tsx와 동일)
   const getSensorColor = useCallback((type: 'pm10' | 'pm25' | 'vocs', value: number): string => {
-    if (type === 'vocs') return '#999';
+    if (type === 'vocs') return '#C8C8C8';
 
     if (type === 'pm10') {
-      if (value <= 30) return '#18A274';
-      if (value <= 80) return '#FFD040';
-      if (value <= 150) return '#F70';
+      if (value <= 30) return '#1C67D7';
+      if (value <= 80) return '#18A274';
+      if (value <= 150) return '#FEE046';
       return '#D32F2D';
     }
 
     if (type === 'pm25') {
-      if (value <= 15) return '#18A274';
-      if (value <= 35) return '#FFD040';
-      if (value <= 75) return '#F70';
+      if (value <= 15) return '#1C67D7';
+      if (value <= 35) return '#18A274';
+      if (value <= 75) return '#FEE046';
       return '#D32F2D';
     }
 
-    return '#999';
+    return '#C8C8C8';
   }, []);
 
   // 센서 HTML 생성 함수
@@ -40,9 +40,9 @@ const StationSensorRenderer = observer(() => {
     const pm25Display = sensorData ? sensorData.pm25.toString() : '---';
     const vocsDisplay = sensorData ? sensorData.vocs.toString() : '---';
 
-    const pm10Color = sensorData ? getSensorColor('pm10', sensorData.pm10) : '#999';
-    const pm25Color = sensorData ? getSensorColor('pm25', sensorData.pm25) : '#999';
-    const vocsColor = sensorData ? getSensorColor('vocs', sensorData.vocs) : '#999';
+    const pm10Color = sensorData ? getSensorColor('pm10', sensorData.pm10) : '#C8C8C8';
+    const pm25Color = sensorData ? getSensorColor('pm25', sensorData.pm25) : '#C8C8C8';
+    const vocsColor = sensorData ? getSensorColor('vocs', sensorData.vocs) : '#C8C8C8';
 
     return `
       <div style="display: flex; padding: 8px; flex-direction: row; justify-content: center; align-items: center; border-radius: 4px; background: rgba(30, 30, 30, 0.90);">
