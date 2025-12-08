@@ -35,9 +35,9 @@ export const AIR_QUALITY_STANDARDS = {
  * 공기질 등급별 색상 정의
  */
 const AIR_QUALITY_COLORS = {
-  good: '#18A274',
-  normal: '#FFD040',
-  bad: '#F70',
+  good: '#1C67D7',
+  normal: '#18A274',
+  bad: '#FEE046',
   very_bad: '#D32F2D',
   vocs_default: '#C8C8C8'
 } as const
@@ -46,11 +46,11 @@ const AIR_QUALITY_COLORS = {
  * 배경색에 따른 텍스트 색상 결정
  */
 function getTextColor(backgroundColor: string): string {
-  // 빨강, 주황 배경: 흰색 텍스트
-  if (backgroundColor === '#D32F2D' || backgroundColor === '#F70') {
+  // 파란색, 빨강 배경: 흰색 텍스트
+  if (backgroundColor === '#1C67D7' || backgroundColor === '#D32F2D') {
     return '#FFF'
   }
-  // 노랑, 초록, 회색 배경: 검정 텍스트
+  // 초록, 노랑, 회색 배경: 검정 텍스트
   return '#000'
 }
 

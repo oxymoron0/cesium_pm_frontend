@@ -203,7 +203,7 @@ const ConcentrationRankings = observer(function ConcentrationRankings({
                 <div
                   style={{
                     flex: '1 0 0',
-                    color: type === 'high' ? '#F70' : '#18A274',
+                    color: type === 'high' ? '#FEE046' : '#1C67D7',
                     fontFamily: 'Pretendard',
                     fontSize: '14px',
                     fontWeight: 400,

@@ -55,11 +55,11 @@ const PriorityGuide = function PriorityGuide({ onClose }: PriorityGuideProps) {
           <p className="font-bold text-white mt-4 mb-2">• 예측 등급</p>
           <p className="ml-4">각 시설의 예측 대기질 농도와 등급이 색상으로 표시됩니다.</p>
           <p className="ml-4 mt-1">
-            <span className="inline-block w-16 text-center py-1 rounded" style={{ backgroundColor: '#00C851', color: '#FFFFFF' }}>좋음</span>
+            <span className="inline-block w-16 text-center py-1 rounded" style={{ backgroundColor: '#1C67D7', color: '#FFFFFF' }}>좋음</span>
             {' '}
-            <span className="inline-block w-16 text-center py-1 rounded" style={{ backgroundColor: '#FFD040', color: '#000000' }}>보통</span>
+            <span className="inline-block w-16 text-center py-1 rounded" style={{ backgroundColor: '#18A274', color: '#000000' }}>보통</span>
             {' '}
-            <span className="inline-block w-16 text-center py-1 rounded" style={{ backgroundColor: '#FF7700', color: '#FFFFFF' }}>나쁨</span>
+            <span className="inline-block w-16 text-center py-1 rounded" style={{ backgroundColor: '#FEE046', color: '#000000' }}>나쁨</span>
             {' '}
             <span className="inline-block w-20 text-center py-1 rounded" style={{ backgroundColor: '#D32F2D', color: '#FFFFFF' }}>매우나쁨</span>
           </p>
