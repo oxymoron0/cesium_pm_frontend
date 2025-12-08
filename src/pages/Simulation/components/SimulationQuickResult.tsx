@@ -119,7 +119,7 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
   // 빠른 폴링(60fps)로 CESIUM 선택 상태 반영
   useEffect(() => {
 
-    setIndicatorType('heatmap');
+    setIndicatorType('json');
 
     //가이드 문구 active
     // simulationStore.isSimulationQuickGuideMode = true;

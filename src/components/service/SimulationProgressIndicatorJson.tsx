@@ -88,6 +88,8 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
     };
   }, []);
 
+  const currentSimulationUuid = simulationStore.selectedsimulationQuick?.uuid || simulationStore.simulationDetail?.uuid;
+
   useEffect(() => {
     setIsPlaying(false);
     setCurrentFrame(0);
@@ -98,8 +100,8 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
       playIntervalRef.current = null;
     }
     clearJsonPrimitives();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [simulationStore.selectedsimulationQuick?.uuid]);
+
+  }, [currentSimulationUuid]);
 
   const currentTimeSeconds = Math.floor((currentFrame * delayMs) / 1000);
   const totalTimeSeconds = Math.floor(((totalFrames - 1) * delayMs) / 1000);
@@ -114,15 +116,23 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
   const progress = totalFrames > 1 ? (shownFrame / (totalFrames - 1)) * 100 : 0;
 
   const getSimulationParams = () => {
-    // 빠른실행 전용
-    const { selectedsimulationQuick } = simulationStore;
-    if (!selectedsimulationQuick) return null;
-    return {
-      uuid: selectedsimulationQuick.uuid,
-      resultPath: selectedsimulationQuick.result_path,
-      totalCount: totalFrames,
-      frameIntervalMs: delayMs
-    };
+    const { selectedsimulationQuick, simulationDetail } = simulationStore;
+    if (selectedsimulationQuick) { // 빠른 실행
+      return {
+        uuid: selectedsimulationQuick.uuid,
+        resultPath: selectedsimulationQuick.result_path,
+        totalCount: totalFrames,
+        frameIntervalMs: delayMs
+      };
+    } else if (simulationDetail) { // 맞춤 실행
+      return {
+        uuid: simulationDetail.uuid,
+        resultPath: simulationDetail.resultPath,
+        totalCount: totalFrames,
+        frameIntervalMs: delayMs
+      };
+    }
+    return null;
   };
 
   const ensurePreloaded = async (params: ReturnType<typeof getSimulationParams>) => {
