@@ -92,7 +92,7 @@ const RouteSelector = observer(function RouteSelector({ onRouteSelect }: RouteSe
       ))}
 
       {/* UI Version Toggle */}
-      <div className="pt-4 mt-4 border-t border-gray-700">
+      {/* <div className="pt-4 mt-4 border-t border-gray-700">
         <div className="mb-3">
           <span className="text-sm font-medium text-gray-400">UI 버전</span>
         </div>
@@ -123,7 +123,7 @@ const RouteSelector = observer(function RouteSelector({ onRouteSelect }: RouteSe
             {routeStore.isV1 ? '기본 UI' : '개선된 UI'}
           </span>
         </div>
-      </div>
+      </div> */}
     </div>
   )
 })

@@ -11,6 +11,7 @@ interface PanelProps {
   marginHorizontal?: number
   marginVertical?: number
   allowOverflow?: boolean
+  bottom?: number
 }
 
 function Panel({
@@ -23,7 +24,8 @@ function Panel({
   height,
   marginHorizontal = 70,
   marginVertical = 72,
-  allowOverflow = false
+  allowOverflow = false,
+  bottom
 }: PanelProps) {
   const getPositionStyle = () => {
     switch (position) {
@@ -53,7 +55,10 @@ function Panel({
         width: position === 'center' ? `calc(100vw - ${marginHorizontal * 2}px)` : width,
         height: position === 'center' ? `calc(100vh - ${marginVertical * 2}px)` : height,
         maxHeight,
-        top: position === 'center' ? `${marginVertical}px` : '32px',
+        ...(bottom !== undefined
+          ? { bottom: `${bottom}px` }
+          : { top: position === 'center' ? `${marginVertical}px` : '32px' }
+        ),
         backgroundColor: 'rgba(0, 0, 0, 0.65)',
         ...getPositionStyle()
       }}

@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite'
 import CesiumViewer from '@/components/CesiumViewer'
 import MonitoringPanel from './components/MonitoringPanel'
 import AirQualityStatus from './components/AirQualityStatus'
+import AirConfig from './components/AirConfig'
 import StationHtmlRenderer from '@/components/service/StationHtmlRenderer'
 import StationSensorRenderer from '@/components/service/StationSensorRenderer'
 import BusHtmlRenderer from '@/components/service/BusHtmlRenderer'
@@ -147,6 +148,9 @@ const App = observer(function App(props: AppProps) {
 
       {/* 통합 모니터링 패널 */}
       <MonitoringPanel onCloseMicroApp={props.onCloseMicroApp} />
+
+      {/* 대기 설정 버튼 그룹 */}
+      <AirConfig />
 
       {/* AirQualityStatus 모달 */}
       {stationDetailStore.isModalOpen && (

@@ -39,16 +39,14 @@ export default function TabNavigation({ tabs, activeTab, onTabChange }: TabProps
               fontStyle: 'normal',
               fontWeight: 700,
               lineHeight: 'normal',
-              transition: 'color 0.1s ease, background-color 0.2s ease'
             }}
           >
             {tab}
             <div
-              className="absolute bottom-0 left-0 right-0 transition-all"
+              className="absolute bottom-0 left-0 right-0"
               style={{
                 height: activeTab === index ? '3px' : '1px',
                 backgroundColor: activeTab === index ? '#FFD040' : '#696A6A',
-                transition: 'all 0.1s ease'
               }}
             />
           </div>

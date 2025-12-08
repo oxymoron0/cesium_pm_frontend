@@ -79,6 +79,7 @@ export interface RouteStationProperties {
   county_district?: string;
   dong?: string;
   ars_id: string;
+  progress_percent: number;  // Position on route (0-100)
 }
 
 /**
@@ -134,6 +135,7 @@ export interface RouteStation {
   ars_id: string;
   longitude: number;
   latitude: number;
+  progress_percent: number;  // Position on route (0-100)
 }
 
 // =============================================================================
