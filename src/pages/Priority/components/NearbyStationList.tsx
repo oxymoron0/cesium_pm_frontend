@@ -11,13 +11,13 @@ const getLevelStyle = (level: string) => {
     case 'very-bad':
       return { bg: '#D32F2D', textColor: '#FFFFFF', text: '매우나쁨' };
     case 'bad':
-      return { bg: '#FF7700', textColor: '#FFFFFF', text: '나쁨' };
+      return { bg: '#FEE046', textColor: '#000000', text: '나쁨' };
     case 'normal':
-      return { bg: '#FFD040', textColor: '#000000', text: '보통' };
+      return { bg: '#18A274', textColor: '#000000', text: '보통' };
     case 'good':
-      return { bg: '#00C851', textColor: '#FFFFFF', text: '좋음' };
+      return { bg: '#1C67D7', textColor: '#FFFFFF', text: '좋음' };
     default:
-      return { bg: '#FFD040', textColor: '#000000', text: '보통' };
+      return { bg: '#18A274', textColor: '#000000', text: '보통' };
   }
 };
 

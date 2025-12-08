@@ -37,19 +37,19 @@ const getLevelStyle = (level: VulnerableFacility['predictedLevel']) => {
       };
     case 'bad':
       return {
-        bg: '#FF7700',
-        textColor: '#FFFFFF',
+        bg: '#FEE046',
+        textColor: '#000000',
         text: '나쁨'
       };
     case 'normal':
       return {
-        bg: '#FFD040',
+        bg: '#18A274',
         textColor: '#000000',
         text: '보통'
       };
     case 'good':
       return {
-        bg: '#00C851',
+        bg: '#1C67D7',
         textColor: '#FFFFFF',
         text: '좋음'
       };
