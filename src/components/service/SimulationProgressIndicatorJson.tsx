@@ -136,7 +136,7 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
   };
 
   const ensurePreloaded = async (params: ReturnType<typeof getSimulationParams>) => {
-    if (!params) return;
+    if (!params || !params.uuid || !params.resultPath) return;
 
     const cacheStatus = getJsonCacheStatus(params.uuid);
 

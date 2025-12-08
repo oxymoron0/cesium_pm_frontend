@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { routeStore } from '@/stores/RouteStore'
 import { stationDetailStore } from '@/stores/StationDetailStore'
 import { busStore } from '@/stores/BusStore'
@@ -8,8 +8,8 @@ import Title from '@/components/basic/Title'
 import AirQualityDisplay from '@/components/service/sensor/AirQualityDisplay'
 import type { RouteStationsResponse } from '@/utils/api/types'
 
-// Animation duration in ms (matches BusStore polling interval)
-const BUS_ANIMATION_DURATION = 10000
+// Default animation duration fallback (ms)
+const DEFAULT_ANIMATION_DURATION = 10000
 
 const basePath = import.meta.env.VITE_BASE_PATH || '/'
 
@@ -83,8 +83,10 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
 
   const selectedRouteInfo = selectedRoute ? routeStore.getRouteInfo(selectedRoute) : null
 
-  // Animation state for smooth bus movement
-  const [animationProgress, setAnimationProgress] = useState(0)
+  // Per-bus animation progress state: Map<vehicleNumber, progress 0-1>
+  const [busAnimationProgress, setBusAnimationProgress] = useState<Map<string, number>>(new Map())
+  // Track animation start times for each bus
+  const busAnimationRef = useRef<Map<string, { startTime: number; duration: number }>>(new Map())
 
   // Get operating buses for this route from busData (has previous + current positions)
   // Note: busStore.busData is a MobX observable, so we access it directly for reactivity
@@ -100,24 +102,61 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
 
   const operatingBusCount = operatingBusData.length
 
-  // Animation effect - smoothly interpolate from previous to current position
+  // Calculate time difference between two positions in milliseconds
+  const getTimeDiffMs = (pos1: { recorded_at: string }, pos2: { recorded_at: string }): number => {
+    const time1 = new Date(pos1.recorded_at).getTime()
+    const time2 = new Date(pos2.recorded_at).getTime()
+    return Math.abs(time2 - time1)
+  }
+
+  // Animation effect - each bus animates based on its own time difference
   useEffect(() => {
     if (operatingBusData.length === 0) return
 
-    // Reset animation when new data arrives
-    const startTime = Date.now()
-    setAnimationProgress(0)
+    const now = Date.now()
 
+    // Initialize or update animation state for each bus
+    operatingBusData.forEach(bus => {
+      const sortedPositions = [...bus.positions].sort(
+        (a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()
+      )
+
+      if (sortedPositions.length < 2) return
+
+      const prevPosition = sortedPositions[sortedPositions.length - 2]
+      const currPosition = sortedPositions[sortedPositions.length - 1]
+
+      // Calculate duration from actual time difference
+      const timeDiff = getTimeDiffMs(prevPosition, currPosition)
+      const duration = timeDiff > 0 ? timeDiff : DEFAULT_ANIMATION_DURATION
+
+      // Check if this is new data (different recorded_at)
+      const existing = busAnimationRef.current.get(bus.vehicle_number)
+      const isNewData = !existing || existing.duration !== duration
+
+      if (isNewData) {
+        busAnimationRef.current.set(bus.vehicle_number, { startTime: now, duration })
+      }
+    })
+
+    // Animation loop
     let animationId: number
 
     const animate = () => {
-      const now = Date.now()
-      const elapsed = now - startTime
-      const progress = Math.min(elapsed / BUS_ANIMATION_DURATION, 1)
+      const currentTime = Date.now()
+      const newProgress = new Map<string, number>()
 
-      setAnimationProgress(progress)
+      busAnimationRef.current.forEach((state, vehicleNumber) => {
+        const elapsed = currentTime - state.startTime
+        const progress = Math.min(elapsed / state.duration, 1)
+        newProgress.set(vehicleNumber, progress)
+      })
 
-      if (progress < 1) {
+      setBusAnimationProgress(newProgress)
+
+      // Continue animation if any bus is still animating
+      const hasActiveAnimation = Array.from(newProgress.values()).some(p => p < 1)
+      if (hasActiveAnimation) {
         animationId = requestAnimationFrame(animate)
       }
     }
@@ -127,9 +166,21 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
   }, [operatingBusData])
 
   // Merge inbound and outbound stations into a single array with direction info
+  // Convert direction-based progress (0-100 each) to entire route progress (0-100 total)
+  // Inbound: 0-100% → 0-50%, Outbound: 0-100% → 50-100%
   const flatStations = useMemo(() => [
-    ...(stationData.inbound?.features.map(f => ({ ...f, direction: 'inbound' as const, directionName: stationData.inbound?.direction_name || '상행선' })) || []),
-    ...(stationData.outbound?.features.map(f => ({ ...f, direction: 'outbound' as const, directionName: stationData.outbound?.direction_name || '하행선' })) || [])
+    ...(stationData.inbound?.features.map(f => ({
+      ...f,
+      direction: 'inbound' as const,
+      directionName: stationData.inbound?.direction_name || '상행선',
+      entireProgress: f.properties.progress_percent * 0.5 // 0-100 → 0-50
+    })) || []),
+    ...(stationData.outbound?.features.map(f => ({
+      ...f,
+      direction: 'outbound' as const,
+      directionName: stationData.outbound?.direction_name || '하행선',
+      entireProgress: 50 + f.properties.progress_percent * 0.5 // 0-100 → 50-100
+    })) || [])
   ], [stationData.inbound, stationData.outbound])
 
   // Convert to 2D array: 10 rows, columns vary based on station count
@@ -148,43 +199,39 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
   })
 
   // Calculate bus positions on the route diagram with animation
+  // Uses entireProgress (0-100 for whole route) to match Cesium's coordinate system
   const busPositions = useMemo(() => {
-    if (flatStations.length === 0) return []
+    if (flatStations.length < 2) return []
 
-    // Use station order in flatStations directly (inbound 0-N, then outbound 0-M)
-    // Each direction has its own 0-100 progress range
-    const inboundCount = stationData.inbound?.features.length || 0
+    // Helper to find station pair for a given progress on entire route
+    const findStationPair = (busProgress: number) => {
+      // Find adjacent stations by entireProgress
+      for (let i = 0; i < flatStations.length - 1; i++) {
+        const currProgress = flatStations[i].entireProgress
+        const nextProgress = flatStations[i + 1].entireProgress
 
-    // Helper to find station pair for a given progress within a direction
-    const findStationPairInDirection = (progress: number, isOutbound: boolean) => {
-      const stations = isOutbound
-        ? flatStations.slice(inboundCount) // outbound stations
-        : flatStations.slice(0, inboundCount) // inbound stations
-      const offset = isOutbound ? inboundCount : 0
-
-      if (stations.length < 2) return null
-
-      // Find adjacent stations by progress
-      for (let i = 0; i < stations.length - 1; i++) {
-        const currProgress = stations[i].properties.progress_percent
-        const nextProgress = stations[i + 1].properties.progress_percent
-        if (currProgress <= progress && nextProgress >= progress) {
+        if (currProgress <= busProgress && nextProgress >= busProgress) {
           return {
-            lowerIndex: offset + i,
-            upperIndex: offset + i + 1,
+            lowerIndex: i,
+            upperIndex: i + 1,
             factor: nextProgress > currProgress
-              ? (progress - currProgress) / (nextProgress - currProgress)
+              ? (busProgress - currProgress) / (nextProgress - currProgress)
               : 0.5
           }
         }
       }
 
-      // Edge cases
-      if (progress <= stations[0].properties.progress_percent) {
-        return { lowerIndex: offset, upperIndex: offset + 1, factor: 0 }
+      // Edge cases: before first station
+      if (busProgress <= flatStations[0].entireProgress) {
+        return { lowerIndex: 0, upperIndex: 1, factor: 0 }
       }
-      if (progress >= stations[stations.length - 1].properties.progress_percent) {
-        return { lowerIndex: offset + stations.length - 2, upperIndex: offset + stations.length - 1, factor: 1 }
+      // After last station
+      if (busProgress >= flatStations[flatStations.length - 1].entireProgress) {
+        return {
+          lowerIndex: flatStations.length - 2,
+          upperIndex: flatStations.length - 1,
+          factor: 1
+        }
       }
 
       return null
@@ -200,19 +247,16 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
       const prevPosition = sortedPositions.length >= 2 ? sortedPositions[sortedPositions.length - 2] : sortedPositions[0]
       const currPosition = sortedPositions[sortedPositions.length - 1]
 
-      // Interpolate progress based on animation
+      // Get this bus's individual animation progress (0-1)
+      const busProgress = busAnimationProgress.get(bus.vehicle_number) ?? 0
+
+      // Interpolate progress based on this bus's animation state
       const prevProgress = prevPosition?.progress_percent ?? currPosition.progress_percent
       const currProgress = currPosition.progress_percent
-      const animatedProgress = prevProgress + (currProgress - prevProgress) * animationProgress
+      const animatedProgress = prevProgress + (currProgress - prevProgress) * busProgress
 
-      // Determine direction based on progress value
-      // If progress > 50, bus is likely on outbound (returning), otherwise inbound
-      // This is a heuristic - adjust based on actual route behavior
-      const isOutbound = animatedProgress > 50
-
-      // Find station pair in the appropriate direction
-      const stationPair = findStationPairInDirection(animatedProgress, isOutbound)
-        || findStationPairInDirection(animatedProgress, !isOutbound) // fallback to other direction
+      // Find station pair using entire route progress (same as Cesium)
+      const stationPair = findStationPair(animatedProgress)
 
       if (!stationPair) return null
 
@@ -235,7 +279,7 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
         upperIndex
       }
     }).filter((pos): pos is NonNullable<typeof pos> => pos !== null)
-  }, [flatStations, stationData.inbound?.features.length, operatingBusData, animationProgress, ROW_COUNT])
+  }, [flatStations, operatingBusData, busAnimationProgress, ROW_COUNT])
 
   // Find selected station from flat list
   const selectedStation = flatStations.find(
@@ -422,8 +466,7 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
                           width: '84px',
                           height: '44px',
                           zIndex: 10,
-                          pointerEvents: 'none',
-                          transition: 'left 0.1s linear'
+                          pointerEvents: 'none'
                         }}
                       />
                     )
@@ -450,8 +493,7 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
                           height: '44px',
                           zIndex: 10,
                           pointerEvents: 'none',
-                          transform: 'rotate(90deg)', // Rotate for vertical movement
-                          transition: 'top 0.1s linear'
+                          transform: 'rotate(90deg)' // Rotate for vertical movement
                         }}
                       />
                     )
