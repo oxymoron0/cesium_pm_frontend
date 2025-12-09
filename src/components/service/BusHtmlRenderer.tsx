@@ -75,17 +75,17 @@ const BusHtmlRenderer = observer(() => {
 
     // PM10 색상 계산
     const getPM10Color = (value: number) => {
-      if (value <= 30) return '#18A274';
-      if (value <= 80) return '#FFD040';
-      if (value <= 150) return '#F70';
+      if (value <= 30) return '#1C67D7';
+      if (value <= 80) return '#18A274';
+      if (value <= 150) return '#FEE046';
       return '#D32F2D';
     };
 
     // PM2.5 색상 계산
     const getPM25Color = (value: number) => {
-      if (value <= 15) return '#18A274';
-      if (value <= 35) return '#FFD040';
-      if (value <= 75) return '#F70';
+      if (value <= 15) return '#1C67D7';
+      if (value <= 35) return '#18A274';
+      if (value <= 75) return '#FEE046';
       return '#D32F2D';
     };
 
@@ -95,11 +95,11 @@ const BusHtmlRenderer = observer(() => {
 
     // 텍스트 색상 계산 (AirQualitySensor와 동일한 로직)
     const getPM10TextColor = (bgColor: string) => {
-      return (bgColor === '#D32F2D' || bgColor === '#F70') ? '#FFF' : '#000';
+      return (bgColor === '#1C67D7' || bgColor === '#D32F2D') ? '#FFF' : '#000';
     };
 
     const getPM25TextColor = (bgColor: string) => {
-      return (bgColor === '#D32F2D' || bgColor === '#F70') ? '#FFF' : '#000';
+      return (bgColor === '#1C67D7' || bgColor === '#D32F2D') ? '#FFF' : '#000';
     };
 
     const pm10TextColor = getPM10TextColor(pm10Color);

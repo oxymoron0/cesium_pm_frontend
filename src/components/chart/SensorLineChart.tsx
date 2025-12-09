@@ -124,21 +124,21 @@ const SensorLineChart = observer(function SensorLineChart({
             <ReferenceArea
               y1={0}
               y2={30}
-              fill="#18A274"
+              fill="#1C67D7"
               fillOpacity={0.05}
             />
             {/* Normal: 30-80 */}
             <ReferenceArea
               y1={30}
               y2={80}
-              fill="#FFD040"
+              fill="#18A274"
               fillOpacity={0.05}
             />
             {/* Bad: 80-150 */}
             <ReferenceArea
               y1={80}
               y2={150}
-              fill="#F70"
+              fill="#FEE046"
               fillOpacity={0.05}
             />
             {/* Very Bad: 150+ */}
@@ -158,21 +158,21 @@ const SensorLineChart = observer(function SensorLineChart({
             <ReferenceArea
               y1={0}
               y2={15}
-              fill="#18A274"
+              fill="#1C67D7"
               fillOpacity={0.05}
             />
             {/* Normal: 15-35 */}
             <ReferenceArea
               y1={15}
               y2={35}
-              fill="#FFD040"
+              fill="#18A274"
               fillOpacity={0.05}
             />
             {/* Bad: 35-75 */}
             <ReferenceArea
               y1={35}
               y2={75}
-              fill="#F70"
+              fill="#FEE046"
               fillOpacity={0.05}
             />
             {/* Very Bad: 75+ */}

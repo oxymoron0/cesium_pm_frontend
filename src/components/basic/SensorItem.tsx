@@ -19,17 +19,17 @@ function getSensorColor(type: SensorType, value: number): string {
 
   // PM10 기준
   if (type === 'pm10') {
-    if (value <= 30) return '#18A274';      // 좋음
-    if (value <= 80) return '#FFD040';      // 보통
-    if (value <= 150) return '#F70';        // 나쁨
+    if (value <= 30) return '#1C67D7';      // 좋음
+    if (value <= 80) return '#18A274';      // 보통
+    if (value <= 150) return '#FEE046';     // 나쁨
     return '#D32F2D';                       // 매우 나쁨
   }
 
   // PM2.5 기준
   if (type === 'pm25') {
-    if (value <= 15) return '#18A274';      // 좋음
-    if (value <= 35) return '#FFD040';      // 보통
-    if (value <= 75) return '#F70';         // 나쁨
+    if (value <= 15) return '#1C67D7';      // 좋음
+    if (value <= 35) return '#18A274';      // 보통
+    if (value <= 75) return '#FEE046';      // 나쁨
     return '#D32F2D';                       // 매우 나쁨
   }
 

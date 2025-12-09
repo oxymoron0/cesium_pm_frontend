@@ -2,16 +2,138 @@ import { observer } from 'mobx-react-lite'
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { routeStore } from '@/stores/RouteStore'
 import { stationDetailStore } from '@/stores/StationDetailStore'
+import { stationSensorStore } from '@/stores/StationSensorStore'
 import { busStore } from '@/stores/BusStore'
 import { getRouteStations } from '@/utils/api/routeApi'
+import { getAirQualityLevel } from '@/utils/airQuality'
 import Title from '@/components/basic/Title'
 import AirQualityDisplay from '@/components/service/sensor/AirQualityDisplay'
-import type { RouteStationsResponse } from '@/utils/api/types'
+import type { RouteStationsResponse, AirQualityLevel } from '@/utils/api/types'
 
 // Default animation duration fallback (ms)
 const DEFAULT_ANIMATION_DURATION = 10000
 
 const basePath = import.meta.env.VITE_BASE_PATH || '/'
+
+// Station icon mapping based on air quality level
+const STATION_ICONS: Record<AirQualityLevel, string> = {
+  good: 'station_good.svg',
+  normal: 'station_normal.svg',
+  bad: 'station_bad.svg',
+  very_bad: 'station_very_bad.svg'
+}
+
+function getStationIcon(pm10Value: number): string {
+  const { level } = getAirQualityLevel('pm10', pm10Value)
+  return `${basePath}icon/${STATION_ICONS[level]}`
+}
+
+// Bus sensor color calculation
+function getBusSensorColor(type: 'pm10' | 'pm25', value: number): { bg: string; text: string } {
+  if (type === 'pm10') {
+    if (value <= 30) return { bg: '#1C67D7', text: '#FFF' }
+    if (value <= 80) return { bg: '#18A274', text: '#000' }
+    if (value <= 150) return { bg: '#FEE046', text: '#000' }
+    return { bg: '#D32F2D', text: '#FFF' }
+  } else {
+    if (value <= 15) return { bg: '#1C67D7', text: '#FFF' }
+    if (value <= 35) return { bg: '#18A274', text: '#000' }
+    if (value <= 75) return { bg: '#FEE046', text: '#000' }
+    return { bg: '#D32F2D', text: '#FFF' }
+  }
+}
+
+// Bus sensor data display component
+interface BusSensorData {
+  pm: number
+  fpm: number
+  voc: number
+}
+
+function BusSensorDisplay({ sensorData }: { sensorData: BusSensorData }) {
+  const pm10Value = Math.round(sensorData.pm * 10) / 10
+  const pm25Value = Math.round(sensorData.fpm * 10) / 10
+  const vocsValue = Math.round(sensorData.voc * 10) / 10
+  const pm10Style = getBusSensorColor('pm10', pm10Value)
+  const pm25Style = getBusSensorColor('pm25', pm25Value)
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        padding: '4px 6px',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: '4px',
+        borderRadius: '6px',
+        border: '1px solid #C4C6C6',
+        background: 'rgba(30, 30, 30, 0.90)',
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+        pointerEvents: 'none',
+        userSelect: 'none',
+        whiteSpace: 'nowrap'
+      }}
+    >
+      {/* PM10 */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+        <span style={{ color: '#FFF', fontSize: '8px', fontWeight: 700, fontFamily: 'Pretendard' }}>PM10</span>
+        <div
+          style={{
+            display: 'flex',
+            width: '32px',
+            height: '32px',
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderRadius: '50%',
+            background: pm10Style.bg
+          }}
+        >
+          <span style={{ color: pm10Style.text, fontSize: '11px', fontWeight: 600, fontFamily: 'Pretendard' }}>
+            {pm10Value}
+          </span>
+        </div>
+      </div>
+      {/* PM2.5 */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+        <span style={{ color: '#FFF', fontSize: '8px', fontWeight: 700, fontFamily: 'Pretendard' }}>PM2.5</span>
+        <div
+          style={{
+            display: 'flex',
+            width: '32px',
+            height: '32px',
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderRadius: '50%',
+            background: pm25Style.bg
+          }}
+        >
+          <span style={{ color: pm25Style.text, fontSize: '11px', fontWeight: 600, fontFamily: 'Pretendard' }}>
+            {pm25Value}
+          </span>
+        </div>
+      </div>
+      {/* VOCs */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+        <span style={{ color: '#FFF', fontSize: '8px', fontWeight: 700, fontFamily: 'Pretendard' }}>VOCs</span>
+        <div
+          style={{
+            display: 'flex',
+            width: '32px',
+            height: '32px',
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderRadius: '50%',
+            background: '#C8C8C8'
+          }}
+        >
+          <span style={{ color: '#000', fontSize: '11px', fontWeight: 600, fontFamily: 'Pretendard' }}>
+            {vocsValue}
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 interface RouteDetailProps {
   selectedRoute: string | null
@@ -71,15 +193,6 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
     }
   }, [initialStationId])
 
-  // Generate sample air quality data based on station ID
-  const generateSampleAirQualityData = (stationId: string) => {
-    const seed = parseInt(stationId.slice(-2), 10) || 1
-    return {
-      pm10: 30 + (seed * 7) % 50, // 30-80 range
-      pm25: 15 + (seed * 5) % 35, // 15-50 range
-      vocs: 100 + (seed * 13) % 200 // 100-300 range
-    }
-  }
 
   const selectedRouteInfo = selectedRoute ? routeStore.getRouteInfo(selectedRoute) : null
 
@@ -267,6 +380,10 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
       const upperCol = Math.floor(upperIndex / ROW_COUNT)
       const upperRow = upperIndex % ROW_COUNT
 
+      // Get sensor data from latest position
+      const latestPosition = sortedPositions[sortedPositions.length - 1]
+      const sensorData = latestPosition?.sensor_data
+
       return {
         vehicleNumber: bus.vehicle_number,
         animatedProgress,
@@ -276,7 +393,8 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
         upperCol,
         upperRow,
         lowerIndex,
-        upperIndex
+        upperIndex,
+        sensorData
       }
     }).filter((pos): pos is NonNullable<typeof pos> => pos !== null)
   }, [flatStations, operatingBusData, busAnimationProgress, ROW_COUNT])
@@ -455,20 +573,34 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
                     const positionPercent = (busSlot + 0.5) / ROW_COUNT * 100
 
                     return (
-                      <img
+                      <div
                         key={`bus_h_${pos.vehicleNumber}`}
-                        src={`${basePath}icon/busPosition.svg`}
-                        alt={`버스 ${pos.vehicleNumber}`}
                         style={{
                           position: 'absolute',
-                          top: '-4px', // Adjust to center on the line (icon is 44px tall)
+                          top: '-60px',
                           left: `calc(30px + ${positionPercent}% - ${positionPercent * 0.6}px - 42px)`,
-                          width: '84px',
-                          height: '44px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '4px',
                           zIndex: 10,
                           pointerEvents: 'none'
                         }}
-                      />
+                      >
+                        {/* Sensor Data Display */}
+                        {pos.sensorData && (
+                          <BusSensorDisplay sensorData={pos.sensorData} />
+                        )}
+                        {/* Bus Icon */}
+                        <img
+                          src={`${basePath}icon/busPosition.svg`}
+                          alt={`버스 ${pos.vehicleNumber}`}
+                          style={{
+                            width: '84px',
+                            height: '44px'
+                          }}
+                        />
+                      </div>
                     )
                   })}
 
@@ -481,21 +613,35 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
                     const verticalOffset = 18 + pos.factor * 118 // 18px is top of connector
 
                     return (
-                      <img
+                      <div
                         key={`bus_v_${pos.vehicleNumber}`}
-                        src={`${basePath}icon/busPosition.svg`}
-                        alt={`버스 ${pos.vehicleNumber}`}
                         style={{
                           position: 'absolute',
-                          top: `${verticalOffset - 22}px`, // Center the 44px icon
-                          [isEvenRow ? 'right' : 'left']: '-12px', // Position near the vertical line
-                          width: '84px',
-                          height: '44px',
+                          top: `${verticalOffset - 22}px`,
+                          [isEvenRow ? 'right' : 'left']: '-12px',
+                          display: 'flex',
+                          flexDirection: isEvenRow ? 'row' : 'row-reverse',
+                          alignItems: 'center',
+                          gap: '4px',
                           zIndex: 10,
-                          pointerEvents: 'none',
-                          transform: 'rotate(90deg)' // Rotate for vertical movement
+                          pointerEvents: 'none'
                         }}
-                      />
+                      >
+                        {/* Sensor Data Display */}
+                        {pos.sensorData && (
+                          <BusSensorDisplay sensorData={pos.sensorData} />
+                        )}
+                        {/* Bus Icon */}
+                        <img
+                          src={`${basePath}icon/busPosition.svg`}
+                          alt={`버스 ${pos.vehicleNumber}`}
+                          style={{
+                            width: '84px',
+                            height: '44px',
+                            transform: 'rotate(90deg)'
+                          }}
+                        />
+                      </div>
                     )
                   })}
 
@@ -525,22 +671,25 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
                     }
 
                     const isSelected = selectedStationId === station.properties.station_id
+                    const sensorData = stationSensorStore.getSensorData(station.properties.station_id)
+                    const stationIconSrc = getStationIcon(sensorData?.pm10 ?? 0)
+
+                    const handleStationClick = () => {
+                      setSelectedStationId(station.properties.station_id)
+                      if (onStationSelect && selectedRoute) {
+                        onStationSelect(
+                          station.properties.station_id,
+                          station.properties.station_name,
+                          selectedRoute,
+                          station.direction,
+                          station.directionName
+                        )
+                      }
+                    }
 
                     return (
                       <div
                         key={`${station.direction}_${station.properties.station_id}_${rowIndex}`}
-                        onClick={() => {
-                          setSelectedStationId(station.properties.station_id)
-                          if (onStationSelect && selectedRoute) {
-                            onStationSelect(
-                              station.properties.station_id,
-                              station.properties.station_name,
-                              selectedRoute,
-                              station.direction,
-                              station.directionName
-                            )
-                          }
-                        }}
                         style={{
                           display: 'flex',
                           flexDirection: 'column',
@@ -549,24 +698,27 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
                           flex: '1 0 0',
                           minWidth: 0,
                           height: '80px',
-                          cursor: 'pointer',
                           opacity: isSelected ? 1 : 0.8,
                           transition: 'opacity 0.2s'
                         }}
                       >
                         {/* Station Icon */}
                         <img
-                          src={`${basePath}icon/station_inactive.svg`}
+                          src={stationIconSrc}
                           alt="정류장"
+                          onClick={handleStationClick}
+                          className="hover:brightness-150 transition-[filter] duration-200"
                           style={{
                             width: '36px',
                             height: '36px',
                             position: 'relative',
-                            zIndex: 2
+                            zIndex: 2,
+                            cursor: 'pointer'
                           }}
                         />
                         {/* Station Name */}
                         <span
+                          onClick={handleStationClick}
                           style={{
                             fontFamily: 'Pretendard',
                             fontSize: '14px',
@@ -581,7 +733,8 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
                             WebkitBoxOrient: 'vertical',
                             wordBreak: 'keep-all',
                             maxWidth: '100%',
-                            width: '100%'
+                            width: '100%',
+                            cursor: 'pointer'
                           }}
                         >
                           {station.properties.station_name}
@@ -601,21 +754,24 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
       </div>
 
       {/* Selected Station Air Quality */}
-      {selectedStation && (
-        <div className="pt-4 border-t border-gray-600">
-          <div className="mb-3 text-base font-medium text-white">
-            선택된 정류장: {selectedStation.properties.station_name}
+      {selectedStation && (() => {
+        const selectedSensorData = stationSensorStore.getSensorData(selectedStation.properties.station_id)
+        return (
+          <div className="pt-4 border-t border-gray-600">
+            <div className="mb-3 text-base font-medium text-white">
+              선택된 정류장: {selectedStation.properties.station_name}
+            </div>
+            <div className="mb-4 text-sm text-gray-300">
+              실시간 공기질 모니터링 데이터
+            </div>
+            <AirQualityDisplay
+              pm10Value={selectedSensorData?.pm10 ?? 0}
+              pm25Value={selectedSensorData?.pm25 ?? 0}
+              vocsValue={selectedSensorData?.vocs ?? 0}
+            />
           </div>
-          <div className="mb-4 text-sm text-gray-300">
-            실시간 공기질 모니터링 데이터
-          </div>
-          <AirQualityDisplay
-            pm10Value={generateSampleAirQualityData(selectedStation.properties.station_id).pm10}
-            pm25Value={generateSampleAirQualityData(selectedStation.properties.station_id).pm25}
-            vocsValue={generateSampleAirQualityData(selectedStation.properties.station_id).vocs}
-          />
-        </div>
-      )}
+        )
+      })()}
     </div>
   )
 })

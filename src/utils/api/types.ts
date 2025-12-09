@@ -171,7 +171,7 @@ export type AirQualityLevel = 'good' | 'normal' | 'bad' | 'very_bad';
 /**
  * 공기질 상태 색상 (CSS 색상값)
  */
-export type AirQualityColor = '#18A274' | '#FFD040' | '#F70' | '#D32F2D' | '#C8C8C8';
+export type AirQualityColor = '#1C67D7' | '#18A274' | '#FEE046' | '#D32F2D' | '#C8C8C8';
 
 /**
  * 센서 타입
