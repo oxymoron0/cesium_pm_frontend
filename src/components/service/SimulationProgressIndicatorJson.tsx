@@ -136,7 +136,7 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
   };
 
   const ensurePreloaded = async (params: ReturnType<typeof getSimulationParams>) => {
-    if (!params || !params.uuid || !params.resultPath) return;
+    if (!params) return;
 
     const cacheStatus = getJsonCacheStatus(params.uuid);
 
@@ -148,7 +148,7 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
     // 실제로 로드가 필요한 경우에만 로딩 상태 설정
     setIsPreloading(true);
     try {
-      await preloadJson(params.uuid, params.resultPath, totalFrames, setPreloadProgress);
+      await preloadJson(params.uuid, params.resultPath!, totalFrames, setPreloadProgress);
     } catch (error) {
       console.error('JSON Preload failed:', error);
     } finally {
