@@ -9,12 +9,13 @@ import { isGeometrySuccess } from '@/types/administrative';
 import Info from '@/components/basic/Info';
 import SimulationCivilRealTimeWeather from './SimulationCivilRealTimeWeather';
 import SimulationCivilList from './SimulationCivilList';
+import Icon from '@/components/basic/Icon';
 
-// interface SimulationCivilConfigProps {
-//   onExecute?: () => void;
-// }
+interface SimulationCivilConfigProps {
+  onBack?: () => void;
+}
 
-const SimulationCivilConfig = observer(function SimulationCivilConfig() {
+const SimulationCivilConfig = observer(function SimulationCivilConfig({ onBack } : SimulationCivilConfigProps)  {
   // Form state
   const [pollutant, setPollutant] = useState('PM10');
   const [concentration, setConcentration] = useState('');
@@ -24,6 +25,7 @@ const SimulationCivilConfig = observer(function SimulationCivilConfig() {
 
   // 에러 표시 상태 관리
   const [showError, setShowError] = useState(false);
+  const isInputDisabled = simulationStore.currentView !== 'civilConfig';
 
   // Options
   const pollutantOptions = [
@@ -31,9 +33,7 @@ const SimulationCivilConfig = observer(function SimulationCivilConfig() {
     // { value: 'PM25', label: '초미세먼지(PM-2.5)' },
   ];
 
-  // ==================================================================================
   // 1. 부산 행정구역 데이터 로드 및 '부산진구' 자동 선택
-  // ==================================================================================
   useEffect(() => {
     const loadBusanDistricts = async () => {
       // 부산 시도 선택 (코드 26)
@@ -60,9 +60,8 @@ const SimulationCivilConfig = observer(function SimulationCivilConfig() {
     };
   }, []);
 
-  // ==================================================================================
+  
   // 2. 선택된 시군구(부산진구) 경계 렌더링
-  // ==================================================================================
   useEffect(() => {
     const renderBoundary = async () => {
       const districtCode = administrativeStore.selectedDistrictCode;
@@ -109,8 +108,8 @@ useEffect(() => {
       setWindDirection(String(currentWeather.wind_direction_1m));
       setWindSpeed(String(currentWeather.wind_speed_1m));
     } else if (!useCurrentWeather) {
-      setWindDirection('');
-      setWindSpeed('');
+      setWindDirection(windDirection);
+      setWindSpeed(windSpeed);
     }
   }, [useCurrentWeather, simulationStore.currentWeather]);
 
@@ -142,7 +141,7 @@ useEffect(() => {
     return validConc && validWindDir && validWindSpd;
   };
 
-  const isFormValid = checkValidity();
+  const isFormValid = checkValidity(); // input 상태 전달 값
 
   const handleShowList = () => {
     if (!checkValidity()) {
@@ -158,7 +157,12 @@ useEffect(() => {
   return (
     <>
       {/* 2. 섹션 타이틀 */}
-      <div className="text-lg font-bold text-white mb-2">실시간 정류장 오염물질 시뮬레이션</div>
+      <div className="flex items-center gap-2">
+        {simulationStore.currentView !== 'civilConfig' && (
+          <Icon name="chevron-left" className="w-5 h-5 cursor-pointer" onClick={onBack}/>
+        )}
+        <div className="text-lg font-bold text-white mb-2">실시간 정류장 오염물질 시뮬레이션</div>
+      </div>
       <Divider color="bg-[#C3C3C3]" />
       
       {/* 3. 안내 문구 */}
@@ -184,15 +188,15 @@ useEffect(() => {
         <div className="flex flex-col gap-4 py-4">
           
           {/* Row 1: 오염물질 */}
-          <div className="flex items-center">
+          <div className="flex items-center justify-between">
             <div className="w-24 flex items-center gap-1">
               <span style={{fontFamily: 'Pretendard', lineHeight: 'normal', fontSize: '15px', fontWeight: '700', color: '#FFFFFF'}}>오염물질</span>
               <Info infoTitle="오염물질">* 미세먼지(PM-10)의 시뮬레이션 예상 농도를 입력해주세요. 19개소 정류장의 평균값으로 입력됩니다.</Info>
             </div>
             
-            <div className="flex flex-1 gap-4 items-center">
+            <div className={`flex gap-4 items-center ${simulationStore.currentView === 'civilConfig' && 'flex-1'}`}>
               {/* 항목 */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center px-left gap-2">
                 <span className="text-white text-sm font-bold w-8">항목</span>
                 <div className="relative w-36 h-8">
                   <select
@@ -211,7 +215,7 @@ useEffect(() => {
               {/* 농도 */}
               <div className="flex items-center gap-2 flex-1">
                 <span className="text-white text-sm font-bold w-8">농도</span>
-                <div className="relative flex-1 h-8">
+                <div className={`relative ${simulationStore.currentView === 'civilConfig' && 'flex-1'} h-8`}>
                   <input
                     type="text"
                     value={concentration}
@@ -219,25 +223,26 @@ useEffect(() => {
                       setConcentration(e.target.value);
                       if(e.target.value) setShowError(false);
                     }}
+                    disabled={isInputDisabled}
                     placeholder="예 : 100"
-                    className={`w-full h-full px-3 rounded focus:outline-none ${isConcentrationInvalid ? 'placeholder-[#FF3333]' : 'placeholder-[#696A6A]'}`}
+                    className={`w-full h-full px-3 rounded text-justify focus:outline-none ${isConcentrationInvalid ? 'placeholder-[#FF3333]' : 'placeholder-[#696A6A]'}`}
                     style={getInputStyle(isConcentrationInvalid)}
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2" 
-                    style={{fontFamily: 'Pretendard', lineHeight: 'normal', fontSize: '15px', fontWeight: '400', color: '#A6A6A6'}}>µg/m³</span>
+                    style={{fontFamily: 'Pretendard', lineHeight: 'normal', fontSize: '15px', fontWeight: '400', color: '#FFFFFF'}}>µg/m³</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Row 2: 기상 조건 */}
-          <div className="flex items-center">
+          <div className="flex items-center justify-between">
             <div className="w-24 flex items-center gap-1">
               <span style={{fontFamily: 'Pretendard', lineHeight: 'normal', fontSize: '15px', fontWeight: '700', color: '#FFFFFF'}}>기상 조건</span>
               <Info infoTitle="기상 조건">* 시뮬레이션 시점의 기상 조건을 직접 입력하거나, 현재 기상정보를 적용할 수 있습니다.</Info>
             </div>
             
-            <div className="flex flex-1 gap-4 items-center">
+            <div className={`flex gap-4 items-center ${simulationStore.currentView === 'civilConfig' && 'flex-1'}`}>
               {/* 풍향 */}
               <div className="flex items-center gap-2">
                 <span className="text-white text-sm font-bold w-8">풍향</span>
@@ -247,30 +252,30 @@ useEffect(() => {
                     value={windDirection}
                     onChange={(e) => setWindDirection(e.target.value)}
                     placeholder="예 : 270"
-                    disabled={useCurrentWeather}
-                    className={`w-full h-full px-3 rounded focus:outline-none disabled:opacity-50 ${isWindDirectionInvalid ? 'placeholder-[#FF3333]' : 'placeholder-[#696A6A]'}`}
+                    disabled={useCurrentWeather || isInputDisabled}
+                    className={`w-full h-full px-3 rounded focus:outline-none ${isWindDirectionInvalid ? 'placeholder-[#FF3333]' : 'placeholder-[#696A6A]'}`}
                     style={getInputStyle(isWindDirectionInvalid)}
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2" 
-                  style={{fontFamily: 'Pretendard', lineHeight: 'normal', fontSize: '15px', fontWeight: '400', color: '#A6A6A6'}}>°</span>
+                  style={{fontFamily: 'Pretendard', lineHeight: 'normal', fontSize: '15px', fontWeight: '400', color: '#FFFFFF'}}>°</span>
                 </div>
               </div>
 
               {/* 풍속 */}
               <div className="flex items-center gap-2 flex-1">
                 <span className="text-white text-sm font-bold w-8">풍속</span>
-                <div className="relative flex-1 h-8">
+                <div className={`relative ${simulationStore.currentView === 'civilConfig' && 'flex-1'} h-8`}>
                    <input
                     type="text"
                     value={windSpeed}
                     onChange={(e) => setWindSpeed(e.target.value)}
                     placeholder="예 : 2.31"
-                    disabled={useCurrentWeather}
-                    className={`w-full h-full px-3 rounded focus:outline-none disabled:opacity-50 ${isWindSpeedInvalid ? 'placeholder-[#FF3333]' : 'placeholder-[#696A6A]'}`}
+                    disabled={useCurrentWeather || isInputDisabled}
+                    className={`w-full h-full px-3 rounded focus:outline-none ${isWindSpeedInvalid ? 'placeholder-[#FF3333]' : 'placeholder-[#696A6A]'}`}
                     style={getInputStyle(isWindSpeedInvalid)}
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2" 
-                  style={{fontFamily: 'Pretendard', lineHeight: 'normal', fontSize: '15px', fontWeight: '400', color: '#A6A6A6'}}>m/s</span>
+                  style={{fontFamily: 'Pretendard', lineHeight: 'normal', fontSize: '15px', fontWeight: '400', color: '#FFFFFF'}}>m/s</span>
                 </div>
               </div>
             </div>
@@ -278,11 +283,13 @@ useEffect(() => {
 
           {/* Row 3: 체크박스 */}
           <div className="flex justify-center">
+            {!isInputDisabled && (
             <Checkbox
               checked={useCurrentWeather}
               onChange={setUseCurrentWeather}
               label={simulationStore.weatherInfoLabel}
             />
+            )}
           </div>
         </div>
       </div>

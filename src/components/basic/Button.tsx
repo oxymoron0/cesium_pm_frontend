@@ -5,7 +5,7 @@ interface ButtonProps {
   children: ReactNode;
   onClick?: () => void;
   className?: string;
-  variant?: 'solid' | 'outline' | 'dark' | 'noStyle';
+  variant?: 'solid' | 'solid_civil' | 'outline' | 'dark' | 'noStyle';
   showIcon?: boolean;
   iconName?: string | null;
   iconPos?: 'left' | 'right';
@@ -22,6 +22,7 @@ export default function Button({
 }: ButtonProps) {
   const variantStyles = {
     solid: "bg-[#CFFF40] text-black",
+    solid_civil: "bg-[#CFFF40] text-black",
     outline: "bg-transparent border border-[#CFFF40] text-[#CFFF40]",
     dark: "bg-black border border-[#696A6A] text-white",
     noStyle: "",
@@ -29,7 +30,7 @@ export default function Button({
 
   return (
     <div
-      className={`flex h-10 px-4 py-2.5 justify-center items-center gap-2 self-stretch rounded cursor-pointer ${variantStyles[variant]} ${className}`}
+      className={`flex h-10 ${variant ==='solid_civil' ? 'px-3' : 'px-4'} py-2.5 justify-center items-center gap-2 self-stretch rounded cursor-pointer ${variantStyles[variant]} ${className}`}
       onClick={onClick}
     >
       {showIcon && iconPos === 'left' && <Icon name={iconName ? iconName : "saas"} />}

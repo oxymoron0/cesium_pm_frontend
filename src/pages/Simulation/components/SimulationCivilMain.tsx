@@ -6,8 +6,6 @@ import SimulationCivilConfig from "./SimulationCivilConfig";
 
 // interface SimulationCivilMainProps {
 //   onCloseMicroApp?: () => void;
-//   onMinimize?: () => void;
-//   dispatch?: (action: unknown) => void;
 // }
 
 const SimulationCivilMain = observer(function App() {  
@@ -15,9 +13,9 @@ const SimulationCivilMain = observer(function App() {
   return (
     <>
       <Title
-        info="※ 시뮬레이션 실행을 위한 설정 페이지입니다."
+        info="※ 부산진구에서 발생한 미세먼지(PM-10)의 확산을 시뮬레이션할 수 있습니다."
         infoTitle="시뮬레이션"
-        onClose={() => simulationStore.setCurrentView("config")}
+        onClose={() => simulationStore.setCurrentView('civilConfig')}
         onMinimize={() => simulationStore.toggleMinimize()}
       >
         시뮬레이션
@@ -27,7 +25,9 @@ const SimulationCivilMain = observer(function App() {
 
         <Spacer height={16} />
 
-        <SimulationCivilConfig />      
+        <SimulationCivilConfig 
+        onBack={() => simulationStore.setCurrentView('civilConfig')} 
+        />      
       </div>
     </>
   );

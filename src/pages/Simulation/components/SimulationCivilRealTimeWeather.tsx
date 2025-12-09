@@ -29,9 +29,7 @@ const SimulationCivilRealTimeWeather = observer(function SimulationCivilRealTime
     const day = String(now.getDate()).padStart(2, '0');
     let hour = now.getHours();
     const minute = String(now.getMinutes()).padStart(2, '0');
-    const ampm = hour >= 12 ? '오후' : '오전';
-    hour = hour % 12 || 12;
-    return `${year}.${month}.${day} ${ampm} ${String(hour).padStart(2, '0')}:${minute}`;
+    return `${year}.${month}.${day} ${String(hour).padStart(2, '0')}:${minute}`;
   };
 
   return (
