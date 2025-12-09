@@ -4,7 +4,7 @@ import Spacer from '@/components/basic/Spacer';
 import Icon from '@/components/basic/Icon';
 import { simulationStore } from '@/stores/SimulationStore';
 import Button from '@/components/basic/Button';
-import SimulationCivilDetailRow from '../SimulationCivilDetailRow';
+import SimulationCivilDetailRow from './SimulationCivilDetailRow';
 // import SimulationDetailRow from '@/pages/Simulation/components/SimulationDetailRow'; // (Civil용 상세 Row가 필요하다면 별도 구현 또는 재사용)
 
 const formatDate = (isoString: string) => {

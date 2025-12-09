@@ -58,16 +58,16 @@ const SimulationCivilDetailRow = ({ data }: SimulationCivilDetailRowProps) => {
   const pollutantLabel = pm_type === 'pm10' ? '미세먼지(PM-10)' : pm_type === 'pm25' ? '초미세먼지(PM-2.5)' : pm_type;
 
   return (
-    <div className="w-full bg-[#2C2C2C] p-4 border-t border-[#696A6A]">
+    <div className="w-full bg-[#000000] p-4 border-t border-[#696A6A]">
       {/* 1. 측정 환경 정보 섹션 */}
-      <div className="flex flex-col w-full rounded overflow-hidden border border-[#696A6A]">
+      <div className="flex flex-col w-full rounded overflow-hidden ">
         {/* 헤더 */}
         <div className="w-full bg-[#464646] py-2 px-4 text-white font-bold text-sm">
           측정 환경 정보
         </div>
         
         {/* 내용 */}
-        <div className="p-4 bg-[#222222] flex flex-col gap-3">
+        <div className="p-4 bg-[#000000] flex flex-col gap-3">
           {/* 측정 시간 */}
           <div className="flex items-center">
             <div className="w-24 flex-shrink-0">
@@ -93,16 +93,16 @@ const SimulationCivilDetailRow = ({ data }: SimulationCivilDetailRowProps) => {
       <Spacer height={16} />
 
       {/* 2. 정류장 측정 목록 섹션 */}
-      <div className="flex flex-col w-full rounded overflow-hidden border border-[#696A6A]">
+      <div className="flex flex-col w-full rounded overflow-hidden">
         {/* 헤더 */}
         <div className="w-full bg-[#464646] py-2 px-4 text-white font-bold text-sm">
           정류장 측정 목록 ({station_data.length})
         </div>
 
         {/* 테이블 */}
-        <div className="bg-[#222222] p-4 pt-2">
+        <div className="bg-[#000000] p-4 pt-2">
           {/* 테이블 헤더 */}
-          <div className="flex items-center py-2 border-b border-[#696A6A] text-white text-sm font-bold">
+          <div className="flex items-center py-2 border-b border-[#FFFFFF] text-white text-sm font-bold">
             <div className="w-12 text-center">No</div>
             <div className="flex-1 text-center">정류장</div>
             <div className="w-40 text-center">측정시간</div>
@@ -114,13 +114,13 @@ const SimulationCivilDetailRow = ({ data }: SimulationCivilDetailRowProps) => {
             {station_data.map((station, index) => (
               <div 
                 key={index} 
-                className="flex items-center py-3 border-b border-[#444444] text-[#A6A6A6] text-sm hover:bg-[#2C2C2C] transition-colors"
+                className="flex items-center py-3 text-[#A6A6A6] text-sm hover:bg-[#2C2C2C] transition-colors"
               >
                 <div className="w-12 text-center">{index + 1}</div>
                 <div className="flex-1 text-center text-white">{station.station_name}</div>
                 <div className="w-40 text-center">{formatTimeOnly(station.measured_at)}</div>
                 <div className="w-32 text-center text-white font-bold">
-                  {station.concentration} µg/m³
+                  {station.concentration.toFixed(1)} µg/m³
                 </div>
               </div>
             ))}

@@ -25,6 +25,10 @@ dist-ssr
 
 # Development env Token
 .env.development
+.env
 
 # Tmp Models
 public/results
+
+# Local CLI Rulebook
+GEMINI.md
