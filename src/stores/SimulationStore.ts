@@ -9,13 +9,15 @@ import type {
   SimulationQuckData,
   SimulationInProgressResponse,
   PMType,
-  Weather
+  Weather,
+  SimulationCivilQuickData
 } from '../types/simulation_request_types';
 import type { VulnerableFacilitiesResponse } from '@/utils/api/types';
-import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck, reverseGeocodeAPI, searchAddressAPI, getVulnerableFacilities } from '@/utils/api';
+import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck, reverseGeocodeAPI, searchAddressAPI, getVulnerableFacilities, getSimulationCivilList } from '@/utils/api';
 import { userStore } from './UserStore';
 import { administrativeStore } from './AdministrativeStore';
 // import { randomizeSimulationConcentration, ENABLE_MOCK_CONCENTRATION } from '@/utils/mockData/simulationConcentration';
+const IS_CIVIL_APP = import.meta.env.VITE_IS_CIVIL === 'true';
 
 // ============================================================================
 // SimulationStore Class
@@ -24,6 +26,9 @@ class SimulationStore {
   // ============================================================================
   // Observable State
   // ============================================================================
+
+  // 행정/대민 초기값 설정
+  isCivilMode: boolean = IS_CIVIL_APP;
 
   // 검색 상태
   searchQuery: string = '';
@@ -105,7 +110,7 @@ class SimulationStore {
   isResultPopupMinimized = false
 
   // 시뮬레이션 Panel 상태 관리
-  currentView: SimulationView = "config"
+  currentView: SimulationView = this.isCivilMode ? "civilConfig" : "config";
   pollutantFilter: PMType | 'all' = 'all';
   sortOrder: 'latest' | 'oldest' = 'latest'; // 기본값 'latest'
   isDeleteMode: boolean = false;
@@ -116,6 +121,12 @@ class SimulationStore {
   isDateModalOpen: boolean = false;
   startDate: string | null = null;
   endDate: string | null = null;
+
+  // 대민 시뮬레이션 상태 관리
+  simulationCivilList: SimulationCivilQuickData[] = [];
+  paginationCivil: SimulationListPagination | null = null;
+  isLoadingCivilList: boolean = false;
+  civilConcentration: string = '';
 
   constructor() {
     makeAutoObservable(this, {
@@ -1039,6 +1050,58 @@ class SimulationStore {
    */
   toggleResultPopupMinimize = () => {
     this.isResultPopupMinimized = !this.isResultPopupMinimized;
+  }
+
+  // ============================================================================
+  // 대민 서비스
+  // ============================================================================
+  
+  /**
+   * 농도 값 설정 액션
+   */
+  setCivilConcentration(value: string) {
+    this.civilConcentration = value;
+  }
+
+  /**
+   * 시민용 시뮬레이션 목록 조회
+   * GET /api/v1/simulation_auto/civil/list
+   * * @param concentration - 미세먼지 농도 필터 (필수, String)
+   * @param page - 페이지 번호 (기본값 1)
+   * @param limit - 페이지당 항목 수 (기본값 7)
+   */
+  async loadSimulationCivilList(concentration: string, page: number = 1, limit: number = 7) {
+    this.isLoadingCivilList = true;
+    
+    try {
+      // 1. 현재 검색어(농도)를 스토어에 저장 (나중에 페이지네이션 등에서 참조 가능)
+      runInAction(() => {
+        this.civilConcentration = concentration;
+      });
+
+      console.log(`[Store] Loading Civil List... (Concentration: ${concentration}, Page: ${page})`);
+
+      // 2. API 호출
+      const response = await getSimulationCivilList(concentration, page, limit);
+
+      runInAction(() => {
+        this.simulationCivilList = response.simulations;
+        this.paginationCivil = response.pagination;
+      });
+
+      console.log('✅ [Store] Civil Simulation List Loaded:', response);
+
+    } catch (error) {
+      console.error('❌ [Store] Failed to load civil simulation list:', error);
+      runInAction(() => {
+        this.simulationCivilList = [];
+        this.paginationCivil = null;
+      });
+    } finally {
+      runInAction(() => {
+        this.isLoadingCivilList = false;
+      });
+    }
   }
 
 }

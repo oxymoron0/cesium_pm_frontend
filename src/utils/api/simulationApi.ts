@@ -14,6 +14,7 @@ import type {
   PMType,
   Weather,
   SimulationInProgressResponse,
+  SimulationCivilQuickDataResponse,
 } from '../../types/simulation_request_types';
 import type { AddressSearchResponse, ReverseGeocodeResponse } from '@/pages/Simulation/types';
 import type { VulnerableFacilitiesResponse } from './types';
@@ -466,6 +467,43 @@ export async function getSimulationGlbCount(
       `[getSimulationGlbCount] API 호출 실패 (UUID: ${uuid}):`,
       error
     );
+    throw error;
+  }
+}
+
+/**
+ * 시뮬레이션(auto) 목록 조회
+ * GET /api/v1/simulation_auto/civil/list
+ *
+ * @param concentration - 미세먼지 농도
+ * @param page - 페이지 번호 (기본값: 1)
+ * @param limit - 페이지당 항목 수 (기본값: 7)
+ * @returns 시뮬레이션 목록과 페이지네이션 정보
+ */
+export async function getSimulationCivilList(
+  concentration: string,
+  page: number = 1,
+  limit: number = 7
+): Promise<SimulationCivilQuickDataResponse> {
+  try {
+    const params = new URLSearchParams({
+      concentration: concentration,
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+
+    const url = `${API_PATHS.SIMULATION_CIVIL_LIST}?${params.toString()}`;
+    const response = await get<SimulationCivilQuickDataResponse>(url);
+
+    if (!response.ok) {
+      throw new Error(
+        `Simulation list API failed with status ${response.status}`
+      );
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error("[getSimulationCivilList] API 호출 실패:", error);
     throw error;
   }
 }
