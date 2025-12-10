@@ -10,7 +10,7 @@ import type {
   SimulationInProgressResponse,
   PMType,
   Weather,
-  SimulationCivilQuickData
+  SimulationCivilQuickData,
 } from '../types/simulation_request_types';
 import type { VulnerableFacilitiesResponse } from '@/utils/api/types';
 import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck, reverseGeocodeAPI, searchAddressAPI, getVulnerableFacilities, getSimulationCivilList } from '@/utils/api';
@@ -124,6 +124,7 @@ class SimulationStore {
 
   // 대민 시뮬레이션 상태 관리
   simulationCivilList: SimulationCivilQuickData[] = [];
+  selectedCivilSimulation: SimulationCivilQuickData | null = null;
   paginationCivil: SimulationListPagination | null = null;
   isLoadingCivilList: boolean = false;
   civilConcentration: string = '';
@@ -1102,6 +1103,24 @@ class SimulationStore {
         this.isLoadingCivilList = false;
       });
     }
+  }
+
+  /**
+   * 시민용 시뮬레이션 실행 (재생 모드로 전환)
+   */
+  playCivilSimulation(data: SimulationCivilQuickData) {
+    runInAction(() => {
+      // 1. 선택된 시민용 데이터 저장
+      this.selectedCivilSimulation = data;
+      
+      // 2. GLB 프레임 수 설정 (json_count 활용)
+      this.glbCount = 100; //
+
+      // 3. 뷰 전환
+      this.currentView = 'civilResult'; 
+    });
+    
+    console.log(`[Store] Playing civil simulation: ${data.uuid} (${this.glbCount} frames)`);
   }
 
 }

@@ -5,6 +5,7 @@ import Icon from '@/components/basic/Icon';
 import { simulationStore } from '@/stores/SimulationStore';
 import Button from '@/components/basic/Button';
 import SimulationCivilDetailRow from './SimulationCivilDetailRow';
+import type { SimulationCivilQuickData } from '@/types/simulation_request_types';
 // import SimulationDetailRow from '@/pages/Simulation/components/SimulationDetailRow'; // (Civil용 상세 Row가 필요하다면 별도 구현 또는 재사용)
 
 const formatDate = (isoString: string) => {
@@ -14,7 +15,6 @@ const formatDate = (isoString: string) => {
   const M = String(date.getMonth() + 1).padStart(2, '0');
   const D = String(date.getDate()).padStart(2, '0');
   const h = String(date.getHours()).padStart(2, '0');
-  const m = String(date.getMinutes()).padStart(2, '0');
   return `${Y}.${M}.${D} ${h}시`;
 };
 
@@ -76,6 +76,14 @@ const SimulationCivilList = observer(function SimulationCivilList() {
         />
       </div>
     );
+  };
+
+  const handleRunSimulation = (sim: SimulationCivilQuickData) => { // 타입은 SimulationCivilQuickData
+    // 필요하다면 컨펌 모달을 띄울 수 있음
+    const confirmed = confirm("시뮬레이션을 재생하시겠습니까?");
+    if (confirmed) {
+      simulationStore.playCivilSimulation(sim);
+    }
   };
 
   // 폰트 스타일
@@ -142,7 +150,7 @@ const SimulationCivilList = observer(function SimulationCivilList() {
 
               {/* 농도 */}
               <div style={{ flex: 1, textAlign: 'center', color: '#FFFFFF' }}>
-                {sim.average_concentration.toFixed(1)} µg/m³
+                {Math.round(sim.average_concentration)} µg/m³
               </div>
 
               {/* 풍향 */}
@@ -161,7 +169,7 @@ const SimulationCivilList = observer(function SimulationCivilList() {
                   variant='solid_civil'
                   iconName={"excute"}
                   iconPos="right"
-                  onClick={() => alert('실행')}
+                  onClick={() => handleRunSimulation(sim)}
                 >
                   시뮬레이션 실행
                 </Button>

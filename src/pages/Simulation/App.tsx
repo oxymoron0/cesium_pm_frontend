@@ -140,7 +140,8 @@ const App = observer(function App(props: AppProps) {
         {/* 대민 */}
           <Panel
             position="left"
-            width={simulationStore.currentView === 'civilConfig' ? "540px" : "720px"}
+            width={simulationStore.currentView === 
+              'civilConfig' || simulationStore.currentView === 'civilResult' ? "540px" : "720px"}
             maxHeight="calc(100vh - 50px)"
             allowOverflow={true}
           >

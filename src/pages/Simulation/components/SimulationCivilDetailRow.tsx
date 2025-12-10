@@ -1,4 +1,3 @@
-import React from 'react';
 import Spacer from '@/components/basic/Spacer';
 import { type SimulationCivilQuickData } from '@/types/simulation_request_types';
 
@@ -39,10 +38,9 @@ const formatTimeOnly = (isoString: string) => {
 const SimulationCivilDetailRow = ({ data }: SimulationCivilDetailRowProps) => {
   const { weather, station_data, pm_type } = data;
 
-  const fontPretendard = { fontFamily: 'Pretendard', lineHeight: 'normal' };
-  const labelStyle = { ...fontPretendard, fontSize: '14px', fontWeight: '700', color: '#FFFFFF' };
   const valueBoxStyle = {
-    ...fontPretendard,
+    fontFamily: 'Pretendard', 
+    lineHeight: 'normal',
     fontSize: '14px',
     fontWeight: '400',
     color: '#FFFFFF',
@@ -71,7 +69,7 @@ const SimulationCivilDetailRow = ({ data }: SimulationCivilDetailRowProps) => {
           {/* 측정 시간 */}
           <div className="flex items-center">
             <div className="w-24 flex-shrink-0">
-              <span style={labelStyle}>측정 시간</span>
+              <span style={{fontFamily: 'Pretendard', lineHeight: 'normal', fontSize: '14px', fontWeight: '700', color: '#FFFFFF'}}>측정 시간</span>
             </div>
             <div className="flex-1" style={valueBoxStyle}>
               {formatDateTime(data.measured_at)}
@@ -81,10 +79,10 @@ const SimulationCivilDetailRow = ({ data }: SimulationCivilDetailRowProps) => {
           {/* 기상 상황 */}
           <div className="flex items-center">
             <div className="w-24 flex-shrink-0">
-              <span style={labelStyle}>기상 상황</span>
+              <span style={{fontFamily: 'Pretendard', lineHeight: 'normal', fontSize: '14px', fontWeight: '700', color: '#FFFFFF'}}>기상 상황</span>
             </div>
             <div className="flex-1" style={valueBoxStyle}>
-              (풍향) {weather.wind_direction_1m}° &nbsp;&nbsp; (풍속) {weather.wind_speed_1m} m/s
+              (풍향) {weather.wind_direction_1m}°  &nbsp; (풍속) {weather.wind_speed_1m} m/s
             </div>
           </div>
         </div>
@@ -120,7 +118,7 @@ const SimulationCivilDetailRow = ({ data }: SimulationCivilDetailRowProps) => {
                 <div className="flex-1 text-center text-white">{station.station_name}</div>
                 <div className="w-40 text-center">{formatTimeOnly(station.measured_at)}</div>
                 <div className="w-32 text-center text-white font-bold">
-                  {station.concentration.toFixed(1)} µg/m³
+                  {Math.round(station.concentration)} µg/m³
                 </div>
               </div>
             ))}

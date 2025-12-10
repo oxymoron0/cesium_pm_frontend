@@ -219,6 +219,7 @@ export interface SimulationCivilStationData {
  */
 export interface SimulationCivilQuickData {
   index: number;
+  uuid: string;
   measured_at: string; // ISO 8601 string
   pm_type: "pm10" | "pm25" | string;
   result_path: string;

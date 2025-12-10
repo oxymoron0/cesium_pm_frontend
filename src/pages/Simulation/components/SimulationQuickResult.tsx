@@ -11,10 +11,10 @@ import {
   clearSimulationResultStations,
   getSelectedSimulationStationId,
 } from "@/utils/cesium/simulationResultRenderer";
-import SimulationProgressIndicator from "@/components/service/SimulationProgressIndicator";
-import SimulationProgressIndicatorCsv from "@/components/service/SimulationProgressIndicatorCsv";
+// import SimulationProgressIndicator from "@/components/service/SimulationProgressIndicator";
+// import SimulationProgressIndicatorCsv from "@/components/service/SimulationProgressIndicatorCsv";
 import SimulationProgressIndicatorJson from "@/components/service/SimulationProgressIndicatorJson";
-import SimulationProgressIndicatorHeatmap from "@/components/service/SimulationProgressIndicatorHeatmap";
+// import SimulationProgressIndicatorHeatmap from "@/components/service/SimulationProgressIndicatorHeatmap";
 
 interface SimulationQuickResultProps {
   onCloseMicroApp?: () => void;
@@ -338,10 +338,10 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
         </div>
       </div>
 
-      {indicatorType === 'default' && <SimulationProgressIndicator />}
-      {indicatorType === 'csv' && <SimulationProgressIndicatorCsv />}
+      {/* {indicatorType === 'default' && <SimulationProgressIndicator />} */}
+      {/* {indicatorType === 'csv' && <SimulationProgressIndicatorCsv />} */}
       {indicatorType === 'json' && <SimulationProgressIndicatorJson />}
-      {indicatorType === 'heatmap' && <SimulationProgressIndicatorHeatmap />}
+      {/* {indicatorType === 'heatmap' && <SimulationProgressIndicatorHeatmap />} */}
     </>
   );
 });
