@@ -95,10 +95,12 @@ export interface SimulationListItem {
   status: string;                    // Status ("대기", "진행중", "완료", "실패")
   concentration: number;             // First station PM concentration
   station_name: string;              // First station name
+  location: LocationPoint;           // GeoJSON Point location
   lot: string;                       // 지번 주소
   road_name: string;                 // 도로명 주소
   weather: Weather;                  // Weather data
   is_private: boolean;
+  json_count: number;                // Number of JSON result files
 }
 
 /**
@@ -149,14 +151,33 @@ export interface SimulationDetail {
 /**
  * Simulation auto response from GET /api/v1/simulation_auto/list
  */
-export interface SimulationQuckData {
+export interface SimulationQuickData {
   index: number;
   uuid: string;
   measured_at: string;
   pm_type: "pm10" | "pm25";
-  result_path: string;
   weather: WeatherData;
   station_data: StationData[];
+  json_count: number;                // Number of JSON result files
+}
+
+/**
+ * @deprecated Use SimulationQuickData instead
+ */
+export type SimulationQuckData = SimulationQuickData;
+
+/**
+ * Simulation auto civil response from GET /api/v1/simulation_auto/civil/list
+ */
+export interface SimulationQuickCivilData {
+  index: number;
+  uuid: string;
+  measured_at: string;
+  pm_type: "pm10" | "pm25";
+  average_concentration: number;     // Civil-specific: average concentration
+  weather: WeatherData;
+  station_data: StationDataCivil[];
+  json_count: number;                // Number of JSON result files
 }
 
 export interface LocationPoint {
@@ -173,6 +194,15 @@ export interface StationData {
   location: LocationPoint;
 }
 
+export interface StationDataCivil {
+  index: number;
+  station_name: string;
+  measured_at: string;
+  concentration: number;
+  pm_label: string;                  // Civil-specific: PM level label (좋음, 보통, etc.)
+  location: LocationPoint;
+}
+
 export interface WeatherData {
   wind_direction_1m: number;
   wind_speed_1m: number;
@@ -183,9 +213,19 @@ export interface WeatherData {
   temperature: number;
 }
 
-export interface SimulationQuckDataResponse {
-  simulations: SimulationQuckData[]; // Simulation items
-  pagination: SimulationListPagination; // Pagination info
+export interface SimulationQuickDataResponse {
+  simulations: SimulationQuickData[];
+  pagination?: SimulationListPagination; // Optional: may not be present
+}
+
+/**
+ * @deprecated Use SimulationQuickDataResponse instead
+ */
+export type SimulationQuckDataResponse = SimulationQuickDataResponse;
+
+export interface SimulationQuickCivilDataResponse {
+  simulations: SimulationQuickCivilData[];
+  pagination?: SimulationListPagination;
 }
 
 export interface SimulationInProgressResponse {
