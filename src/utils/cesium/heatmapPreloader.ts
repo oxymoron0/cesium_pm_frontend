@@ -246,10 +246,14 @@ async function parseHeatmapJson(jsonUrl: string, sampleRate: number = 1, frameIn
 
 /**
  * JSON 파일들을 프리로드
+ *
+ * 경로 구조: ${VITE_SIM_PATH}/${uuid}/Finedust_XXXX.json
+ * - Dev: Vite plugin serves from SIM_LOCAL_PATH (e.g., /mnt/nfs)
+ * - Prod: nginx serves from mounted path
  */
 export async function preloadHeatmap(
   uuid: string,
-  resultPath: string,
+  _resultPath: string, // deprecated: kept for backward compatibility
   totalFrames: number,
   onProgress?: (progress: HeatmapPreloadProgress) => void
 ): Promise<void> {
@@ -264,14 +268,10 @@ export async function preloadHeatmap(
     heatmapCacheMap.set(uuid, frameCache);
   }
 
+  // Build path using environment variables: VITE_BASE_PATH + VITE_SIM_PATH
   const basePath = import.meta.env.VITE_BASE_PATH || '/';
-  // TODO: 경로 로직은 프로젝트 상황에 맞춰 조정 필요
-  // 임시 하드코딩 (기존 jsonPreloader 참조)
-  resultPath = `/results/convert/aabc67b9-1ff3-40b1-92c4-1a32676565eb/`;
-
-  const normalizedPath = basePath.endsWith('/') && resultPath.startsWith('/')
-    ? basePath + resultPath.slice(1)
-    : basePath + resultPath;
+  const simPath = import.meta.env.VITE_SIM_PATH || 'sim';
+  const normalizedPath = `${basePath}${simPath}/${uuid}/`;
 
   let loadedCount = 0;
   frameCache.forEach(entry => { if (entry.loaded) loadedCount++; });

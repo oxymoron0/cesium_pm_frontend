@@ -43,15 +43,19 @@ let currentAbortController: AbortController | null = null;
 /**
  * 시뮬레이션 GLB 파일 일괄 프리로드
  *
+ * 경로 구조: ${VITE_SIM_PATH}/${uuid}/Finedust_XXXX.glb
+ * - Dev: Vite plugin serves from SIM_LOCAL_PATH (e.g., /mnt/nfs)
+ * - Prod: nginx serves from mounted path
+ *
  * @param uuid - 시뮬레이션 UUID
- * @param resultPath - GLB 파일 디렉토리 경로 (예: /api/simulation/result/...)
+ * @param _resultPath - deprecated: kept for backward compatibility
  * @param totalFrames - 총 프레임 개수
  * @param onProgress - 진행 상황 콜백 (optional)
  * @returns Promise (모든 프레임 로드 완료 시 resolve)
  */
 export async function preloadSimulationGlbs(
   uuid: string,
-  resultPath: string,
+  _resultPath: string, // deprecated: kept for backward compatibility
   totalFrames: number,
   onProgress?: (progress: PreloadProgress) => void
 ): Promise<void> {
@@ -74,11 +78,10 @@ export async function preloadSimulationGlbs(
   // UUID 설정
   currentCachedUuid = uuid;
 
-  // GLB 파일 경로 정규화
+  // Build path using environment variables: VITE_BASE_PATH + VITE_SIM_PATH
   const basePath = import.meta.env.VITE_BASE_PATH || '/';
-  const normalizedPath = basePath.endsWith('/') && resultPath.startsWith('/')
-    ? basePath + resultPath.slice(1)
-    : basePath + resultPath;
+  const simPath = import.meta.env.VITE_SIM_PATH || 'sim';
+  const normalizedPath = `${basePath}${simPath}/${uuid}/`;
 
   console.log(`[glbPreloader] Starting preload: ${uuid} (${totalFrames} frames)`);
 
