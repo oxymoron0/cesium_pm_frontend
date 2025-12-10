@@ -39,7 +39,7 @@ const jsonCacheMap = new Map<string, Map<number, JsonCacheEntry>>();
 /**
  * JSON 파싱
  */
-async function parseJson(jsonUrl: string, sampleRate: number = 5): Promise<JsonFrameData> {
+async function parseJson(jsonUrl: string, sampleRate: number = 1): Promise<JsonFrameData> {
   const response = await fetch(jsonUrl);
 
   if (!response.ok) {
@@ -106,13 +106,17 @@ async function parseJson(jsonUrl: string, sampleRate: number = 5): Promise<JsonF
 
 /**
  * JSON 파일들을 프리로드
+ *
+ * 경로 구조: ${VITE_SIM_PATH}/${uuid}/Finedust_XXXX.json
+ * - Dev: Vite plugin serves from SIM_LOCAL_PATH (e.g., /mnt/nfs)
+ * - Prod: nginx serves from mounted path
  */
 export async function preloadJson(
   uuid: string,
-  resultPath: string,
+  _resultPath: string, // deprecated: kept for backward compatibility
   totalFrames: number,
   onProgress?: (progress: JsonPreloadProgress) => void,
-  sampleRate: number = 5
+  sampleRate: number = 1
 ): Promise<void> {
   console.log(` [JSON Preloader] Starting preload for ${uuid} (${totalFrames} frames)`);
 
@@ -137,15 +141,12 @@ export async function preloadJson(
     jsonCacheMap.set(uuid, frameCache);
   }
 
+  // Build path using environment variables: VITE_BASE_PATH + VITE_SIM_PATH
   const basePath = import.meta.env.VITE_BASE_PATH || '/';
-  // TODO: 실제 경로에 맞게 수정 필요. 현재는 CSV Preloader와 동일한 로직 적용
-  resultPath = `/results/convert/aabc67b9-1ff3-40b1-92c4-1a32676565eb/`; // 테스트용 하드코딩이 필요하다면 여기에
+  const simPath = import.meta.env.VITE_SIM_PATH || 'sim';
+  const normalizedPath = `${basePath}${simPath}/${uuid}/`;
 
-  const normalizedPath = basePath.endsWith('/') && resultPath.startsWith('/')
-    ? basePath + resultPath.slice(1)
-    : basePath + resultPath;
-
-  console.log("실제 api 경로 : ", normalizedPath);
+  console.log("[JSON Preloader] Base path:", normalizedPath);
 
   // 기존에 로드된 프레임 수 계산
   let loadedCount = 0;

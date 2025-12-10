@@ -74,10 +74,9 @@ const SimulationProgressIndicatorCsv = observer(function SimulationProgressIndic
   const getSimulationParams = () => {
     // 빠른실행 전용
     const { selectedsimulationQuick } = simulationStore;
-    if (!selectedsimulationQuick) return null;
+    if (!selectedsimulationQuick?.uuid) return null;
     return {
       uuid: selectedsimulationQuick.uuid,
-      resultPath: selectedsimulationQuick.result_path,
       totalCount: totalFrames,
       frameIntervalMs: delayMs
     };
@@ -96,7 +95,7 @@ const SimulationProgressIndicatorCsv = observer(function SimulationProgressIndic
     // 실제로 로드가 필요한 경우에만 로딩 상태 설정
     setIsPreloading(true);
     try {
-      await preloadCsv(params.uuid, params.resultPath, totalFrames, setPreloadProgress);
+      await preloadCsv(params.uuid, '', totalFrames, setPreloadProgress);
     } catch (error) {
       console.error('CSV Preload failed:', error);
     } finally {

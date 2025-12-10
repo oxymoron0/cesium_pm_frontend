@@ -33,7 +33,7 @@ class SimulationStore {
   // 직접 위치 지정 모드
   isDirectLocationMode: boolean = false;
   directLocationResults: AddressSearchResult[] = []; // 직접 위치 지정 시 선택한 위치 목록
-  selectedLocation: { lat: number; lng: number } | null = null;
+  selectedLocation: { lat: number; lng: number; height: number } | null = null;
 
   // 선택 상태 (검색 또는 직접 위치 지정)
   selectedAddressId: string | null = null;
@@ -219,7 +219,8 @@ class SimulationStore {
     const address = this.currentResults.find(result => result.id === addressId);
     if (address?.geometry) {
       const [lng, lat] = address.geometry.coordinates;
-      this.selectedLocation = { lng, lat };
+      const height = address.height ?? 0;
+      this.selectedLocation = { lng, lat, height };
     }
   }
 
@@ -297,9 +298,9 @@ class SimulationStore {
    * 직접 위치 지정: 지도 클릭 시 호출
    * GET /api/v1/address/reverse
    */
-  async addDirectLocationResult(lat: number, lng: number) {
+  async addDirectLocationResult(lat: number, lng: number, height: number = 0) {
     runInAction(() => {
-      this.selectedLocation = { lat, lng };
+      this.selectedLocation = { lat, lng, height };
       this.isSearching = true;
       this.directLocationResults = []
     });
@@ -317,13 +318,15 @@ class SimulationStore {
               id: `direct_road_${Date.now()}`,
               roadAddress: item.text,
               detailAddress: item.structure.detail,
-              geometry
+              geometry,
+              height
             });
           } else if (item.type === 'parcel') {
             results.push({
               id: `direct_jibun_${Date.now()}`,
               jibunAddress: item.text,
-              geometry
+              geometry,
+              height
             });
           }
         });
@@ -692,11 +695,14 @@ class SimulationStore {
       const detail = await getSimulationDetail(uuid);
       this.simulationDetail = detail;
 
-      // 상세 정보 로드 성공 시 취약시설 정보와 GLB 개수 로드
-      await Promise.all([
-        this.loadVulnerableFacilities(uuid),
-        this.loadGlbCount(uuid)
-      ]);
+      // simulationList에서 json_count 가져오기
+      const listItem = this.simulationList.find(item => item.uuid === uuid);
+      this.glbCount = listItem?.json_count || 0;
+
+      console.log(`[SimulationStore] Selected simulation: uuid=${uuid}, json_count=${this.glbCount}`);
+
+      // 취약시설 정보 로드
+      await this.loadVulnerableFacilities(uuid);
     } catch (error) {
       console.error(`[SimulationStore] Failed to load simulation detail (${uuid}):`, error);
       this.detailError = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -927,18 +933,10 @@ class SimulationStore {
     this.selectedsimulationQuick = null;
     this.selectedsimulationQuick = item;
 
-    // 목업 모드가 활성화된 경우 concentration 값을 랜덤화하여 히트맵 시각화 개선
-    // this.selectedsimulationQuick = ENABLE_MOCK_CONCENTRATION
-    //   ? randomizeSimulationConcentration(item)
-    //   : item;
+    // json_count를 glbCount에 설정 (API에서 json 파일 개수 반환)
+    this.glbCount = item.json_count || 0;
 
-    //MOCK
-    item.uuid = '1a93b766-53e9-41fc-9a8f-39fa53cc520e';
-
-    // GLB 개수 조회
-    if (item.uuid) {
-      this.loadGlbCount(item.uuid);
-    }
+    console.log(`[SimulationStore] Selected quick simulation: uuid=${item.uuid}, json_count=${item.json_count}`);
   }
   /**
    * 모달 열기
