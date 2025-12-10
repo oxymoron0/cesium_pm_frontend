@@ -18,7 +18,10 @@ import { stationStore } from '@/stores/StationStore';
 import { routeStore } from '@/stores/RouteStore';
 import type { PriorityConfig, VulnerableFacility } from '../types';
 import type { RouteStationFeature } from '@/utils/api/types';
+import Info from '@/components/basic/Info';
 // import { Color, ColorBlendMode, Matrix4, Model } from 'cesium';
+
+const basePath = import.meta.env.VITE_BASE_PATH || '/';
 
 interface PriorityResultProps {
   config: PriorityConfig;
@@ -567,6 +570,77 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
               >
                 예측 등급
               </div>
+              <Info infoTitle="범례" width="480px">
+                <div className="flex flex-col gap-3">
+                  <div className="flex justify-between items-center w-full">
+                    <p className="text-[#A6A6A6] text-[12px] whitespace-nowrap">기준: 매시 정각 업데이트(1시간 단위)</p>
+                    <p className="text-[#A6A6A6] text-[12px] whitespace-nowrap">환경부 한국환경공단</p>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <img src={`${basePath}icon/pm10icon.svg`} alt="PM10" style={{ width: '24px', height: '24px' }} />
+                      <p className="text-white text-[16px] font-bold">미세먼지 (PM-10)</p>
+                    </div>
+
+                    <p className="text-white text-[14px] leading-relaxed">
+                      PM10은 1000분의 10mm보다 작은 먼지이며, 공기 중 고체상태와 액체상태의 입자의 혼합물로 배출됩니다. 공장, 자동차, 생물성 연소에 따라 화학반응 또는 자연적으로 생성됩니다.
+                    </p>
+                  </div>
+
+                  {/* 색상 범례 바 */}
+                  <div className="flex flex-col gap-1 w-full">
+                    {/* 범위 표시 */}
+                    <div className="flex w-full text-[#A6A6A6] text-[12px]">
+                      <span className="flex-1">~30</span>
+                      <span className="flex-1">~80</span>
+                      <span className="flex-1">~150</span>
+                      <span className="flex-1">151~</span>
+                    </div>
+
+                    {/* 색상 그라데이션 바 */}
+                    <div className="flex w-full h-1 rounded overflow-hidden">
+                      <div className="flex-1" style={{ backgroundColor: '#1C67D7' }}></div>
+                      <div className="flex-1" style={{ backgroundColor: '#18A274' }}></div>
+                      <div className="flex-1" style={{ backgroundColor: '#FEE046' }}></div>
+                      <div className="flex-1" style={{ backgroundColor: '#D32F2F' }}></div>
+                    </div>
+
+                    {/* 등급명 표시 */}
+                    <div className="flex w-full text-white text-[12px]">
+                      <span className="flex-1 text-center">좋음</span>
+                      <span className="flex-1 text-center">보통</span>
+                      <span className="flex-1 text-center">나쁨</span>
+                      <span className="flex-1 text-center">매우나쁨</span>
+                    </div>
+
+                    {/* 설명 텍스트 */}
+                    <p className="text-[#A6A6A6] text-[12px] mt-4 mb-5">
+                      실시간 관측치로는, 환경에 따라 오차가 있을 수 있습니다. (단위: μg/m³)
+                    </p>
+                  </div>
+
+                  {/* <div className="flex flex-col gap-2">
+                    <p className="text-white font-bold">등급 구분</p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded" style={{backgroundColor: '#1C67D7'}}></div>
+                      <span className="text-[#A6A6A6] text-sm">좋음</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded" style={{backgroundColor: '#18A274'}}></div>
+                      <span className="text-[#A6A6A6] text-sm">보통</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded" style={{backgroundColor: '#FEE046'}}></div>
+                      <span className="text-[#A6A6A6] text-sm">나쁨</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded" style={{backgroundColor: '#D32F2D'}}></div>
+                      <span className="text-[#A6A6A6] text-sm">매우나쁨</span>
+                    </div>
+                  </div> */}
+                </div>
+              </Info>                
             </div>
 
             {/* 테이블 데이터 */}

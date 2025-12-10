@@ -8,6 +8,45 @@ interface StationConcentrationChartProps {
   period: TimePeriod
 }
 
+interface CustomXAxisTickProps {
+  x: number
+  y: number
+  payload: { value: string }
+}
+
+const CustomXAxisTick = (props: CustomXAxisTickProps) => {
+  const { x, y, payload } = props
+  const text = payload?.value
+
+  if (!text) return null
+
+  console.log('XAxis Tick:', text)
+
+  // "부전역(05730)" 형태를 파싱하여 역 이름과 코드 분리
+  const match = text.match(/^(.+?)(\(.+\))$/)
+
+  if (match) {
+    const [, stationName, stationCode] = match
+
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <text x={0} y={0} textAnchor="middle" fill="#FFFFFF">
+          <tspan x={0} dy="15" fontSize={15}>{stationName}</tspan>
+          <tspan x={0} dy="20" fontSize={12}>{stationCode}</tspan>
+        </text>
+      </g>
+    )
+  }
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text x={0} y={0} dy={16} textAnchor="middle" fill="#FFFFFF" fontSize={15}>
+        {text}
+      </text>
+    </g>
+  )
+}
+
 const StationConcentrationChart = function StationConcentrationChart({ data, period }: StationConcentrationChartProps) {
   if (!data || data.length === 0) {
     return (
@@ -104,8 +143,9 @@ const StationConcentrationChart = function StationConcentrationChart({ data, per
               <XAxis
                 dataKey="stationName"
                 stroke="#999"
-                tick={{ fill: '#999', fontSize: 11 }}
-                height={80}
+                tick={<CustomXAxisTick x={0} y={0} payload={{ value: '' }} />}
+                height={100}
+                interval={0}
               />
               <YAxis
                 stroke="#999"

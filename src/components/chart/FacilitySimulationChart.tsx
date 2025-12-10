@@ -7,6 +7,45 @@ interface FacilitySimulationChartProps {
   selectedType: 'bad' | 'veryBad'
 }
 
+interface CustomXAxisTickProps {
+  x: number
+  y: number
+  payload: { value: string }
+}
+
+const CustomXAxisTick = (props: CustomXAxisTickProps) => {
+  const { x, y, payload } = props
+  const text = payload.value
+
+  if (!text) return null
+
+  // "시설명(코드)" 형태를 파싱하여 시설명과 코드 분리
+  const match = text.match(/^(.+?)(\(.+\))$/)
+
+  if (match) {
+    const [, facilityName, facilityCode] = match
+    // 텍스트 길이에 따른 폰트 크기 조정
+    const fontSize = facilityName.length > 8 ? 12 : 15
+
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <text x={0} y={0} textAnchor="middle" fill="#FFF" fontSize={fontSize}>
+          <tspan x={0} dy="10">{facilityName}</tspan>
+          <tspan x={0} dy="20" fontSize={13}>{facilityCode}</tspan>
+        </text>
+      </g>
+    )
+  }
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text x={0} y={0} dy={16} textAnchor="middle" fill="#FFF" fontSize={15}>
+        {text}
+      </text>
+    </g>
+  )
+}
+
 const FacilitySimulationChart = function FacilitySimulationChart({ data, selectedType }: FacilitySimulationChartProps) {
   if (!data || data.length === 0) {
     return (
@@ -80,7 +119,7 @@ const FacilitySimulationChart = function FacilitySimulationChart({ data, selecte
           <XAxis
             dataKey="facilityName"
             stroke="#999"
-            tick={{ fill: '#999', fontSize: 11 }}
+            tick={<CustomXAxisTick x={0} y={0} payload={{ value: '' }} />}
             height={80}
           />
           <YAxis
