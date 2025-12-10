@@ -33,7 +33,7 @@ class SimulationStore {
   // 직접 위치 지정 모드
   isDirectLocationMode: boolean = false;
   directLocationResults: AddressSearchResult[] = []; // 직접 위치 지정 시 선택한 위치 목록
-  selectedLocation: { lat: number; lng: number } | null = null;
+  selectedLocation: { lat: number; lng: number; height: number } | null = null;
 
   // 선택 상태 (검색 또는 직접 위치 지정)
   selectedAddressId: string | null = null;
@@ -219,7 +219,8 @@ class SimulationStore {
     const address = this.currentResults.find(result => result.id === addressId);
     if (address?.geometry) {
       const [lng, lat] = address.geometry.coordinates;
-      this.selectedLocation = { lng, lat };
+      const height = address.height ?? 0;
+      this.selectedLocation = { lng, lat, height };
     }
   }
 
@@ -297,9 +298,9 @@ class SimulationStore {
    * 직접 위치 지정: 지도 클릭 시 호출
    * GET /api/v1/address/reverse
    */
-  async addDirectLocationResult(lat: number, lng: number) {
+  async addDirectLocationResult(lat: number, lng: number, height: number = 0) {
     runInAction(() => {
-      this.selectedLocation = { lat, lng };
+      this.selectedLocation = { lat, lng, height };
       this.isSearching = true;
       this.directLocationResults = []
     });
@@ -317,13 +318,15 @@ class SimulationStore {
               id: `direct_road_${Date.now()}`,
               roadAddress: item.text,
               detailAddress: item.structure.detail,
-              geometry
+              geometry,
+              height
             });
           } else if (item.type === 'parcel') {
             results.push({
               id: `direct_jibun_${Date.now()}`,
               jibunAddress: item.text,
-              geometry
+              geometry,
+              height
             });
           }
         });
