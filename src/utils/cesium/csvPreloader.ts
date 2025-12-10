@@ -149,10 +149,14 @@ async function parseCSV(
 
 /**
  * CSV 파일들을 프리로드
+ *
+ * 경로 구조: ${VITE_SIM_PATH}/${uuid}/Finedust_XXXX.csv
+ * - Dev: Vite plugin serves from SIM_LOCAL_PATH (e.g., /mnt/nfs)
+ * - Prod: nginx serves from mounted path
  */
 export async function preloadCsv(
   uuid: string,
-  resultPath: string,
+  _resultPath: string, // deprecated: kept for backward compatibility
   totalFrames: number,
   onProgress?: (progress: CsvPreloadProgress) => void,
   sampleRate: number = 5,
@@ -181,12 +185,11 @@ export async function preloadCsv(
     csvCacheMap.set(uuid, frameCache);
   }
 
+  // Build path using environment variables: VITE_BASE_PATH + VITE_SIM_PATH
   const basePath = import.meta.env.VITE_BASE_PATH || '/';
-  resultPath = `/results/aabc67b9-1ff3-40b1-92c4-1a32676565eb/`;
-  const normalizedPath = basePath.endsWith('/') && resultPath.startsWith('/')
-  ? basePath + resultPath.slice(1)
-  : basePath + resultPath
-  console.log("실제 api 경로 : ", normalizedPath)
+  const simPath = import.meta.env.VITE_SIM_PATH || 'sim';
+  const normalizedPath = `${basePath}${simPath}/${uuid}/`;
+  console.log("[CSV Preloader] Base path:", normalizedPath)
 
   // 기존에 로드된 프레임 수 계산
   let loadedCount = 0;

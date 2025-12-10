@@ -85,7 +85,6 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
     if (!simulationDetail) return null;
     return {
       uuid: simulationDetail.uuid,
-      resultPath: simulationDetail.resultPath || '',
       totalCount: totalFrames,
       frameIntervalMs: delayMs
     };
@@ -97,8 +96,8 @@ const SimulationProgressIndicator = observer(function SimulationProgressIndicato
     if (!cacheStatus.isCached || cacheStatus.loadedFrames < totalFrames) {
       setIsPreloading(true);
       try {
-        console.log("GLB 경로 : ", params.resultPath)
-        await preloadSimulationGlbs(params.uuid, params.resultPath, totalFrames, setPreloadProgress);
+        console.log("[GLB] Preloading UUID:", params.uuid);
+        await preloadSimulationGlbs(params.uuid, '', totalFrames, setPreloadProgress);
       } catch (error) {
         console.error('Preload failed:', error);
       } finally {

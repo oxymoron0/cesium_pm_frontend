@@ -117,17 +117,15 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
 
   const getSimulationParams = () => {
     const { selectedsimulationQuick, simulationDetail } = simulationStore;
-    if (selectedsimulationQuick) { // 빠른 실행
+    if (selectedsimulationQuick?.uuid) { // 빠른 실행
       return {
         uuid: selectedsimulationQuick.uuid,
-        resultPath: selectedsimulationQuick.result_path,
         totalCount: totalFrames,
         frameIntervalMs: delayMs
       };
     } else if (simulationDetail) { // 맞춤 실행
       return {
         uuid: simulationDetail.uuid,
-        resultPath: simulationDetail.resultPath,
         totalCount: totalFrames,
         frameIntervalMs: delayMs
       };
@@ -136,7 +134,7 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
   };
 
   const ensurePreloaded = async (params: ReturnType<typeof getSimulationParams>) => {
-    if (!params) return;
+    if (!params || !params.uuid) return;
 
     const cacheStatus = getJsonCacheStatus(params.uuid);
 
@@ -148,7 +146,7 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
     // 실제로 로드가 필요한 경우에만 로딩 상태 설정
     setIsPreloading(true);
     try {
-      await preloadJson(params.uuid, params.resultPath!, totalFrames, setPreloadProgress);
+      await preloadJson(params.uuid, '', totalFrames, setPreloadProgress);
     } catch (error) {
       console.error('JSON Preload failed:', error);
     } finally {

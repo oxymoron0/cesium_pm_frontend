@@ -13,8 +13,6 @@ const PRIMITIVE_GROUP_NAME = 'simulation_glb_result'
  */
 type PreparedContext = {
   uuid: string
-  resultPath: string
-  basePath: string
   normalizedPath: string
   totalCount: number
   currentModel: Model | null
@@ -114,14 +112,14 @@ export function flyToSimulationGlb(
  */
 export async function prepareSimulationGlb(params: {
   uuid: string
-  resultPath: string
+  resultPath?: string  // deprecated: kept for backward compatibility
   totalCount: number
   frameIntervalMs: number
 }): Promise<void> {
   const viewer = getViewer()
   if (!viewer) return
 
-  const { uuid, resultPath, totalCount, frameIntervalMs } = params
+  const { uuid, totalCount, frameIntervalMs } = params
 
   if (!totalCount || totalCount <= 0) {
     console.warn('[simulationGlbRenderer] Invalid totalCount:', totalCount)
@@ -130,10 +128,15 @@ export async function prepareSimulationGlb(params: {
 
   console.log('[GLB Prepare] 시작')
 
+  // Build path using environment variables: VITE_BASE_PATH + VITE_SIM_PATH
+  const basePath = import.meta.env.VITE_BASE_PATH || '/'
+  const simPath = import.meta.env.VITE_SIM_PATH || 'sim'
+  const normalizedPath = `${basePath}${simPath}/${uuid}/`
+
   // 이미 준비된 컨텍스트와 동일하면 스킵
   if (preparedCtx &&
       preparedCtx.uuid === uuid &&
-      preparedCtx.resultPath === resultPath &&
+      preparedCtx.normalizedPath === normalizedPath &&
       preparedCtx.totalCount === totalCount &&
       preparedCtx.frameIntervalMs === frameIntervalMs) {
     console.log('[GLB Prepare] 이미 준비됨 - 스킵')
@@ -143,12 +146,7 @@ export async function prepareSimulationGlb(params: {
   // 기존 Primitives 정리 (캐시는 유지)
   clearPrimitives()
 
-  // GLB 파일 경로 정규화
-  const basePath = import.meta.env.VITE_BASE_PATH || '/'
-  const normalizedPath = basePath.endsWith('/') && resultPath.startsWith('/')
-    ? basePath + resultPath.slice(1)
-    : basePath + resultPath
-
+  console.log('[GLB Prepare] normalizedPath:', normalizedPath)
 
   // Primitive 그룹 생성
   try {
@@ -164,8 +162,6 @@ export async function prepareSimulationGlb(params: {
   // Context 설정
   preparedCtx = {
     uuid,
-    resultPath,
-    basePath,
     normalizedPath,
     totalCount,
     currentModel: null,

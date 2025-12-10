@@ -82,11 +82,11 @@ export function enableDirectLocationClickHandler(): void {
           const cartographic = Cartographic.fromCartesian(cartesian);
           const longitude = CesiumMath.toDegrees(cartographic.longitude);
           const latitude = CesiumMath.toDegrees(cartographic.latitude);
-          
-          // 높이(Height) 값은 로그로 확인 가능 (검증용)
-          // console.log(`[DirectLocation] Height: ${cartographic.height.toFixed(2)}m`);
+          const height = cartographic.height;
 
-          simulationStore.addDirectLocationResult(latitude, longitude);
+          console.log(`[DirectLocation] Coordinates: lng=${longitude.toFixed(6)}, lat=${latitude.toFixed(6)}, height=${height.toFixed(2)}m`);
+
+          simulationStore.addDirectLocationResult(latitude, longitude, height);
         }
       } catch (error) {
         console.error('[directLocationRenderer] Click error:', error);

@@ -27,6 +27,7 @@ export interface AddressSearchResult {
     type: 'Point';
     coordinates: [number, number]; // [lng, lat]
   };
+  height?: number; // Terrain height in meters
 }
 
 // --- 주소 검색 API (GET /api/v1/address/search) ---

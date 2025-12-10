@@ -11,10 +11,7 @@ import {
   clearSimulationResultStations,
   getSelectedSimulationStationId,
 } from "@/utils/cesium/simulationResultRenderer";
-// import SimulationProgressIndicator from "@/components/service/SimulationProgressIndicator";
-// import SimulationProgressIndicatorCsv from "@/components/service/SimulationProgressIndicatorCsv";
 import SimulationProgressIndicatorJson from "@/components/service/SimulationProgressIndicatorJson";
-// import SimulationProgressIndicatorHeatmap from "@/components/service/SimulationProgressIndicatorHeatmap";
 
 interface SimulationQuickResultProps {
   onCloseMicroApp?: () => void;
@@ -114,13 +111,8 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
   const listRef = useRef<HTMLDivElement | null>(null);
   const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-   const [indicatorType, setIndicatorType] = useState('heatmap');
-
   // 빠른 폴링(60fps)로 CESIUM 선택 상태 반영
   useEffect(() => {
-
-    setIndicatorType('json');
-
     //가이드 문구 active
     // simulationStore.isSimulationQuickGuideMode = true;
     const intervalId = setInterval(() => {
@@ -338,10 +330,7 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
         </div>
       </div>
 
-      {/* {indicatorType === 'default' && <SimulationProgressIndicator />} */}
-      {/* {indicatorType === 'csv' && <SimulationProgressIndicatorCsv />} */}
-      {indicatorType === 'json' && <SimulationProgressIndicatorJson />}
-      {/* {indicatorType === 'heatmap' && <SimulationProgressIndicatorHeatmap />} */}
+      <SimulationProgressIndicatorJson />
     </>
   );
 });
