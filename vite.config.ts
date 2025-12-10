@@ -1,10 +1,64 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import cesium from 'vite-plugin-cesium'
 import path from 'path'
+import fs from 'fs'
 
 // 빌드할 페이지 (환경변수로 지정)
 const pageName = process.env.VITE_PAGE
+
+/**
+ * Simulation files serving plugin
+ * Serves files from local filesystem path (e.g., /mnt/nfs) during development
+ */
+function simulationFilesPlugin(localPath: string, urlPrefix: string): Plugin {
+  return {
+    name: 'simulation-files-server',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (!req.url?.startsWith(urlPrefix)) {
+          return next()
+        }
+
+        // Remove URL prefix and decode
+        const relativePath = decodeURIComponent(req.url.slice(urlPrefix.length))
+        const filePath = path.join(localPath, relativePath)
+
+        // Security: ensure path is within localPath
+        const resolvedPath = path.resolve(filePath)
+        if (!resolvedPath.startsWith(path.resolve(localPath))) {
+          res.statusCode = 403
+          res.end('Forbidden')
+          return
+        }
+
+        // Check if file exists
+        if (!fs.existsSync(resolvedPath)) {
+          res.statusCode = 404
+          res.end(`Not found: ${relativePath}`)
+          return
+        }
+
+        // Serve the file
+        const stat = fs.statSync(resolvedPath)
+        if (stat.isDirectory()) {
+          res.statusCode = 403
+          res.end('Cannot serve directory')
+          return
+        }
+
+        // Set content type for JSON
+        if (resolvedPath.endsWith('.json')) {
+          res.setHeader('Content-Type', 'application/json')
+        }
+        res.setHeader('Access-Control-Allow-Origin', '*')
+
+        const stream = fs.createReadStream(resolvedPath)
+        stream.pipe(res)
+      })
+    }
+  }
+}
 
 export default defineConfig(({ command, mode }) => {
   const isDev = command === 'serve'
@@ -14,8 +68,15 @@ export default defineConfig(({ command, mode }) => {
     // 개발환경에서만 BASE_PATH 적용
     const env = loadEnv(mode, process.cwd(), '')
     const basePath = env.VITE_BASE_PATH || './'
+    const simLocalPath = env.SIM_LOCAL_PATH || '/mnt/nfs'
+    const simUrlPrefix = `${basePath}${env.VITE_SIM_PATH || 'sim'}`
+
     return {
-      plugins: [react(), cesium()],
+      plugins: [
+        react(),
+        cesium(),
+        simulationFilesPlugin(simLocalPath, simUrlPrefix)
+      ],
       resolve: {
         alias: {
           '@': path.resolve(__dirname, './src')
