@@ -540,7 +540,7 @@ export async function getSimulationCivilList(
       limit: limit.toString(),
     });
 
-    const url = `${API_PATHS.SIMULATION_CIVIL_LIST}?${params.toString()}`;
+    const url = `${API_PATHS.SIMULATION_QUICK_CIVIL_LIST}?${params.toString()}`;
     const response = await get<SimulationCivilQuickDataResponse>(url);
 
     if (!response.ok) {
