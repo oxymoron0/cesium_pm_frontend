@@ -4,7 +4,7 @@ import Icon from "@/components/basic/Icon";
 import DatePicker from "@/components/basic/DatePicker";
 import Button from "@/components/basic/Button";
 import { simulationStore } from "@/stores/SimulationStore";
-import type { PMType, SimulationQuckData } from "@/types/simulation_request_types";
+import type { PMType, SimulationQuickData } from "@/types/simulation_request_types";
 // import { getSimulationQuickGlbDetail } from "@/utils/api/simulationApi";
 import { MOCK_GLB_DATA } from "@/utils/mockData/simulationQuickGlbDetail";
 
@@ -97,7 +97,7 @@ const SimulationQuick = observer(function SimulationQuick() {
 
   const offset = (pagination.page - 1) * pagination.limit;
 
-  const RowDetail = ({ row }: { row: SimulationQuckData }) => {
+  const RowDetail = ({ row }: { row: SimulationQuickData }) => {
     // weather 폴백 처리
     const wd10 =
       row?.weather?.wind_direction_10m ??
@@ -317,7 +317,7 @@ const SimulationQuick = observer(function SimulationQuick() {
               데이터가 없습니다.
             </div>
           ) : (
-            simulations.map((s: SimulationQuckData, i: number) => {
+            simulations.map((s: SimulationQuickData, i: number) => {
               const rowNo = offset + i + 1;
               const dateStr = toLocalYMD(s.measured_at);
               const timeStr = toLocalHM(s.measured_at);

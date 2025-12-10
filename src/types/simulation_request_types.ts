@@ -163,11 +163,6 @@ export interface SimulationQuickData {
 }
 
 /**
- * @deprecated Use SimulationQuickData instead
- */
-export type SimulationQuckData = SimulationQuickData;
-
-/**
  * Simulation auto civil response from GET /api/v1/simulation_auto/civil/list
  */
 export interface SimulationQuickCivilData {
@@ -218,11 +213,6 @@ export interface SimulationQuickDataResponse {
   simulations: SimulationQuickData[];
   pagination?: SimulationListPagination; // Optional: may not be present
 }
-
-/**
- * @deprecated Use SimulationQuickDataResponse instead
- */
-export type SimulationQuckDataResponse = SimulationQuickDataResponse;
 
 export interface SimulationQuickCivilDataResponse {
   simulations: SimulationQuickCivilData[];

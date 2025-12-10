@@ -282,15 +282,30 @@ useEffect(() => {
           </div>
 
           {/* Row 3: 체크박스 */}
-          <div className="flex justify-center">
-            {!isInputDisabled && (
-            <Checkbox
-              checked={useCurrentWeather}
-              onChange={setUseCurrentWeather}
-              label={simulationStore.weatherInfoLabel}
-            />
-            )}
-          </div>
+          {simulationStore.isLoadingCurrentWeather ? (<>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              color: '#999',
+              fontFamily: 'Pretendard',
+              fontSize: '14px'
+            }}>
+              기상청 데이터 로딩 중...
+            </div>
+          </>) : 
+          (<>
+            <div className="flex justify-center">
+              {!isInputDisabled && (
+              <Checkbox
+                checked={useCurrentWeather}
+                onChange={setUseCurrentWeather}
+                label={simulationStore.weatherInfoLabel}
+              />
+              )}
+            </div>
+          </>)}
         </div>
       </div>
       

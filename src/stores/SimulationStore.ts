@@ -6,7 +6,7 @@ import type {
   SimulationListItem,
   SimulationListPagination,
   SimulationDetail,
-  SimulationQuckData,
+  SimulationQuickData,
   SimulationInProgressResponse,
   PMType,
   Weather,
@@ -68,9 +68,9 @@ class SimulationStore {
   pendingSimulationData: SimulationRequest | null = null;
 
   // 시뮬레이션auto(quick) 목록 (API 기반)
-  simulationQuickList: SimulationQuckData[] = [];
+  simulationQuickList: SimulationQuickData[] = [];
   paginationQuick: SimulationListPagination | null = null;
-  selectedsimulationQuick: SimulationQuckData | null = null;
+  selectedsimulationQuick: SimulationQuickData | null = null;
   isLoadingQuickList: boolean = false;
   // 빠른실행 결과 가이드창 활성화
   isSimulationQuickGuideMode: boolean = false;
@@ -941,7 +941,7 @@ class SimulationStore {
   /**
    * 빠른실행 분석시작시 객체 저장
    */
-  setSelectedSimulationQuick(item: SimulationQuckData) {
+  setSelectedSimulationQuick(item: SimulationQuickData) {
     this.selectedsimulationQuick = null;
     this.selectedsimulationQuick = item;
 

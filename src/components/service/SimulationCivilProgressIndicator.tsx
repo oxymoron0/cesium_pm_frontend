@@ -76,7 +76,7 @@ const SimulationCivilProgressIndicator = observer(function SimulationCivilProgre
   const shownFrame = isSeeking ? seekValue : currentFrame;
   const progress = totalFrames > 1 ? (shownFrame / (totalFrames - 1)) * 100 : 0;
 
-  // [수정] 시민용 데이터에서 파라미터 추출
+  // 시민용 데이터에서 파라미터 추출
   const getSimulationParams = () => {
     const sim = simulationStore.selectedCivilSimulation; 
     if (!sim) return null;
@@ -215,7 +215,6 @@ const SimulationCivilProgressIndicator = observer(function SimulationCivilProgre
     await renderSimulationGlbFrame(val, true);
   };
 
-  // ... (JSX는 SimulationProgressIndicator와 동일하되, 위치나 스타일 필요 시 수정) ...
   return (
     <div className="fixed bottom-[64px] left-0 right-0 pointer-events-auto" style={{ zIndex: 2003 }}>
       {isPreloading && preloadProgress && (
