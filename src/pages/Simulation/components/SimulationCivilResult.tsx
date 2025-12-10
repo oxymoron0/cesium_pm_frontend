@@ -6,11 +6,11 @@ import Spacer from "@/components/basic/Spacer";
 import Button from "@/components/basic/Button";
 import { simulationStore } from "@/stores/SimulationStore";
 import {
-  renderSimulationResultStations,
-  clearSimulationResultStations,
-  getSelectedSimulationStationId,
-  setSelectedSimulationStationId
-} from "@/utils/cesium/simulationResultRenderer";
+  renderCivilResultStations,
+  clearCivilResultStations,
+  getSelectedCivilStationId,
+  setSelectedCivilStationId
+} from "@/utils/cesium/SimulationCivilResultRenderer";
 import SimulationCivilProgressIndicator from "@/components/service/SimulationCivilProgressIndicator";
 import SimulationStationHtmlRenderer from "@/components/service/SimulationStationHtmlRenderer";
 
@@ -19,6 +19,7 @@ export type StationRow = {
   name: string;
   time: string;
   pm10: string;
+  pmLabel: string;
   point: [number, number];
 };
 
@@ -36,14 +37,6 @@ const formatDateTimeKOR = (iso: string) => {
     hour12: true,
   });
   return `${y}.${m}.${day} ${t}`;
-};
-
-const formatTimeOnly = (iso: string) => {
-  if (!iso) return "-";
-  const d = new Date(iso);
-  const hh = to2(d.getHours());
-  const mm = to2(d.getMinutes());
-  return `${hh}:${mm}`;
 };
 
 const formatPollutant = (pm: string | undefined) => {
@@ -64,6 +57,21 @@ function InfoField({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+const getPmLabelStyle = (label: string) => {
+  switch (label) {
+    case '좋음':
+      return { backgroundColor: '#00C851', color: '#FFFFFF' }; // 녹색
+    case '보통':
+      return { backgroundColor: '#FFD040', color: '#000000' }; // 노란색
+    case '나쁨':
+      return { backgroundColor: '#FF7700', color: '#FFFFFF' }; // 주황색
+    case '매우나쁨':
+      return { backgroundColor: '#FF3333', color: '#FFFFFF' }; // 빨간색
+    default:
+      return { backgroundColor: '#666666', color: '#FFFFFF' }; // 기본값 (회색)
+  }
+};
 
 const ensureVisible = (
   container: HTMLElement,
@@ -105,17 +113,17 @@ const SimulationCivilResult = observer(function SimulationCivilResult() {
 
   // 2. Cesium 선택 상태 동기화 (Polling)
   useEffect(() => {
-    setSelectedSimulationStationId(null);
+    setSelectedCivilStationId(null);
     const intervalId = setInterval(() => {
-      const raw = getSelectedSimulationStationId();
+      const raw = getSelectedCivilStationId();
       const normalized = raw == null ? null : typeof raw === "number" ? `station_${raw}` : /^\d+$/.test(String(raw)) ? `station_${raw}` : String(raw);
       setSelectedStationId(normalized);
     }, 16);
 
     return () => {
       clearInterval(intervalId);
-      clearSimulationResultStations();
-      setSelectedSimulationStationId(null);
+      clearCivilResultStations();
+      setSelectedCivilStationId(null);
     };
   }, []);
 
@@ -127,36 +135,34 @@ const SimulationCivilResult = observer(function SimulationCivilResult() {
     if (container && el) ensureVisible(container, el, "center", 8);
   }, [selectedStationId]);
 
-  // [수정] 4. useMemo를 최상단으로 이동 (simData 체크 내부에서 수행)
   const weatherText = useMemo(() => {
     if (!simData?.weather) return "-";
     const w = simData.weather;
     return `(풍향) ${w.wind_direction_1m}°  (풍속) ${w.wind_speed_1m} m/s`;
   }, [simData]); // simData 전체 의존
 
-  // [수정] 5. useMemo를 최상단으로 이동
   const rows: StationRow[] = useMemo(() => {
     if (!simData?.station_data) return [];
     
     return simData.station_data.map((st) => ({
       id: st.index,
       name: st.station_name,
-      time: formatTimeOnly(st.measured_at),
+      time: formatDateTimeKOR(st.measured_at),
       pm10: `${Math.round(st.concentration)}`,
+      pmLabel: st.pm_label || '-',
       point: [st.location.coordinates[0], st.location.coordinates[1]],
     }));
   }, [simData]);
 
-  // [수정] 6. useEffect를 최상단으로 이동
   useEffect(() => {
     const viewer = window.cviewer;
     if (!viewer) return;
 
     if (rows.length > 0) {
-      renderSimulationResultStations(rows);
+      renderCivilResultStations(rows);
     }
     return () => {
-      clearSimulationResultStations();
+      clearCivilResultStations();
     };
   }, [rows]);
 
@@ -174,12 +180,18 @@ const SimulationCivilResult = observer(function SimulationCivilResult() {
       <Spacer height={8} />
 
       {/* 상단 정보 섹션 */}
-      <div className="w-full bg-[#2C2C2C] p-4 rounded-lg border border-[#696A6A]">
-        <div className="mb-2 text-white font-bold text-sm">측정 환경 정보</div>
-        <div className="flex flex-col border-t border-[rgba(255,255,255,0.3)]">
-           <InfoField label="측정 시간" value={formatDateTimeKOR(simData.measured_at)} />
-           <InfoField label="측정 물질" value={formatPollutant(simData.pm_type)} />
-           <InfoField label="기상 상황" value={weatherText} />
+      <SubTitle>
+        <span className="font-pretendard text-[16px] font-bold text-white">
+          현재시간
+        </span>
+      </SubTitle>
+      <div className="w-full p-4 rounded-lg">
+        <div className="flex flex-col border-t border-[#FFFFFF)]">
+           <InfoField label="측정물질" value={formatPollutant(simData.pm_type)} />
+           <InfoField label="측정일시" value={formatDateTimeKOR(simData.measured_at)} />
+           <InfoField label="측정위치" value={'부산진구 정류장'} />
+           <InfoField label="측정위치 수" value={`${rows.length}개`} />
+           <InfoField label="기상조건" value={weatherText} />
         </div>
       </div>
 
@@ -192,13 +204,13 @@ const SimulationCivilResult = observer(function SimulationCivilResult() {
         </span>
       </SubTitle>
       
-      <div className="bg-[#222222] rounded-lg overflow-hidden border border-[#696A6A]">
+      <div className=" rounded-lg overflow-hidden w-full">
          {/* 헤더 */}
-         <div className="flex items-center h-[40px] bg-[#464646] text-white text-sm font-bold border-b border-[#696A6A]">
+         <div className="flex items-center h-[50px] text-white text-sm font-bold border-t border-b border-[#FFFFFF]">
             <div className="w-[50px] text-center">No</div>
             <div className="flex-1 text-center">정류장</div>
-            <div className="w-[80px] text-center">시간</div>
-            <div className="w-[100px] text-center">{formatPollutant(simData.pm_type)}</div>
+            <div className="w-[120px] text-center">측정시간</div>
+            <div className="w-[120px] text-center">{formatPollutant(simData.pm_type)}</div>
          </div>
 
          {/* 바디 */}
@@ -206,23 +218,44 @@ const SimulationCivilResult = observer(function SimulationCivilResult() {
             {rows.map((r) => {
               const key = `station_${r.id}`;
               const isSelected = selectedStationId === key;
+              const labelStyle = getPmLabelStyle(r.pmLabel);
               return (
                 <div
                   key={r.id}
                   ref={(el) => { rowRefs.current[key] = el; }}
                   className={`flex items-center h-[48px] text-sm border-b border-[#444444] transition-colors cursor-pointer last:border-b-0 ${isSelected ? 'bg-[rgba(255,208,64,0.2)]' : 'hover:bg-[#2C2C2C] text-[#A6A6A6]'}`}
                   onClick={() => {
-                     const entity = window.cviewer?.dataSources.getByName("simulation_result_stations")[0]?.entities.getById(key);
+                     const entity = window.cviewer?.dataSources.getByName("simulation_civil_result_stations")[0]?.entities.getById(key);
                      if (entity) {
                         window.cviewer?.flyTo(entity, { duration: 1.0 });
-                        setSelectedSimulationStationId(r.id.toString());
+                        setSelectedCivilStationId(r.id);
                      }
                   }}
                 >
-                   <div className={`w-[50px] text-center ${isSelected ? 'text-white' : ''}`}>{to2(r.id)}</div>
-                   <div className={`flex-1 text-center px-2 truncate ${isSelected ? 'text-white' : ''}`}>{r.name}</div>
-                   <div className={`w-[80px] text-center ${isSelected ? 'text-white' : ''}`}>{r.time}</div>
-                   <div className={`w-[100px] text-center font-bold ${isSelected ? 'text-[#FFD040]' : 'text-white'}`}>{r.pm10} µg/m³</div>
+                   <div className={`w-[50px] text-center text-white`}>{to2(r.id)}</div>
+                   <div className={`flex-1 text-center px-2 truncate text-white`}>{r.name}</div>
+                   <div className={`w-[120px] text-center text-white`}>{r.time}</div>
+                   <div className={`w-[120px] text-center font-bold`}>
+                    <div
+                       style={{
+                         backgroundColor: labelStyle.backgroundColor,
+                         color: labelStyle.color,
+                         borderRadius: '16px', // 둥근 모서리
+                         padding: '4px 12px', // 내부 여백
+                         fontSize: '16px',
+                         fontWeight: '600',
+                         fontFamily: 'Pretendard',
+                         display: 'inline-flex', // 텍스트 길이에 맞게 늘어남
+                         alignItems: 'center',
+                         justifyContent: 'center',
+                         minWidth: '82px', // 최소 너비 확보
+                         minHeight: '36px', // 최소 너비 확보
+                         lineHeight: 'normal'
+                       }}
+                     >
+                       {r.pmLabel}
+                     </div>
+                    </div>
                 </div>
               );
             })}
