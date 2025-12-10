@@ -10,7 +10,8 @@ import type {
   SimulationResponse,
   SimulationListResponse,
   SimulationDetail,
-  SimulationQuckDataResponse,
+  SimulationQuickDataResponse,
+  SimulationQuickCivilDataResponse,
   PMType,
   Weather,
   SimulationInProgressResponse,
@@ -142,7 +143,7 @@ export async function getSimulationList(
 
 /**
  * 시뮬레이션(auto) 목록 조회
- * GET /api/v1/simulation/list
+ * GET /api/v1/simulation_auto/list
  *
  * @param startDate - 시작일 (2025-10-23)
  * @param endDate - 종료일 (2025-10-30)
@@ -155,7 +156,7 @@ export async function getSimulationQuickList(
   endDate: Date,
   page: number = 1,
   limit: number = 7
-): Promise<SimulationQuckDataResponse> {
+): Promise<SimulationQuickDataResponse> {
   try {
     const toYMDLocal = (d: Date): string => {
       const y = d.getFullYear();
@@ -172,7 +173,7 @@ export async function getSimulationQuickList(
     });
 
     const url = `${API_PATHS.SIMULATION_QUICK_LIST}?${params.toString()}`;
-    const response = await get<SimulationQuckDataResponse>(url);
+    const response = await get<SimulationQuickDataResponse>(url);
 
     if (!response.ok) {
       throw new Error(
@@ -182,7 +183,54 @@ export async function getSimulationQuickList(
 
     return response.data;
   } catch (error) {
-    console.error("[getSimulationList] API 호출 실패:", error);
+    console.error("[getSimulationQuickList] API 호출 실패:", error);
+    throw error;
+  }
+}
+
+/**
+ * 시뮬레이션(auto) 시민용 목록 조회
+ * GET /api/v1/simulation_auto/civil/list
+ *
+ * @param startDate - 시작일 (2025-10-23)
+ * @param endDate - 종료일 (2025-10-30)
+ * @param page - 페이지 번호 (기본값: 1)
+ * @param limit - 페이지당 항목 수 (기본값: 7, 최대: 100)
+ * @returns 시뮬레이션 목록과 페이지네이션 정보
+ */
+export async function getSimulationQuickCivilList(
+  startDate: Date,
+  endDate: Date,
+  page: number = 1,
+  limit: number = 7
+): Promise<SimulationQuickCivilDataResponse> {
+  try {
+    const toYMDLocal = (d: Date): string => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+
+    const params = new URLSearchParams({
+      start_date: toYMDLocal(startDate),
+      end_date: toYMDLocal(endDate),
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+
+    const url = `${API_PATHS.SIMULATION_QUICK_CIVIL_LIST}?${params.toString()}`;
+    const response = await get<SimulationQuickCivilDataResponse>(url);
+
+    if (!response.ok) {
+      throw new Error(
+        `Simulation civil list API failed with status ${response.status}`
+      );
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error("[getSimulationQuickCivilList] API 호출 실패:", error);
     throw error;
   }
 }

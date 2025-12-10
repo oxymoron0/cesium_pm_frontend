@@ -110,10 +110,9 @@ const SimulationProgressIndicatorHeatmap = observer(function SimulationProgressI
 
   const getSimulationParams = () => {
     const { selectedsimulationQuick } = simulationStore;
-    if (!selectedsimulationQuick) return null;
+    if (!selectedsimulationQuick?.uuid) return null;
     return {
       uuid: selectedsimulationQuick.uuid,
-      resultPath: selectedsimulationQuick.result_path,
       totalCount: totalFrames,
     };
   };
@@ -130,7 +129,7 @@ const SimulationProgressIndicatorHeatmap = observer(function SimulationProgressI
 
     setIsPreloading(true);
     try {
-      await preloadHeatmap(params.uuid, params.resultPath, totalFrames, setPreloadProgress);
+      await preloadHeatmap(params.uuid, '', totalFrames, setPreloadProgress);
       // 렌더링은 호출자(handlePlay)가 처리
     } catch (error) {
       console.error('Heatmap Preload failed:', error);
@@ -296,7 +295,7 @@ const SimulationProgressIndicatorHeatmap = observer(function SimulationProgressI
       clearHeatmapCache(params.uuid);
       setIsPreloading(true);
       try {
-        await preloadHeatmap(params.uuid, params.resultPath, totalFrames, setPreloadProgress);
+        await preloadHeatmap(params.uuid, '', totalFrames, setPreloadProgress);
       } catch (error) {
         console.error('Heatmap reload failed:', error);
       } finally {
