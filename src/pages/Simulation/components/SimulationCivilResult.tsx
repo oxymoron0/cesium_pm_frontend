@@ -1,6 +1,5 @@
 import { useMemo, useEffect, useState, useRef } from "react";
 import { observer } from "mobx-react-lite";
-import Title from "@/components/basic/Title";
 import SubTitle from "@/components/basic/SubTitle";
 import Spacer from "@/components/basic/Spacer";
 import Button from "@/components/basic/Button";
@@ -12,7 +11,11 @@ import {
   setSelectedCivilStationId
 } from "@/utils/cesium/SimulationCivilResultRenderer";
 import SimulationCivilProgressIndicator from "@/components/service/SimulationCivilProgressIndicator";
-import SimulationStationHtmlRenderer from "@/components/service/SimulationStationHtmlRenderer";
+import SimulationCivilStationHtmlRenderer from "@/components/service/SimulationCivilStationHtmlRenderer";
+import { administrativeStore } from "@/stores/AdministrativeStore";
+import { isGeometrySuccess } from "@/types/administrative";
+import { clearAdministrativeBoundary, renderAdministrativeBoundary } from "@/utils/cesium/administrativeRenderer";
+import SimulationCivilStationAnalysis from "./SimulationCivilStationAnalysis";
 
 export type StationRow = {
   id: number;
@@ -25,7 +28,7 @@ export type StationRow = {
 
 const to2 = (n: number) => String(n).padStart(2, "0");
 
-const formatDateTimeKOR = (iso: string) => {
+const formatDateTimeKOR = (iso: string | number) => {
   if (!iso) return "-";
   const d = new Date(iso);
   const y = d.getFullYear();
@@ -61,13 +64,13 @@ function InfoField({ label, value }: { label: string; value: string }) {
 const getPmLabelStyle = (label: string) => {
   switch (label) {
     case '좋음':
-      return { backgroundColor: '#00C851', color: '#FFFFFF' }; // 녹색
+      return { backgroundColor: '#1C67D7', color: '#FFFFFF' }; // 파란색
     case '보통':
-      return { backgroundColor: '#FFD040', color: '#000000' }; // 노란색
+      return { backgroundColor: '#18A274', color: '#000000' }; // 녹색
     case '나쁨':
-      return { backgroundColor: '#FF7700', color: '#FFFFFF' }; // 주황색
+      return { backgroundColor: '#FF7700', color: '#000000' }; // 주황색
     case '매우나쁨':
-      return { backgroundColor: '#FF3333', color: '#FFFFFF' }; // 빨간색
+      return { backgroundColor: '#D32F2D', color: '#FFFFFF' }; // 빨간색
     default:
       return { backgroundColor: '#666666', color: '#FFFFFF' }; // 기본값 (회색)
   }
@@ -107,9 +110,54 @@ const SimulationCivilResult = observer(function SimulationCivilResult() {
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const { selectedCivilStationAnalysisId } = simulationStore;
 
   // 1. 데이터 가져오기
   const simData = simulationStore.selectedCivilSimulation;
+  
+  useEffect(() => {
+    const renderDistrictBoundary = async () => {
+      // 1. 부산광역시(26) 로드 및 부산진구(26230) 찾기
+      if (administrativeStore.provinces.length === 0) {
+        await administrativeStore.loadProvinces();
+      }
+      // 부산이 선택 안되어 있으면 선택
+      if (administrativeStore.selectedProvinceCode !== '26') {
+        await administrativeStore.selectProvince('26');
+      }
+
+      // 부산진구 코드 확인
+      const busanjingu = administrativeStore.districts.find(d => d.code === '26230');
+      
+      if (busanjingu) {
+        const shortCode = busanjingu.code.substring(2); // '230'
+        
+        // 2. 경계 데이터 로드 및 렌더링
+        try {
+          const params = {
+            province_code: '26',
+            district_code: shortCode
+          };
+          
+          const response = await administrativeStore.loadGeometry(params);
+          
+          if (isGeometrySuccess(response)) {
+            renderAdministrativeBoundary(response.geom, response.full_name);
+            console.log('[CivilResult] Boundary rendered:', response.full_name);
+          }
+        } catch (error) {
+          console.error('[CivilResult] Failed to render boundary:', error);
+        }
+      }
+    };
+
+    renderDistrictBoundary();
+
+    // 언마운트 시 경계 제거
+    return () => {
+      clearAdministrativeBoundary();
+    };
+  }, []);
 
   // 2. Cesium 선택 상태 동기화 (Polling)
   useEffect(() => {
@@ -166,23 +214,21 @@ const SimulationCivilResult = observer(function SimulationCivilResult() {
     };
   }, [rows]);
 
-  // [수정] 7. 모든 Hooks 호출 후 데이터 체크 및 Early Return
-  if (!simData) {
-    return <div className="text-white p-4">데이터를 불러올 수 없습니다.</div>;
-  }
+  const renderMainCivilContent = () => {
+    if (!simData) {
+      return <div className="text-white p-4">데이터를 불러올 수 없습니다.</div>;
+    }
 
-  return (
+    if (selectedCivilStationAnalysisId !== null) {
+      return <SimulationCivilStationAnalysis />
+    }
+
+    return (
     <>
-      <Title onClose={() => simulationStore.setCurrentView("civilList")} onBack={() => simulationStore.setCurrentView("civilList")}>
-        <span className="font-pretendard text-[20px] font-bold text-white">시뮬레이션 결과</span>
-      </Title>
-
-      <Spacer height={8} />
-
       {/* 상단 정보 섹션 */}
       <SubTitle>
         <span className="font-pretendard text-[16px] font-bold text-white">
-          현재시간
+          {formatDateTimeKOR(Date.now())}
         </span>
       </SubTitle>
       <div className="w-full p-4 rounded-lg">
@@ -269,9 +315,16 @@ const SimulationCivilResult = observer(function SimulationCivilResult() {
           시뮬레이션 종료
         </Button>
       </div>
+    </>
+    )
+  }
 
-      <SimulationCivilProgressIndicator />
-      <SimulationStationHtmlRenderer />
+  return (
+    <>
+      {renderMainCivilContent()}
+
+      <SimulationCivilStationHtmlRenderer />
+      {selectedCivilStationAnalysisId !== null && <SimulationCivilProgressIndicator />}
     </>
   );
 });

@@ -125,6 +125,7 @@ class SimulationStore {
   // 대민 시뮬레이션 상태 관리
   simulationCivilList: SimulationCivilQuickData[] = [];
   selectedCivilSimulation: SimulationCivilQuickData | null = null;
+  selectedCivilStationAnalysisId: number | null = null;
   paginationCivil: SimulationListPagination | null = null;
   isLoadingCivilList: boolean = false;
   civilConcentration: string = '';
@@ -1120,6 +1121,25 @@ class SimulationStore {
     
     console.log(`[Store] Playing civil simulation: ${data.uuid} (${this.glbCount} frames)`);
   }
+  /**
+   * 정류장 상세 시뮬레이션(활동가이드) 실행
+   */
+  runCivilStationAnalysis(stationId: number) {
+    runInAction(() => {
+      this.selectedCivilStationAnalysisId = stationId;
+      console.log(`[Store] Run Civil station analysis for ID: ${stationId}`);
+    });
+  }
+
+  /**
+   * 정류장 상세 시뮬레이션 종료
+   */
+  closeCivilStationAnalysis() {
+    runInAction(() => {
+      this.selectedCivilStationAnalysisId = null;
+    });
+  }
+
 
 }
 

@@ -11,6 +11,12 @@ import { simulationStore } from "@/stores/SimulationStore";
 
 const SimulationCivilMain = observer(function App() {  
   const { currentView, isMinimized } = simulationStore;
+
+  const handleOnclose = () => {
+    simulationStore.setCurrentView('civilConfig')
+    simulationStore.closeCivilStationAnalysis();
+  }
+  
   return (
     <>
       <Title
@@ -18,7 +24,7 @@ const SimulationCivilMain = observer(function App() {
         infoTitle={(currentView === 'civilConfig' || currentView === 'civilList') ? "시뮬레이션" 
           : currentView === 'civilResult' ? "시뮬레이션 설정 정보" 
           : "상세 시뮬레이션 결과"}
-        onClose={() => simulationStore.setCurrentView('civilConfig')}
+        onClose={handleOnclose}
         onMinimize={() => simulationStore.toggleMinimize()}
       >
         {(currentView === 'civilConfig' || currentView === 'civilList') ? "시뮬레이션" 
