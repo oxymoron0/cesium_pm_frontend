@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite';
 import SubTitle from '@/components/basic/SubTitle';
 import Divider from '@/components/basic/Divider';
 import { airConfigStore } from '@/stores/AirConfigStore';
+import { AIR_QUALITY_COLORS } from '@/utils/airQuality';
 import type { AirQualityLevel } from '@/utils/api/types';
 
 type SensorType = 'pm10' | 'pm25' | 'vocs';
@@ -121,10 +122,10 @@ const SENSOR_CONFIGS: SensorConfig[] = [
 ];
 
 const GRADE_CONFIGS: GradeConfig[] = [
-  { type: 'good', label: '좋음', color: '#18A274' },
-  { type: 'normal', label: '보통', color: '#FFD040' },
-  { type: 'bad', label: '나쁨', color: '#FF7700' },
-  { type: 'very_bad', label: '매우 나쁨', color: '#D32F2D' },
+  { type: 'good', label: '좋음', color: AIR_QUALITY_COLORS.good },
+  { type: 'normal', label: '보통', color: AIR_QUALITY_COLORS.normal },
+  { type: 'bad', label: '나쁨', color: AIR_QUALITY_COLORS.bad },
+  { type: 'very_bad', label: '매우 나쁨', color: AIR_QUALITY_COLORS.very_bad },
 ];
 
 /**

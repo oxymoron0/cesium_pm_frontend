@@ -28,13 +28,14 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
 
   // 파티클 설정 상태
   const [showSettings, setShowSettings] = useState(false);
-  const [opacity, setOpacity] = useState(0.005);
-  const [minScale, setMinScale] = useState(5);
-  const [maxScale, setMaxScale] = useState(50);
-  const [contrast, setContrast] = useState(2.0); // jsonRenderer.ts의 기본값
-  const [sizeSensitivity, setSizeSensitivity] = useState(2.0); // jsonRenderer.ts의 기본값
-  const [alphaMultiplier, setAlphaMultiplier] = useState(5.0); // jsonRenderer.ts의 기본값
-  const [threshold, setThreshold] = useState(0.1); // jsonRenderer.ts의 기본값
+  const [opacity, setOpacity] = useState(0.8);
+  const [minScale, setMinScale] = useState(1);
+  const [maxScale, setMaxScale] = useState(8);
+  const [contrast, setContrast] = useState(1.5);
+  const [sizeSensitivity, setSizeSensitivity] = useState(0.0);
+  const [alphaMultiplier, setAlphaMultiplier] = useState(1.0);
+  const [threshold, setThreshold] = useState(0.1);
+  const [sizeMultiplier, setSizeMultiplier] = useState(0.3);
   const [cameraHeight, setCameraHeight] = useState<number>(0);
 
   const playIntervalRef = useRef<number | null>(null);
@@ -50,12 +51,36 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
     setOpacity(currentSettings.opacity);
     setMinScale(currentSettings.farScale);  // farScale = 멀 때 = 작게 = minScale
     setMaxScale(currentSettings.nearScale); // nearScale = 가까울 때 = 크게 = maxScale
-    // 새로 추가된 설정값 로드
     setContrast(currentSettings.contrast);
     setSizeSensitivity(currentSettings.sizeSensitivity);
     setAlphaMultiplier(currentSettings.alphaMultiplier);
     setThreshold(currentSettings.threshold);
+    setSizeMultiplier(currentSettings.sizeMultiplier);
   }, []);
+
+  // 설정값 변경 시 실시간 적용
+  useEffect(() => {
+    // 설정 패널이 열려있을 때만 실시간 적용
+    if (!showSettings) return;
+
+    updateParticleSettings({
+      opacity,
+      nearScale: maxScale,
+      farScale: minScale,
+      contrast,
+      sizeSensitivity,
+      alphaMultiplier,
+      threshold,
+      sizeMultiplier
+    });
+
+    // 현재 프레임 재렌더링
+    const params = getSimulationParams();
+    if (params && currentFrame >= 0) {
+      renderJsonFrame(params.uuid, currentFrame);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 설정값 변경 시에만 재렌더링, currentFrame 변경은 제외
+  }, [opacity, maxScale, minScale, contrast, sizeSensitivity, alphaMultiplier, threshold, sizeMultiplier, showSettings]);
 
   // 카메라 높이 실시간 업데이트
   useEffect(() => {
@@ -259,25 +284,6 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
     renderJsonFrame(params.uuid, val);
   };
 
-  // 파티클 설정 적용 및 재렌더링
-  const handleApplySettings = () => {
-    updateParticleSettings({
-      opacity,
-      nearScale: maxScale,
-      farScale: minScale,
-      contrast,
-      sizeSensitivity,
-      alphaMultiplier,
-      threshold
-    });
-
-    // 현재 프레임 재렌더링
-    const params = getSimulationParams();
-    if (params) {
-      renderJsonFrame(params.uuid, currentFrame);
-    }
-  };
-
   return (
     <div className="fixed bottom-[64px] left-0 right-0 pointer-events-auto" style={{ zIndex: 2003 }}>
       {/* 파티클 설정 패널 */}
@@ -302,15 +308,31 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
             {/* Opacity */}
             <div>
               <label className="text-white text-xs mb-1 block">
-                Opacity: <span className="text-[#FFD040] font-mono">{opacity.toFixed(3)}</span>
+                Opacity: <span className="text-[#FFD040] font-mono">{opacity.toFixed(2)}</span>
               </label>
               <input
                 type="range"
-                min="0.001"
-                max="0.1"
-                step="0.001"
+                min="0.01"
+                max="1.0"
+                step="0.01"
                 value={opacity}
                 onChange={(e) => setOpacity(parseFloat(e.target.value))}
+                className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+              />
+            </div>
+
+            {/* Size Multiplier */}
+            <div>
+              <label className="text-white text-xs mb-1 block">
+                크기 배율 (Size Multiplier): <span className="text-[#FFD040] font-mono">{sizeMultiplier.toFixed(2)}</span>
+              </label>
+              <input
+                type="range"
+                min="0.1"
+                max="2.0"
+                step="0.05"
+                value={sizeMultiplier}
+                onChange={(e) => setSizeMultiplier(parseFloat(e.target.value))}
                 className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
               />
             </div>
@@ -411,13 +433,6 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
               />
             </div>
           </div>
-
-          <button
-            onClick={handleApplySettings}
-            className="w-full mt-4 px-4 py-2 bg-[#FFD040] text-black text-sm font-bold rounded-md hover:bg-[#FFE060] transition-colors"
-          >
-            적용 및 재렌더링
-          </button>
         </div>
       )}
 

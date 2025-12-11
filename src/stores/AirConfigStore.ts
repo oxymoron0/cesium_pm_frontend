@@ -100,15 +100,12 @@ class AirConfigStore {
   }
 
   /**
-   * 센서 값이 현재 등급 필터를 통과하는지 확인
-   * PM10, PM2.5 값 중 하나라도 선택된 등급에 해당하면 true 반환
+   * 특정 센서 값이 현재 등급 필터를 통과하는지 확인
+   * 해당 센서의 등급이 선택되어 있으면 true 반환
    */
-  shouldShowByGrade(pm10Value: number, pm25Value: number): boolean {
-    const pm10Grade = getGradeFromValue('pm10', pm10Value);
-    const pm25Grade = getGradeFromValue('pm25', pm25Value);
-
-    // PM10 또는 PM2.5 중 하나라도 선택된 등급에 해당하면 표시
-    return this.gradeVisibility[pm10Grade] || this.gradeVisibility[pm25Grade];
+  shouldShowSensorByGrade(sensorType: 'pm10' | 'pm25', value: number): boolean {
+    const grade = getGradeFromValue(sensorType, value);
+    return this.gradeVisibility[grade];
   }
 
   /**

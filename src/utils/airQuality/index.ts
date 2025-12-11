@@ -34,7 +34,7 @@ export const AIR_QUALITY_STANDARDS = {
 /**
  * 공기질 등급별 색상 정의
  */
-const AIR_QUALITY_COLORS = {
+export const AIR_QUALITY_COLORS = {
   good: '#1C67D7',
   normal: '#18A274',
   bad: '#FEE046',
