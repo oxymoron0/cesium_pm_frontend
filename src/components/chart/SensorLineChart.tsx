@@ -67,9 +67,9 @@ const SensorLineChart = observer(function SensorLineChart({
     // 1. 데이터 최대값 계산
     let maxValue = 0
     data.forEach(point => {
-      if (showPM10 && point.pm10 !== undefined && point.pm10 > maxValue) maxValue = point.pm10
-      if (showPM25 && point.pm25 !== undefined && point.pm25 > maxValue) maxValue = point.pm25
-      if (showVOCs && point.voc !== undefined && point.voc > maxValue) maxValue = point.voc
+      if (showPM10 && point.pm10 != null && point.pm10 > maxValue) maxValue = point.pm10
+      if (showPM25 && point.pm25 != null && point.pm25 > maxValue) maxValue = point.pm25
+      if (showVOCs && point.voc != null && point.voc > maxValue) maxValue = point.voc
     })
 
     // 컬러맵이 꺼져 있거나 VOCs 모드면 배경색 없이 Y축은 max * 1.2
