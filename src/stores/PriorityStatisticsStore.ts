@@ -1,13 +1,7 @@
 import { makeAutoObservable } from 'mobx'
 import {
-  getRealtimeStationConcentration,
-  getTodayStationConcentration,
-  getWeekStationConcentration,
-  getMonthStationConcentration,
-  getRealtimeFacilityData,
-  getTodayFacilityData,
-  getWeekFacilityData,
-  getMonthFacilityData
+  getPM10Ranking,
+  getAlertRanking
 } from '../utils/api/statisticsApi'
 import type { ChartDataPoint } from '../utils/chart/sensorDataTransform'
 import type { StationConcentrationData, FacilityData, FacilitySimulationData } from '../types/statistics'
@@ -226,9 +220,9 @@ class PriorityStatisticsStore {
 
   /**
    * Flag to determine whether to use mock data or fetch from API
-   * @default true
+   * @default false - uses real PM10 ranking API
    */
-  useMockData = true
+  useMockData = false
   
     /**
    * Statistics popup minimize state
@@ -378,46 +372,50 @@ class PriorityStatisticsStore {
 
   /**
    * Fetch station concentration data based on period
+   * Uses PM10 ranking API: GET /api/v1/sensor-data/stations/pm10-ranking
    */
   private async fetchStationData(period: TimePeriod): Promise<StationConcentrationData[]> {
     if (this.useMockData) {
       console.log(`[PriorityStatisticsStore] Using MOCK station data for ${period}`)
-      // For mock data, we return the same detailed station concentration data for all periods
       return Promise.resolve(MOCK_STATION_CONCENTRATION_DATA)
     }
 
-    switch (period) {
-      case 'realtime':
-        return await getRealtimeStationConcentration()
-      case 'today':
-        return await getTodayStationConcentration()
-      case 'week':
-        return await getWeekStationConcentration()
-      case 'month':
-        return await getMonthStationConcentration()
+    // TimePeriod를 PM10 Ranking API period로 매핑
+    const periodMap: Record<TimePeriod, 'current' | 'today' | 'week' | 'month'> = {
+      'realtime': 'current',
+      'today': 'today',
+      'week': 'week',
+      'month': 'month'
     }
+
+    const apiPeriod = periodMap[period]
+    console.log(`[PriorityStatisticsStore] Fetching PM10 ranking for period: ${apiPeriod}`)
+
+    return await getPM10Ranking(apiPeriod, 7)
   }
 
   /**
    * Fetch facility simulation data based on period
+   * Uses Alert Ranking API: GET /api/v1/vulnerable-facilities/alert-ranking
    */
   private async fetchFacilityData(period: TimePeriod): Promise<FacilityData[]> {
     if (this.useMockData) {
       console.log(`[PriorityStatisticsStore] Using MOCK facility data for ${period}`)
-      // For mock data, we return the same detailed facility data for all periods
       return Promise.resolve(MOCK_FACILITY_DATA)
     }
 
-    switch (period) {
-      case 'realtime':
-        return await getRealtimeFacilityData()
-      case 'today':
-        return await getTodayFacilityData()
-      case 'week':
-        return await getWeekFacilityData()
-      case 'month':
-        return await getMonthFacilityData()
+    // TimePeriod를 Alert Ranking API period로 매핑
+    const periodMap: Record<TimePeriod, 'current' | 'today' | 'week' | 'month'> = {
+      'realtime': 'current',
+      'today': 'today',
+      'week': 'week',
+      'month': 'month'
     }
+
+    const apiPeriod = periodMap[period]
+    console.log(`[PriorityStatisticsStore] Fetching alert ranking for period: ${apiPeriod}`)
+
+    return await getAlertRanking(apiPeriod, 7)
   }
 
   /**
