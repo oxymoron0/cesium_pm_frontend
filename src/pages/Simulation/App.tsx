@@ -15,6 +15,7 @@ import { clearLocationMarker } from "@/utils/cesium/locationMarker";
 import { disableDirectLocationClickHandler } from "@/utils/cesium/directLocationRenderer";
 import SimulationStationHtmlRenderer from "@/components/service/SimulationStationHtmlRenderer";
 import SimulationGlbHeatmapRender from "@/components/service/SimulationGlbHeatmapRender";
+import { cleanupAll } from "./cleanup";
 
 interface AppProps {
   onCloseMicroApp?: () => void;
@@ -63,6 +64,14 @@ const App = observer(function App(props: AppProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [simulationStore.currentView]);
+
+  // Cleanup on unmount (fallback for non-qiankun mode)
+  useEffect(() => {
+    return () => {
+      console.log('[Simulation App] Component unmounting, cleaning up');
+      cleanupAll();
+    };
+  }, []);
 
   const isQiankun = window.__POWERED_BY_QIANKUN__;
 
