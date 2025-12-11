@@ -36,6 +36,15 @@ export async function fetchVulnerableFacilitiesData(
     const data: VulnerableFacilitiesApiResponse = await response.json();
     console.log(`[fetchVulnerableFacilitiesData] Total affected facilities: ${data.total_affected_facilities}`);
 
+    // ID 목록 로그 출력
+    const allFacilityIds = {
+      good: data.facilities_by_grade.good?.map(f => ({ id: f.id, name: f.name })) || [],
+      normal: data.facilities_by_grade.normal?.map(f => ({ id: f.id, name: f.name })) || [],
+      bad: data.facilities_by_grade.bad?.map(f => ({ id: f.id, name: f.name })) || [],
+      very_bad: data.facilities_by_grade.very_bad?.map(f => ({ id: f.id, name: f.name })) || []
+    };
+    console.log('[fetchVulnerableFacilitiesData] Facility IDs from SIMULATION_VULNERABLE_FACILITIES_BY_UUID:', allFacilityIds);
+
     return data;
   } catch (error) {
     console.error('[fetchVulnerableFacilitiesData] Failed to fetch vulnerable facilities:', error);
@@ -59,6 +68,8 @@ function findFacilityById(
     return undefined;
   }
 
+  console.log(`[findFacilityById] Searching for facility ID: ${facilityId} (numeric: ${numericId})`);
+
   // 모든 등급에서 시설 검색
   const allGrades = ['good', 'normal', 'bad', 'very_bad'] as const;
 
@@ -67,11 +78,13 @@ function findFacilityById(
     if (facilities) {
       const found = facilities.find(f => f.id === numericId);
       if (found) {
+        console.log(`[findFacilityById] Found facility in grade '${grade}':`, { id: found.id, name: found.name, type: found.type });
         return found;
       }
     }
   }
 
+  console.warn(`[findFacilityById] Facility ID ${facilityId} not found in any grade`);
   return undefined;
 }
 

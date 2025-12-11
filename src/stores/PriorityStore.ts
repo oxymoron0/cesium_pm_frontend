@@ -13,6 +13,7 @@ import { API_PATHS } from '../utils/api/config';
 import { searchNearbyRoads } from '../pages/Priority/api/roadSearch';
 import { fetchVulnerableFacilitiesData, searchNearbyBuildingFacilities } from '../pages/Priority/api/buildingFacilitiesSearch';
 import type { BuildingFacilitiesResponse } from '@/utils/cesium/nearbyBuildingFacilitiesRenderer';
+import { getSimulationGlbCount } from '../utils/api/simulationApi';
 
 // ============================================================================
 // API Response Types (향후 백엔드 API 연동용)
@@ -181,6 +182,7 @@ class PriorityStore {
   // 취약시설 검색 결과
   vulnerableFacilities: VulnerableFacility[] = [];
   simulationUuid: string | null = null;
+  simulationGlbCount: number = 0;
 
   // 정류장 통계 데이터 (전체)
   stationStatisticsData: StationStatisticsResponse | null = null;
@@ -582,12 +584,12 @@ class PriorityStore {
       console.log('[PriorityStore] Searching priority facilities:', url);
 
       const response = await fetch(url);
-
       if (!response.ok) {
         throw new Error(`API request failed: ${response.status} ${response.statusText}`);
       }
-
+      
       const data: PrioritySearchResponse = await response.json();
+      console.log("응답 데이터 : ",data)
 
       // 응답 데이터를 VulnerableFacility 형식으로 변환
       this.vulnerableFacilities = data.facilities.map((item) => ({
@@ -602,16 +604,50 @@ class PriorityStore {
           coordinates: item.location.coordinates
         }
       }));
+      console.log(`[PriorityStore] vulnerableFacilities populated with ${this.vulnerableFacilities.length} items.`);
+      console.log('[PriorityStore] Facility IDs from PRIORITY_SEARCH:', this.vulnerableFacilities.map(f => ({ id: f.id, name: f.name, rank: f.rank })));
+      // ...
+            this.simulationUuid = data.simulation_uuid;
+      
+            // GLB count 및 건물 데이터 조회 (UUID가 있을 때만)
+            if (this.simulationUuid) {
+              await this.loadSimulationGlbCount();
+              console.log('[PriorityStore] searchPriorityFacilities: loadBuildingFacilitiesData 호출 시작...');
+              await this.loadBuildingFacilitiesData(); // 건물 형상 데이터 로드
+              console.log('[PriorityStore] searchPriorityFacilities: loadBuildingFacilitiesData 완료.');
+            } else {
+              console.warn('[PriorityStore] searchPriorityFacilities: simulationUuid가 null이므로 GLB count 및 건물 데이터 로드를 건너뜁니다.');
+            }
+      
+            console.log(`[PriorityStore] ${data.total_count}개의 시설을 찾았습니다.`);
+          } catch (error) {
+            console.error('[PriorityStore] 취약시설 검색 실패:', error);
+            this.vulnerableFacilities = [];
+            this.simulationUuid = null;
+          } finally {
+            this.isLoadingFacilities = false;
+          }  }
 
-      this.simulationUuid = data.simulation_uuid;
+  // ============================================================================
+  // Simulation GLB Count API
+  // ============================================================================
 
-      console.log(`[PriorityStore] Found ${data.total_count} facilities`);
+  /**
+   * 시뮬레이션 GLB 개수 조회
+   */
+  async loadSimulationGlbCount(): Promise<void> {
+    if (!this.simulationUuid) {
+      console.warn('[PriorityStore] No simulation UUID available');
+      return;
+    }
+
+    try {
+      console.log(`[PriorityStore] Loading GLB count for UUID: ${this.simulationUuid}`);
+      this.simulationGlbCount = await getSimulationGlbCount(this.simulationUuid);
+      console.log(`[PriorityStore] GLB count loaded: ${this.simulationGlbCount}`);
     } catch (error) {
-      console.error('[PriorityStore] Failed to search priority facilities:', error);
-      this.vulnerableFacilities = [];
-      this.simulationUuid = null;
-    } finally {
-      this.isLoadingFacilities = false;
+      console.error('[PriorityStore] Failed to load GLB count:', error);
+      this.simulationGlbCount = 0;
     }
   }
 
@@ -685,7 +721,7 @@ class PriorityStore {
    */
   async loadAllNearbyRoads(): Promise<void> {
     const facilities = this.vulnerableFacilities.filter(
-      f => f.predictedLevel === 'very-bad' || f.predictedLevel === 'bad'
+      f => f.predictedLevel === 'very-bad' || f.predictedLevel === 'bad' || f.predictedLevel === 'good' || f.predictedLevel === 'normal'
     );
 
     if (facilities.length === 0) {
@@ -720,31 +756,22 @@ class PriorityStore {
    */
   async loadBuildingFacilitiesData(): Promise<void> {
     if (!this.simulationUuid) {
-      console.warn('[PriorityStore] No simulation UUID available');
+      console.warn('[PriorityStore] 건물 데이터를 로드할 Simulation UUID가 없습니다.');
       return;
     }
 
     // 이미 로드되어 있으면 스킵
     if (this.vulnerableFacilitiesApiData) {
-      console.log('[PriorityStore] Building facilities data already loaded');
+      console.log('[PriorityStore] 건물 시설물 데이터가 이미 로드되었습니다.');
       return;
     }
 
     try {
-      console.log(`[PriorityStore] Loading building facilities data for UUID: ${this.simulationUuid}`);
+      console.log(`[PriorityStore] Simulation UUID: ${this.simulationUuid} 로 건물 시설물 데이터를 로드합니다.`);
       this.vulnerableFacilitiesApiData = await fetchVulnerableFacilitiesData(this.simulationUuid);
-      console.log('[PriorityStore] Building facilities API data structure:', {
-        total_affected_facilities: this.vulnerableFacilitiesApiData.total_affected_facilities,
-        grades_available: Object.keys(this.vulnerableFacilitiesApiData.facilities_by_grade),
-        facilities_by_grade: Object.entries(this.vulnerableFacilitiesApiData.facilities_by_grade).map(([grade, facilities]) => ({
-          grade,
-          count: facilities?.length || 0,
-          ids: facilities?.map(f => ({ id: f.id, name: f.name, type: f.type })) || []
-        }))
-      });
-      console.log('[PriorityStore] Building facilities data loaded successfully');
+      console.log(`[PriorityStore] 건물 시설물 데이터 로드 성공. 총 영향 시설: ${this.vulnerableFacilitiesApiData.total_affected_facilities} 개.`);
     } catch (error) {
-      console.error('[PriorityStore] Failed to load building facilities data:', error);
+      console.error('[PriorityStore] 건물 시설물 데이터 로드 실패:', error);
       this.vulnerableFacilitiesApiData = null;
     }
   }
@@ -756,7 +783,10 @@ class PriorityStore {
     // 캐시 확인
     if (this.buildingFacilitiesCache.has(facilityId)) {
       const cached = this.buildingFacilitiesCache.get(facilityId)!;
-      console.log(`[PriorityStore] Using cached building data for facility ${facilityId}: ${cached.total} buildings`);
+      console.log(`[PriorityStore] === USING CACHED BUILDING DATA ===`);
+      console.log(`[PriorityStore] Facility ID: ${facilityId}`);
+      console.log(`[PriorityStore] Cached building count: ${cached.total}`);
+      console.log(`[PriorityStore] Cache keys:`, Array.from(this.buildingFacilitiesCache.keys()));
       return cached;
     }
 
@@ -766,14 +796,18 @@ class PriorityStore {
     }
 
     try {
-      console.log(`[PriorityStore] Searching building facilities for facility ${facilityId}`);
+      console.log(`[PriorityStore] === LOADING NEW BUILDING DATA ===`);
+      console.log(`[PriorityStore] Facility ID: ${facilityId}`);
+      console.log(`[PriorityStore] Simulation UUID: ${this.simulationUuid}`);
       const buildingData = await searchNearbyBuildingFacilities(
         facilityId,
         this.simulationUuid,
         this.vulnerableFacilitiesApiData || undefined
       );
       this.buildingFacilitiesCache.set(facilityId, buildingData);
-      console.log(`[PriorityStore] Cached ${buildingData.total} buildings for facility ${facilityId}`);
+      console.log(`[PriorityStore] === CACHED NEW BUILDING DATA ===`);
+      console.log(`[PriorityStore] Facility ID: ${facilityId}`);
+      console.log(`[PriorityStore] Building count: ${buildingData.total}`);
 
       if (buildingData.total === 0) {
         console.warn(`[PriorityStore] No buildings found for facility ${facilityId} - check API data`);
@@ -791,7 +825,7 @@ class PriorityStore {
    */
   async loadAllBuildingFacilities(): Promise<void> {
     const facilities = this.vulnerableFacilities.filter(
-      f => f.predictedLevel === 'very-bad' || f.predictedLevel === 'bad'
+      f => f.predictedLevel === 'very-bad' || f.predictedLevel === 'bad' || f.predictedLevel === 'good' || f.predictedLevel === 'normal'
     );
 
     if (facilities.length === 0) {
@@ -970,7 +1004,7 @@ class PriorityStore {
    */
   async loadAllNearbyStations(allStations: RouteStationFeature[]): Promise<void> {
     const facilities = this.vulnerableFacilities.filter(
-      f => f.predictedLevel === 'very-bad' || f.predictedLevel === 'bad'
+      f => f.predictedLevel === 'very-bad' || f.predictedLevel === 'bad' || f.predictedLevel === 'good' || f.predictedLevel === 'normal'
     );
 
     if (facilities.length === 0) {
@@ -1003,22 +1037,25 @@ class PriorityStore {
     startDate: string,
     endDate: string
   ): Promise<void> {
-    console.log('[PriorityStore] Initializing priority result data...');
+    console.log('[PriorityStore] 우선순위 결과 데이터 초기화를 시작합니다.');
 
     try {
-      // 1. 정류장 통계 데이터 로드 (다른 API들의 선행 조건)
+      // 1. 정류장 통계 데이터 로드
       await this.loadStationStatistics(startDate, endDate);
 
-      // 2. 병렬로 나머지 데이터 로드
-      await Promise.all([
-        this.loadAllNearbyStations(allStations),
-        this.loadAllNearbyRoads(),
-        this.loadAllBuildingFacilities()
-      ]);
+      // 2. 주변 정류장 로드
+      await this.loadAllNearbyStations(allStations);
 
-      console.log('[PriorityStore] Priority result data initialization completed');
+      // 3. 건물 시설물 전체 데이터 로드 (개별 검색 전에 필요)
+      // await this.loadBuildingFacilitiesData(); // NOTE: searchPriorityFacilities에서 호출하므로 여기서는 제거
+
+      // NOTE: 도로/건물 개별 검색은 lazy loading으로 처리
+      // - 체크박스 선택 시 toggleFacility()에서 로드
+      // - 초기화 시 모든 시설의 데이터를 로드하면 429 Too Many Requests 발생
+
+      console.log('[PriorityStore] 우선순위 결과 데이터 초기화를 완료했습니다.');
     } catch (error) {
-      console.error('[PriorityStore] Failed to initialize priority result data:', error);
+      console.error('[PriorityStore] 우선순위 결과 데이터 초기화 중 오류 발생:', error);
     }
   }
 
@@ -1062,6 +1099,17 @@ class PriorityStore {
 
   get hasSelectedFacilities(): boolean {
     return this.selectedFacilityIds.size > 0;
+  }
+
+  /**
+   * 중복 제거된 취약시설 목록 (우선순위 오름차순 정렬)
+   */
+  get uniqueVulnerableFacilities(): VulnerableFacility[] {
+    const uniqueMap = new Map<string, VulnerableFacility>();
+    this.vulnerableFacilities.forEach(facility => {
+      uniqueMap.set(facility.id, facility);
+    });
+    return Array.from(uniqueMap.values()).sort((a, b) => a.rank - b.rank);
   }
 }
 
