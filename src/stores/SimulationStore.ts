@@ -597,7 +597,7 @@ class SimulationStore {
     try {
       const response = await getSimulationQuickList(startDate, endDate, page, limit);
       this.simulationQuickList = response.simulations;
-      this.paginationQuick = response.pagination;
+      this.paginationQuick = response.pagination ?? null;
 
     } catch (error) {
       console.error('[SimulationStore] Failed to load simulation list:', error);

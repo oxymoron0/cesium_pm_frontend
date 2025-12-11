@@ -57,7 +57,7 @@ export interface StationMeasurement {
 export interface CoordinateLocation {
   longitude: number;                 // Longitude (-180 to 180)
   latitude: number;                  // Latitude (-90 to 90)
-  height: number;                    // Terrain height (meters)
+  height?: number;                   // Terrain height (meters), optional
 }
 
 /**
