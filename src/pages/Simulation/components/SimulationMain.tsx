@@ -23,7 +23,10 @@ const SimulationMain = observer(function App(props: SimulationMainProps) {
       <Title
         info="※ 시뮬레이션 실행을 위한 설정 페이지입니다."
         infoTitle="시뮬레이션"
-        onClose={props.onCloseMicroApp}
+        onClose={() => {
+          console.log('[SimulationMain] Close icon clicked: Triggering onCloseMicroApp');
+          props.onCloseMicroApp?.();
+        }}
         onMinimize={() => simulationStore.toggleMinimize()}
       >
         시뮬레이션
@@ -51,7 +54,6 @@ const SimulationMain = observer(function App(props: SimulationMainProps) {
             <SimulationActiveTabList />
                 {simulationStore.currentView === "config" ? (
                   <SimulationConfig
-                    onClose={props.onCloseMicroApp}
                     onLocationComplete={() => {
                       simulationStore.disableDirectLocationMode();
                       simulationStore.setCurrentView("detailConfig");

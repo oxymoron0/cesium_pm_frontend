@@ -214,7 +214,10 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
   return (
     <>
       <Title
-        onClose={onCloseMicroApp}
+        onClose={() => {
+          console.log('[SimulationQuickResult] Close icon clicked: Triggering onCloseMicroApp');
+          onCloseMicroApp?.();
+        }}
         onBack={() => simulationStore.setCurrentView("quick")}
         onMinimize={() => simulationStore.toggleMinimize()}
       >

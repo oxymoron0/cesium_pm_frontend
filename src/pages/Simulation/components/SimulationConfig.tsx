@@ -14,7 +14,6 @@ import { renderAdministrativeBoundary, clearAdministrativeBoundary } from '@/uti
 import { isGeometrySuccess } from '@/types/administrative';
 
 interface SimulationConfigProps {
-  onClose?: () => void;
   onLocationComplete?: () => void;
 }
 
