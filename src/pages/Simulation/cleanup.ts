@@ -8,6 +8,7 @@
 import { clearAdministrativeBoundary } from '@/utils/cesium/administrativeRenderer';
 import { clearLocationMarker } from '@/utils/cesium/locationMarker';
 import { simulationStore } from '@/stores/SimulationStore';
+import { administrativeStore } from '@/stores/AdministrativeStore';
 import { abortJsonPreload } from '@/utils/cesium/jsonPreloader';
 import { abortCsvPreload } from '@/utils/cesium/csvPreloader';
 
@@ -63,6 +64,19 @@ export function cleanupSimulationStore(): void {
 }
 
 /**
+ * Clean up AdministrativeStore state
+ * Clears selection and cache
+ */
+export function cleanupAdministrativeStore(): void {
+  try {
+    administrativeStore.clearSelection();
+    administrativeStore.clearCache();
+  } catch {
+    // Silent error handling
+  }
+}
+
+/**
  * Abort and cleanup preloaders
  * Stops ongoing downloads and frees memory
  */
@@ -87,6 +101,7 @@ export function cleanupPreloaders(): void {
 export function cleanupAll(): void {
   cleanupPreloaders();
   cleanupSimulationStore();
+  cleanupAdministrativeStore();
   cleanupCesiumDataSources();
   cleanupAdministrativeBoundary();
   cleanupLocationMarker();

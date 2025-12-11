@@ -1080,6 +1080,50 @@ class SimulationStore {
     // 설정 초기화
     this.config = null;
 
+    // 현재 기상 정보 초기화
+    this.currentWeather = null;
+    this.isLoadingCurrentWeather = false;
+    this.weatherLocation = '부전동';
+    this.weatherTimestamp = '08.07. 09:00';
+
+    // 시뮬레이션 제출 상태 초기화
+    this.isSubmitting = false;
+    this.submitError = null;
+
+    // 시뮬레이션 목록 초기화
+    this.simulationList = [];
+    this.isLoadingList = false;
+    this.listError = null;
+    this.pagination = null;
+    this.selectedStartSimulation = null;
+    this.pendingSimulationData = null;
+
+    // 시뮬레이션 Quick 목록 초기화
+    this.simulationQuickList = [];
+    this.paginationQuick = null;
+    this.selectedsimulationQuick = null;
+    this.isLoadingQuickList = false;
+    this.isSimulationQuickGuideMode = false;
+
+    // 시뮬레이션 상세 정보 초기화
+    this.selectedSimulationUuid = null;
+    this.simulationDetail = null;
+    this.isLoadingDetail = false;
+    this.detailError = null;
+
+    // 취약시설 초기화
+    this.vulnerableFacilities = null;
+    this.isLoadingVulnerableFacilities = false;
+    this.vulnerableFacilitiesError = null;
+
+    // GLB 상태 초기화
+    this.glbCount = null;
+    this.isLoadingGlbCount = false;
+    this.currentGlbFrame = 0;
+
+    // 지역 정보 로딩 상태 초기화
+    this.isLoadingDistricts = false;
+
     // 모달/팝업 상태 초기화
     this.isModalOpen = false;
     this.isModalConfirmType = null;
@@ -1088,33 +1132,20 @@ class SimulationStore {
     this.isConfigPopupMinimized = false;
     this.isResultPopupMinimized = false;
 
-    // 시뮬레이션 관련 상태 초기화
-    this.selectedSimulationUuid = null;
-    this.simulationDetail = null;
-    this.selectedStartSimulation = null;
-    this.pendingSimulationData = null;
-    this.selectedsimulationQuick = null;
-    this.isSimulationQuickGuideMode = false;
-
-    // 취약시설 초기화
-    this.vulnerableFacilities = null;
-
-    // GLB 상태 초기화
-    this.glbCount = null;
-    this.currentGlbFrame = 0;
-
     // 삭제 모드 초기화
     this.isDeleteMode = false;
     this.itemsToDelete.clear();
 
     // 날짜 필터 초기화
     this.isDateModalOpen = false;
+    this.startDate = null;
+    this.endDate = null;
 
     // 필터 초기화
     this.pollutantFilter = 'all';
     this.sortOrder = 'latest';
 
-    console.log('[SimulationStore] Cleanup completed - state reset to initial');
+    console.log('[SimulationStore] Cleanup completed - all state reset to initial');
   }
 
 }
