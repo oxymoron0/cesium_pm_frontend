@@ -1,13 +1,15 @@
 /**
  * Simulation Page Cleanup Utilities
  *
- * Purpose: Clean up Cesium DataSources, administrative boundaries, and store state when unmounting
+ * Purpose: Clean up Cesium DataSources, administrative boundaries, store state, and preloaders when unmounting
  * Called from: index.tsx unmount() lifecycle hook
  */
 
 import { clearAdministrativeBoundary } from '@/utils/cesium/administrativeRenderer';
 import { clearLocationMarker } from '@/utils/cesium/locationMarker';
 import { simulationStore } from '@/stores/SimulationStore';
+import { abortJsonPreload } from '@/utils/cesium/jsonPreloader';
+import { abortCsvPreload } from '@/utils/cesium/csvPreloader';
 
 /**
  * Clean up all Cesium DataSources
@@ -61,10 +63,29 @@ export function cleanupSimulationStore(): void {
 }
 
 /**
+ * Abort and cleanup preloaders
+ * Stops ongoing downloads and frees memory
+ */
+export function cleanupPreloaders(): void {
+  try {
+    abortJsonPreload();
+  } catch {
+    // Silent error handling
+  }
+
+  try {
+    abortCsvPreload();
+  } catch {
+    // Silent error handling
+  }
+}
+
+/**
  * Master cleanup function
  * Executes all cleanup operations
  */
 export function cleanupAll(): void {
+  cleanupPreloaders();
   cleanupSimulationStore();
   cleanupCesiumDataSources();
   cleanupAdministrativeBoundary();

@@ -15,6 +15,8 @@ import type { VulnerableFacilitiesResponse } from '@/utils/api/types';
 import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck, reverseGeocodeAPI, searchAddressAPI, getVulnerableFacilities } from '@/utils/api';
 import { userStore } from './UserStore';
 import { administrativeStore } from './AdministrativeStore';
+import { abortJsonPreload } from '@/utils/cesium/jsonPreloader';
+import { abortCsvPreload } from '@/utils/cesium/csvPreloader';
 // import { randomizeSimulationConcentration, ENABLE_MOCK_CONCENTRATION } from '@/utils/mockData/simulationConcentration';
 
 // ============================================================================
@@ -128,7 +130,19 @@ class SimulationStore {
   // 시뮬레이션 Panel 변경
   // ============================================================================
   setCurrentView(viewName: SimulationView) {
-    this.currentView = viewName
+    const previousView = this.currentView;
+    this.currentView = viewName;
+
+    // 결과 페이지(result, quickResult)에서 벗어날 때 프리로더 중단
+    const isLeavingResultView =
+      (previousView === 'result' || previousView === 'quickResult') &&
+      (viewName !== 'result' && viewName !== 'quickResult');
+
+    if (isLeavingResultView) {
+      console.log('[SimulationStore] Leaving result view, aborting preloaders');
+      abortJsonPreload();
+      abortCsvPreload();
+    }
 
     if (viewName !== 'config' && this.isDirectLocationMode) {
       this.disableDirectLocationMode();
