@@ -4,8 +4,91 @@
  */
 
 import { API_PATHS } from './config';
-import { get } from './request';
-import type { StationConcentrationData, FacilityData } from '../../types/statistics';
+import type { StationConcentrationData, FacilityData, PM10RankingResponse, AlertRankingResponse } from '../../types/statistics';
+
+/**
+ * PM10 랭킹 API period 매핑
+ */
+type PM10RankingPeriod = 'current' | 'today' | 'week' | 'month';
+
+/**
+ * PM10 랭킹 데이터 조회
+ * GET /api/v1/sensor-data/stations/pm10-ranking
+ *
+ * @param period - 조회 기간 (current, today, week, month)
+ * @param limit - 조회 개수 (1-10, 기본값 7)
+ * @returns PM10 랭킹 데이터를 StationConcentrationData 형식으로 변환
+ */
+export async function getPM10Ranking(
+  period: PM10RankingPeriod = 'current',
+  limit: number = 7
+): Promise<StationConcentrationData[]> {
+  try {
+    const url = API_PATHS.SENSOR_DATA_PM10_RANKING(period, limit);
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`PM10 ranking API failed with status ${response.status}`);
+    }
+
+    const result: PM10RankingResponse = await response.json();
+
+    if (result.status !== 'success') {
+      throw new Error('PM10 ranking API returned error status');
+    }
+
+    // API 응답을 StationConcentrationData 형식으로 변환
+    return result.data.map(item => ({
+      stationName: `${item.station_name}\n<${item.station_id.slice(-5)}>`,
+      stationId: item.station_id,
+      maxConcentration: Math.round(item.pm10_value * 100) / 100,
+      avgConcentration: Math.round(item.pm10_value * 100) / 100
+    }));
+  } catch (error) {
+    console.error(`[getPM10Ranking] API 호출 실패 (period: ${period}):`, error);
+    throw error;
+  }
+}
+
+/**
+ * 취약시설 알림 랭킹 데이터 조회
+ * GET /api/v1/vulnerable-facilities/alert-ranking
+ *
+ * @param period - 조회 기간 (current, today, week, month)
+ * @param limit - 조회 개수 (기본값 7, 최대 100)
+ * @returns 취약시설 알림 랭킹 데이터를 FacilityData 형식으로 변환
+ */
+export async function getAlertRanking(
+  period: PM10RankingPeriod = 'current',
+  limit: number = 7
+): Promise<FacilityData[]> {
+  try {
+    const url = API_PATHS.VULNERABLE_FACILITIES_ALERT_RANKING(period, limit);
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Alert ranking API failed with status ${response.status}`);
+    }
+
+    const result: AlertRankingResponse = await response.json();
+
+    if (result.status !== 'success') {
+      throw new Error('Alert ranking API returned error status');
+    }
+
+    // API 응답을 FacilityData 형식으로 변환
+    return result.data.facilities.map(item => ({
+      facilityName: item.facility_name,
+      facilityId: item.facility_id.toString(),
+      badCount: item.bad_count,
+      veryBadCount: item.very_bad_count,
+      totalCount: item.total_count
+    }));
+  } catch (error) {
+    console.error(`[getAlertRanking] API 호출 실패 (period: ${period}):`, error);
+    throw error;
+  }
+}
 
 /**
  * 실시간 정류장별 농도 통계 데이터 조회
