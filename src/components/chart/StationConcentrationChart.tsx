@@ -8,6 +8,48 @@ interface StationConcentrationChartProps {
   period: TimePeriod
 }
 
+// 줄바꿈을 지원하는 커스텀 X축 tick
+interface CustomTickProps {
+  x: number
+  y: number
+  payload: { value: string }
+}
+
+function CustomXAxisTick({ x, y, payload }: CustomTickProps) {
+  const text = payload.value || ''
+  // \n으로 먼저 분할, 그 후 긴 줄은 추가 분할
+  const maxCharsPerLine = 12
+  const lines: string[] = []
+
+  text.split('\n').forEach(segment => {
+    if (segment.length <= maxCharsPerLine) {
+      lines.push(segment)
+    } else {
+      for (let i = 0; i < segment.length; i += maxCharsPerLine) {
+        lines.push(segment.slice(i, i + maxCharsPerLine))
+      }
+    }
+  })
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {lines.map((line, index) => (
+        <text
+          key={index}
+          x={0}
+          y={index * 14}
+          dy={12}
+          textAnchor="middle"
+          fill="#999"
+          fontSize={11}
+        >
+          {line}
+        </text>
+      ))}
+    </g>
+  )
+}
+
 const StationConcentrationChart = function StationConcentrationChart({ data, period }: StationConcentrationChartProps) {
   if (!data || data.length === 0) {
     return (
@@ -104,8 +146,9 @@ const StationConcentrationChart = function StationConcentrationChart({ data, per
               <XAxis
                 dataKey="stationName"
                 stroke="#999"
-                tick={{ fill: '#999', fontSize: 11 }}
+                tick={<CustomXAxisTick x={0} y={0} payload={{ value: '' }} />}
                 height={80}
+                interval={0}
               />
               <YAxis
                 stroke="#999"

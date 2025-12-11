@@ -97,7 +97,15 @@ export const API_PATHS = {
   PRIORITY_SEARCH: getApiPath('api/v1/priority/search'),
   STATION_STATISTICS: getApiPath('api/v1/stations/statistics/'),
   ROAD_SEARCH: getApiPath('api/v1/road/search'),
-  
+
+  // PM10 랭킹 API (PM Backend)
+  SENSOR_DATA_PM10_RANKING: (period: 'current' | 'today' | 'week' | 'month' = 'current', limit: number = 7) =>
+    getApiPath(`api/v1/sensor-data/stations/pm10-ranking?period=${period}&limit=${limit}`),
+
+  // 취약시설 알림 랭킹 API (PM Backend)
+  VULNERABLE_FACILITIES_ALERT_RANKING: (period: 'current' | 'today' | 'week' | 'month' = 'current', limit: number = 7) =>
+    getApiPath(`api/v1/vulnerable-facilities/alert-ranking?period=${period}&limit=${limit}`),
+
 } as const;
 
 /**
