@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   ResponsiveContainer,
   LineChart,
@@ -12,11 +12,15 @@ import {
 } from 'recharts'
 import { sensorSelectionStore } from '@/stores/SensorSelectionStore'
 import SensorTooltip from './SensorTooltip'
+import { AIR_QUALITY_STANDARDS, AIR_QUALITY_COLORS } from '@/utils/airQuality'
 import type { ChartDataPoint } from '@/utils/chart/sensorDataTransform'
 
 interface SensorLineChartProps {
   data: ChartDataPoint[]
 }
+
+// 배경색 투명도
+const ZONE_FILL_OPACITY = 0.3
 
 /**
  * Sensor Line Chart Component
@@ -50,6 +54,85 @@ const SensorLineChart = observer(function SensorLineChart({
   const showPM10 = isPMMode && (sensorSelectionStore.selectedPMType === null || sensorSelectionStore.isPM10Selected)
   const showPM25 = isPMMode && (sensorSelectionStore.selectedPMType === null || sensorSelectionStore.isPM25Selected)
   const showVOCs = isVOCsMode
+
+  // 컬러맵이 켜져 있는지 확인 (PM10 또는 PM25가 명시적으로 선택된 경우)
+  const isColorMapOn = sensorSelectionStore.selectedPMType !== null
+
+  // Y축 최대값과 배경 영역을 공기질 기준에 맞춰 계산
+  const { yAxisMax, zones } = useMemo(() => {
+    if (!data || data.length === 0) {
+      return { yAxisMax: 100, zones: [] }
+    }
+
+    // 1. 데이터 최대값 계산
+    let maxValue = 0
+    data.forEach(point => {
+      if (showPM10 && point.pm10 !== undefined && point.pm10 > maxValue) maxValue = point.pm10
+      if (showPM25 && point.pm25 !== undefined && point.pm25 > maxValue) maxValue = point.pm25
+      if (showVOCs && point.voc !== undefined && point.voc > maxValue) maxValue = point.voc
+    })
+
+    // 컬러맵이 꺼져 있거나 VOCs 모드면 배경색 없이 Y축은 max * 1.2
+    if (!isColorMapOn || (showVOCs && !showPM10 && !showPM25)) {
+      return { yAxisMax: Math.ceil(maxValue * 1.2) || 100, zones: [] }
+    }
+
+    // 2. 적용할 기준 선택 (PM10 우선)
+    const standards = showPM10 ? AIR_QUALITY_STANDARDS.pm10 : AIR_QUALITY_STANDARDS.pm25
+    const thresholds = [standards.good.max, standards.normal.max, standards.bad.max]
+
+    // 3. Y축 최대값: 데이터가 포함되는 기준 임계값으로 설정
+    let yMax: number
+    if (maxValue <= thresholds[0]) {
+      yMax = thresholds[0]
+    } else if (maxValue <= thresholds[1]) {
+      yMax = thresholds[1]
+    } else if (maxValue <= thresholds[2]) {
+      yMax = thresholds[2]
+    } else {
+      // 매우나쁨 범위: 50 단위로 올림
+      yMax = Math.ceil(maxValue / 50) * 50
+    }
+
+    // 4. 배경 영역 생성 (Y축 최대값까지만)
+    const zoneList: { y1: number; y2: number; fill: string }[] = []
+
+    // Good
+    zoneList.push({
+      y1: 0,
+      y2: Math.min(thresholds[0], yMax),
+      fill: AIR_QUALITY_COLORS.good
+    })
+
+    // Normal
+    if (yMax > thresholds[0]) {
+      zoneList.push({
+        y1: thresholds[0],
+        y2: Math.min(thresholds[1], yMax),
+        fill: AIR_QUALITY_COLORS.normal
+      })
+    }
+
+    // Bad
+    if (yMax > thresholds[1]) {
+      zoneList.push({
+        y1: thresholds[1],
+        y2: Math.min(thresholds[2], yMax),
+        fill: AIR_QUALITY_COLORS.bad
+      })
+    }
+
+    // Very Bad
+    if (yMax > thresholds[2]) {
+      zoneList.push({
+        y1: thresholds[2],
+        y2: yMax,
+        fill: AIR_QUALITY_COLORS.very_bad
+      })
+    }
+
+    return { yAxisMax: yMax, zones: zoneList }
+  }, [data, showPM10, showPM25, showVOCs, isColorMapOn])
 
   // Empty state
   if (!data || data.length === 0) {
@@ -93,6 +176,7 @@ const SensorLineChart = observer(function SensorLineChart({
 
         {/* Y Axis */}
         <YAxis
+          domain={[0, yAxisMax]}
           tick={{
             fill: '#FFF',
             fontFamily: 'Pretendard',
@@ -117,73 +201,16 @@ const SensorLineChart = observer(function SensorLineChart({
           cursor={{ stroke: '#FFD040', strokeWidth: 1, strokeDasharray: '5 5' }}
         />
 
-        {/* Air Quality Threshold Zones (PM10-based for now) */}
-        {showPM10 && (
-          <>
-            {/* Good: 0-30 */}
-            <ReferenceArea
-              y1={0}
-              y2={30}
-              fill="#1C67D7"
-              fillOpacity={0.05}
-            />
-            {/* Normal: 30-80 */}
-            <ReferenceArea
-              y1={30}
-              y2={80}
-              fill="#18A274"
-              fillOpacity={0.05}
-            />
-            {/* Bad: 80-150 */}
-            <ReferenceArea
-              y1={80}
-              y2={150}
-              fill="#FEE046"
-              fillOpacity={0.05}
-            />
-            {/* Very Bad: 150+ */}
-            <ReferenceArea
-              y1={150}
-              y2={250}
-              fill="#D32F2D"
-              fillOpacity={0.05}
-            />
-          </>
-        )}
-
-        {/* PM25 Threshold Zones (when only PM25 selected) */}
-        {!showPM10 && showPM25 && (
-          <>
-            {/* Good: 0-15 */}
-            <ReferenceArea
-              y1={0}
-              y2={15}
-              fill="#1C67D7"
-              fillOpacity={0.05}
-            />
-            {/* Normal: 15-35 */}
-            <ReferenceArea
-              y1={15}
-              y2={35}
-              fill="#18A274"
-              fillOpacity={0.05}
-            />
-            {/* Bad: 35-75 */}
-            <ReferenceArea
-              y1={35}
-              y2={75}
-              fill="#FEE046"
-              fillOpacity={0.05}
-            />
-            {/* Very Bad: 75+ */}
-            <ReferenceArea
-              y1={75}
-              y2={150}
-              fill="#D32F2D"
-              fillOpacity={0.05}
-            />
-          </>
-        )}
+        {/* Air Quality Threshold Zones - Y축과 동기화 */}
+        {zones.map((zone, index) => (
+          <ReferenceArea
+            key={`zone-${index}`}
+            y1={zone.y1}
+            y2={zone.y2}
+            fill={zone.fill}
+            fillOpacity={ZONE_FILL_OPACITY}
+          />
+        ))}
 
         {/* PM10 Line */}
         <Line
