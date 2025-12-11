@@ -1,18 +1,8 @@
 import { useState, memo, useCallback } from 'react';
 import TabNavigation from '@/components/basic/TabNavigation';
-import { AIR_QUALITY_STANDARDS } from '@/utils/airQuality';
+import { AIR_QUALITY_STANDARDS, AIR_QUALITY_COLORS } from '@/utils/airQuality';
 
 const basePath = import.meta.env.VITE_BASE_PATH || '/';
-
-/**
- * 등급 색상 정의
- */
-const GRADE_COLORS = {
-  good: '#18A274',
-  normal: '#FFD040',
-  bad: '#FF7700',
-  very_bad: '#D32F2D',
-} as const;
 
 type AirQualityLevel = 'good' | 'normal' | 'bad' | 'very_bad';
 
@@ -134,25 +124,25 @@ const PM10Content = memo(function PM10Content() {
           <QualityLevelBar
             level="good"
             label="좋음"
-            color={GRADE_COLORS.good}
+            color={AIR_QUALITY_COLORS.good}
             rangeText={getPM10RangeText('good')}
           />
           <QualityLevelBar
             level="normal"
             label="보통"
-            color={GRADE_COLORS.normal}
+            color={AIR_QUALITY_COLORS.normal}
             rangeText={getPM10RangeText('normal')}
           />
           <QualityLevelBar
             level="bad"
             label="나쁨"
-            color={GRADE_COLORS.bad}
+            color={AIR_QUALITY_COLORS.bad}
             rangeText={getPM10RangeText('bad')}
           />
           <QualityLevelBar
             level="very_bad"
             label="매우나쁨"
-            color={GRADE_COLORS.very_bad}
+            color={AIR_QUALITY_COLORS.very_bad}
             rangeText={getPM10RangeText('very_bad')}
           />
         </div>
@@ -217,25 +207,25 @@ const PM25Content = memo(function PM25Content() {
           <QualityLevelBar
             level="good"
             label="좋음"
-            color={GRADE_COLORS.good}
+            color={AIR_QUALITY_COLORS.good}
             rangeText={getPM25RangeText('good')}
           />
           <QualityLevelBar
             level="normal"
             label="보통"
-            color={GRADE_COLORS.normal}
+            color={AIR_QUALITY_COLORS.normal}
             rangeText={getPM25RangeText('normal')}
           />
           <QualityLevelBar
             level="bad"
             label="나쁨"
-            color={GRADE_COLORS.bad}
+            color={AIR_QUALITY_COLORS.bad}
             rangeText={getPM25RangeText('bad')}
           />
           <QualityLevelBar
             level="very_bad"
             label="매우나쁨"
-            color={GRADE_COLORS.very_bad}
+            color={AIR_QUALITY_COLORS.very_bad}
             rangeText={getPM25RangeText('very_bad')}
           />
         </div>
