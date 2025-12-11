@@ -71,16 +71,16 @@ const StationDetail = observer(function StationDetail({
           latestResponse,
           hourly24Response,
           hourly7daysResponse,
-          hourly10daysResponse,
+          hourly30daysResponse,
           daily7Response,
-          daily10Response
+          daily30Response
         ] = await Promise.all([
           getLatestSensorData(),
           getHourlySensorData(stationId, 24),        // 오늘
           getHourlySensorData(stationId, 24 * 7),    // 7일
-          getHourlySensorData(stationId, 24 * 10),   // 10일
+          getHourlySensorData(stationId, 24 * 30),   // 30일 (1개월)
           getDailySensorData(stationId, 7),          // 7일
-          getDailySensorData(stationId, 10)          // 10일
+          getDailySensorData(stationId, 30)          // 30일 (1개월)
         ])
 
         console.log('[StationDetail] 모든 API 응답 완료:', {
@@ -88,18 +88,18 @@ const StationDetail = observer(function StationDetail({
           latestCount: latestResponse?.data?.length || 0,
           hourly24: hourly24Response?.status,
           hourly7days: hourly7daysResponse?.status,
-          hourly10days: hourly10daysResponse?.status,
+          hourly30days: hourly30daysResponse?.status,
           daily7: daily7Response?.status,
-          daily10: daily10Response?.status
+          daily30: daily30Response?.status
         })
 
         // Latest Data에서 해당 station 찾기
         const stationLatestData = latestResponse?.data?.find(data => data.station_id === stationId)
         const hourly24Data = hourly24Response?.status === 'success' ? hourly24Response.data?.hourly_data || [] : []
         const hourly7daysData = hourly7daysResponse?.status === 'success' ? hourly7daysResponse.data?.hourly_data || [] : []
-        const hourly10daysData = hourly10daysResponse?.status === 'success' ? hourly10daysResponse.data?.hourly_data || [] : []
+        const hourly30daysData = hourly30daysResponse?.status === 'success' ? hourly30daysResponse.data?.hourly_data || [] : []
         const daily7Data = daily7Response?.status === 'success' ? daily7Response.data?.daily_data || [] : []
-        const daily10Data = daily10Response?.status === 'success' ? daily10Response.data?.daily_data || [] : []
+        const daily30Data = daily30Response?.status === 'success' ? daily30Response.data?.daily_data || [] : []
 
         // 캐시에 데이터 저장
         setCachedTodayData({
@@ -111,14 +111,14 @@ const StationDetail = observer(function StationDetail({
           hourlyData: hourly7daysData
         })
         setCachedMonthData({
-          dailyData: daily10Data,
-          hourlyData: hourly10daysData
+          dailyData: daily30Data,
+          hourlyData: hourly30daysData
         })
 
         console.log('[StationDetail] 캐시 저장 완료:', {
           todayCached: hourly24Data.length > 0,
           weekCached: daily7Data.length > 0,
-          monthCached: daily10Data.length > 0
+          monthCached: daily30Data.length > 0
         })
 
         // 좌측 센서 정보 업데이트 (오늘 데이터 기준)
