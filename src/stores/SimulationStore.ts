@@ -15,6 +15,8 @@ import type { VulnerableFacilitiesResponse } from '@/utils/api/types';
 import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck, reverseGeocodeAPI, searchAddressAPI, getVulnerableFacilities } from '@/utils/api';
 import { userStore } from './UserStore';
 import { administrativeStore } from './AdministrativeStore';
+import { abortJsonPreload } from '@/utils/cesium/jsonPreloader';
+import { abortCsvPreload } from '@/utils/cesium/csvPreloader';
 // import { randomizeSimulationConcentration, ENABLE_MOCK_CONCENTRATION } from '@/utils/mockData/simulationConcentration';
 
 // ============================================================================
@@ -128,7 +130,19 @@ class SimulationStore {
   // 시뮬레이션 Panel 변경
   // ============================================================================
   setCurrentView(viewName: SimulationView) {
-    this.currentView = viewName
+    const previousView = this.currentView;
+    this.currentView = viewName;
+
+    // 결과 페이지(result, quickResult)에서 벗어날 때 프리로더 중단
+    const isLeavingResultView =
+      (previousView === 'result' || previousView === 'quickResult') &&
+      (viewName !== 'result' && viewName !== 'quickResult');
+
+    if (isLeavingResultView) {
+      console.log('[SimulationStore] Leaving result view, aborting preloaders');
+      abortJsonPreload();
+      abortCsvPreload();
+    }
 
     if (viewName !== 'config' && this.isDirectLocationMode) {
       this.disableDirectLocationMode();
@@ -1037,6 +1051,70 @@ class SimulationStore {
    */
   toggleResultPopupMinimize = () => {
     this.isResultPopupMinimized = !this.isResultPopupMinimized;
+  }
+
+  // ============================================================================
+  // Cleanup (언마운트 시 상태 초기화)
+  // ============================================================================
+
+  /**
+   * 전체 상태 초기화 (마이크로앱 종료 시 호출)
+   * 다음 진입 시 초기 화면이 표시되도록 모든 UI 상태를 리셋
+   */
+  cleanup() {
+    // View 상태 초기화
+    this.currentView = 'config';
+    this.isMinimized = false;
+
+    // 검색 상태 초기화
+    this.searchQuery = '';
+    this.searchResults = [];
+    this.isSearching = false;
+
+    // 위치 지정 상태 초기화
+    this.isDirectLocationMode = false;
+    this.directLocationResults = [];
+    this.selectedLocation = null;
+    this.selectedAddressId = null;
+
+    // 설정 초기화
+    this.config = null;
+
+    // 모달/팝업 상태 초기화
+    this.isModalOpen = false;
+    this.isModalConfirmType = null;
+    this.isConfigPopupOpen = false;
+    this.isResultPopupOpen = false;
+    this.isConfigPopupMinimized = false;
+    this.isResultPopupMinimized = false;
+
+    // 시뮬레이션 관련 상태 초기화
+    this.selectedSimulationUuid = null;
+    this.simulationDetail = null;
+    this.selectedStartSimulation = null;
+    this.pendingSimulationData = null;
+    this.selectedsimulationQuick = null;
+    this.isSimulationQuickGuideMode = false;
+
+    // 취약시설 초기화
+    this.vulnerableFacilities = null;
+
+    // GLB 상태 초기화
+    this.glbCount = null;
+    this.currentGlbFrame = 0;
+
+    // 삭제 모드 초기화
+    this.isDeleteMode = false;
+    this.itemsToDelete.clear();
+
+    // 날짜 필터 초기화
+    this.isDateModalOpen = false;
+
+    // 필터 초기화
+    this.pollutantFilter = 'all';
+    this.sortOrder = 'latest';
+
+    console.log('[SimulationStore] Cleanup completed - state reset to initial');
   }
 
 }
