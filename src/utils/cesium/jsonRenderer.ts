@@ -9,20 +9,21 @@ const JSON_PRIMITIVE_GROUP_NAME = 'simulation_json_result';
 
 // 파티클 설정
 export const particleSettings = {
-  opacity: 0.039,
-  autoScale: true,
+  opacity: 0.8,         // [TEST] 0.01 → 0.8: 선명하게 보이도록 불투명도 증가
+  autoScale: false,     // [TEST] true → false: 거리별 크기 조정 비활성화
   nearDistance: 0,
-  nearScale: 30.0,
+  nearScale: 1.0,       // [TEST] 비활성화됨
   farDistance: 8000,
-  farScale: 2.0,
+  farScale: 1.0,        // [TEST] 비활성화됨
   // 시각적 효과 개선을 위한 추가 설정
-  contrast: 2.7,        // 명암 대비 (1.0이 기본, 높을수록 차이가 커짐)
-  sizeSensitivity: 3.5, // 값에 따른 크기 변화 민감도 (0이면 크기 변화 없음)
-  alphaMultiplier: 2.0, // 전체적인 불투명도 부스트 (기본 opacity가 너무 낮을 경우 보정)
+  contrast: 1.5,        // [TEST] 4.0 → 1.5: 선명도 위해 대비 완화
+  sizeSensitivity: 0.0, // [TEST] 1.0 → 0.0: 크기 변화 없음 (고정 크기)
+  sizeMultiplier: 0.3,  // [TEST] 기본 크기 배율 (1.0 = 원본, 0.3 = 30% 크기)
+  alphaMultiplier: 1.0, // [TEST] 2.0 → 1.0: 부스트 제거
   threshold: 0.1,       // 렌더링 최소 임계값 (이 값 이하의 alpha를 가진 데이터는 렌더링 안함)
 
   // 스파클(Sparkle) 효과 설정: 고농도 지역이 반짝거림
-  sparkleEnabled: true,
+  sparkleEnabled: false, // [TEST] true → false: 반짝임 비활성화
   sparkleThreshold: 0.4, // 이 값 이상의 농도에서만 반짝임 (0.0 ~ 1.0)
   sparkleSpeed: 0.4,     // 반짝임 속도
   sparkleIntensity: 0.05  // 반짝임 강도 (알파값 변화폭 +/-)
@@ -116,7 +117,7 @@ export function renderJsonFrame(uuid: string, frameIndex: number): boolean {
     // 3. 크기 가중치 적용: 강도가 높을수록 점을 더 크게 그림
     // sizeSensitivity가 0이면 원래 pointSize 사용
     const scaleFactor = 1.0 + (intensity * particleSettings.sizeSensitivity);
-    const finalPixelSize = pointSize * scaleFactor;
+    const finalPixelSize = pointSize * scaleFactor * particleSettings.sizeMultiplier;
 
     primitiveCollection.add({
       position: position,
