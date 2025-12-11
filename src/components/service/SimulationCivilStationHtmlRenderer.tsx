@@ -145,12 +145,13 @@ const SimulationCivilStationHtmlRenderer = ({
             font-size: 13px;
             font-weight: 700;
             cursor: pointer;
+            display: ${simulationStore.selectedCivilStationAnalysisId === null ?  '' : 'none'}
           ">
             정류장 시뮬레이션 실행
           </button>
         </div>
       `;
-  }, []);
+  }, [simulationStore.selectedCivilStationAnalysisId]);
 
   // ===== DOM 엘리먼트 업데이트 =====
   const createOrUpdateElements = useCallback((entityId: string, x: number, y: number) => {
@@ -170,10 +171,10 @@ const SimulationCivilStationHtmlRenderer = ({
       
       // 클릭 이벤트
       tagEl.onclick = () => {
+        if(simulationStore.selectedCivilStationAnalysisId !== null) return;
         const newId = isSelected ? null : entityId;
         setSelectedStationId(newId);
         
-        // 카메라 이동 (선택 시)
         if (newId) {
           // 리스트와 동기화
           setSelectedCivilStationId(stationData.index); 

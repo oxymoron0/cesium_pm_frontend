@@ -123,6 +123,8 @@ class SimulationStore {
   endDate: string | null = null;
 
   // 대민 시뮬레이션 상태 관리
+  isCivilInputDirty: boolean = false;
+  civilConfigKey: number = 0;
   simulationCivilList: SimulationCivilQuickData[] = [];
   selectedCivilSimulation: SimulationCivilQuickData | null = null;
   selectedCivilStationAnalysisId: number | null = null;
@@ -1056,6 +1058,24 @@ class SimulationStore {
   // 대민 서비스
   // ============================================================================
   
+  // 입력 상태 업데이트 액션
+  setIsCivilInputDirty(isDirty: boolean) {
+    this.isCivilInputDirty = isDirty;
+  }
+
+  /**
+   * 시민용 화면 완전 초기화 (폼 내용 지우기)
+   */
+  resetCivilConfig() {
+    this.civilConfigKey++; // 키를 변경하여 컴포넌트 리마운트 유도
+    this.isCivilInputDirty = false;
+    this.currentView = 'civilConfig';
+    // 필요 시 선택된 정류장 등도 초기화
+    this.selectedCivilSimulation = null;
+    this.selectedCivilStationAnalysisId = null;
+  }
+
+
   /**
    * 농도 값 설정 액션
    */
@@ -1140,6 +1160,13 @@ class SimulationStore {
     });
   }
 
+  /**
+   * 정류장 상세 분석(활동가이드) 모드 활성화 여부
+   * (selectedCivilStationAnalysisId 컴포넌트가 표시 중인지 체크)
+   */
+  get isStationAnalysisMode(): boolean {
+    return this.selectedCivilStationAnalysisId !== null;
+  }
 
 }
 

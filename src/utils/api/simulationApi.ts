@@ -524,14 +524,18 @@ export async function getSimulationGlbCount(
  * GET /api/v1/simulation_auto/civil/list
  *
  * @param concentration - 미세먼지 농도
+ * @param sortOrder - 정렬 순서 (내림차순, 오름차순)
+ * @param sortName - 정렬 유형
  * @param page - 페이지 번호 (기본값: 1)
  * @param limit - 페이지당 항목 수 (기본값: 7)
  * @returns 시뮬레이션 목록과 페이지네이션 정보
  */
 export async function getSimulationCivilList(
   concentration: string,
+  // sortOrder: 'latest' | 'oldest' = 'latest',
+  // sortName: string | '',
   page: number = 1,
-  limit: number = 7
+  limit: number = 7,
 ): Promise<SimulationCivilQuickDataResponse> {
   try {
     const params = new URLSearchParams({

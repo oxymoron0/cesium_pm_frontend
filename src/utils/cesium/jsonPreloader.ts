@@ -146,6 +146,18 @@ export async function preloadJson(
   const simPath = import.meta.env.VITE_SIM_PATH || 'sim';
   const normalizedPath = `${basePath}${simPath}/${uuid}/`;
 
+  /* NAS 경로 테스트용 
+    const basePath_nas = import.meta.env.VITE_API_BASE_PATH_TWO || '/';
+    const normalizedPath = `${basePath_nas}${uuid}/`;
+  */
+ 
+  /* 로컬 테스트용
+  const resultPath = `/results/convert/${uuid}/`; // 테스트용 하드코딩이 필요하다면 여기에
+
+  const normalizedPath = basePath.endsWith('/') && resultPath.startsWith('/')
+    ? basePath + resultPath.slice(1)
+    : basePath + resultPath;
+  */
   console.log("[JSON Preloader] Base path:", normalizedPath);
 
   // 기존에 로드된 프레임 수 계산
@@ -168,6 +180,9 @@ export async function preloadJson(
     try {
       console.log(`📥 Frame ${frameIndex}: Fetching ${jsonUrl}`);
       const frameData = await parseJson(jsonUrl, sampleRate);
+      /* 로컬 테스트용 
+        const frameData = await parseJson(jsonUrl, 5);
+      */
 
       frameCache.set(frameIndex, {
         data: frameData,

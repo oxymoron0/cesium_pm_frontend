@@ -8,7 +8,7 @@ const basePath = import.meta.env.VITE_BASE_PATH || '/'
 // 1. 등급별 활동 가이드 데이터 정의
 const ACTIVITY_GUIDES: Record<string, Array<{ title: string; desc: string; badge: string; color: string }>> = {
   '좋음': [
-    { title: '마스크', desc: '오늘은 맨얼굴로 바람맞아도 괜찮아요', badge: '필요 없음', color: '#1C67D7' }, // 녹색
+    { title: '마스크', desc: '오늘은 맨얼굴로 바람맞아도 괜찮아요', badge: '필요 없음', color: '#1C67D7' },
     { title: '자전거', desc: '오늘은 라이딩각, 바람이 스포트라이트 쏴줍니다', badge: '추천', color: '#1C67D7' },
     { title: '산책', desc: '강아지도 신나는 날, 같이 산책 인증샷 남겨요', badge: '추천', color: '#1C67D7' },
     { title: '야외 달리기', desc: '오늘은 러너`s 하이, 코스 좀 늘려도 돼요', badge: '추천', color: '#1C67D7' },
@@ -16,7 +16,7 @@ const ACTIVITY_GUIDES: Record<string, Array<{ title: string; desc: string; badge
     { title: '별 관찰', desc: '오늘 밤은 별이 쏟아지듯 잘 보여요', badge: '최적', color: '#1C67D7' },
   ],
   '보통': [
-    { title: '마스크', desc: '가방에 KF80하나 챙겨두면 마음이 편해요', badge: '선택', color: '#18A274' }, // 노란색
+    { title: '마스크', desc: '가방에 KF80하나 챙겨두면 마음이 편해요', badge: '선택', color: '#18A274' },
     { title: '자전거', desc: '동네 한 바퀴면 충분히 기분 전환돼요', badge: '양호', color: '#18A274' },
     { title: '산책', desc: '짧게 돌고 바로 집콕, 반반 산책 추천합니다', badge: '양호', color: '#18A274' },
     { title: '야외 달리기', desc: '5KM까지만 달리고, 카페로 직행 어떠세요?', badge: '조심', color: '#18A274' },
@@ -24,7 +24,7 @@ const ACTIVITY_GUIDES: Record<string, Array<{ title: string; desc: string; badge
     { title: '별 관찰', desc: '몇 개 별은 보이지만, 흐린 밤이네요', badge: '가능', color: '#18A274' },
   ],
   '나쁨': [
-    { title: '마스크', desc: 'KF94는 오늘 외출의 드레스 코드예요', badge: '착용 필수', color: '#FF7700' }, // 주황색
+    { title: '마스크', desc: 'KF94는 오늘 외출의 드레스 코드예요', badge: '착용 필수', color: '#FF7700' },
     { title: '자전거', desc: '오늘은 페달 대신 대중교통이 더 낫겠어요', badge: '주의', color: '#FF7700' },
     { title: '산책', desc: '오늘 산책은 FLEX 말고 PASS가 정답이에요', badge: '주의', color: '#FF7700' },
     { title: '야외 달리기', desc: '러닝화 대신 헬스장 카드 꺼낼 차례예요', badge: '자제', color: '#FF7700' },
@@ -121,8 +121,8 @@ const SimulationCivilStationAnalysis = observer(() => {
 
       <Spacer height={16} />
 
-      {/* 2. 활동 카드 그리드 (2열) */}
-      <div className="grid grid-cols-2 gap-3 w-full">
+      {/* 2. 활동 카드 그리드 (3열) */}
+      <div className="grid grid-cols-3 gap-3 w-full">
         {guides.map((item, idx) => (
           <div 
             key={idx} 

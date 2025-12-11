@@ -33,6 +33,32 @@ const SimulationCivilConfig = observer(function SimulationCivilConfig({ onBack }
     // { value: 'PM25', label: '초미세먼지(PM-2.5)' },
   ];
 
+  // 입력된 값이 있는지 확인하는 함수
+  const hasInputValues = () => {
+    return (
+      concentration.trim() !== '' ||
+      windDirection.trim() !== '' ||
+      windSpeed.trim() !== '' ||
+      useCurrentWeather === true
+    );
+  };
+
+  // Store에 Dirty 상태 동기화
+  useEffect(() => {
+    const isDirty = hasInputValues();
+    // 값이 변경될 때마다 Store에 상태 업데이트
+    if (simulationStore.isCivilInputDirty !== isDirty) {
+      simulationStore.setIsCivilInputDirty(isDirty);
+    }
+  }, [concentration, windDirection, windSpeed, useCurrentWeather]); // 의존성 배열: 입력값들
+
+  // 컴포넌트 언마운트 시 Dirty 상태 해제
+  useEffect(() => {
+    return () => {
+      simulationStore.setIsCivilInputDirty(false);
+    };
+  }, []);
+
   // 1. 부산 행정구역 데이터 로드 및 '부산진구' 자동 선택
   useEffect(() => {
     const loadBusanDistricts = async () => {
