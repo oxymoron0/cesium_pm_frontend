@@ -9,6 +9,7 @@ import { routeStore } from '@/stores/RouteStore';
 import { stationStore } from '@/stores/StationStore';
 import { busStore } from '@/stores/BusStore';
 import { stationSensorStore } from '@/stores/StationSensorStore';
+import { stationDetailStore } from '@/stores/StationDetailStore';
 
 /**
  * Clean up all MobX stores
@@ -27,6 +28,10 @@ export function cleanupStores(): void {
     busStore.cleanup();
 
     stationSensorStore.clearVisibleStations();
+
+    // 노선별 실시간 공기질 현황 모달 닫기 및 상태 초기화
+    stationDetailStore.closeModal();
+    stationDetailStore.clearAll();
   } catch {
     // Silent error handling
   }
