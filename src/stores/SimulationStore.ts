@@ -1085,8 +1085,8 @@ class SimulationStore {
    * 다음 진입 시 초기 화면이 표시되도록 모든 UI 상태를 리셋
    */
   cleanup() {
-    // View 상태 초기화
-    this.currentView = 'config';
+    // View 상태 초기화 (isCivilMode에 따라 초기값 결정)
+    this.currentView = this.isCivilMode ? 'civilConfig' : 'config';
     this.isMinimized = false;
 
     // 검색 상태 초기화
@@ -1170,7 +1170,6 @@ class SimulationStore {
 
     // 대민 초기화
     this.isCivilInputDirty = false;
-    this.currentView = 'civilConfig';
     this.selectedCivilSimulation = null;
     this.selectedCivilStationAnalysisId = null;
 
