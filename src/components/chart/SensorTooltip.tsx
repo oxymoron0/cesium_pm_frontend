@@ -1,5 +1,6 @@
 import type { TooltipProps } from 'recharts'
 import { getAirQualityLevel } from '@/utils/airQuality'
+import { isCivil } from '@/utils/env'
 
 interface PayloadItem {
   dataKey?: string
@@ -23,6 +24,8 @@ interface SensorTooltipProps extends TooltipProps<number, string> {
  * Styled to match design system (Pretendard, dark theme)
  */
 export default function SensorTooltip({ active, payload, label, showPM10 = true, showPM25 = true, showVOCs = false }: SensorTooltipProps) {
+  const civilMode = isCivil()
+
   if (!active || !payload || payload.length === 0) {
     return null
   }
@@ -36,6 +39,144 @@ export default function SensorTooltip({ active, payload, label, showPM10 = true,
   const pm25Value = pm25Data?.value as number | undefined
   const vocValue = vocData?.value as number | undefined
 
+  // Civil 모드: 간소화된 툴팁 (상태만 표시)
+  if (civilMode) {
+    return (
+      <div
+        style={{
+          background: 'rgba(0, 0, 0, 0.95)',
+          border: '1px solid #C4C6C6',
+          borderRadius: '4px',
+          padding: '12px',
+          minWidth: '140px'
+        }}
+      >
+        {/* Timestamp */}
+        <div
+          style={{
+            color: '#FFF',
+            fontFamily: 'Pretendard',
+            fontSize: '14px',
+            fontWeight: 600,
+            marginBottom: '8px',
+            paddingBottom: '8px',
+            borderBottom: '1px solid #333'
+          }}
+        >
+          {label}
+        </div>
+
+        {/* PM10 - Civil */}
+        {showPM10 && pm10Value !== undefined && (() => {
+          const pm10Quality = getAirQualityLevel('pm10', pm10Value)
+          return (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '6px'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: '#CFFF40'
+                  }}
+                />
+                <span
+                  style={{
+                    color: '#FFF',
+                    fontFamily: 'Pretendard',
+                    fontSize: '13px',
+                    fontWeight: 400
+                  }}
+                >
+                  미세먼지
+                </span>
+              </div>
+              <div
+                style={{
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                  background: pm10Quality.color
+                }}
+              >
+                <span
+                  style={{
+                    color: pm10Quality.textColor,
+                    fontFamily: 'Pretendard',
+                    fontSize: '12px',
+                    fontWeight: 600
+                  }}
+                >
+                  {pm10Quality.levelText}
+                </span>
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* PM25 - Civil */}
+        {showPM25 && pm25Value !== undefined && (() => {
+          const pm25Quality = getAirQualityLevel('pm25', pm25Value)
+          return (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: '#FFD040'
+                  }}
+                />
+                <span
+                  style={{
+                    color: '#FFF',
+                    fontFamily: 'Pretendard',
+                    fontSize: '13px',
+                    fontWeight: 400
+                  }}
+                >
+                  초미세먼지
+                </span>
+              </div>
+              <div
+                style={{
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                  background: pm25Quality.color
+                }}
+              >
+                <span
+                  style={{
+                    color: pm25Quality.textColor,
+                    fontFamily: 'Pretendard',
+                    fontSize: '12px',
+                    fontWeight: 600
+                  }}
+                >
+                  {pm25Quality.levelText}
+                </span>
+              </div>
+            </div>
+          )
+        })()}
+      </div>
+    )
+  }
+
+  // 일반 모드: 기존 상세 툴팁
   return (
     <div
       style={{

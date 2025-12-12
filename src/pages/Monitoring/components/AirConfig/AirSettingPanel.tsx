@@ -1,9 +1,10 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import SubTitle from '@/components/basic/SubTitle';
 import Divider from '@/components/basic/Divider';
 import { airConfigStore } from '@/stores/AirConfigStore';
 import { AIR_QUALITY_COLORS } from '@/utils/airQuality';
+import { isCivil } from '@/utils/env';
 import type { AirQualityLevel } from '@/utils/api/types';
 
 type SensorType = 'pm10' | 'pm25' | 'vocs';
@@ -15,6 +16,7 @@ interface SensorButtonProps {
   label: string;
   isActive: boolean;
   onClick: () => void;
+  className?: string;
 }
 
 // #FFD040 색상으로 변환하는 CSS 필터
@@ -28,12 +30,13 @@ const SensorButton = memo(function SensorButton({
   icon,
   label,
   isActive,
-  onClick
+  onClick,
+  className = 'w-[112px]'
 }: SensorButtonProps) {
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center justify-center gap-2 w-[112px] h-[112px] rounded-lg transition-all duration-200 ease-out"
+      className={`flex flex-col items-center justify-center gap-2 h-[112px] rounded-lg transition-all duration-200 ease-out ${className}`}
       style={{
         backgroundColor: isActive ? 'rgba(255, 208, 64, 0.30)' : 'transparent',
         border: isActive ? '1px solid #FFD040' : '1px solid white',
@@ -135,6 +138,15 @@ const GRADE_CONFIGS: GradeConfig[] = [
  * - 등급 선택 (좋음, 보통, 나쁨, 매우 나쁨)
  */
 const AirSettingPanel = observer(function AirSettingPanel() {
+  const civilMode = isCivil();
+
+  // Civil 모드에서는 VOCs 제외
+  const filteredSensorConfigs = useMemo(() => {
+    return civilMode
+      ? SENSOR_CONFIGS.filter(config => config.type !== 'vocs')
+      : SENSOR_CONFIGS;
+  }, [civilMode]);
+
   // 센서 토글 핸들러
   const handlePM10Click = useCallback(() => {
     airConfigStore.toggleSensor('pm10');
@@ -148,7 +160,12 @@ const AirSettingPanel = observer(function AirSettingPanel() {
     airConfigStore.toggleSensor('vocs');
   }, []);
 
-  const sensorHandlers = [handlePM10Click, handlePM25Click, handleVOCsClick];
+  // 핸들러 매핑
+  const sensorHandlerMap: Record<SensorType, () => void> = useMemo(() => ({
+    pm10: handlePM10Click,
+    pm25: handlePM25Click,
+    vocs: handleVOCsClick,
+  }), [handlePM10Click, handlePM25Click, handleVOCsClick]);
 
   // 등급 토글 핸들러
   const handleGoodClick = useCallback(() => {
@@ -176,13 +193,14 @@ const AirSettingPanel = observer(function AirSettingPanel() {
       <Divider color="bg-white" />
 
       <div className="flex justify-between gap-4 mt-4">
-        {SENSOR_CONFIGS.map((config, index) => (
+        {filteredSensorConfigs.map((config) => (
           <SensorButton
             key={config.type}
             icon={config.icon}
             label={config.label}
             isActive={airConfigStore.isSensorVisible(config.type)}
-            onClick={sensorHandlers[index]}
+            onClick={sensorHandlerMap[config.type]}
+            className={civilMode ? 'flex-1' : 'w-[112px]'}
           />
         ))}
       </div>

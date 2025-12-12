@@ -1,6 +1,7 @@
 import { observer } from 'mobx-react-lite'
 import { useMemo } from 'react'
 import { getSensorInfo, getAirQualityLevel, getCircularBarAngle, type SensorType } from '@/utils/airQuality'
+import { isCivil } from '@/utils/env'
 import Icon from '@/components/basic/Icon'
 
 interface SensorInfoContainerProps {
@@ -46,6 +47,8 @@ const SensorInfoContainer = observer(function SensorInfoContainer({
   hasValidData = true,
   timeDifference
 }: SensorInfoContainerProps) {
+  const civilMode = isCivil()
+
   // 센서 값 포맷팅 (최대 4자리) 또는 데이터 없음 메시지
   const formatSensorValue = useMemo(() => {
     if (!hasValidData) return '수집안됨'
@@ -72,11 +75,11 @@ const SensorInfoContainer = observer(function SensorInfoContainer({
   // 실제 API 데이터 기반 변화량 추이 계산 (정확한 시간 차이 포함)
   const trendData = useMemo(() => {
     if (!hasValidData) {
-      return { icon: '–', text: '데이터 수집되지 않음' }
+      return { icon: '–', text: '데이터 수집되지 않음', civilText: '데이터 없음' }
     }
 
     if (previousValue === undefined) {
-      return { icon: '–', text: '이전 데이터 없음' }
+      return { icon: '–', text: '이전 데이터 없음', civilText: '데이터 없음' }
     }
 
     const diff = value - previousValue
@@ -84,11 +87,11 @@ const SensorInfoContainer = observer(function SensorInfoContainer({
     const timeText = timeDifference || '1시간'
 
     if (diff > 0.5) {
-      return { icon: '↑', text: `${timeText} 전보다 ${changeAmount} 증가` }
+      return { icon: '↑', text: `${timeText} 전보다 ${changeAmount} 증가`, civilText: `${timeText} 전보다 상승` }
     } else if (diff < -0.5) {
-      return { icon: '↓', text: `${timeText} 전보다 ${changeAmount} 감소` }
+      return { icon: '↓', text: `${timeText} 전보다 ${changeAmount} 감소`, civilText: `${timeText} 전보다 하강` }
     } else {
-      return { icon: '–', text: '변화 없음' }
+      return { icon: '↔', text: '변화 없음', civilText: '변화 없음' }
     }
   }, [value, previousValue, hasValidData, timeDifference])
 
@@ -103,6 +106,96 @@ const SensorInfoContainer = observer(function SensorInfoContainer({
     return iconMap[airQualityResult.level] || 'state_normal'
   }, [airQualityResult.level])
 
+  // Civil 모드: 간소화된 레이아웃
+  if (civilMode) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          alignSelf: 'stretch'
+        }}
+      >
+        {/* 좌측: 상태 아이콘 + 등급 텍스트 */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            width: '64px',
+            flexShrink: 0
+          }}
+        >
+          <Icon name={stateIconName} className="w-12 h-12" />
+          <span
+            style={{
+              color: '#FFFFFF',
+              fontFamily: 'Pretendard',
+              fontSize: '14px',
+              fontWeight: '700',
+              lineHeight: 'normal'
+            }}
+          >
+            {airQualityResult.levelText}
+          </span>
+        </div>
+
+        {/* 우측: 센서 이름 + 변화 상태 */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            gap: '8px',
+            flex: '1 0 0'
+          }}
+        >
+          {/* 센서 이름 */}
+          <div
+            style={{
+              color: '#FFFFFF',
+              fontFamily: 'Pretendard',
+              fontSize: STYLES.SENSOR_NAME_FONT_SIZE,
+              fontWeight: '600',
+              lineHeight: 'normal'
+            }}
+          >
+            {sensorInfo.name} ({sensorInfo.shortName})
+          </div>
+
+          {/* 변화 상태 */}
+          <div
+            style={{
+              display: 'flex',
+              padding: '4px 8px',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: '10px',
+              borderRadius: STYLES.TREND_BORDER_RADIUS,
+              background: 'rgba(255, 255, 255, 0.20)'
+            }}
+          >
+            <span
+              style={{
+                color: '#FFF',
+                fontFamily: 'Pretendard',
+                fontSize: STYLES.TREND_FONT_SIZE,
+                fontStyle: 'normal',
+                fontWeight: '400',
+                lineHeight: 'normal'
+              }}
+            >
+              {trendData.icon} {trendData.civilText}
+            </span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // 일반 모드: 기존 레이아웃
   return (
     <div
       style={{

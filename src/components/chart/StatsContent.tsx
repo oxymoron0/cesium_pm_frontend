@@ -6,6 +6,7 @@ import HourlyDistributionChart from './HourlyDistributionChart'
 import DailyBarChart from './DailyBarChart'
 import ConcentrationRankings, { type ConcentrationRankingItem } from './ConcentrationRankings'
 import { sensorSelectionStore } from '@/stores/SensorSelectionStore'
+import { isCivil } from '@/utils/env'
 import type { HourlyDataPoint, DailyDataPoint } from '@/utils/api/types'
 import { transformDailyDataToBarChart } from '@/utils/chart/sensorDataTransform'
 
@@ -171,6 +172,16 @@ const StatsContent = observer(function StatsContent({
 
   // Title and info text based on period and sensor type
   const getTitleAndInfo = () => {
+    const civilMode = isCivil()
+
+    // Civil 모드: 간소화된 제목
+    if (civilMode) {
+      const periodPrefix = period === 'today' ? '일간별' : (period === 'week' ? '주간별' : '월간별')
+      const title = `${periodPrefix} 미세먼지 상태 현황`
+      return { title, info: undefined }
+    }
+
+    // 일반 모드
     if (period === 'today') {
       const title = isVOCsMode
         ? '시간대별 VOCs 농도 분포'
@@ -220,27 +231,29 @@ const StatsContent = observer(function StatsContent({
         />
       )}
 
-      {/* Distribution Chart */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          alignSelf: 'stretch'
-        }}
-      >
-        {period === 'today' ? (
-          <HourlyDistributionChart data={distributionData} />
-        ) : (
-          <DailyBarChart data={dailyBarData} />
-        )}
-      </div>
+      {/* Distribution Chart - Civil 모드에서는 숨김 */}
+      {!isCivil() && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            alignSelf: 'stretch'
+          }}
+        >
+          {period === 'today' ? (
+            <HourlyDistributionChart data={distributionData} />
+          ) : (
+            <DailyBarChart data={dailyBarData} />
+          )}
+        </div>
+      )}
 
       {/* High Concentration Rankings */}
-      <ConcentrationRankings type="high" data={highConcentrationData} />
+      <ConcentrationRankings type="high" data={highConcentrationData} pmType={pmType} />
 
       {/* Low Concentration Rankings */}
-      <ConcentrationRankings type="low" data={lowConcentrationData} />
+      <ConcentrationRankings type="low" data={lowConcentrationData} pmType={pmType} />
     </div>
   )
 })

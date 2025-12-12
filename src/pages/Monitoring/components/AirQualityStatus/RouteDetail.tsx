@@ -6,6 +6,7 @@ import { stationSensorStore } from '@/stores/StationSensorStore'
 import { busStore } from '@/stores/BusStore'
 import { getRouteStations } from '@/utils/api/routeApi'
 import { getAirQualityLevel, AIR_QUALITY_COLORS } from '@/utils/airQuality'
+import { isCivil } from '@/utils/env'
 import Title from '@/components/basic/Title'
 import AirQualityDisplay from '@/components/service/sensor/AirQualityDisplay'
 import type { RouteStationsResponse, AirQualityLevel } from '@/utils/api/types'
@@ -72,13 +73,66 @@ interface BusSensorData {
   voc: number
 }
 
+// PM10 등급 계산 (Civil 모드용)
+function getPM10Grade(value: number): { icon: string; text: string } {
+  if (value <= 30) return { icon: `${basePath}icon/state_good.svg`, text: '좋음' }
+  if (value <= 80) return { icon: `${basePath}icon/state_normal.svg`, text: '보통' }
+  return { icon: `${basePath}icon/state_bad.svg`, text: '나쁨' }
+}
+
+// PM2.5 등급 계산 (Civil 모드용)
+function getPM25Grade(value: number): { icon: string; text: string } {
+  if (value <= 15) return { icon: `${basePath}icon/state_good.svg`, text: '좋음' }
+  if (value <= 35) return { icon: `${basePath}icon/state_normal.svg`, text: '보통' }
+  return { icon: `${basePath}icon/state_bad.svg`, text: '나쁨' }
+}
+
 function BusSensorDisplay({ sensorData }: { sensorData: BusSensorData }) {
+  const civilMode = isCivil()
   const pm10Value = Math.round(sensorData.pm * 10) / 10
   const pm25Value = Math.round(sensorData.fpm * 10) / 10
   const vocsValue = Math.round(sensorData.voc * 10) / 10
   const pm10Style = getBusSensorColor('pm10', pm10Value)
   const pm25Style = getBusSensorColor('pm25', pm25Value)
 
+  // Civil 모드: 아이콘 + 등급 텍스트
+  if (civilMode) {
+    const pm10Grade = getPM10Grade(pm10Value)
+    const pm25Grade = getPM25Grade(pm25Value)
+
+    return (
+      <div
+        style={{
+          display: 'flex',
+          padding: '8px',
+          justifyContent: 'center',
+          alignItems: 'flex-start',
+          gap: '8px',
+          borderRadius: '6px',
+          border: '1px solid #C4C6C6',
+          background: 'rgba(0, 0, 0, 0.80)',
+          pointerEvents: 'none',
+          userSelect: 'none',
+          whiteSpace: 'nowrap'
+        }}
+      >
+        {/* PM10 */}
+        <div style={{ display: 'flex', width: '48px', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+          <span style={{ color: '#FFF', fontSize: '10px', fontWeight: 700, fontFamily: 'Pretendard', whiteSpace: 'nowrap' }}>미세먼지</span>
+          <img src={pm10Grade.icon} alt={pm10Grade.text} style={{ width: '32px', height: '32px' }} />
+          <span style={{ color: '#FFF', fontSize: '8px', fontWeight: 400, fontFamily: 'Pretendard' }}>{pm10Grade.text}</span>
+        </div>
+        {/* PM2.5 */}
+        <div style={{ display: 'flex', width: '48px', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+          <span style={{ color: '#FFF', fontSize: '10px', fontWeight: 700, fontFamily: 'Pretendard', whiteSpace: 'nowrap' }}>초미세먼지</span>
+          <img src={pm25Grade.icon} alt={pm25Grade.text} style={{ width: '32px', height: '32px' }} />
+          <span style={{ color: '#FFF', fontSize: '8px', fontWeight: 400, fontFamily: 'Pretendard' }}>{pm25Grade.text}</span>
+        </div>
+      </div>
+    )
+  }
+
+  // 일반 모드: 숫자 값 표시
   return (
     <div
       style={{

@@ -143,6 +143,7 @@ const BusHtmlRenderer = observer(() => {
 
   // 대민 모드용 센서 HTML 생성 함수 (상태 아이콘 + 등급 텍스트)
   const createCivilSensorHTML = useCallback((sensorData: { pm: number; fpm: number; voc: number }) => {
+    const basePath = import.meta.env.VITE_BASE_PATH || '/';
     const pm10Value = Math.round(sensorData.pm * 10) / 10;
     const pm25Value = Math.round(sensorData.fpm * 10) / 10;
 
@@ -155,16 +156,16 @@ const BusHtmlRenderer = observer(() => {
 
     // PM10 등급 계산 (매우 나쁨은 나쁨으로 통합)
     const getPM10Grade = (value: number): { icon: string; text: string } => {
-      if (value <= 30) return { icon: '/icon/state_good.svg', text: '좋음' };
-      if (value <= 80) return { icon: '/icon/state_normal.svg', text: '보통' };
-      return { icon: '/icon/state_bad.svg', text: '나쁨' }; // 150 초과도 나쁨으로 표시
+      if (value <= 30) return { icon: `${basePath}icon/state_good.svg`, text: '좋음' };
+      if (value <= 80) return { icon: `${basePath}icon/state_normal.svg`, text: '보통' };
+      return { icon: `${basePath}icon/state_bad.svg`, text: '나쁨' }; // 150 초과도 나쁨으로 표시
     };
 
     // PM2.5 등급 계산 (매우 나쁨은 나쁨으로 통합)
     const getPM25Grade = (value: number): { icon: string; text: string } => {
-      if (value <= 15) return { icon: '/icon/state_good.svg', text: '좋음' };
-      if (value <= 35) return { icon: '/icon/state_normal.svg', text: '보통' };
-      return { icon: '/icon/state_bad.svg', text: '나쁨' }; // 75 초과도 나쁨으로 표시
+      if (value <= 15) return { icon: `${basePath}icon/state_good.svg`, text: '좋음' };
+      if (value <= 35) return { icon: `${basePath}icon/state_normal.svg`, text: '보통' };
+      return { icon: `${basePath}icon/state_bad.svg`, text: '나쁨' }; // 75 초과도 나쁨으로 표시
     };
 
     const pm10Grade = getPM10Grade(pm10Value);

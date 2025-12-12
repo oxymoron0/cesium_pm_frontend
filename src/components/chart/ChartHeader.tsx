@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { observer } from 'mobx-react-lite'
 import { sensorSelectionStore } from '@/stores/SensorSelectionStore'
+import { isCivil } from '@/utils/env'
 
 interface ChartHeaderProps {
   period: 'today' | 'week' | 'month'
@@ -19,6 +20,7 @@ const ChartHeader = observer(function ChartHeader({
   period,
   currentDate
 }: ChartHeaderProps) {
+  const civilMode = isCivil()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
   const getTitle = () => {
@@ -71,121 +73,123 @@ const ChartHeader = observer(function ChartHeader({
         {getTitle()}
       </div>
 
-      {/* Right: Dropdown Selector */}
-      <div style={{ position: 'relative' }}>
-        <button
-          onClick={toggleDropdown}
-          style={{
-            display: 'flex',
-            padding: '6px 16px 6px 10px',
-            alignItems: 'center',
-            gap: '16px',
-            borderRadius: '4px',
-            border: '1px solid #C4C6C6',
-            background: '#000',
-            cursor: 'pointer',
-            color: '#FFF',
-            fontFamily: 'Pretendard',
-            fontSize: '14px',
-            fontWeight: 400,
-            lineHeight: 'normal'
-          }}
-        >
-          {getSensorTypeLabel(sensorSelectionStore.selectedSensorType)}
-          <svg
-            width="12"
-            height="8"
-            viewBox="0 0 12 8"
-            fill="none"
+      {/* Right: Dropdown Selector - Civil 모드에서는 숨김 (PM만 사용) */}
+      {!civilMode && (
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={toggleDropdown}
             style={{
-              transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-              transition: 'transform 0.2s ease'
-            }}
-          >
-            <path d="M1 1L6 6L11 1" stroke="#C4C6C6" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </button>
-
-        {/* Dropdown Menu */}
-        {isDropdownOpen && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 'calc(100% + 4px)',
-              right: 0,
               display: 'flex',
-              flexDirection: 'column',
+              padding: '6px 16px 6px 10px',
+              alignItems: 'center',
+              gap: '16px',
               borderRadius: '4px',
               border: '1px solid #C4C6C6',
               background: '#000',
-              overflow: 'hidden',
-              zIndex: 10,
-              minWidth: '140px'
+              cursor: 'pointer',
+              color: '#FFF',
+              fontFamily: 'Pretendard',
+              fontSize: '14px',
+              fontWeight: 400,
+              lineHeight: 'normal'
             }}
           >
-            <button
-              onClick={() => handleSensorTypeSelect('PM')}
+            {getSensorTypeLabel(sensorSelectionStore.selectedSensorType)}
+            <svg
+              width="12"
+              height="8"
+              viewBox="0 0 12 8"
+              fill="none"
               style={{
-                display: 'flex',
-                padding: '8px 16px',
-                alignItems: 'center',
-                cursor: 'pointer',
-                background: sensorSelectionStore.isPMSelected ? '#1A1A1A' : '#000',
-                color: sensorSelectionStore.isPMSelected ? '#FFD040' : '#FFF',
-                fontFamily: 'Pretendard',
-                fontSize: '14px',
-                fontWeight: 400,
-                lineHeight: 'normal',
-                border: 'none',
-                textAlign: 'left',
-                transition: 'background 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                if (!sensorSelectionStore.isPMSelected) {
-                  e.currentTarget.style.background = '#1A1A1A'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!sensorSelectionStore.isPMSelected) {
-                  e.currentTarget.style.background = '#000'
-                }
+                transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s ease'
               }}
             >
-              미세·초미세먼지
-            </button>
-            <button
-              onClick={() => handleSensorTypeSelect('VOCs')}
+              <path d="M1 1L6 6L11 1" stroke="#C4C6C6" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+
+          {/* Dropdown Menu */}
+          {isDropdownOpen && (
+            <div
               style={{
+                position: 'absolute',
+                top: 'calc(100% + 4px)',
+                right: 0,
                 display: 'flex',
-                padding: '8px 16px',
-                alignItems: 'center',
-                cursor: 'pointer',
-                background: sensorSelectionStore.isVOCsSelected ? '#1A1A1A' : '#000',
-                color: sensorSelectionStore.isVOCsSelected ? '#FFD040' : '#FFF',
-                fontFamily: 'Pretendard',
-                fontSize: '14px',
-                fontWeight: 400,
-                lineHeight: 'normal',
-                border: 'none',
-                textAlign: 'left',
-                transition: 'background 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                if (!sensorSelectionStore.isVOCsSelected) {
-                  e.currentTarget.style.background = '#1A1A1A'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!sensorSelectionStore.isVOCsSelected) {
-                  e.currentTarget.style.background = '#000'
-                }
+                flexDirection: 'column',
+                borderRadius: '4px',
+                border: '1px solid #C4C6C6',
+                background: '#000',
+                overflow: 'hidden',
+                zIndex: 10,
+                minWidth: '140px'
               }}
             >
-              VOCs
-            </button>
-          </div>
-        )}
-      </div>
+              <button
+                onClick={() => handleSensorTypeSelect('PM')}
+                style={{
+                  display: 'flex',
+                  padding: '8px 16px',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  background: sensorSelectionStore.isPMSelected ? '#1A1A1A' : '#000',
+                  color: sensorSelectionStore.isPMSelected ? '#FFD040' : '#FFF',
+                  fontFamily: 'Pretendard',
+                  fontSize: '14px',
+                  fontWeight: 400,
+                  lineHeight: 'normal',
+                  border: 'none',
+                  textAlign: 'left',
+                  transition: 'background 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (!sensorSelectionStore.isPMSelected) {
+                    e.currentTarget.style.background = '#1A1A1A'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!sensorSelectionStore.isPMSelected) {
+                    e.currentTarget.style.background = '#000'
+                  }
+                }}
+              >
+                미세·초미세먼지
+              </button>
+              <button
+                onClick={() => handleSensorTypeSelect('VOCs')}
+                style={{
+                  display: 'flex',
+                  padding: '8px 16px',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  background: sensorSelectionStore.isVOCsSelected ? '#1A1A1A' : '#000',
+                  color: sensorSelectionStore.isVOCsSelected ? '#FFD040' : '#FFF',
+                  fontFamily: 'Pretendard',
+                  fontSize: '14px',
+                  fontWeight: 400,
+                  lineHeight: 'normal',
+                  border: 'none',
+                  textAlign: 'left',
+                  transition: 'background 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (!sensorSelectionStore.isVOCsSelected) {
+                    e.currentTarget.style.background = '#1A1A1A'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!sensorSelectionStore.isVOCsSelected) {
+                    e.currentTarget.style.background = '#000'
+                  }
+                }}
+              >
+                VOCs
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 })

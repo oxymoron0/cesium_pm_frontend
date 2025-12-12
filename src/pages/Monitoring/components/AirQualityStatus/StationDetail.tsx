@@ -8,6 +8,7 @@ import { getHourlySensorData, getDailySensorData, getLatestSensorData } from '@/
 import type { HourlyDataPoint, DailyDataPoint, StationSensorApiData } from '@/utils/api/types'
 import { formatUTCToKoreaTime, getCurrentKoreaTime, formatTimeDifference } from '@/utils/dateTime'
 import { stationDetailStore } from '@/stores/StationDetailStore'
+import { isCivil } from '@/utils/env'
 import UnifiedStationSensorMetric from './StationSensorMetric'
 
 interface StationDetailProps {
@@ -19,6 +20,7 @@ const StationDetail = observer(function StationDetail({
   stationId,
   onClose
 }: StationDetailProps) {
+  const civilMode = isCivil()
   // Store에서 정류장 정보 가져오기
   const { selectedStationName, selectedRouteName, selectedDirection, selectedDirectionName } = stationDetailStore
   const [lastUpdated, setLastUpdated] = useState<string>('')
@@ -307,13 +309,15 @@ const StationDetail = observer(function StationDetail({
                 hasValidData={!!currentSensorData && currentSensorData.average_readings.fpm > 0}
                 timeDifference={timeComparisonData?.timeDiff}
               />
-              <SensorInfoContainer
-                sensorType="vocs"
-                value={currentSensorData?.average_readings.voc || 0}
-                previousValue={previousSensorData?.average_readings.voc}
-                hasValidData={!!currentSensorData && currentSensorData.average_readings.voc > 0}
-                timeDifference={timeComparisonData?.timeDiff}
-              />
+              {!civilMode && (
+                <SensorInfoContainer
+                  sensorType="vocs"
+                  value={currentSensorData?.average_readings.voc || 0}
+                  previousValue={previousSensorData?.average_readings.voc}
+                  hasValidData={!!currentSensorData && currentSensorData.average_readings.voc > 0}
+                  timeDifference={timeComparisonData?.timeDiff}
+                />
+              )}
             </div>
         </div>
 
