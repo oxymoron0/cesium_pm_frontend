@@ -368,8 +368,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
   // 리포트 다운로드
   const handleDownloadReport = async () => {
-    if (!priorityStore.simulationUuid) {
-      console.error('[handleDownloadReport] No simulation UUID available');
+    if (isDownloadingReport || !priorityStore.simulationUuid) {
       return;
     }
 
@@ -694,7 +693,6 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
             variant="solid"
             showIcon={true}
             onClick={handleDownloadReport}
-            disabled={isDownloadingReport || !priorityStore.simulationUuid}
           >
             {isDownloadingReport ? '다운로드 중...' : '리포트 다운로드'}
           </Button>
