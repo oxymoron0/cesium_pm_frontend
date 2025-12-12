@@ -8,41 +8,44 @@ interface StationConcentrationChartProps {
   period: TimePeriod
 }
 
-interface CustomXAxisTickProps {
+// 줄바꿈을 지원하는 커스텀 X축 tick
+interface CustomTickProps {
   x: number
   y: number
   payload: { value: string }
 }
 
-const CustomXAxisTick = (props: CustomXAxisTickProps) => {
-  const { x, y, payload } = props
-  const text = payload?.value
+function CustomXAxisTick({ x, y, payload }: CustomTickProps) {
+  const text = payload.value || ''
+  // \n으로 먼저 분할, 그 후 긴 줄은 추가 분할
+  const maxCharsPerLine = 12
+  const lines: string[] = []
 
-  if (!text) return null
-
-  console.log('XAxis Tick:', text)
-
-  // "부전역(05730)" 형태를 파싱하여 역 이름과 코드 분리
-  const match = text.match(/^(.+?)(\(.+\))$/)
-
-  if (match) {
-    const [, stationName, stationCode] = match
-
-    return (
-      <g transform={`translate(${x},${y})`}>
-        <text x={0} y={0} textAnchor="middle" fill="#FFFFFF">
-          <tspan x={0} dy="15" fontSize={15}>{stationName}</tspan>
-          <tspan x={0} dy="20" fontSize={12}>{stationCode}</tspan>
-        </text>
-      </g>
-    )
-  }
+  text.split('\n').forEach(segment => {
+    if (segment.length <= maxCharsPerLine) {
+      lines.push(segment)
+    } else {
+      for (let i = 0; i < segment.length; i += maxCharsPerLine) {
+        lines.push(segment.slice(i, i + maxCharsPerLine))
+      }
+    }
+  })
 
   return (
     <g transform={`translate(${x},${y})`}>
-      <text x={0} y={0} dy={16} textAnchor="middle" fill="#FFFFFF" fontSize={15}>
-        {text}
-      </text>
+      {lines.map((line, index) => (
+        <text
+          key={index}
+          x={0}
+          y={index * 14}
+          dy={12}
+          textAnchor="middle"
+          fill="#999"
+          fontSize={11}
+        >
+          {line}
+        </text>
+      ))}
     </g>
   )
 }
@@ -144,7 +147,7 @@ const StationConcentrationChart = function StationConcentrationChart({ data, per
                 dataKey="stationName"
                 stroke="#999"
                 tick={<CustomXAxisTick x={0} y={0} payload={{ value: '' }} />}
-                height={100}
+                height={80}
                 interval={0}
               />
               <YAxis

@@ -5,7 +5,7 @@ import { stationDetailStore } from '@/stores/StationDetailStore'
 import { stationSensorStore } from '@/stores/StationSensorStore'
 import { busStore } from '@/stores/BusStore'
 import { getRouteStations } from '@/utils/api/routeApi'
-import { getAirQualityLevel } from '@/utils/airQuality'
+import { getAirQualityLevel, AIR_QUALITY_COLORS } from '@/utils/airQuality'
 import Title from '@/components/basic/Title'
 import AirQualityDisplay from '@/components/service/sensor/AirQualityDisplay'
 import type { RouteStationsResponse, AirQualityLevel } from '@/utils/api/types'
@@ -23,24 +23,46 @@ const STATION_ICONS: Record<AirQualityLevel, string> = {
   very_bad: 'station_very_bad.svg'
 }
 
-function getStationIcon(pm10Value: number): string {
-  const { level } = getAirQualityLevel('pm10', pm10Value)
-  return `${basePath}icon/${STATION_ICONS[level]}`
+// Station display type based on position relative to bus
+type StationDisplayType = 'inactive' | 'upcoming' | 'passed'
+
+// Get station icon path based on display type and PM10 value
+function getStationIconByType(displayType: StationDisplayType, pm10Value: number): string {
+  switch (displayType) {
+    case 'upcoming':
+      return `${basePath}icon/station_upcoming.svg`
+    case 'passed': {
+      const { level } = getAirQualityLevel('pm10', pm10Value)
+      return `${basePath}icon/${STATION_ICONS[level]}`
+    }
+    case 'inactive':
+    default:
+      return `${basePath}icon/station_inactive.svg`
+  }
 }
 
-// Bus sensor color calculation
-function getBusSensorColor(type: 'pm10' | 'pm25', value: number): { bg: string; text: string } {
-  if (type === 'pm10') {
-    if (value <= 30) return { bg: '#1C67D7', text: '#FFF' }
-    if (value <= 80) return { bg: '#18A274', text: '#000' }
-    if (value <= 150) return { bg: '#FEE046', text: '#000' }
-    return { bg: '#D32F2D', text: '#FFF' }
-  } else {
-    if (value <= 15) return { bg: '#1C67D7', text: '#FFF' }
-    if (value <= 35) return { bg: '#18A274', text: '#000' }
-    if (value <= 75) return { bg: '#FEE046', text: '#000' }
-    return { bg: '#D32F2D', text: '#FFF' }
+// Get station text color based on display type and PM10 value
+function getStationTextColor(displayType: StationDisplayType, pm10Value: number): string {
+  switch (displayType) {
+    case 'upcoming':
+      return '#40B5F1'
+    case 'passed': {
+      const { level } = getAirQualityLevel('pm10', pm10Value)
+      return AIR_QUALITY_COLORS[level]
+    }
+    case 'inactive':
+    default:
+      return '#A6A6A6'
   }
+}
+
+// Bus sensor color calculation using centralized colors
+function getBusSensorColor(type: 'pm10' | 'pm25', value: number): { bg: string; text: string } {
+  const { level } = getAirQualityLevel(type, value)
+  const bg = AIR_QUALITY_COLORS[level]
+  // White text for blue and red backgrounds, black for green and yellow
+  const text = (level === 'good' || level === 'very_bad') ? '#FFF' : '#000'
+  return { bg, text }
 }
 
 // Bus sensor data display component
@@ -399,6 +421,47 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
     }).filter((pos): pos is NonNullable<typeof pos> => pos !== null)
   }, [flatStations, operatingBusData, busAnimationProgress, ROW_COUNT])
 
+  // Calculate station display type based on bus positions
+  // - upcoming: 3 stations ahead of any bus (in travel direction)
+  // - passed: 2 stations behind any bus (opposite of travel direction)
+  // - inactive: all other stations
+  const stationDisplayTypes = useMemo(() => {
+    const displayTypes = new Map<number, StationDisplayType>()
+
+    // Initialize all stations as inactive
+    flatStations.forEach((_, index) => {
+      displayTypes.set(index, 'inactive')
+    })
+
+    // For each bus, mark stations relative to its position
+    busPositions.forEach(pos => {
+      // Bus is between lowerIndex and upperIndex
+      // Current bus position index (round up to nearest station)
+      const busStationIndex = pos.upperIndex
+
+      // Mark 3 stations ahead as upcoming (including station at bus position)
+      for (let i = 0; i <= 2; i++) {
+        const upcomingIndex = busStationIndex + i
+        if (upcomingIndex < flatStations.length) {
+          displayTypes.set(upcomingIndex, 'upcoming')
+        }
+      }
+
+      // Mark 2 stations behind as passed (with air quality colors)
+      for (let i = 0; i <= 1; i++) {
+        const passedIndex = pos.lowerIndex - i
+        if (passedIndex >= 0) {
+          // Only set to passed if not already set to upcoming (upcoming takes priority)
+          if (displayTypes.get(passedIndex) !== 'upcoming') {
+            displayTypes.set(passedIndex, 'passed')
+          }
+        }
+      }
+    })
+
+    return displayTypes
+  }, [flatStations, busPositions])
+
   // Find selected station from flat list
   const selectedStation = flatStations.find(
     station => station.properties.station_id === selectedStationId
@@ -593,11 +656,12 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
                         )}
                         {/* Bus Icon */}
                         <img
-                          src={`${basePath}icon/busPosition.svg`}
+                          src={`${basePath}icon/bus_image.png`}
                           alt={`버스 ${pos.vehicleNumber}`}
                           style={{
                             width: '84px',
-                            height: '44px'
+                            height: 'auto',
+                            transform: isEvenRow ? 'scaleX(-1)' : 'none'
                           }}
                         />
                       </div>
@@ -633,12 +697,12 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
                         )}
                         {/* Bus Icon */}
                         <img
-                          src={`${basePath}icon/busPosition.svg`}
+                          src={`${basePath}icon/bus_image.png`}
                           alt={`버스 ${pos.vehicleNumber}`}
                           style={{
                             width: '84px',
-                            height: '44px',
-                            transform: 'rotate(90deg)'
+                            height: 'auto',
+                            transform: 'rotate(-90deg)'
                           }}
                         />
                       </div>
@@ -672,7 +736,15 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
 
                     const isSelected = selectedStationId === station.properties.station_id
                     const sensorData = stationSensorStore.getSensorData(station.properties.station_id)
-                    const stationIconSrc = getStationIcon(sensorData?.pm10 ?? 0)
+                    const pm10Value = sensorData?.pm10 ?? 0
+
+                    // Calculate station index in flatStations array
+                    const stationIndex = colIndex * ROW_COUNT + rowIndex
+                    // Get display type based on bus positions
+                    const displayType = stationDisplayTypes.get(stationIndex) ?? 'inactive'
+                    // Get icon and text color based on display type
+                    const stationIconSrc = getStationIconByType(displayType, pm10Value)
+                    const stationTextColor = getStationTextColor(displayType, pm10Value)
 
                     const handleStationClick = () => {
                       setSelectedStationId(station.properties.station_id)
@@ -723,7 +795,7 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
                             fontFamily: 'Pretendard',
                             fontSize: '14px',
                             fontWeight: isSelected ? '700' : '400',
-                            color: isSelected ? '#40B5F1' : '#A6A6A6',
+                            color: isSelected ? '#40B5F1' : stationTextColor,
                             textAlign: 'center',
                             lineHeight: 'normal',
                             overflow: 'hidden',

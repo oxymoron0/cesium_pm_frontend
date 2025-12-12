@@ -7,41 +7,44 @@ interface FacilitySimulationChartProps {
   selectedType: 'bad' | 'veryBad'
 }
 
-interface CustomXAxisTickProps {
+// 줄바꿈을 지원하는 커스텀 X축 tick
+interface CustomTickProps {
   x: number
   y: number
   payload: { value: string }
 }
 
-const CustomXAxisTick = (props: CustomXAxisTickProps) => {
-  const { x, y, payload } = props
-  const text = payload.value
+function CustomXAxisTick({ x, y, payload }: CustomTickProps) {
+  const text = payload.value || ''
+  // \n으로 먼저 분할, 그 후 긴 줄은 추가 분할
+  const maxCharsPerLine = 12
+  const lines: string[] = []
 
-  if (!text) return null
-
-  // "시설명(코드)" 형태를 파싱하여 시설명과 코드 분리
-  const match = text.match(/^(.+?)(\(.+\))$/)
-
-  if (match) {
-    const [, facilityName, facilityCode] = match
-    // 텍스트 길이에 따른 폰트 크기 조정
-    const fontSize = facilityName.length > 8 ? 12 : 15
-
-    return (
-      <g transform={`translate(${x},${y})`}>
-        <text x={0} y={0} textAnchor="middle" fill="#FFF" fontSize={fontSize}>
-          <tspan x={0} dy="10">{facilityName}</tspan>
-          <tspan x={0} dy="20" fontSize={13}>{facilityCode}</tspan>
-        </text>
-      </g>
-    )
-  }
+  text.split('\n').forEach(segment => {
+    if (segment.length <= maxCharsPerLine) {
+      lines.push(segment)
+    } else {
+      for (let i = 0; i < segment.length; i += maxCharsPerLine) {
+        lines.push(segment.slice(i, i + maxCharsPerLine))
+      }
+    }
+  })
 
   return (
     <g transform={`translate(${x},${y})`}>
-      <text x={0} y={0} dy={16} textAnchor="middle" fill="#FFF" fontSize={15}>
-        {text}
-      </text>
+      {lines.map((line, index) => (
+        <text
+          key={index}
+          x={0}
+          y={index * 14}
+          dy={12}
+          textAnchor="middle"
+          fill="#999"
+          fontSize={11}
+        >
+          {line}
+        </text>
+      ))}
     </g>
   )
 }
@@ -121,6 +124,7 @@ const FacilitySimulationChart = function FacilitySimulationChart({ data, selecte
             stroke="#999"
             tick={<CustomXAxisTick x={0} y={0} payload={{ value: '' }} />}
             height={80}
+            interval={0}
           />
           <YAxis
             yAxisId="left"

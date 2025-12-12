@@ -34,7 +34,7 @@ RUN echo 'server { \
     # Simulation result files (JSON, CSV, GLB) \
     # Mount NFS or volume to /mnt/nfs at runtime \
     # Path: /bump-svc3d-front-pm/sim/{uuid}/Finedust_XXXX.{json|csv|glb} \
-    location /bump-svc3d-front-pm/sim/ { \
+    location /sim/ { \
         alias /mnt/nfs/; \
         autoindex off; \
         add_header Access-Control-Allow-Origin *; \

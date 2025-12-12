@@ -4,7 +4,7 @@ import Title from '@/components/basic/Title';
 import AirConfigButton from './AirConfigButton';
 import AirSettingPanel from './AirSettingPanel';
 import LegendPanel from './LegendPanel';
-import NationalSensorPanel from './NationalSensorPanel';
+// import NationalSensorPanel from './NationalSensorPanel'; // 임시 비활성화
 
 type AirConfigType = 'airConfig' | 'nationalSensor' | 'legend' | null;
 
@@ -17,7 +17,7 @@ interface ButtonConfig {
 
 const BUTTON_CONFIGS: ButtonConfig[] = [
   { id: 'airConfig', icon: 'air_config.svg', label: '대기 설정', panelTitle: '대기 설정' },
-  { id: 'nationalSensor', icon: 'national_senser.svg', label: '국가 측정망', panelTitle: '국가 측정망' },
+  // { id: 'nationalSensor', icon: 'national_senser.svg', label: '국가 측정망', panelTitle: '국가 측정망' }, // 임시 비활성화
   { id: 'legend', icon: 'legend.svg', label: '범례', panelTitle: '범례' },
 ];
 
@@ -41,15 +41,17 @@ function AirConfig() {
     setActiveButton(prev => prev === 'airConfig' ? null : 'airConfig');
   }, []);
 
-  const handleNationalSensorClick = useCallback(() => {
-    setActiveButton(prev => prev === 'nationalSensor' ? null : 'nationalSensor');
-  }, []);
+  // 임시 비활성화
+  // const handleNationalSensorClick = useCallback(() => {
+  //   setActiveButton(prev => prev === 'nationalSensor' ? null : 'nationalSensor');
+  // }, []);
 
   const handleLegendClick = useCallback(() => {
     setActiveButton(prev => prev === 'legend' ? null : 'legend');
   }, []);
 
-  const handlers = [handleAirConfigClick, handleNationalSensorClick, handleLegendClick];
+  // const handlers = [handleAirConfigClick, handleNationalSensorClick, handleLegendClick]; // 임시 비활성화
+  const handlers = [handleAirConfigClick, handleLegendClick];
 
   const handleClosePanel = useCallback(() => {
     setActiveButton(null);
@@ -62,8 +64,8 @@ function AirConfig() {
     switch (activeButton) {
       case 'airConfig':
         return <AirSettingPanel />;
-      case 'nationalSensor':
-        return <NationalSensorPanel />;
+      // case 'nationalSensor': // 임시 비활성화
+      //   return <NationalSensorPanel />;
       case 'legend':
         return <LegendPanel />;
       default:
