@@ -55,16 +55,35 @@ const BUILDING_STYLES = {
 // --- Helper Functions ---
 
 /**
- * MultiPolygon 좌표를 Cesium PolygonHierarchy 배열로 변환
- * @param multiPolygonCoords - MultiPolygon 좌표 [polygon][ring][point][lng/lat]
- * @returns PolygonHierarchy 배열 (각 폴리곤마다 하나씩)
+ * Polygon/MultiPolygon 좌표를 Cesium PolygonHierarchy 배열로 변환
+ * 3중 배열(Polygon)과 4중 배열(MultiPolygon) 모두 지원
  */
-function createPolygonHierarchiesFromMultiPolygon(
-  multiPolygonCoords: number[][][][]
+function createPolygonHierarchies(
+  coords: number[][][] | number[][][][]
 ): PolygonHierarchy[] {
+  console.log('[nearbyBuildingFacilitiesRenderer] createPolygonHierarchies input:', coords);
   const hierarchies: PolygonHierarchy[] = [];
 
-  for (const polygonRings of multiPolygonCoords) {
+  if (!coords || coords.length === 0) return hierarchies;
+
+  let polygons: number[][][][] = [];
+
+  // 타입 가드: 4중 배열인지 3중 배열인지 확인 (coords[0][0]이 배열이면 4중)
+  // Polygon: [Ring][Point][lat,lng] -> coords[0][0] is number
+  // MultiPolygon: [Polygon][Ring][Point][lat,lng] -> coords[0][0] is array
+  const firstElement = coords[0];
+  const secondElement = Array.isArray(firstElement) ? firstElement[0] : undefined;
+  const isMultiPolygon = Array.isArray(secondElement) && Array.isArray(secondElement[0]);
+  console.log('[nearbyBuildingFacilitiesRenderer] isMultiPolygon:', isMultiPolygon);
+
+  if (isMultiPolygon) {
+    polygons = coords as number[][][][];
+  } else {
+    // 단일 Polygon이면 MultiPolygon 형태로 래핑
+    polygons = [coords as number[][][]];
+  }
+
+  for (const polygonRings of polygons) {
     if (polygonRings.length === 0) continue;
 
     // 첫 번째 ring은 외곽선 (exterior)
@@ -90,6 +109,8 @@ function createPolygonHierarchiesFromMultiPolygon(
 /**
  * 건물 시설물 Feature를 Cesium Entity로 변환 (MultiPolygon)
  * MultiPolygon의 각 폴리곤을 별도 Entity로 생성
+ * @param feature - 건물 Feature
+ * @param facilityId - 시설 composite key (${id}_${type})
  */
 function createBuildingFacilityEntity(
   feature: BuildingFacilityFeature,
@@ -99,9 +120,8 @@ function createBuildingFacilityEntity(
   const multiPolygonCoords = feature.geometry.coordinates;
 
   console.log(`[createBuildingFacilityEntity] Creating entities for facility ${facilityId}, building ${feature.properties.id}`);
-  console.log(`[createBuildingFacilityEntity] MultiPolygon has ${multiPolygonCoords.length} polygon(s)`);
 
-  const hierarchies = createPolygonHierarchiesFromMultiPolygon(multiPolygonCoords);
+  const hierarchies = createPolygonHierarchies(multiPolygonCoords);
 
   // 각 폴리곤을 별도 Entity로 생성
   hierarchies.forEach((hierarchy, index) => {
@@ -118,12 +138,16 @@ function createBuildingFacilityEntity(
         outline: BUILDING_STYLES.outline,
         outlineColor: new ColorMaterialProperty(BUILDING_STYLES.outlineColor),
         outlineWidth: BUILDING_STYLES.outlineWidth,
-        height: feature.properties.ground_level,
-        extrudedHeight: feature.properties.ground_level + feature.properties.height,
-        heightReference: HeightReference.CLAMP_TO_GROUND // 절대 높이 사용
+
+        // 지형에 딱 붙게 설정
+        heightReference: HeightReference.CLAMP_TO_GROUND,
+
+        // 지형으로부터 상대적인 높이로 돌출
+        extrudedHeight: feature.properties.height,
+        extrudedHeightReference: HeightReference.RELATIVE_TO_GROUND
       }),
       properties: {
-        facilityId: facilityId,
+        facilityId: facilityId, // composite key (${id}_${type})
         buildingId: feature.properties.id,
         lod1_shape_id: feature.properties.lod1_shape_id,
         height: feature.properties.height,
@@ -144,7 +168,7 @@ function createBuildingFacilityEntity(
 
 /**
  * 단일 시설의 주변 건물 시설물 검색 결과를 렌더링
- * @param facilityId - 시설 ID
+ * @param facilityId - 시설 composite key (${id}_${type})
  * @param buildingData - 건물 시설물 검색 결과
  */
 export async function renderNearbyBuildingFacilitiesForFacility(
@@ -161,8 +185,15 @@ export async function renderNearbyBuildingFacilitiesForFacility(
     // 건물 렌더링 전 depth test 활성화
     viewer.scene.globe.depthTestAgainstTerrain = true;
 
-    console.log(`[renderNearbyBuildingFacilitiesForFacility] Rendering ${buildingData.total} buildings for facility ${facilityId}`);
-    console.log('[renderNearbyBuildingFacilitiesForFacility] Building data:', buildingData);
+    console.log(`[renderNearbyBuildingFacilitiesForFacility] === RENDERING START ===`);
+    console.log(`[renderNearbyBuildingFacilitiesForFacility] Facility ID: ${facilityId}`);
+    console.log(`[renderNearbyBuildingFacilitiesForFacility] Total buildings: ${buildingData.total}`);
+    console.log('[renderNearbyBuildingFacilitiesForFacility] Building features:', buildingData.features.map(f => ({
+      id: f.properties.id,
+      lod1_shape_id: f.properties.lod1_shape_id,
+      height: f.properties.height,
+      distance_m: f.properties.distance_m
+    })));
 
     // DataSource 생성 또는 가져오기
     const buildingDataSource = await createGeoJsonDataSource(BUILDING_DATASOURCE_NAME);
@@ -212,7 +243,7 @@ export async function renderNearbyBuildingFacilitiesMultiple(
 
 /**
  * 특정 시설의 건물 시설물 렌더링 제거
- * @param facilityId - 시설 ID
+ * @param facilityId - 시설 composite key (${id}_${type})
  */
 export function clearNearbyBuildingFacilitiesForFacility(facilityId: string): void {
   try {
@@ -222,13 +253,25 @@ export function clearNearbyBuildingFacilitiesForFacility(facilityId: string): vo
     const buildingDataSource = viewer.dataSources.getByName(BUILDING_DATASOURCE_NAME)[0];
 
     if (buildingDataSource) {
+      console.log(`[clearNearbyBuildingFacilitiesForFacility] === CLEARING START ===`);
+      console.log(`[clearNearbyBuildingFacilitiesForFacility] Facility ID: ${facilityId}`);
+      console.log(`[clearNearbyBuildingFacilitiesForFacility] Total entities before clear: ${buildingDataSource.entities.values.length}`);
+
       const entitiesToRemove = buildingDataSource.entities.values.filter(
         entity => entity.properties?.facilityId?.getValue() === facilityId
       );
+
+      console.log(`[clearNearbyBuildingFacilitiesForFacility] Entities to remove: ${entitiesToRemove.length}`);
+      console.log(`[clearNearbyBuildingFacilitiesForFacility] Entities being removed:`, entitiesToRemove.map(e => e.id));
+
       entitiesToRemove.forEach(entity => buildingDataSource.entities.remove(entity));
+
+      console.log(`[clearNearbyBuildingFacilitiesForFacility] Total entities after clear: ${buildingDataSource.entities.values.length}`);
+    } else {
+      console.warn(`[clearNearbyBuildingFacilitiesForFacility] DataSource not found for facility ${facilityId}`);
     }
 
-    console.log(`[clearNearbyBuildingFacilitiesForFacility] Cleared building facilities for facility ${facilityId}`);
+    console.log(`[clearNearbyBuildingFacilitiesForFacility] === CLEARING END ===`);
   } catch (error) {
     console.error('[clearNearbyBuildingFacilitiesForFacility] Failed to clear building facilities:', error);
   }

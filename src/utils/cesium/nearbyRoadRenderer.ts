@@ -22,10 +22,12 @@ import type { RoadSearchResponse, RoadFeature } from '@/pages/Priority/types';
 const ROAD_DATASOURCE_NAME = 'nearby_roads';
 
 // 도로명별 렌더링 상태 추적 (전역)
-const renderedRoads: Map<string, Set<string>> = new Map(); // roadName -> Set<facilityId>
+// NOTE: facilityKey는 composite key (${id}_${type})
+const renderedRoads: Map<string, Set<string>> = new Map(); // roadName -> Set<facilityKey>
 
 // 시설별 도로 추적 (전역)
-const facilityRoads: Map<string, Set<string>> = new Map(); // facilityId -> Set<roadName>
+// NOTE: facilityKey는 composite key (${id}_${type})
+const facilityRoads: Map<string, Set<string>> = new Map(); // facilityKey -> Set<roadName>
 
 // 도로 스타일
 const ROAD_STYLES = {
@@ -50,6 +52,8 @@ function multiLineStringToCartesianArrays(coordinates: number[][][]): Cartesian3
 /**
  * 도로 Feature를 Cesium Entity로 변환 (Corridor 사용)
  * - 도로명 기반 Entity ID: `road_{roadName}_{segmentIndex}`
+ * @param feature - 도로 Feature
+ * @param facilityId - 시설 composite key (${id}_${type})
  */
 function createRoadEntity(feature: RoadFeature, facilityId: string): Entity[] {
   const entities: Entity[] = [];
@@ -73,7 +77,7 @@ function createRoadEntity(feature: RoadFeature, facilityId: string): Entity[] {
         roadNameEng: feature.properties.eng_rn,
         roadCode: feature.properties.rn_cd,
         regionCode: feature.properties.sig_cd,
-        facilityIds: new ConstantProperty([facilityId]) // 초기 시설 ID
+        facilityIds: new ConstantProperty([facilityId]) // 초기 시설 composite key
       }
     });
     entities.push(entity);
@@ -87,8 +91,8 @@ function createRoadEntity(feature: RoadFeature, facilityId: string): Entity[] {
 
 /**
  * 단일 시설의 주변 도로 검색 결과를 렌더링
- * - 도로명 기반 중복 방지: 이미 렌더링된 도로는 시설 ID만 추가
- * @param facilityId - 시설 ID
+ * - 도로명 기반 중복 방지: 이미 렌더링된 도로는 시설 composite key만 추가
+ * @param facilityId - 시설 composite key (${id}_${type})
  * @param roadData - 도로 검색 결과
  */
 export async function renderNearbyRoadsForFacility(
@@ -200,8 +204,8 @@ export async function renderNearbyRoadsMultiple(
 
 /**
  * 특정 시설의 도로 렌더링 제거
- * - 다른 시설이 공유하는 도로는 유지하고 시설 ID만 제거
- * @param facilityId - 시설 ID
+ * - 다른 시설이 공유하는 도로는 유지하고 시설 composite key만 제거
+ * @param facilityId - 시설 composite key (${id}_${type})
  */
 export function clearNearbyRoadsForFacility(facilityId: string): void {
   try {

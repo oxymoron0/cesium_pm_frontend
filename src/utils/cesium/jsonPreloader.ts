@@ -168,6 +168,8 @@ export async function preloadJson(
     : basePath + resultPath;
   */
   console.log("[JSON Preloader] Base path:", normalizedPath);
+  console.log("[JSON Preloader] Base path:", basePath);
+  console.log("[JSON Preloader] Base path:", simPath);
 
   // 기존에 로드된 프레임 수 계산
   let loadedCount = 0;
@@ -237,6 +239,62 @@ export async function preloadJson(
   }
 
   console.log(` [JSON Preloader] Preload complete: ${loadedCount}/${totalFrames} frames`);
+}
+
+/**
+ * 단일 JSON 프레임 로드 (우선순위 조회용)
+ *
+ * @param uuid - 시뮬레이션 UUID
+ * @param frameIndex - 로드할 프레임 인덱스 (0부터 시작)
+ * @param sampleRate - 샘플링 비율
+ */
+export async function preloadSingleJsonFrame(
+  uuid: string,
+  frameIndex: number,
+  sampleRate: number = 5
+): Promise<void> {
+  console.log(`[JSON Preloader] Loading single frame ${frameIndex} for ${uuid}`);
+
+  // 캐시 확인/생성
+  let frameCache = jsonCacheMap.get(uuid);
+  if (!frameCache) {
+    frameCache = new Map<number, JsonCacheEntry>();
+    jsonCacheMap.set(uuid, frameCache);
+  }
+
+  // 이미 로드된 프레임이면 스킵
+  const existingEntry = frameCache.get(frameIndex);
+  if (existingEntry && existingEntry.loaded) {
+    console.log(`[JSON Preloader] Frame ${frameIndex} already cached`);
+    return;
+  }
+
+  // 경로 구성
+  const basePath = import.meta.env.VITE_BASE_PATH || '/';
+  const simPath = import.meta.env.VITE_SIM_PATH || 'sim';
+  const normalizedPath = `${basePath}${simPath}/${uuid}/`;
+
+  const frameNumber = String(frameIndex + 1).padStart(4, '0');
+  const jsonUrl = `${normalizedPath}Finedust_${frameNumber}.json`;
+
+  try {
+    console.log(`📥 Loading frame ${frameIndex}: ${jsonUrl}`);
+    const frameData = await parseJson(jsonUrl, sampleRate);
+
+    frameCache.set(frameIndex, {
+      data: frameData,
+      loaded: true
+    });
+
+    console.log(`✅ Frame ${frameIndex} loaded: ${frameData.dataPoints.length} particles`);
+  } catch (error) {
+    console.error(`❌ Frame ${frameIndex} load failed (${jsonUrl}):`, error);
+    frameCache.set(frameIndex, {
+      data: { dataPoints: [], pointSize: 1 },
+      loaded: false
+    });
+    throw error;
+  }
 }
 
 /**

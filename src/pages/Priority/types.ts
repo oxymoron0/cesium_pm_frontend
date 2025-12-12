@@ -11,6 +11,7 @@ export interface PriorityConfig {
 
 export interface VulnerableFacility {
   id: string;
+  type: 'senior' | 'childcare';
   rank: number;
   name: string;
   address: string;

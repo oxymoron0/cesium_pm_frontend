@@ -53,6 +53,7 @@ export const API_PATHS = {
   SIMULATION_UPDATE_PRIVACY: (uuid: string) => getApiPath(`/api/v1/simulation/${uuid}/privacy`),
   SIMULATION_CURRENT_WEATHER: getApiPath('/api/v1/weather/current'),
   SIMULATION_VULNERABLE_FACILITIES_BY_UUID: (uuid: string) => getApiPath(`api/v1/simulation/${uuid}/vulnerable-facilities`),
+  SIMULATION_VULNERABLE_FACILITIES_BY_UUID_TO_CSV: (uuid: string) => getApiPath(`api/v1/simulation/${uuid}/vulnerable-facilities/csv`),
 
   // 북마크 API (PM Backend)
   BOOKMARKS_ROUTES: (user: string) => getApiPath(`api/v1/bookmarks/routes?user=${user}`),

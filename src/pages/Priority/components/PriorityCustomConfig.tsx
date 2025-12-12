@@ -28,9 +28,9 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
-  const provinceCode = administrativeStore.selectedProvinceCode || '26';
-  const districtCode = administrativeStore.selectedDistrictCode || '';
-  const neighborhoodCode = administrativeStore.selectedNeighborhoodCode || '';
+  // const provinceCode = administrativeStore.selectedProvinceCode || '26';
+  // const districtCode = administrativeStore.selectedDistrictCode || '';
+  // const neighborhoodCode = administrativeStore.selectedNeighborhoodCode || '';
 
   // Ensure administrative data is loaded
   useEffect(() => {
@@ -598,9 +598,13 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
 
       {/* 로딩 표시 - 위치 지정 모드에서만 임시사용 */}
       {locationMode === 'point' && administrativeStore.loading && (
-        <div className="flex items-center justify-center p-4 bg-[#1A1A1A] rounded-lg">
-          <div className="text-sm text-white animate-pulse">
-            읍면동 경계를 불러오는 중...
+        <div className="fixed inset-0 flex items-center justify-center z-[9999] bg-black/50">
+          <div className="px-8 py-6 bg-black/90 text-white rounded-lg border border-[#696A6A] min-w-[320px]">
+            <div className="text-lg font-bold mb-4 text-center">읍면동 경계를 불러오는 중...</div>
+            <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-[#FDF106] to-[#FFD040] animate-pulse"
+                   style={{ width: '100%' }} />
+            </div>
           </div>
         </div>
       )}
@@ -614,15 +618,8 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
               : 'bg-[#696A6A] cursor-not-allowed'
           }`}
           disabled={locationMode === 'point' && !administrativeStore.selectedNeighborhoodCode}
-          onClick={async () => {
+          onClick={() => {
             if (!config) return;
-
-            await priorityStore.searchPriorityFacilities(
-              provinceCode,
-              districtCode,
-              neighborhoodCode
-            );
-
             onSearch({
               date: config.date,
               time: config.time,

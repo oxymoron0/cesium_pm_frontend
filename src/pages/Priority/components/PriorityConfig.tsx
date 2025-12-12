@@ -417,7 +417,7 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
         <Button
           variant="solid"
           showIcon={false}
-          onClick={async () => {
+          onClick={() => {
             // Store에 현재 설정 저장
             priorityStore.setConfig({
               date: dateStr,
@@ -426,14 +426,7 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
               district: getDistrictName()
             });
 
-            // API 호출하여 취약시설 검색
-            await priorityStore.searchPriorityFacilities(
-              provinceCode,
-              districtCode,
-              neighborhoodCode
-            );
-
-            // 검색 완료 후 결과 화면으로 이동
+            // 즉시 결과 화면으로 이동 (PriorityResult에서 API 호출)
             if (onSearch) {
               onSearch({
                 date: dateStr,
