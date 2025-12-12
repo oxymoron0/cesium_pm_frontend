@@ -45,7 +45,7 @@ function getStationIconByType(displayType: StationDisplayType, pm10Value: number
 function getStationTextColor(displayType: StationDisplayType, pm10Value: number): string {
   switch (displayType) {
     case 'upcoming':
-      return '#40B5F1'
+      return '#FFFFFF'
     case 'passed': {
       const { level } = getAirQualityLevel('pm10', pm10Value)
       return AIR_QUALITY_COLORS[level]
@@ -794,7 +794,7 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
                           style={{
                             fontFamily: 'Pretendard',
                             fontSize: '14px',
-                            fontWeight: isSelected ? '700' : '400',
+                            fontWeight: (isSelected || displayType === 'upcoming') ? '700' : '400',
                             color: isSelected ? '#40B5F1' : stationTextColor,
                             textAlign: 'center',
                             lineHeight: 'normal',

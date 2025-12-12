@@ -1,4 +1,4 @@
-import { Entity, ModelGraphics, Cartesian3, Color, ColorBlendMode, HeightReference, HeadingPitchRange, ConstantPositionProperty, Transforms, Matrix4, HeadingPitchRoll, ConstantProperty } from 'cesium'
+import { Entity, ModelGraphics, Cartesian3, HeightReference, HeadingPitchRange, ConstantPositionProperty, Transforms, Matrix4, HeadingPitchRoll, ConstantProperty } from 'cesium'
 import { createDataSource, findDataSource, removeDataSource } from './datasources'
 import { type BusTrajectoryData } from '@/utils/api/busApi'
 import { getPositionOnRoute, lerpProgress, calculateShortestPath } from './routePositionCalculator'
@@ -14,14 +14,6 @@ function getBusModelUrl(routeName: string): string {
 }
 
 const DATASOURCE_NAME = 'bus_models'
-
-// 노선별 색상 매핑
-const ROUTE_COLOR_MAP: Record<string, string> = {
-  '10': '#FF6B6B',  // 빨강
-  '31': '#4ECDC4',  // 청록
-  '44': '#45B7D1',  // 파랑
-  '167': '#FFA726' // 주황
-}
 
 /**
  * Cesium viewer 가용성 체크
@@ -85,9 +77,6 @@ export async function renderBusModels(busData: BusTrajectoryData[]): Promise<voi
       position = Cartesian3.fromDegrees(latestPosition.position.longitude, latestPosition.position.latitude, 0)
     }
 
-    const colorHex = ROUTE_COLOR_MAP[bus.route_name] || '#888888'
-    const color = Color.fromCssColorString(colorHex)
-
     // GLB 모델의 기본 방향 보정 (-90도)
     const adjustedHeading = heading - Math.PI / 2
     const hpr = new HeadingPitchRoll(adjustedHeading, 0, 0)
@@ -103,8 +92,6 @@ export async function renderBusModels(busData: BusTrajectoryData[]): Promise<voi
         scale: 1,
         minimumPixelSize: 48,
         maximumScale: 48,
-        color: color,
-        colorBlendMode: ColorBlendMode.HIGHLIGHT,
         heightReference: HeightReference.CLAMP_TO_GROUND,
       }),
     })
