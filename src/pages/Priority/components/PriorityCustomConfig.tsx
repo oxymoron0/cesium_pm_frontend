@@ -614,15 +614,8 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
               : 'bg-[#696A6A] cursor-not-allowed'
           }`}
           disabled={locationMode === 'point' && !administrativeStore.selectedNeighborhoodCode}
-          onClick={async () => {
+          onClick={() => {
             if (!config) return;
-
-            await priorityStore.searchPriorityFacilities(
-              provinceCode,
-              districtCode,
-              neighborhoodCode
-            );
-
             onSearch({
               date: config.date,
               time: config.time,

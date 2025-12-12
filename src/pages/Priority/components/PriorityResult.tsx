@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import Title from '@/components/basic/Title';
 import Spacer from '@/components/basic/Spacer';
@@ -47,6 +47,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
   const [selectedFacilities, setSelectedFacilities] = useState<Set<string>>(new Set());
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('');
   const [isLoadingSimulation, setIsLoadingSimulation] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   // 중복 제거된 facilities (이제 PriorityStore에서 가져옴)
   const facilities = priorityStore.uniqueVulnerableFacilities;
@@ -54,63 +55,76 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
   // 초기화
   useEffect(() => {
     const initialize = async () => {
-      priorityStore.setConfig(config);
+      setIsInitializing(true);
 
-      // 행정구역 초기화
-      if (administrativeStore.provinces.length === 0) {
-        await administrativeStore.loadProvinces();
-      }
-      if (!administrativeStore.selectedProvinceCode) {
-        await administrativeStore.selectProvince('26');
-      }
-      if (!administrativeStore.selectedDistrictCode) {
-        await administrativeStore.selectDistrict('230');
-      }
+      try {
+        priorityStore.setConfig(config);
 
-      // 읍면동 초기값 설정
-      const sel = administrativeStore.selectedNeighborhoodCode;
-      if (sel === "all") {
-        setSelectedNeighborhood("전체");
-      } else {
-        const found = administrativeStore.neighborhoods.find(n => n.code.slice(-3) === sel);
-        if (found) setSelectedNeighborhood(found.name);
-      }
-
-      // RouteStore와 StationStore 초기화
-      if (routeStore.routeInfoList.length === 0) {
-        await routeStore.initializeRouteData();
-        const routeNames = Array.from(routeStore.routeGeomMap.keys());
-        if (routeNames.length > 0) {
-          const stationLoadPromises = routeNames.flatMap(routeName => [
-            stationStore.loadStations(routeName, 'inbound'),
-            stationStore.loadStations(routeName, 'outbound')
-          ]);
-          await Promise.all(stationLoadPromises);
+        // 행정구역 초기화
+        if (administrativeStore.provinces.length === 0) {
+          await administrativeStore.loadProvinces();
         }
+        if (!administrativeStore.selectedProvinceCode) {
+          await administrativeStore.selectProvince('26');
+        }
+        if (!administrativeStore.selectedDistrictCode) {
+          await administrativeStore.selectDistrict('230');
+        }
+
+        // 읍면동 초기값 설정
+        const sel = administrativeStore.selectedNeighborhoodCode;
+        if (sel === "all") {
+          setSelectedNeighborhood("전체");
+        } else {
+          const found = administrativeStore.neighborhoods.find(n => n.code.slice(-3) === sel);
+          if (found) setSelectedNeighborhood(found.name);
+        }
+
+        // RouteStore와 StationStore 초기화
+        if (routeStore.routeInfoList.length === 0) {
+          await routeStore.initializeRouteData();
+          const routeNames = Array.from(routeStore.routeGeomMap.keys());
+          if (routeNames.length > 0) {
+            const stationLoadPromises = routeNames.flatMap(routeName => [
+              stationStore.loadStations(routeName, 'inbound'),
+              stationStore.loadStations(routeName, 'outbound')
+            ]);
+            await Promise.all(stationLoadPromises);
+          }
+        }
+
+        // 모든 정류장 데이터
+        const allStations: RouteStationFeature[] = [];
+        stationStore.stationDataMap.forEach((stationData) => {
+          allStations.push(...stationData.features);
+        });
+
+        // 날짜 계산
+        const endDate = new Date(config.date);
+        const startDate = new Date(endDate);
+        startDate.setDate(startDate.getDate() - 7);
+        const startDateStr = startDate.toISOString().split('T')[0];
+        const endDateStr = endDate.toISOString().split('T')[0];
+
+        // 취약시설 검색
+        await priorityStore.searchPriorityFacilities(
+          administrativeStore.selectedProvinceCode || '26',
+          administrativeStore.selectedDistrictCode || '230',
+          null
+        );
+
+        // 통합 초기화
+        await priorityStore.initializePriorityResultData(allStations, startDateStr, endDateStr);
+
+        // 시뮬레이션 결과 렌더링 (초기화 중이므로 별도 로딩 표시 안함)
+        if (priorityStore.simulationUuid && priorityStore.simulationGlbCount > 0) {
+          await renderSimulationLastFrame(false);
+        }
+      } catch (error) {
+        console.error('[PriorityResult] Initialization failed:', error);
+      } finally {
+        setIsInitializing(false);
       }
-
-      // 모든 정류장 데이터
-      const allStations: RouteStationFeature[] = [];
-      stationStore.stationDataMap.forEach((stationData) => {
-        allStations.push(...stationData.features);
-      });
-
-      // 날짜 계산
-      const endDate = new Date(config.date);
-      const startDate = new Date(endDate);
-      startDate.setDate(startDate.getDate() - 7);
-      const startDateStr = startDate.toISOString().split('T')[0];
-      const endDateStr = endDate.toISOString().split('T')[0];
-
-      // 취약시설 검색
-      await priorityStore.searchPriorityFacilities(
-        administrativeStore.selectedProvinceCode || '26',
-        administrativeStore.selectedDistrictCode || '230',
-        null
-      );
-
-      // 통합 초기화
-      await priorityStore.initializePriorityResultData(allStations, startDateStr, endDateStr);
     };
 
     initialize();
@@ -196,12 +210,14 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
   }, [selectedNeighborhood]);
 
   // 시뮬레이션 마지막 프레임 렌더링
-  const renderSimulationLastFrame = async () => {
+  const renderSimulationLastFrame = async (showLoading = true) => {
     if (!priorityStore.simulationUuid || priorityStore.simulationGlbCount === 0) {
       return;
     }
 
-    setIsLoadingSimulation(true);
+    if (showLoading) {
+      setIsLoadingSimulation(true);
+    }
     try {
       const uuid = priorityStore.simulationUuid;
       const totalFrames = priorityStore.simulationGlbCount;
@@ -212,7 +228,9 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
     } catch (error) {
       console.error('[PriorityResult] Failed to render simulation:', error);
     } finally {
-      setIsLoadingSimulation(false);
+      if (showLoading) {
+        setIsLoadingSimulation(false);
+      }
     }
   };
 
@@ -468,10 +486,19 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
           </div>
         </div>
 
+        {/* 초기화 로딩 */}
+        {isInitializing && (
+          <div className="fixed bottom-[80px] left-1/2 transform -translate-x-1/2 z-[9999]">
+            <div className="px-4 py-2 bg-black/80 text-white text-sm rounded-lg">
+              데이터 로딩 중...
+            </div>
+          </div>
+        )}
+
         {/* 시뮬레이션 로딩 */}
         {isLoadingSimulation && (
-          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999]">
-            <div className="px-6 py-4 bg-black/90 text-white text-sm rounded-lg border border-[#FFD040]">
+          <div className="fixed bottom-[80px] left-1/2 transform -translate-x-1/2 z-[9999]">
+            <div className="px-4 py-2 bg-black/80 text-white text-sm rounded-lg">
               시뮬레이션 결과 로딩 중...
             </div>
           </div>
