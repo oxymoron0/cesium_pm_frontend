@@ -103,13 +103,43 @@ const StationHtmlRenderer = observer(() => {
 
     // 정류장 태그 클릭 이벤트
     element.addEventListener('click', () => {
-      // 검색 정류장은 상세보기 미지원
+      // 검색 정류장 처리: Entity properties에서 direction 정보 조회
       if (routeName === 'search') {
-        console.log(`[StationHtmlRenderer] Search station clicked (not supported)`);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const viewer = (window as unknown as { cviewer: any }).cviewer;
+        if (!viewer) return;
+
+        // DataSource에서 Entity 찾기
+        const dataSource = viewer.dataSources.getByName('search_stations');
+        if (dataSource.length === 0) return;
+
+        const entity = dataSource[0].entities.getById(`station_${stationId}`);
+        if (!entity?.properties) {
+          console.warn(`[StationHtmlRenderer] No entity properties for search station: ${stationId}`);
+          return;
+        }
+
+        // Entity properties에서 direction 정보 가져오기
+        const entityRouteName = entity.properties.routeName?.getValue?.() || entity.properties.routeName;
+        const entityDirection = entity.properties.direction?.getValue?.() || entity.properties.direction;
+        const entityDirectionName = entity.properties.directionName?.getValue?.() || entity.properties.directionName;
+
+        if (!entityRouteName || !entityDirection || !entityDirectionName) {
+          console.warn(`[StationHtmlRenderer] Missing direction info for search station: ${stationId}`);
+          return;
+        }
+
+        // StationDetailStore에 정류장 정보 설정
+        stationDetailStore.selectStation(stationId, stationName, entityRouteName, entityDirection, entityDirectionName);
+
+        // AirQualityStatus 모달 열기
+        stationDetailStore.openModal();
+
+        console.log(`[StationHtmlRenderer] Search station detail opened: ${stationName} (${entityRouteName}-${entityDirection})`);
         return;
       }
 
-      // StationStore에서 direction_name 가져오기
+      // 기존 정류장 처리: StationStore에서 direction_name 가져오기
       const stationData = stationStore.getStationData(routeName, direction);
       if (!stationData) {
         console.warn(`[StationHtmlRenderer] No station data for ${routeName}-${direction}`);

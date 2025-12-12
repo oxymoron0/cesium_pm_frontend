@@ -1,6 +1,7 @@
 import { createGeoJsonDataSource, clearDataSource } from './datasources';
 import { setupStationHoverEvents } from './stationRenderer';
 import { stationSensorStore } from '@/stores/StationSensorStore';
+import { stationStore } from '@/stores/StationStore';
 import type { RouteStationFeature } from '../api/types';
 import {
   Cartesian3,
@@ -23,6 +24,37 @@ const terrainHeightCache = new Map<string, number>();
 
 // 검색 정류장 선택 상태 전역 관리
 let currentSelectedSearchStationId: string | null = null;
+
+/**
+ * stationStore에서 정류장의 direction 정보 조회
+ * @param stationId - 정류장 ID
+ * @param routeName - 노선명
+ * @returns direction 정보 또는 null
+ */
+function findStationDirection(
+  stationId: string,
+  routeName: string
+): { direction: 'inbound' | 'outbound'; directionName: string } | null {
+  // 해당 노선의 inbound/outbound 데이터에서 정류장 검색
+  const directions: Array<'inbound' | 'outbound'> = ['inbound', 'outbound'];
+
+  for (const direction of directions) {
+    const stationData = stationStore.getStationData(routeName, direction);
+    if (stationData) {
+      const found = stationData.features.find(
+        feature => feature.properties.station_id === stationId
+      );
+      if (found) {
+        return {
+          direction,
+          directionName: stationData.direction_name
+        };
+      }
+    }
+  }
+
+  return null;
+}
 
 /**
  * 검색된 정류장들을 Cesium에 렌더링 (Billboard 시스템 활용)
@@ -161,14 +193,19 @@ function createSearchStationBillboardEntity(
       `</div>`
     ),
 
-    // 검색 결과 메타데이터
-    properties: {
-      stationId: stationId,
-      stationName: feature.properties.station_name,
-      arsId: feature.properties.ars_id,
-      routeName: feature.properties.route_name,
-      isSearchResult: true
-    }
+    // 검색 결과 메타데이터 (direction 정보 포함)
+    properties: (() => {
+      const directionInfo = findStationDirection(stationId, feature.properties.route_name);
+      return {
+        stationId: stationId,
+        stationName: feature.properties.station_name,
+        arsId: feature.properties.ars_id,
+        routeName: feature.properties.route_name,
+        direction: directionInfo?.direction || null,
+        directionName: directionInfo?.directionName || null,
+        isSearchResult: true
+      };
+    })()
   });
 }
 
