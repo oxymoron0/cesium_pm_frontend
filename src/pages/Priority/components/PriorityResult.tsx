@@ -20,6 +20,7 @@ import { routeStore } from '@/stores/RouteStore';
 import type { PriorityConfig, VulnerableFacility } from '../types';
 import type { RouteStationFeature } from '@/utils/api/types';
 import Info from '@/components/basic/Info';
+import { API_PATHS } from '@/utils/api/config';
 
 const basePath = import.meta.env.VITE_BASE_PATH || '/';
 
@@ -48,6 +49,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('');
   const [isLoadingSimulation, setIsLoadingSimulation] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [isDownloadingReport, setIsDownloadingReport] = useState(false);
 
   // 중복 제거된 facilities (이제 PriorityStore에서 가져옴)
   const facilities = priorityStore.uniqueVulnerableFacilities;
@@ -364,6 +366,60 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
     }
   };
 
+  // 리포트 다운로드
+  const handleDownloadReport = async () => {
+    if (!priorityStore.simulationUuid) {
+      console.error('[handleDownloadReport] No simulation UUID available');
+      return;
+    }
+
+    setIsDownloadingReport(true);
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15초 타임아웃
+
+      const url = API_PATHS.SIMULATION_VULNERABLE_FACILITIES_BY_UUID_TO_CSV(priorityStore.simulationUuid);
+      const response = await fetch(url, {
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+      }
+
+      // Blob으로 받아서 파일 다운로드
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+
+      // 파일명: 우선순위_날짜_시간.csv
+      const dateStr = config.date.replace(/\./g, '');
+      const timeStr = config.time.split('시')[0].trim().padStart(2, '0');
+      link.download = `우선순위_${dateStr}_${timeStr}시.csv`;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+
+      console.log('[handleDownloadReport] Report downloaded successfully');
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.error('[handleDownloadReport] Download timeout (15s)');
+        alert('리포트 다운로드 시간이 초과되었습니다. 다시 시도해주세요.');
+      } else {
+        console.error('[handleDownloadReport] Download failed:', error);
+        alert('리포트 다운로드에 실패했습니다.');
+      }
+    } finally {
+      setIsDownloadingReport(false);
+    }
+  };
+
   // 드롭다운 옵션
   const getDongOptions = () => {
     const options = [{ value: 'all', label: '전체' }];
@@ -483,18 +539,26 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
         {/* 초기화 로딩 */}
         {isInitializing && (
-          <div className="fixed bottom-[80px] left-1/2 transform -translate-x-1/2 z-[9999]">
-            <div className="px-4 py-2 bg-black/80 text-white text-sm rounded-lg">
-              데이터 로딩 중...
+          <div className="fixed inset-0 flex items-center justify-center z-[9999] bg-black/50">
+            <div className="px-8 py-6 bg-black/90 text-white rounded-lg border border-[#696A6A] min-w-[320px]">
+              <div className="text-lg font-bold mb-4 text-center">데이터 로딩 중...</div>
+              <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-[#FDF106] to-[#FFD040] animate-pulse"
+                     style={{ width: '100%' }} />
+              </div>
             </div>
           </div>
         )}
 
         {/* 시뮬레이션 로딩 */}
         {isLoadingSimulation && (
-          <div className="fixed bottom-[80px] left-1/2 transform -translate-x-1/2 z-[9999]">
-            <div className="px-4 py-2 bg-black/80 text-white text-sm rounded-lg">
-              시뮬레이션 결과 로딩 중...
+          <div className="fixed inset-0 flex items-center justify-center z-[9999] bg-black/50">
+            <div className="px-8 py-6 bg-black/90 text-white rounded-lg border border-[#696A6A] min-w-[320px]">
+              <div className="text-lg font-bold mb-4 text-center">시뮬레이션 결과 로딩 중...</div>
+              <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-[#FDF106] to-[#FFD040] animate-pulse"
+                     style={{ width: '100%' }} />
+              </div>
             </div>
           </div>
         )}
@@ -626,10 +690,28 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
         {/* 리포트 다운로드 */}
         <div className="self-stretch">
-          <Button variant="solid" showIcon={true} onClick={() => console.log('리포트 다운로드')}>
-            리포트 다운로드
+          <Button
+            variant="solid"
+            showIcon={true}
+            onClick={handleDownloadReport}
+            disabled={isDownloadingReport || !priorityStore.simulationUuid}
+          >
+            {isDownloadingReport ? '다운로드 중...' : '리포트 다운로드'}
           </Button>
         </div>
+
+        {/* 다운로드 로딩 바 */}
+        {isDownloadingReport && (
+          <div className="fixed inset-0 flex items-center justify-center z-[9999] bg-black/50">
+            <div className="px-8 py-6 bg-black/90 text-white rounded-lg border border-[#696A6A] min-w-[320px]">
+              <div className="text-lg font-bold mb-4 text-center">리포트 다운로드 중...</div>
+              <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-[#FDF106] to-[#FFD040] animate-pulse"
+                     style={{ width: '100%' }} />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
