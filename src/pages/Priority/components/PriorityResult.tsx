@@ -6,6 +6,7 @@ import Button from '@/components/basic/Button';
 import DongDropdown from './DongDropdown';
 import NearbyStationList from './NearbyStationList';
 import { renderNearbyStations, clearNearStations } from '@/utils/cesium/nearbyStationRenderer';
+import { flyToFacility } from '@/utils/cesium/cameraUtils';
 import { renderVulnerableFacilities, clearVulnerableFacilities, showFacilityHtmlTags, hideFacilityHtmlTags } from '@/utils/cesium/nearbyFacilitiesRenderer';
 import { renderNearbyRoadsForFacility, clearNearbyRoadsForFacility, clearAllNearbyRoads } from '@/utils/cesium/nearbyRoadRenderer';
 import { renderNearbyBuildingFacilitiesForFacility, clearNearbyBuildingFacilitiesForFacility, clearAllNearbyBuildingFacilities } from '@/utils/cesium/nearbyBuildingFacilitiesRenderer';
@@ -263,6 +264,10 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
     } else {
       console.log('[toggleFacility] Selecting facility:', facilityKey);
       newSet.add(facilityKey);
+
+      // 선택한 시설로 카메라 이동 (줌인 + 중앙 배치)
+      const [longitude, latitude] = facility.geometry.coordinates;
+      flyToFacility(longitude, latitude, 300, 1);
     }
 
     // UI 즉시 업데이트

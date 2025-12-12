@@ -103,6 +103,42 @@ export function flyToSearchStation(
 }
 
 /**
+ * 취약시설 선택 시 카메라를 해당 위치로 부드럽게 이동
+ * @param longitude - 경도
+ * @param latitude - 위도
+ * @param height - 지면으로부터의 높이 (기본값: 300m)
+ * @param duration - 이동 시간 (초, 기본값: 1초)
+ */
+export function flyToFacility(
+  longitude: number,
+  latitude: number,
+  height: number = 300,
+  duration: number = 1
+): void {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const viewer = (window as unknown as { cviewer: any }).cviewer;
+    if (!viewer || !viewer.camera) {
+      console.warn('[flyToFacility] Cesium viewer or camera not available');
+      return;
+    }
+
+    const destination = Cartesian3.fromDegrees(longitude, latitude, height);
+
+    viewer.camera.flyTo({
+      destination: destination,
+      duration: duration,
+      complete: () => {
+        console.log(`[flyToFacility] Camera moved to facility at (${longitude}, ${latitude}) height: ${height}m`);
+      }
+    });
+
+  } catch (error) {
+    console.error('[flyToFacility] Failed to move camera:', error);
+  }
+}
+
+/**
  * 모델의 BoundingSphere를 기반으로 최적의 뷰로 비행하는 내부 함수.
  * 코드 중복을 방지하고 Model.ready 상태에 따라 호출됩니다.
  */
