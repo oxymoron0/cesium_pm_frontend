@@ -17,6 +17,7 @@ import SimulationStationHtmlRenderer from "@/components/service/SimulationStatio
 import SimulationGlbHeatmapRender from "@/components/service/SimulationGlbHeatmapRender";
 import { cleanupAll } from "./cleanup";
 import SimulationCivilMain from "./components/SimulationCivilMain";
+import { isCivil as getIsCivil } from "@/utils/env";
 
 interface AppProps {
   onCloseMicroApp?: () => void;
@@ -27,7 +28,7 @@ const App = observer(function App(props: AppProps) {
   const [cesiumStatus, setCesiumStatus] = useState<"loading" | "ready">(
     "loading"
   );
-  const isCivil = import.meta.env.VITE_IS_CIVIL === 'true'
+  const isCivil = getIsCivil();
 
   useEffect(() => {
     const checkCesiumStatus = () => {
