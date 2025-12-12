@@ -94,6 +94,30 @@ export interface NearbyRoadsResponse {
   roads: NearbyRoad[];
 }
 
+/**
+ * 주변 정류장 센서 데이터 API 응답
+ * POST /api/v1/stations/nearby-sensor
+ */
+export interface NearbySensorApiResponse {
+  status: string;
+  stations: NearbySensorStation[];
+  total: number;
+}
+
+export interface NearbySensorStation {
+  station: {
+    station_id: string;
+    station_name: string;
+  };
+  readings: NearbySensorReading[];
+}
+
+export interface NearbySensorReading {
+  recorded_at: string;
+  pm: number;
+  pm_grade: string;
+}
+
 // ============================================================================
 // Internal Types
 // ============================================================================

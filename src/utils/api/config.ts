@@ -97,6 +97,7 @@ export const API_PATHS = {
   // 우선순위에 사용한 API (PM Backend)
   PRIORITY_SEARCH: getApiPath('api/v1/priority/search'),
   STATION_STATISTICS: getApiPath('api/v1/stations/statistics/'),
+  STATIONS_NEARBY_SENSOR: getApiPath('api/v1/stations/nearby-sensor'),
   ROAD_SEARCH: getApiPath('api/v1/road/search'),
 
   // PM10 랭킹 API (PM Backend)
