@@ -98,7 +98,7 @@ async function parseJson(jsonUrl: string, sampleRate: number = 1, signal?: Abort
       lon,
       lat,
       height,
-      position: cartesian,
+      position: Cartesian3.fromDegrees(lon, lat, height + 1000),
       color: { r, g, b, a }
     });
   }

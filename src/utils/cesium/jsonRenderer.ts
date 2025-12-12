@@ -83,7 +83,7 @@ export function renderJsonFrame(uuid: string, frameIndex: number): boolean {
       continue;
     }
 
-    const position = point.position ?? Cartesian3.fromDegrees(point.lon, point.lat, point.height + 1000);
+    const position = point.position;
     
     // 입력값이 매우 작으므로(예: ~0.0017) 증폭 계수(200.0)를 곱하여 보정
     const alphaBoost = 100.0;
