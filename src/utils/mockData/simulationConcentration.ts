@@ -5,7 +5,7 @@
  * 히트맵 시각화를 위해 더 넓은 범위의 값으로 변환
  */
 
-import type { SimulationQuckData } from '@/types/simulation_request_types';
+import type { SimulationQuickData } from '@/types/simulation_request_types';
 
 /**
  * PM10 농도 범위 설정
@@ -50,7 +50,7 @@ function generateRandomConcentration(min: number, max: number, seed: number): nu
  * @param data - 원본 시뮬레이션 데이터
  * @returns concentration 값이 랜덤화된 시뮬레이션 데이터 (깊은 복사)
  */
-export function randomizeSimulationConcentration(data: SimulationQuckData): SimulationQuckData {
+export function randomizeSimulationConcentration(data: SimulationQuickData): SimulationQuickData {
   if (!data.station_data || data.station_data.length === 0) {
     return data;
   }
@@ -83,8 +83,8 @@ export function randomizeSimulationConcentration(data: SimulationQuckData): Simu
  * @returns concentration 값이 랜덤화된 시뮬레이션 데이터 목록
  */
 export function randomizeSimulationListConcentration(
-  dataList: SimulationQuckData[]
-): SimulationQuckData[] {
+  dataList: SimulationQuickData[]
+): SimulationQuickData[] {
   return dataList.map((data) => randomizeSimulationConcentration(data));
 }
 

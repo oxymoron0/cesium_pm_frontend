@@ -163,11 +163,6 @@ export interface SimulationQuickData {
 }
 
 /**
- * @deprecated Use SimulationQuickData instead
- */
-export type SimulationQuckData = SimulationQuickData;
-
-/**
  * Simulation auto civil response from GET /api/v1/simulation_auto/civil/list
  */
 export interface SimulationQuickCivilData {
@@ -219,11 +214,6 @@ export interface SimulationQuickDataResponse {
   pagination?: SimulationListPagination; // Optional: may not be present
 }
 
-/**
- * @deprecated Use SimulationQuickDataResponse instead
- */
-export type SimulationQuckDataResponse = SimulationQuickDataResponse;
-
 export interface SimulationQuickCivilDataResponse {
   simulations: SimulationQuickCivilData[];
   pagination?: SimulationListPagination;
@@ -237,4 +227,42 @@ export interface SimulationInProgressResponse {
 
 export interface SimulationInProgressData {
   in_progress: boolean;
+}
+
+/**
+ * Simulation civil auto response from GET /api/v1/simulation_auto/civil/list
+ */
+
+/**
+ * 개별 측정소 데이터 (Civil용)
+ */
+export interface SimulationCivilStationData {
+  index: number;
+  station_name: string;
+  measured_at: string; // ISO 8601 string
+  concentration: number;
+  pm_label: "좋음" | "보통" | "나쁨" | "매우나쁨" | string;
+  location: LocationPoint; // 기존 LocationPoint 재사용
+}
+
+/**
+ * 시뮬레이션 목록 아이템 (Civil Quick List)
+ */
+export interface SimulationCivilQuickData {
+  index: number;
+  uuid: string;
+  measured_at: string; // ISO 8601 string
+  pm_type: "pm10" | "pm25" | string;
+  result_path: string;
+  average_concentration: number;
+  weather: Weather; // 기존 Weather 인터페이스 재사용 (WeatherData와 동일하다면)
+  station_data: SimulationCivilStationData[];
+}
+
+/**
+ * 시뮬레이션 목록 응답 (Civil Quick List Response)
+ */
+export interface SimulationCivilQuickDataResponse {
+  simulations: SimulationCivilQuickData[];
+  pagination: SimulationListPagination; // 기존 Pagination 인터페이스 재사용
 }

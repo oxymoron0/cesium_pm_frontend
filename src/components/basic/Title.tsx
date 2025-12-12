@@ -32,7 +32,7 @@ export default function Title({ children, info, onClose, onMinimize, onBack, div
         {/* 오른쪽: Minimize + Close 아이콘 */}
         <div className="flex items-center gap-2">
           {onMinimize && <Icon name="minimize" onClick={onMinimize} />}
-          <Icon name="close" onClick={onClose} />
+          {onClose && <Icon name="close" onClick={onClose} />}
         </div>
       </div>
       

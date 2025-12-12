@@ -6,18 +6,21 @@ import type {
   SimulationListItem,
   SimulationListPagination,
   SimulationDetail,
-  SimulationQuckData,
+  SimulationQuickData,
   SimulationInProgressResponse,
   PMType,
-  Weather
+  Weather,
+  SimulationCivilQuickData,
 } from '../types/simulation_request_types';
 import type { VulnerableFacilitiesResponse } from '@/utils/api/types';
-import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck, reverseGeocodeAPI, searchAddressAPI, getVulnerableFacilities } from '@/utils/api';
+import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck, reverseGeocodeAPI, searchAddressAPI, getVulnerableFacilities, getSimulationCivilList } from '@/utils/api';
 import { userStore } from './UserStore';
 import { administrativeStore } from './AdministrativeStore';
 import { abortJsonPreload } from '@/utils/cesium/jsonPreloader';
 import { abortCsvPreload } from '@/utils/cesium/csvPreloader';
+import { isCivil as getIsCivil } from "@/utils/env"
 // import { randomizeSimulationConcentration, ENABLE_MOCK_CONCENTRATION } from '@/utils/mockData/simulationConcentration';
+const IS_CIVIL_APP = getIsCivil()
 
 // ============================================================================
 // SimulationStore Class
@@ -26,6 +29,9 @@ class SimulationStore {
   // ============================================================================
   // Observable State
   // ============================================================================
+
+  // 행정/대민 초기값 설정
+  isCivilMode: boolean = IS_CIVIL_APP;
 
   // 검색 상태
   searchQuery: string = '';
@@ -65,9 +71,9 @@ class SimulationStore {
   pendingSimulationData: SimulationRequest | null = null;
 
   // 시뮬레이션auto(quick) 목록 (API 기반)
-  simulationQuickList: SimulationQuckData[] = [];
+  simulationQuickList: SimulationQuickData[] = [];
   paginationQuick: SimulationListPagination | null = null;
-  selectedsimulationQuick: SimulationQuckData | null = null;
+  selectedsimulationQuick: SimulationQuickData | null = null;
   isLoadingQuickList: boolean = false;
   // 빠른실행 결과 가이드창 활성화
   isSimulationQuickGuideMode: boolean = false;
@@ -107,7 +113,7 @@ class SimulationStore {
   isResultPopupMinimized = false
 
   // 시뮬레이션 Panel 상태 관리
-  currentView: SimulationView = "config"
+  currentView: SimulationView = this.isCivilMode ? "civilConfig" : "config";
   pollutantFilter: PMType | 'all' = 'all';
   sortOrder: 'latest' | 'oldest' = 'latest'; // 기본값 'latest'
   isDeleteMode: boolean = false;
@@ -118,6 +124,23 @@ class SimulationStore {
   isDateModalOpen: boolean = false;
   startDate: string | null = null;
   endDate: string | null = null;
+
+  // 대민 시뮬레이션 상태 관리
+  isCivilInputDirty: boolean = false;
+  civilConfigKey: number = 0;
+  simulationCivilList: SimulationCivilQuickData[] = [];
+  selectedCivilSimulation: SimulationCivilQuickData | null = null;
+  selectedCivilStationAnalysisId: number | null = null;
+  paginationCivil: SimulationListPagination | null = null;
+  isLoadingCivilList: boolean = false;
+  civilConditions = {
+    concentration: '',
+    windDirection: '',
+    windSpeed: '',
+    measuredAt: '' // 현재 시간 등 기준 시간
+  };
+  civilSortKey: 'measured_at' | 'concentration' | 'wind_direction' | 'wind_speed' | null = null;
+  civilSortOrder: 'latest' | 'oldest' = 'latest';
 
   constructor() {
     makeAutoObservable(this, {
@@ -943,7 +966,7 @@ class SimulationStore {
   /**
    * 빠른실행 분석시작시 객체 저장
    */
-  setSelectedSimulationQuick(item: SimulationQuckData) {
+  setSelectedSimulationQuick(item: SimulationQuickData) {
     this.selectedsimulationQuick = null;
     this.selectedsimulationQuick = item;
 
@@ -1145,7 +1168,151 @@ class SimulationStore {
     this.pollutantFilter = 'all';
     this.sortOrder = 'latest';
 
+    // 대민 초기화
+    this.isCivilInputDirty = false;
+    this.currentView = 'civilConfig';
+    this.selectedCivilSimulation = null;
+    this.selectedCivilStationAnalysisId = null;
+
     console.log('[SimulationStore] Cleanup completed - all state reset to initial');
+  }
+
+  // ============================================================================
+  // 대민 서비스
+  // ============================================================================
+  
+  // 입력 상태 업데이트 액션
+  setIsCivilInputDirty(isDirty: boolean) {
+    this.isCivilInputDirty = isDirty;
+  }
+
+  // 시민용 검색 조건 일괄 설정 (CivilConfig에서 호출)
+  setCivilConditions(concentration: string, windDirection: string, windSpeed: string) {
+    this.civilConditions = {
+      concentration,
+      windDirection,
+      windSpeed,
+      measuredAt: new Date().toISOString() // 기준 시간은 현재 시간으로 설정 (필요시 변경)
+    };
+  }
+
+  // 정렬 변경 액션 (CivilList 헤더에서 호출)
+  setCivilSort(key: 'measured_at' | 'concentration' | 'wind_direction' | 'wind_speed') {
+    if (this.civilSortKey === key) {
+      // 같은 키를 누르면 정렬 순서 반전
+      this.civilSortOrder = this.civilSortOrder === 'latest' ? 'oldest' : 'latest';
+    } else {
+      // 새로운 키를 누르면 해당 키 선택, 순서는 oldest(가까운 순/오름차순)가 보통 기본
+      this.civilSortKey = key;
+      this.civilSortOrder = 'oldest'; 
+    }
+    // 데이터 다시 로드 (1페이지부터)
+    this.loadSimulationCivilList(1);
+  }
+
+  /**
+   * 시민용 화면 완전 초기화 (폼 내용 지우기)
+   */
+  resetCivilConfig() {
+    this.civilConfigKey++; // 키를 변경하여 컴포넌트 리마운트 유도
+    this.isCivilInputDirty = false;
+    this.currentView = 'civilConfig';
+    // 필요 시 선택된 정류장 등도 초기화
+    this.selectedCivilSimulation = null;
+    this.selectedCivilStationAnalysisId = null;
+  }
+
+  /**
+   * 시민용 시뮬레이션 목록 조회
+   * GET /api/v1/simulation_auto/civil/list
+   * @param page - 페이지 번호 (기본값 1)
+   */
+  async loadSimulationCivilList(page: number = 1) {
+    this.isLoadingCivilList = true;
+    
+    try {
+      // 정렬 키에 따라 API에 보낼 파라미터 결정
+      let targetConc, targetWD, targetWS, targetTime = undefined;
+
+      // civilSortKey가 설정되어 있으면 해당 값만 보냄
+      if (this.civilSortKey === 'concentration') {
+        targetConc = this.civilConditions.concentration;
+      } else if (this.civilSortKey === 'wind_direction') {
+        targetWD = this.civilConditions.windDirection;
+      } else if (this.civilSortKey === 'wind_speed') {
+        targetWS = this.civilConditions.windSpeed;
+      } else if (this.civilSortKey === 'measured_at') {
+        targetTime = this.civilConditions.measuredAt;
+      }
+      // 키가 없으면(null) 아무 파라미터도 안 보냄 -> 기본 정렬(최신순)
+
+      console.log(`[Store] Loading Civil List... Page:${page}, Sort:${this.civilSortKey}, Order:${this.civilSortOrder}`);
+
+      const response = await getSimulationCivilList(
+        page, 
+        5, // limit
+        this.civilSortOrder,
+        targetConc,
+        targetWD,
+        targetWS,
+        targetTime
+      );
+
+      runInAction(() => {
+        this.simulationCivilList = response.simulations;
+        this.paginationCivil = response.pagination;
+      });
+
+    } catch (error) {
+      console.error('❌ [Store] Failed to load civil list:', error);
+      // ... Error handling
+    } finally {
+      runInAction(() => { this.isLoadingCivilList = false; });
+    }
+  }
+
+  /**
+   * 시민용 시뮬레이션 실행 (재생 모드로 전환)
+   */
+  playCivilSimulation(data: SimulationCivilQuickData) {
+    runInAction(() => {
+      // 1. 선택된 시민용 데이터 저장
+      this.selectedCivilSimulation = data;
+      
+      // 2. GLB 프레임 수 설정 (json_count 활용)
+      this.glbCount = 100; //
+
+      // 3. 뷰 전환
+      this.currentView = 'civilResult'; 
+    });
+    
+    console.log(`[Store] Playing civil simulation: ${data.uuid} (${this.glbCount} frames)`);
+  }
+  /**
+   * 정류장 상세 시뮬레이션(활동가이드) 실행
+   */
+  runCivilStationAnalysis(stationId: number) {
+    runInAction(() => {
+      this.selectedCivilStationAnalysisId = stationId;
+      console.log(`[Store] Run Civil station analysis for ID: ${stationId}`);
+    });
+  }
+
+  /**
+   * 정류장 상세 시뮬레이션 종료
+   */
+  closeCivilStationAnalysis() {
+    runInAction(() => {
+      this.selectedCivilStationAnalysisId = null;
+    });
+  }
+
+  /**
+   * 정류장 상세 분석(활동가이드) 모드 활성화 여부
+   * (selectedCivilStationAnalysisId 컴포넌트가 표시 중인지 체크)
+   */
+  get isStationAnalysisMode(): boolean {
+    return this.selectedCivilStationAnalysisId !== null;
   }
 
 }

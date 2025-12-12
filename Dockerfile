@@ -22,6 +22,10 @@ FROM nginx:alpine3.22
 # Copy built files from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
+# Copy entrypoint script for runtime environment configuration
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Create simulation files mount point
 RUN mkdir -p /mnt/nfs
 
@@ -30,6 +34,13 @@ RUN echo 'server { \
     listen 8080; \
     server_name _; \
     root /usr/share/nginx/html; \
+    index index.html; \
+    \
+    # Static files (config.json, assets, etc.) \
+    location / { \
+        try_files $uri $uri/ /index.html; \
+        add_header Cache-Control "public, max-age=3600"; \
+    } \
     \
     # Simulation result files (JSON, CSV, GLB) \
     # Mount NFS or volume to /mnt/nfs at runtime \
@@ -50,4 +61,8 @@ EXPOSE 8080
 # Volume for simulation result files
 VOLUME ["/mnt/nfs"]
 
+# Runtime environment variables (can be overridden at container start)
+ENV IS_CIVIL=false
+
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]

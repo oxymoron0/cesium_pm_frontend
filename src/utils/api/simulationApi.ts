@@ -15,6 +15,7 @@ import type {
   PMType,
   Weather,
   SimulationInProgressResponse,
+  SimulationCivilQuickDataResponse,
 } from '../../types/simulation_request_types';
 import type { AddressSearchResponse, ReverseGeocodeResponse } from '@/pages/Simulation/types';
 import type { VulnerableFacilitiesResponse } from './types';
@@ -514,6 +515,55 @@ export async function getSimulationGlbCount(
       `[getSimulationGlbCount] API 호출 실패 (UUID: ${uuid}):`,
       error
     );
+    throw error;
+  }
+}
+
+/**
+ * 시뮬레이션(auto) 목록 조회
+ * GET /api/v1/simulation_auto/civil/list
+ *
+ * @param concentration - 미세먼지 농도
+ * @param sortOrder - 정렬 순서 (내림차순, 오름차순)
+ * @param sortName - 정렬 유형
+ * @param page - 페이지 번호 (기본값: 1)
+ * @param limit - 페이지당 항목 수 (기본값: 7)
+ * @returns 시뮬레이션 목록과 페이지네이션 정보
+ */
+export async function getSimulationCivilList(
+  page: number = 1,
+  limit: number = 7,
+  sortOrder: 'latest' | 'oldest' = 'latest',
+  // 정렬 기준 값들 (하나만 값이 들어오면 해당 기준으로 정렬됨)
+  concentration?: string,
+  windDirection?: string,
+  windSpeed?: string,
+  measuredAt?: string
+): Promise<SimulationCivilQuickDataResponse> {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      sort_order: sortOrder
+    });
+
+    if (concentration) params.append('concentration', concentration);
+    if (windDirection) params.append('wind_direction', windDirection);
+    if (windSpeed) params.append('wind_speed', windSpeed);
+    if (measuredAt) params.append('measured_at', measuredAt);
+
+    const url = `${API_PATHS.SIMULATION_QUICK_CIVIL_LIST}?${params.toString()}`;
+    const response = await get<SimulationCivilQuickDataResponse>(url);
+
+    if (!response.ok) {
+      throw new Error(
+        `Simulation list API failed with status ${response.status}`
+      );
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error("[getSimulationCivilList] API 호출 실패:", error);
     throw error;
   }
 }

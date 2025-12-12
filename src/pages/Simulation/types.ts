@@ -100,7 +100,7 @@ export interface SimulationDetailConfig {
 // Simulation State
 // ============================================================================
 
-export type SimulationView = 'config' | 'detailConfig' | 'running' | 'result' | 'quick' | 'quickResult';
+export type SimulationView = 'config' | 'detailConfig' | 'running' | 'result' | 'quick' | 'quickResult' | 'civilConfig' | 'civilList' | 'civilInfo' |'civilResult';
 export type SimulationConfirmType =   | "moveReset" //이동시 초기화 컨펌
   | "locStart" //위치 지정확인 컨펌
   | "stopSim" //시뮬레이션 분석 중지 컨펌
