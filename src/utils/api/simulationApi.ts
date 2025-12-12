@@ -531,18 +531,26 @@ export async function getSimulationGlbCount(
  * @returns 시뮬레이션 목록과 페이지네이션 정보
  */
 export async function getSimulationCivilList(
-  concentration: string,
-  // sortOrder: 'latest' | 'oldest' = 'latest',
-  // sortName: string | '',
   page: number = 1,
   limit: number = 7,
+  sortOrder: 'latest' | 'oldest' = 'latest',
+  // 정렬 기준 값들 (하나만 값이 들어오면 해당 기준으로 정렬됨)
+  concentration?: string,
+  windDirection?: string,
+  windSpeed?: string,
+  measuredAt?: string
 ): Promise<SimulationCivilQuickDataResponse> {
   try {
     const params = new URLSearchParams({
-      concentration: concentration,
       page: page.toString(),
       limit: limit.toString(),
+      sort_order: sortOrder
     });
+
+    if (concentration) params.append('concentration', concentration);
+    if (windDirection) params.append('wind_direction', windDirection);
+    if (windSpeed) params.append('wind_speed', windSpeed);
+    if (measuredAt) params.append('measured_at', measuredAt);
 
     const url = `${API_PATHS.SIMULATION_QUICK_CIVIL_LIST}?${params.toString()}`;
     const response = await get<SimulationCivilQuickDataResponse>(url);

@@ -25,7 +25,8 @@ const SimulationCivilList = observer(function SimulationCivilList() {
     simulationCivilList, 
     paginationCivil, 
     isLoadingCivilList,
-    civilConcentration
+    civilSortKey,
+    civilSortOrder
   } = simulationStore;
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -34,10 +35,27 @@ const SimulationCivilList = observer(function SimulationCivilList() {
     setExpandedId(prevId => (prevId === index ? null : index));
   };
 
+  // 정렬 아이콘 렌더링 헬퍼
+  const renderSortIcon = (key: string) => {
+    const isActive = civilSortKey === key;
+    return (
+        <Icon 
+            name='arrow_updown' 
+            className={`relative ${
+                key === 'measured_at' ? 'right-5' : 
+                key === 'concentration' ? 'right-6' : 
+                key === 'wind_direction' ? 'right-2' : ''
+            } ${isActive && civilSortOrder === 'oldest' ? 'rotate-180' : ''} ${
+                isActive ? 'opacity-100' : 'opacity-30'
+            }`} 
+        />
+    );
+  };
+
   // 페이지 변경 함수
   const handlePageChange = (newPage: number) => {
     // 스토어에 저장된 현재 농도 값(civilConcentration)을 유지하면서 페이지 번호만 변경
-    simulationStore.loadSimulationCivilList(civilConcentration, newPage);
+    simulationStore.loadSimulationCivilList(newPage);
   };
 
   const renderPagination = () => {
@@ -92,30 +110,34 @@ const SimulationCivilList = observer(function SimulationCivilList() {
 
   return (
     <>
+      <div className="text-sm text-[#A6A6A6]" style={{fontFamily: 'Pretendard', lineHeight: 'normal'}}>
+        * "IoT 센서로 수집한 부산진구 정류장  데이터 기반으로, 오염물질 확산 시뮬레이션을 실행할 수 있습니다
+      </div>
+
       <Spacer height={16} />
       
       {/* 리스트 헤더 */}
       <div
-        className="flex items-center self-stretch px-4 h-10 border-y border-[#696A6A]"
+        className="flex items-center self-stretch px-4 h-10 border-b border-[#696A6A]"
         style={headerStyle}
       >
         {/* className='relative right-5' */}
         <div style={{ width: '40px', textAlign: 'center' }}>#</div>
-        <div className='flex flex-1 cursor-pointer'>
-          <div style={{ flex: 1.1, textAlign: 'center' }}>측정일시</div>
-          <Icon name='arrow_updown' className='relative right-5'/>
+        <div className={`flex flex-1 cursor-pointer ${civilSortKey === 'measured_at' && 'text-[#FFD040] font-bold'}`}>
+          <div style={{ flex: 1.1, textAlign: 'center' }} onClick={() => simulationStore.setCivilSort('measured_at')}>측정일시</div>
+          {renderSortIcon('measured_at')}
         </div>
-        <div className='flex flex-1 cursor-pointer'>
-          <div style={{ flex: 0.8, textAlign: 'center' }}>농도</div>
-          <Icon name='arrow_updown' className='relative right-6'/>
+        <div className={`flex flex-1 cursor-pointer ${civilSortKey === 'concentration' && 'text-[#FFD040] font-bold'}`}>
+          <div style={{ flex: 0.8, textAlign: 'center' }} onClick={() => simulationStore.setCivilSort('concentration')}>농도</div>
+          {renderSortIcon('concentration')}
         </div>
-        <div className='flex flex-1 cursor-pointer'>
-          <div style={{ flex: 0.5, textAlign: 'center' }}>풍향</div>
-          <Icon name='arrow_updown' className='relative right-2'/>
+        <div className={`flex flex-1 cursor-pointer ${civilSortKey === 'wind_direction' && 'text-[#FFD040] font-bold'}`}>
+          <div style={{ flex: 0.5, textAlign: 'center' }} onClick={() => simulationStore.setCivilSort('wind_direction')}>풍향</div>
+          {renderSortIcon('wind_direction')}
         </div>
-        <div className='flex flex-1 cursor-pointer'>
-          <div style={{ flex: 0.3, textAlign: 'center' }}>풍속</div>
-          <Icon name='arrow_updown'/>
+        <div className={`flex flex-1 cursor-pointer ${civilSortKey === 'wind_speed' && 'text-[#FFD040] font-bold'}`}>
+          <div style={{ flex: 0.3, textAlign: 'center' }} onClick={() => simulationStore.setCivilSort('wind_speed')}>풍속</div>
+          {renderSortIcon('wind_speed')}
         </div>
         <div className='flex flex-1'>
           <div style={{ flex: 0.6, textAlign: 'center' }}>실행</div>

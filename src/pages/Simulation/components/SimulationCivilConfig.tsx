@@ -169,14 +169,15 @@ useEffect(() => {
 
   const isFormValid = checkValidity(); // input 상태 전달 값
 
-  const handleShowList = () => {
+  const handleShowList = async () => {
     if (!checkValidity()) {
       setShowError(true);
       return;
     }
     setShowError(false);
-    simulationStore.setCivilConcentration(concentration)
-    simulationStore.loadSimulationCivilList(concentration, 1)
+    
+    simulationStore.setCivilConditions(concentration, windDirection, windSpeed);
+    await simulationStore.loadSimulationCivilList(1);
     simulationStore.setCurrentView('civilList')
   };
 

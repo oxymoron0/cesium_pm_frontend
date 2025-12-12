@@ -130,7 +130,14 @@ class SimulationStore {
   selectedCivilStationAnalysisId: number | null = null;
   paginationCivil: SimulationListPagination | null = null;
   isLoadingCivilList: boolean = false;
-  civilConcentration: string = '';
+  civilConditions = {
+    concentration: '',
+    windDirection: '',
+    windSpeed: '',
+    measuredAt: '' // 현재 시간 등 기준 시간
+  };
+  civilSortKey: 'measured_at' | 'concentration' | 'wind_direction' | 'wind_speed' | null = null;
+  civilSortOrder: 'latest' | 'oldest' = 'latest';
 
   constructor() {
     makeAutoObservable(this, {
@@ -1063,6 +1070,30 @@ class SimulationStore {
     this.isCivilInputDirty = isDirty;
   }
 
+  // 시민용 검색 조건 일괄 설정 (CivilConfig에서 호출)
+  setCivilConditions(concentration: string, windDirection: string, windSpeed: string) {
+    this.civilConditions = {
+      concentration,
+      windDirection,
+      windSpeed,
+      measuredAt: new Date().toISOString() // 기준 시간은 현재 시간으로 설정 (필요시 변경)
+    };
+  }
+
+  // 정렬 변경 액션 (CivilList 헤더에서 호출)
+  setCivilSort(key: 'measured_at' | 'concentration' | 'wind_direction' | 'wind_speed') {
+    if (this.civilSortKey === key) {
+      // 같은 키를 누르면 정렬 순서 반전
+      this.civilSortOrder = this.civilSortOrder === 'latest' ? 'oldest' : 'latest';
+    } else {
+      // 새로운 키를 누르면 해당 키 선택, 순서는 oldest(가까운 순/오름차순)가 보통 기본
+      this.civilSortKey = key;
+      this.civilSortOrder = 'oldest'; 
+    }
+    // 데이터 다시 로드 (1페이지부터)
+    this.loadSimulationCivilList(1);
+  }
+
   /**
    * 시민용 화면 완전 초기화 (폼 내용 지우기)
    */
@@ -1075,52 +1106,52 @@ class SimulationStore {
     this.selectedCivilStationAnalysisId = null;
   }
 
-
-  /**
-   * 농도 값 설정 액션
-   */
-  setCivilConcentration(value: string) {
-    this.civilConcentration = value;
-  }
-
   /**
    * 시민용 시뮬레이션 목록 조회
    * GET /api/v1/simulation_auto/civil/list
-   * * @param concentration - 미세먼지 농도 필터 (필수, String)
    * @param page - 페이지 번호 (기본값 1)
-   * @param limit - 페이지당 항목 수 (기본값 7)
    */
-  async loadSimulationCivilList(concentration: string, page: number = 1, limit: number = 7) {
+  async loadSimulationCivilList(page: number = 1) {
     this.isLoadingCivilList = true;
     
     try {
-      // 1. 현재 검색어(농도)를 스토어에 저장 (나중에 페이지네이션 등에서 참조 가능)
-      runInAction(() => {
-        this.civilConcentration = concentration;
-      });
+      // 정렬 키에 따라 API에 보낼 파라미터 결정
+      let targetConc, targetWD, targetWS, targetTime = undefined;
 
-      console.log(`[Store] Loading Civil List... (Concentration: ${concentration}, Page: ${page})`);
+      // civilSortKey가 설정되어 있으면 해당 값만 보냄
+      if (this.civilSortKey === 'concentration') {
+        targetConc = this.civilConditions.concentration;
+      } else if (this.civilSortKey === 'wind_direction') {
+        targetWD = this.civilConditions.windDirection;
+      } else if (this.civilSortKey === 'wind_speed') {
+        targetWS = this.civilConditions.windSpeed;
+      } else if (this.civilSortKey === 'measured_at') {
+        targetTime = this.civilConditions.measuredAt;
+      }
+      // 키가 없으면(null) 아무 파라미터도 안 보냄 -> 기본 정렬(최신순)
 
-      // 2. API 호출
-      const response = await getSimulationCivilList(concentration, page, limit);
+      console.log(`[Store] Loading Civil List... Page:${page}, Sort:${this.civilSortKey}, Order:${this.civilSortOrder}`);
+
+      const response = await getSimulationCivilList(
+        page, 
+        5, // limit
+        this.civilSortOrder,
+        targetConc,
+        targetWD,
+        targetWS,
+        targetTime
+      );
 
       runInAction(() => {
         this.simulationCivilList = response.simulations;
         this.paginationCivil = response.pagination;
       });
 
-      console.log('✅ [Store] Civil Simulation List Loaded:', response);
-
     } catch (error) {
-      console.error('❌ [Store] Failed to load civil simulation list:', error);
-      runInAction(() => {
-        this.simulationCivilList = [];
-        this.paginationCivil = null;
-      });
+      console.error('❌ [Store] Failed to load civil list:', error);
+      // ... Error handling
     } finally {
-      runInAction(() => {
-        this.isLoadingCivilList = false;
-      });
+      runInAction(() => { this.isLoadingCivilList = false; });
     }
   }
 
