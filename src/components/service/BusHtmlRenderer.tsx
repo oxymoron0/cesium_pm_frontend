@@ -62,16 +62,16 @@ const BusHtmlRenderer = observer(() => {
     const pm25Value = Math.round(sensorData.fpm * 10) / 10;
     const vocsValue = Math.round(sensorData.voc * 10) / 10;
 
-    // 센서 표시 여부 확인
-    const showPM10 = airConfigStore.isSensorVisible('pm10');
-    const showPM25 = airConfigStore.isSensorVisible('pm25');
+    // 센서 표시 여부 확인 (센서 타입 선택 + 등급 필터 적용)
+    // PM10: 센서 타입이 선택되어 있고, 해당 값의 등급이 선택되어 있을 때만 표시
+    const showPM10 = airConfigStore.isSensorVisible('pm10') && airConfigStore.shouldShowSensorByGrade('pm10', pm10Value);
+    // PM25: 센서 타입이 선택되어 있고, 해당 값의 등급이 선택되어 있을 때만 표시
+    const showPM25 = airConfigStore.isSensorVisible('pm25') && airConfigStore.shouldShowSensorByGrade('pm25', pm25Value);
+    // VOCs: 등급 필터 없음, 센서 타입 선택만 확인
     const showVOCs = airConfigStore.isSensorVisible('vocs');
 
-    // 등급 필터 확인 (PM10, PM2.5 기준)
-    const passesGradeFilter = airConfigStore.shouldShowByGrade(pm10Value, pm25Value);
-
-    // 모든 센서가 비활성화되거나 등급 필터를 통과하지 못하면 숨김 처리
-    const shouldHide = (!showPM10 && !showPM25 && !showVOCs) || !passesGradeFilter;
+    // 모든 센서가 비활성화되면 숨김 처리
+    const shouldHide = !showPM10 && !showPM25 && !showVOCs;
 
     // PM10 색상 계산
     const getPM10Color = (value: number) => {
@@ -265,26 +265,8 @@ const BusHtmlRenderer = observer(() => {
       const sensorVisibilityChanged = busInfo.lastSensorVisibility !== currentSensorVisibility;
       const gradeVisibilityChanged = busInfo.lastGradeVisibility !== currentGradeVisibility;
 
-      // 등급 가시성만 변경된 경우 (센서 가시성은 그대로)
-      const onlyGradeVisibilityChanged = (
-        !sensorDataChanged && !routeChanged && !trackingChanged && !sensorVisibilityChanged && gradeVisibilityChanged
-      );
-
-      if (onlyGradeVisibilityChanged) {
-        // display 속성만 업데이트 (innerHTML 재생성 없음)
-        const sensorContainer = busInfo.element.querySelector('.sensor-container') as HTMLElement;
-        if (sensorContainer && sensorData) {
-          const pm10Value = Math.round(sensorData.pm * 10) / 10;
-          const pm25Value = Math.round(sensorData.fpm * 10) / 10;
-          const showPM10 = airConfigStore.isSensorVisible('pm10');
-          const showPM25 = airConfigStore.isSensorVisible('pm25');
-          const showVOCs = airConfigStore.isSensorVisible('vocs');
-          const passesGradeFilter = airConfigStore.shouldShowByGrade(pm10Value, pm25Value);
-          const shouldHide = (!showPM10 && !showPM25 && !showVOCs) || !passesGradeFilter;
-          sensorContainer.style.display = shouldHide ? 'none' : 'flex';
-        }
-        busInfo.lastGradeVisibility = currentGradeVisibility;
-      } else if (sensorDataChanged || routeChanged || trackingChanged || sensorVisibilityChanged) {
+      // 등급 가시성 변경 시에도 개별 센서 표시/숨김이 변경될 수 있으므로 HTML 재생성
+      if (sensorDataChanged || routeChanged || trackingChanged || sensorVisibilityChanged || gradeVisibilityChanged) {
         // 전체 HTML 재생성
         busInfo.element.innerHTML = generateContainerHTML(routeName, vehicleNumber, sensorData);
         registerBusEvents(busInfo.element, vehicleNumber);

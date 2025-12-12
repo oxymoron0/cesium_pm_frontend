@@ -36,11 +36,15 @@ export interface JsonPreloadProgress {
 // 시뮬레이션별 JSON 캐시
 const jsonCacheMap = new Map<string, Map<number, JsonCacheEntry>>();
 
+// 진행 중인 프리로드 작업 (fetch 중단용)
+let currentAbortController: AbortController | null = null;
+let isPreloadAborted = false;
+
 /**
  * JSON 파싱
  */
-async function parseJson(jsonUrl: string, sampleRate: number = 1): Promise<JsonFrameData> {
-  const response = await fetch(jsonUrl);
+async function parseJson(jsonUrl: string, sampleRate: number = 1, signal?: AbortSignal): Promise<JsonFrameData> {
+  const response = await fetch(jsonUrl, { signal });
 
   if (!response.ok) {
     console.error(` JSON fetch failed: ${response.status} ${response.statusText} for ${jsonUrl}`);
@@ -120,6 +124,11 @@ export async function preloadJson(
 ): Promise<void> {
   console.log(` [JSON Preloader] Starting preload for ${uuid} (${totalFrames} frames)`);
 
+  // AbortController 생성
+  const abortController = new AbortController();
+  currentAbortController = abortController;
+  isPreloadAborted = false;
+
   // 기존 캐시 확인
   let frameCache = jsonCacheMap.get(uuid);
 
@@ -167,6 +176,12 @@ export async function preloadJson(
   });
 
   for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
+    // 중단 체크
+    if (isPreloadAborted || abortController.signal.aborted) {
+      console.log(` [JSON Preloader] Aborted at frame ${frameIndex}`);
+      break;
+    }
+
     // 이미 로드된 프레임은 건너뛰기
     const existingEntry = frameCache.get(frameIndex);
     if (existingEntry && existingEntry.loaded) {
@@ -179,10 +194,13 @@ export async function preloadJson(
 
     try {
       console.log(`📥 Frame ${frameIndex}: Fetching ${jsonUrl}`);
-      const frameData = await parseJson(jsonUrl, sampleRate);
-      /* 로컬 테스트용 
-        const frameData = await parseJson(jsonUrl, 5);
-      */
+      const frameData = await parseJson(jsonUrl, sampleRate, abortController.signal);
+
+      // 중단 후 결과 무시
+      if (isPreloadAborted || abortController.signal.aborted) {
+        console.log(` [JSON Preloader] Aborted after fetch at frame ${frameIndex}`);
+        break;
+      }
 
       frameCache.set(frameIndex, {
         data: frameData,
@@ -201,12 +219,21 @@ export async function preloadJson(
 
       console.log(` Frame ${frameIndex}: ${frameData.dataPoints.length} particles loaded from ${jsonUrl}`);
     } catch (error) {
+      if ((error as Error).name === 'AbortError') {
+        console.log(` [JSON Preloader] Fetch aborted at frame ${frameIndex}`);
+        break;
+      }
       console.error(` Frame ${frameIndex} load failed (${jsonUrl}):`, error);
       frameCache.set(frameIndex, {
         data: { dataPoints: [], pointSize: 1 },
         loaded: false
       });
     }
+  }
+
+  // AbortController 정리
+  if (currentAbortController === abortController) {
+    currentAbortController = null;
   }
 
   console.log(` [JSON Preloader] Preload complete: ${loadedCount}/${totalFrames} frames`);
@@ -256,4 +283,21 @@ export function clearJsonCache(uuid?: string): void {
     jsonCacheMap.clear();
     console.log(' [JSON Preloader] All caches cleared');
   }
+}
+
+/**
+ * 진행 중인 프리로드 중단 및 메모리 해제
+ */
+export function abortJsonPreload(): void {
+  isPreloadAborted = true;
+
+  if (currentAbortController) {
+    currentAbortController.abort();
+    currentAbortController = null;
+    console.log(' [JSON Preloader] Preload aborted');
+  }
+
+  // 캐시 전체 정리
+  jsonCacheMap.clear();
+  console.log(' [JSON Preloader] All caches cleared on abort');
 }

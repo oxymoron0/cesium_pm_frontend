@@ -15,7 +15,7 @@ interface SimulationMainProps {
   dispatch?: (action: unknown) => void;
 }
 
-const SimulationMain = observer(function App(props: SimulationMainProps) {
+const SimulationMain = observer(function SimulationMain({ onCloseMicroApp }: SimulationMainProps) {
   const isQuickView = simulationStore.currentView === "quick";
 
   return (
@@ -23,7 +23,7 @@ const SimulationMain = observer(function App(props: SimulationMainProps) {
       <Title
         info="※ 시뮬레이션 실행을 위한 설정 페이지입니다."
         infoTitle="시뮬레이션"
-        onClose={() => simulationStore.setCurrentView("config")}
+        onClose={onCloseMicroApp}
         onMinimize={() => simulationStore.toggleMinimize()}
       >
         시뮬레이션
@@ -51,7 +51,6 @@ const SimulationMain = observer(function App(props: SimulationMainProps) {
             <SimulationActiveTabList />
                 {simulationStore.currentView === "config" ? (
                   <SimulationConfig
-                    onClose={props.onCloseMicroApp}
                     onLocationComplete={() => {
                       simulationStore.disableDirectLocationMode();
                       simulationStore.setCurrentView("detailConfig");

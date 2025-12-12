@@ -33,6 +33,10 @@ const csvCacheMap = new Map<string, Map<number, CsvCacheEntry>>();
 // 시뮬레이션별 PM10 범위 정보
 const pm10RangeMap = new Map<string, Pm10RangeInfo>();
 
+// 진행 중인 프리로드 작업 (fetch 중단용)
+let currentAbortController: AbortController | null = null;
+let isPreloadAborted = false;
+
 // EPSG:5186 정의
 proj4.defs("EPSG:5186",
   "+proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=600000 " + 
@@ -84,9 +88,10 @@ function calculatePm10Range(dataPoints: ParticleDataPoint[]): Pm10RangeInfo {
 async function parseCSV(
   csvUrl: string,
   sampleRate: number = 5,
-  minPm10: number = 0
+  minPm10: number = 0,
+  signal?: AbortSignal
 ): Promise<ParticleDataPoint[]> {
-  const response = await fetch(csvUrl);
+  const response = await fetch(csvUrl, { signal });
 
   if (!response.ok) {
     console.error(` CSV fetch failed: ${response.status} ${response.statusText} for ${csvUrl}`);
@@ -164,6 +169,11 @@ export async function preloadCsv(
 ): Promise<void> {
   console.log(` [CSV Preloader] Starting preload for ${uuid} (${totalFrames} frames)`);
 
+  // AbortController 생성
+  const abortController = new AbortController();
+  currentAbortController = abortController;
+  isPreloadAborted = false;
+
   // 기존 캐시 확인
   let frameCache = csvCacheMap.get(uuid);
 
@@ -199,6 +209,12 @@ export async function preloadCsv(
 
   // 순차 로딩
   for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
+    // 중단 체크
+    if (isPreloadAborted || abortController.signal.aborted) {
+      console.log(` [CSV Preloader] Aborted at frame ${frameIndex}`);
+      break;
+    }
+
     // 이미 로드된 프레임은 건너뛰기
     const existingEntry = frameCache.get(frameIndex);
     if (existingEntry && existingEntry.loaded) {
@@ -211,7 +227,13 @@ export async function preloadCsv(
 
     try {
       console.log(` Frame ${frameIndex}: Fetching ${csvUrl}`);
-      const dataPoints = await parseCSV(csvUrl, sampleRate, minPm10);
+      const dataPoints = await parseCSV(csvUrl, sampleRate, minPm10, abortController.signal);
+
+      // 중단 후 결과 무시
+      if (isPreloadAborted || abortController.signal.aborted) {
+        console.log(` [CSV Preloader] Aborted after fetch at frame ${frameIndex}`);
+        break;
+      }
 
       // 첫 번째 프레임에서 PM10 범위 계산
       if (frameIndex === 0 && dataPoints.length > 0) {
@@ -237,12 +259,21 @@ export async function preloadCsv(
 
       console.log(` Frame ${frameIndex}: ${dataPoints.length} particles loaded from ${csvUrl}`);
     } catch (error) {
+      if ((error as Error).name === 'AbortError') {
+        console.log(` [CSV Preloader] Fetch aborted at frame ${frameIndex}`);
+        break;
+      }
       console.error(` Frame ${frameIndex} load failed (${csvUrl}):`, error);
       frameCache.set(frameIndex, {
         data: [],
         loaded: false
       });
     }
+  }
+
+  // AbortController 정리
+  if (currentAbortController === abortController) {
+    currentAbortController = null;
   }
 
   console.log(` [CSV Preloader] Preload complete: ${loadedCount}/${totalFrames} frames`);
@@ -301,4 +332,22 @@ export function clearCsvCache(uuid?: string): void {
     pm10RangeMap.clear();
     console.log(' [CSV Preloader] All caches cleared');
   }
+}
+
+/**
+ * 진행 중인 프리로드 중단 및 메모리 해제
+ */
+export function abortCsvPreload(): void {
+  isPreloadAborted = true;
+
+  if (currentAbortController) {
+    currentAbortController.abort();
+    currentAbortController = null;
+    console.log(' [CSV Preloader] Preload aborted');
+  }
+
+  // 캐시 전체 정리
+  csvCacheMap.clear();
+  pm10RangeMap.clear();
+  console.log(' [CSV Preloader] All caches cleared on abort');
 }
