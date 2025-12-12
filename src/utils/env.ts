@@ -41,7 +41,10 @@ export async function loadConfig(): Promise<RuntimeConfig> {
   }
 
   try {
-    const basePath = import.meta.env.VITE_BASE_PATH || '/';
+    // Use Vite's BASE_URL which correctly handles dev/prod paths
+    // Dev: '/' (Vite serves public folder at root)
+    // Prod: VITE_BASE_PATH value (e.g., '/bump-svc3d-front-pm/')
+    const basePath = import.meta.env.BASE_URL || '/';
     const response = await fetch(`${basePath}config.json`);
 
     if (!response.ok) {
