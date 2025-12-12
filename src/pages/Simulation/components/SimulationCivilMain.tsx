@@ -5,20 +5,26 @@ import SimulationCivilConfig from "./SimulationCivilConfig";
 import SimulationCivilResult from "./SimulationCivilResult";
 import { simulationStore } from "@/stores/SimulationStore";
 
-// interface SimulationCivilMainProps {
-//   onCloseMicroApp?: () => void;
-// }
+interface SimulationCivilMainProps {
+  onCloseMicroApp?: () => void;
+}
 
-const SimulationCivilMain = observer(function App() {  
+const SimulationCivilMain = observer(function App({onCloseMicroApp}: SimulationCivilMainProps) {  
   const { currentView, isMinimized, isCivilInputDirty, civilConfigKey } = simulationStore;
 
 const handleOnclose = async () => {
-  console.log('진입')
     // 설정 화면이고, 입력값이 있다면 경고 팝업
     if (currentView === 'civilConfig' && isCivilInputDirty) {
       const result = await simulationStore.openModal('moveReset'); // 'moveReset' 타입 사용
       
       if (result !== 'confirm') return;
+    }
+
+    if (currentView === 'civilConfig') {
+      // 다음 실행을 위해 상태는 초기화해두고 창 닫기
+      simulationStore.resetCivilConfig(); 
+      onCloseMicroApp?.(); // 마이크로앱 닫기 함수 실행
+      return;
     }
 
     // 초기화 및 화면 전환

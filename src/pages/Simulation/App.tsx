@@ -159,7 +159,7 @@ const App = observer(function App(props: AppProps) {
             maxHeight="calc(100vh - 50px)"
             allowOverflow={true}
           >
-            <SimulationCivilMain />
+            <SimulationCivilMain onCloseMicroApp={props.onCloseMicroApp}/>
           </Panel>
 
           {simulationStore.isModalOpen && (
