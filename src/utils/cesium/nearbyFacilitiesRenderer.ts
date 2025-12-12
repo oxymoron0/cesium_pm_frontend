@@ -1,4 +1,5 @@
 import type { BuildingFacilityData, VulnerableFacilitiesApiResponse } from '@/pages/Priority/types';
+import { AIR_QUALITY_COLORS } from '@/utils/airQuality';
 import { createGeoJsonDataSource, clearDataSource } from './datasources';
 import {
   Cartesian3,
@@ -47,7 +48,7 @@ export interface BuildingGeomShape {
 
 /**
  * 미세먼지 레벨에 따른 스타일(색상/텍스트)을 반환합니다.
- * PriorityResult.tsx의 getLevelStyle과 동일한 색상 사용
+ * AIR_QUALITY_COLORS 기준 색상 사용
  */
 function getLevelStyle(level: VulnerableFacility['predictedLevel']): {
   text: string;
@@ -57,13 +58,13 @@ function getLevelStyle(level: VulnerableFacility['predictedLevel']): {
 } {
   switch (level) {
     case 'very-bad':
-      return { text: '매우나쁨', color: '#FFFFFF', borderColor: '#D32F2D', backgroundColor: '#D32F2D' };
+      return { text: '매우나쁨', color: '#FFFFFF', borderColor: AIR_QUALITY_COLORS.very_bad, backgroundColor: AIR_QUALITY_COLORS.very_bad };
     case 'bad':
-      return { text: '나쁨', color: '#FFFFFF', borderColor: '#FF7700', backgroundColor: '#FF7700' };
+      return { text: '나쁨', color: '#000000', borderColor: AIR_QUALITY_COLORS.bad, backgroundColor: AIR_QUALITY_COLORS.bad };
     case 'normal':
-      return { text: '보통', color: '#000000', borderColor: '#FFD040', backgroundColor: '#FFD040' };
+      return { text: '보통', color: '#000000', borderColor: AIR_QUALITY_COLORS.normal, backgroundColor: AIR_QUALITY_COLORS.normal };
     case 'good':
-      return { text: '좋음', color: '#FFFFFF', borderColor: '#00C851', backgroundColor: '#00C851' };
+      return { text: '좋음', color: '#FFFFFF', borderColor: AIR_QUALITY_COLORS.good, backgroundColor: AIR_QUALITY_COLORS.good };
     default:
       return { text: '미확인', color: 'gray', borderColor: 'gray', backgroundColor: 'lightgray' };
   }
