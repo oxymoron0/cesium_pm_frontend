@@ -1,57 +1,87 @@
 /**
- * Runtime Environment Configuration Utility
+ * Runtime Configuration Utility
  *
- * Provides type-safe access to runtime environment variables injected via env-config.js.
- * In Docker/Kubernetes, env-config.js is generated at container startup from environment variables.
- * In development, default values from public/env-config.js are used.
+ * Loads configuration from config.json at runtime.
+ * In Docker/Kubernetes, config.json is generated at container startup from environment variables.
+ * In development, default values from public/config.json are used.
  *
  * @example
  * ```typescript
- * import { getEnv, isCivil } from '@/utils/env';
+ * import { loadConfig, isCivil } from '@/utils/env';
  *
- * // Get specific environment variable
- * const civil = getEnv('IS_CIVIL');
+ * // Load config once at app startup
+ * await loadConfig();
  *
- * // Or use convenience getter
+ * // Then use synchronously
  * if (isCivil()) {
  *   // Civil mode specific logic
  * }
  * ```
  */
 
-export interface RuntimeEnv {
-  IS_CIVIL: boolean;
+export interface RuntimeConfig {
+  isCivil: boolean;
+}
+
+// Cached configuration
+let cachedConfig: RuntimeConfig | null = null;
+
+// Default configuration (fallback)
+const defaultConfig: RuntimeConfig = {
+  isCivil: false,
+};
+
+/**
+ * Load configuration from config.json
+ * Should be called once at app initialization
+ */
+export async function loadConfig(): Promise<RuntimeConfig> {
+  if (cachedConfig) {
+    return cachedConfig;
+  }
+
+  try {
+    const basePath = import.meta.env.VITE_BASE_PATH || '/';
+    const response = await fetch(`${basePath}config.json`);
+
+    if (!response.ok) {
+      console.warn('[env] Failed to load config.json, using defaults');
+      cachedConfig = defaultConfig;
+      return cachedConfig;
+    }
+
+    const config = await response.json();
+    cachedConfig = {
+      isCivil: config.isCivil ?? defaultConfig.isCivil,
+    };
+
+    console.log('[env] Config loaded:', cachedConfig);
+    return cachedConfig;
+  } catch (error) {
+    console.warn('[env] Error loading config.json, using defaults:', error);
+    cachedConfig = defaultConfig;
+    return cachedConfig;
+  }
 }
 
 /**
- * Get runtime environment configuration
- * Falls back to default values if window.__ENV__ is not available
+ * Get cached configuration
+ * Returns default config if not loaded yet
  */
-function getRuntimeEnv(): RuntimeEnv {
-  const env = (window as Window & { __ENV__?: RuntimeEnv }).__ENV__;
-
-  return {
-    IS_CIVIL: env?.IS_CIVIL ?? false,
-  };
-}
-
-/**
- * Get a specific environment variable value
- */
-export function getEnv<K extends keyof RuntimeEnv>(key: K): RuntimeEnv[K] {
-  return getRuntimeEnv()[key];
+export function getConfig(): RuntimeConfig {
+  return cachedConfig ?? defaultConfig;
 }
 
 /**
  * Check if application is running in civil mode
  */
 export function isCivil(): boolean {
-  return getEnv('IS_CIVIL');
+  return getConfig().isCivil;
 }
 
 /**
- * Get all runtime environment variables
+ * Check if config has been loaded
  */
-export function getAllEnv(): RuntimeEnv {
-  return getRuntimeEnv();
+export function isConfigLoaded(): boolean {
+  return cachedConfig !== null;
 }
