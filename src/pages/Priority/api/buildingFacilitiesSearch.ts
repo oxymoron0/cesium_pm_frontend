@@ -15,8 +15,6 @@ import type { BuildingFacilitiesResponse } from '@/utils/cesium/nearbyBuildingFa
 export async function fetchVulnerableFacilitiesData(
   uuid: string
 ): Promise<VulnerableFacilitiesApiResponse> {
-  console.log(`[fetchVulnerableFacilitiesData] Fetching data for UUID: ${uuid}`);
-
   try {
     const response = await fetch(API_PATHS.SIMULATION_VULNERABLE_FACILITIES_BY_UUID(uuid), {
       method: 'GET',
@@ -34,114 +32,104 @@ export async function fetchVulnerableFacilitiesData(
     }
 
     const data: VulnerableFacilitiesApiResponse = await response.json();
-    console.log(`[fetchVulnerableFacilitiesData] Total affected facilities: ${data.total_affected_facilities}`);
+    console.log(`[fetchVulnerableFacilitiesData] ${data.total_affected_facilities}개 시설 데이터 로드 완료`);
+    console.log(`[fetchVulnerableFacilitiesData] : `, data);
 
-    // ID 목록 로그 출력
-    const allFacilityIds = {
-      good: data.facilities_by_grade.good?.map(f => ({ id: f.id, name: f.name })) || [],
-      normal: data.facilities_by_grade.normal?.map(f => ({ id: f.id, name: f.name })) || [],
-      bad: data.facilities_by_grade.bad?.map(f => ({ id: f.id, name: f.name })) || [],
-      very_bad: data.facilities_by_grade.very_bad?.map(f => ({ id: f.id, name: f.name })) || []
-    };
-    console.log('[fetchVulnerableFacilitiesData] Facility IDs from SIMULATION_VULNERABLE_FACILITIES_BY_UUID:', allFacilityIds);
+    // 특정 시설 필터링 및 geom_shape 확인
+    const allGrades = ['good', 'normal', 'bad', 'very_bad'] as const;
+    const targetNames = ['다원어린이집', '성지곡학수경로당'];
+
+    allGrades.forEach(grade => {
+      const facilities = data.facilities_by_grade[grade];
+      if (facilities) {
+        targetNames.forEach(targetName => {
+          const target = facilities.find(f => f.name.includes(targetName));
+          if (target) {
+            console.log(`[fetchVulnerableFacilitiesData] ${targetName} 전체 객체 (${grade}):`, target);
+            console.log(`[fetchVulnerableFacilitiesData] ${targetName} 요약:`, {
+              id: target.id,
+              type: target.type,
+              name: target.name,
+              hasGeomShape: !!target.geom_shape,
+              geomShapeType: target.geom_shape?.type,
+              geomShapeCoordinatesLength: target.geom_shape?.coordinates?.length,
+              lod1_shape_id: target.lod1_shape_id,
+              nearbyBuildingsCount: target.nearby_buildings?.length || 0,
+              firstNearbyBuildingId: target.nearby_buildings?.[0]?.lod1_shape_id
+            });
+          }
+        });
+      }
+    });
 
     return data;
   } catch (error) {
-    console.error('[fetchVulnerableFacilitiesData] Failed to fetch vulnerable facilities:', error);
+    console.error('[fetchVulnerableFacilitiesData] 취약시설 데이터 로드 실패:', error);
     throw error;
   }
 }
 
 /**
- * facility ID로 해당 시설의 데이터 찾기
+ * facility ID와 type으로 해당 시설의 데이터 찾기
  * @param data - 취약시설 API 응답
  * @param facilityId - 시설 ID (VulnerableFacility의 id와 매칭)
+ * @param facilityType - 시설 타입 (senior/childcare)
  * @returns 해당 시설 데이터 또는 undefined
  */
 function findFacilityById(
   data: VulnerableFacilitiesApiResponse,
-  facilityId: string
+  facilityId: string,
+  facilityType: string
 ): BuildingFacilityData | undefined {
   const numericId = parseInt(facilityId, 10);
-  if (isNaN(numericId)) {
-    console.warn(`[findFacilityById] Invalid facility ID: ${facilityId}`);
-    return undefined;
-  }
+  if (isNaN(numericId)) return undefined;
 
-  console.log(`[findFacilityById] Searching for facility ID: ${facilityId} (numeric: ${numericId})`);
-
-  // 모든 등급에서 시설 검색
   const allGrades = ['good', 'normal', 'bad', 'very_bad'] as const;
 
   for (const grade of allGrades) {
     const facilities = data.facilities_by_grade[grade];
     if (facilities) {
-      const found = facilities.find(f => f.id === numericId);
-      if (found) {
-        console.log(`[findFacilityById] Found facility in grade '${grade}':`, { id: found.id, name: found.name, type: found.type });
-        return found;
-      }
+      const found = facilities.find(f => f.id === numericId && f.type === facilityType);
+      if (found) return found;
     }
   }
 
-  console.warn(`[findFacilityById] Facility ID ${facilityId} not found in any grade`);
   return undefined;
 }
 
 /**
  * 주변 건물 시설물 검색 (facility ID 기반)
  * @param facilityId - 시설 ID (VulnerableFacility의 id)
+ * @param facilityType - 시설 타입 (senior/childcare)
  * @param uuid - 시뮬레이션 UUID
  * @param cachedData - 캐시된 API 데이터 (옵션)
  * @returns 건물 시설물 응답 (nearbyBuildingFacilitiesRenderer 호환 형식)
  */
 export async function searchNearbyBuildingFacilities(
   facilityId: string,
+  facilityType: string,
   uuid: string,
   cachedData?: VulnerableFacilitiesApiResponse
 ): Promise<BuildingFacilitiesResponse> {
-  console.log(`[searchNearbyBuildingFacilities] Searching for facility ID: ${facilityId}, UUID: ${uuid}`);
-
   try {
-    // 캐시된 데이터가 없으면 API 호출
     const data = cachedData || await fetchVulnerableFacilitiesData(uuid);
-
-    // facility ID로 시설 찾기
-    const facility = findFacilityById(data, facilityId);
+    const facility = findFacilityById(data, facilityId, facilityType);
 
     if (!facility) {
-      console.warn(`[searchNearbyBuildingFacilities] Facility not found: ${facilityId}`);
-      console.warn(`[searchNearbyBuildingFacilities] Available facilities:`, {
-        good: data.facilities_by_grade.good?.map(f => f.id) || [],
-        normal: data.facilities_by_grade.normal?.map(f => f.id) || [],
-        bad: data.facilities_by_grade.bad?.map(f => f.id) || [],
-        very_bad: data.facilities_by_grade.very_bad?.map(f => f.id) || []
-      });
-      return {
+      console.warn(`[searchNearbyBuildingFacilities] 시설 없음: ID=${facilityId}, type=${facilityType}`);
+      const emptyResult: BuildingFacilitiesResponse = {
         type: 'FeatureCollection',
         features: [],
         total: 0
       };
+      return emptyResult;
     }
 
-    console.log(`[searchNearbyBuildingFacilities] Facility found:`, {
-      id: facility.id,
-      name: facility.name,
-      hasGeomShape: !!facility.geom_shape,
-      geomShapeType: facility.geom_shape?.type,
-      geomShapeCoordinatesLength: facility.geom_shape?.coordinates?.length,
-      nearbyBuildingsCount: facility.nearby_buildings?.length || 0,
-      lod1_shape_id: facility.lod1_shape_id,
-      geom_height: facility.geom_height,
-      geom_ground_level: facility.geom_ground_level
-    });
-
-    // BuildingFacilitiesResponse 형식으로 변환 (MultiPolygon 그대로 사용)
     const features = [];
 
-    // 1.  에만 추가
+    // 주 건물 추가
     if (facility.geom_shape && facility.geom_shape.coordinates && facility.geom_shape.coordinates.length > 0) {
-      const mainBuildingFeature = {
+      features.push({
         type: 'Feature' as const,
         geometry: facility.geom_shape,
         properties: {
@@ -149,77 +137,59 @@ export async function searchNearbyBuildingFacilities(
           lod1_shape_id: facility.lod1_shape_id,
           height: facility.geom_height,
           ground_level: facility.geom_ground_level,
-          distance_m: 0 // 주 건물이므로 거리 0
+          distance_m: 0
         }
-      };
-      features.push(mainBuildingFeature);
-      console.log(`[searchNearbyBuildingFacilities] Added main building for facility ${facilityId}`);
-    } else {
-      console.warn(`[searchNearbyBuildingFacilities] No geom_shape for facility ${facilityId}`);
-    }
-
-    // 2. 주변 건물들
-    if (facility.nearby_buildings && facility.nearby_buildings.length > 0) {
-      const nearbyBuildingFeatures = facility.nearby_buildings.map(building => {
-        return {
-          type: 'Feature' as const,
-          geometry: building.geom,
-          properties: {
-            id: building.lod1_shape_id.toString(),
-            lod1_shape_id: building.lod1_shape_id,
-            height: building.height,
-            ground_level: building.ground_level,
-            distance_m: building.distance_m
-          }
-        };
       });
-      features.push(...nearbyBuildingFeatures);
-      console.log(`[searchNearbyBuildingFacilities] Added ${nearbyBuildingFeatures.length} nearby buildings for facility ${facilityId}`);
-    } else {
-      console.warn(`[searchNearbyBuildingFacilities] No nearby_buildings for facility ${facilityId}`);
     }
 
-    const response: BuildingFacilitiesResponse = {
+    // 주변 건물 추가
+    if (facility.nearby_buildings && facility.nearby_buildings.length > 0) {
+      const nearbyBuildingFeatures = facility.nearby_buildings.map(building => ({
+        type: 'Feature' as const,
+        geometry: building.geom,
+        properties: {
+          id: building.lod1_shape_id.toString(),
+          lod1_shape_id: building.lod1_shape_id,
+          height: building.height,
+          ground_level: building.ground_level,
+          distance_m: building.distance_m
+        }
+      }));
+      features.push(...nearbyBuildingFeatures);
+
+    }
+
+    const result: BuildingFacilitiesResponse = {
       type: 'FeatureCollection',
       features,
       total: features.length
     };
 
-    console.log(`[searchNearbyBuildingFacilities] Found ${response.total} nearby buildings for facility ${facilityId}`);
-
-    return response;
+    return result;
   } catch (error) {
-    console.error('[searchNearbyBuildingFacilities] Failed to search building facilities:', error);
+    console.error('[searchNearbyBuildingFacilities] 건물 시설물 검색 실패:', error);
     throw error;
   }
 }
 
 /**
  * 여러 시설에 대해 주변 건물 검색 (병렬 처리)
- * @param facilityIds - 시설 ID 배열
+ * @param facilities - 시설 정보 배열 { id, type }
  * @param uuid - 시뮬레이션 UUID
  * @returns 건물 시설물 검색 결과 배열
  */
 export async function searchNearbyBuildingFacilitiesMultiple(
-  facilityIds: string[],
+  facilities: Array<{ id: string; type: string }>,
   uuid: string
 ): Promise<BuildingFacilitiesResponse[]> {
-  console.log(`[searchNearbyBuildingFacilitiesMultiple] Searching for ${facilityIds.length} facilities, UUID: ${uuid}`);
-
   try {
-    // 한 번만 API 호출하여 데이터 가져오기
     const data = await fetchVulnerableFacilitiesData(uuid);
-
-    // 각 facility ID에 대해 검색 (캐시된 데이터 사용)
-    const promises = facilityIds.map(facilityId =>
-      searchNearbyBuildingFacilities(facilityId, uuid, data)
+    const promises = facilities.map(facility =>
+      searchNearbyBuildingFacilities(facility.id, facility.type, uuid, data)
     );
-
-    const results = await Promise.all(promises);
-    console.log(`[searchNearbyBuildingFacilitiesMultiple] Completed ${results.length} searches`);
-    return results;
+    return await Promise.all(promises);
   } catch (error) {
-    console.error('[searchNearbyBuildingFacilitiesMultiple] Failed to search building facilities:', error);
+    console.error('[searchNearbyBuildingFacilitiesMultiple] 건물 시설물 일괄 검색 실패:', error);
     throw error;
   }
 }

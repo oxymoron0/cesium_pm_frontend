@@ -71,7 +71,9 @@ function createPolygonHierarchies(
   // 타입 가드: 4중 배열인지 3중 배열인지 확인 (coords[0][0]이 배열이면 4중)
   // Polygon: [Ring][Point][lat,lng] -> coords[0][0] is number
   // MultiPolygon: [Polygon][Ring][Point][lat,lng] -> coords[0][0] is array
-  const isMultiPolygon = Array.isArray(coords[0]) && Array.isArray(coords[0][0]) && Array.isArray((coords[0][0] as any)[0]);
+  const firstElement = coords[0];
+  const secondElement = Array.isArray(firstElement) ? firstElement[0] : undefined;
+  const isMultiPolygon = Array.isArray(secondElement) && Array.isArray(secondElement[0]);
   console.log('[nearbyBuildingFacilitiesRenderer] isMultiPolygon:', isMultiPolygon);
 
   if (isMultiPolygon) {
@@ -107,6 +109,8 @@ function createPolygonHierarchies(
 /**
  * 건물 시설물 Feature를 Cesium Entity로 변환 (MultiPolygon)
  * MultiPolygon의 각 폴리곤을 별도 Entity로 생성
+ * @param feature - 건물 Feature
+ * @param facilityId - 시설 composite key (${id}_${type})
  */
 function createBuildingFacilityEntity(
   feature: BuildingFacilityFeature,
@@ -116,7 +120,7 @@ function createBuildingFacilityEntity(
   const multiPolygonCoords = feature.geometry.coordinates;
 
   console.log(`[createBuildingFacilityEntity] Creating entities for facility ${facilityId}, building ${feature.properties.id}`);
-  
+
   const hierarchies = createPolygonHierarchies(multiPolygonCoords);
 
   // 각 폴리곤을 별도 Entity로 생성
@@ -134,16 +138,16 @@ function createBuildingFacilityEntity(
         outline: BUILDING_STYLES.outline,
         outlineColor: new ColorMaterialProperty(BUILDING_STYLES.outlineColor),
         outlineWidth: BUILDING_STYLES.outlineWidth,
-        
+
         // 지형에 딱 붙게 설정
         heightReference: HeightReference.CLAMP_TO_GROUND,
-        
+
         // 지형으로부터 상대적인 높이로 돌출
         extrudedHeight: feature.properties.height,
         extrudedHeightReference: HeightReference.RELATIVE_TO_GROUND
       }),
       properties: {
-        facilityId: facilityId,
+        facilityId: facilityId, // composite key (${id}_${type})
         buildingId: feature.properties.id,
         lod1_shape_id: feature.properties.lod1_shape_id,
         height: feature.properties.height,
@@ -164,7 +168,7 @@ function createBuildingFacilityEntity(
 
 /**
  * 단일 시설의 주변 건물 시설물 검색 결과를 렌더링
- * @param facilityId - 시설 ID
+ * @param facilityId - 시설 composite key (${id}_${type})
  * @param buildingData - 건물 시설물 검색 결과
  */
 export async function renderNearbyBuildingFacilitiesForFacility(
@@ -239,7 +243,7 @@ export async function renderNearbyBuildingFacilitiesMultiple(
 
 /**
  * 특정 시설의 건물 시설물 렌더링 제거
- * @param facilityId - 시설 ID
+ * @param facilityId - 시설 composite key (${id}_${type})
  */
 export function clearNearbyBuildingFacilitiesForFacility(facilityId: string): void {
   try {

@@ -28,9 +28,9 @@ const PriorityCustomConfig = observer(function PriorityCustomConfig({ onBack, on
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
-  const provinceCode = administrativeStore.selectedProvinceCode || '26';
-  const districtCode = administrativeStore.selectedDistrictCode || '';
-  const neighborhoodCode = administrativeStore.selectedNeighborhoodCode || '';
+  // const provinceCode = administrativeStore.selectedProvinceCode || '26';
+  // const districtCode = administrativeStore.selectedDistrictCode || '';
+  // const neighborhoodCode = administrativeStore.selectedNeighborhoodCode || '';
 
   // Ensure administrative data is loaded
   useEffect(() => {

@@ -107,10 +107,14 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
         const endDateStr = endDate.toISOString().split('T')[0];
 
         // 취약시설 검색
+        const neighborhoodCode = administrativeStore.selectedNeighborhoodCode === 'all'
+          ? null
+          : administrativeStore.selectedNeighborhoodCode;
+
         await priorityStore.searchPriorityFacilities(
           administrativeStore.selectedProvinceCode || '26',
           administrativeStore.selectedDistrictCode || '230',
-          null
+          neighborhoodCode
         );
 
         // 통합 초기화
@@ -168,6 +172,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       hideFacilityHtmlTags(); // Hide HTML tags during cleanup
       clearVulnerableFacilities(); // Cesium 렌더링 정리
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facilities, priorityStore.vulnerableFacilitiesApiData]);
 
   // 읍면동 변경 시 경계 렌더링
@@ -234,87 +239,76 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
     }
   };
 
-  // 시설 토글
-  const toggleFacility = async (id: string) => {
-    console.log('[toggleFacility] START - Facility ID:', id);
-    const facility = facilities.find(f => f.id === id);
-    console.log('[toggleFacility] Facility data:', facility ? { id: facility.id, name: facility.name, rank: facility.rank } : 'NOT FOUND');
+  // 시설 토글 (id + type으로 unique하게 식별)
+  const toggleFacility = async (facilityKey: string) => {
+    console.log('[toggleFacility] START - Facility Key:', facilityKey);
+    const facility = facilities.find(f => `${f.id}_${f.type}` === facilityKey);
+    console.log('[toggleFacility] Facility data:', facility ? { id: facility.id, type: facility.type, name: facility.name, rank: facility.rank } : 'NOT FOUND');
+
+    if (!facility) {
+      console.error('[toggleFacility] Facility not found:', facilityKey);
+      return;
+    }
+
     const newSet = new Set(selectedFacilities);
-    const isDeselecting = newSet.has(id);
+    const isDeselecting = newSet.has(facilityKey);
 
     if (isDeselecting) {
-      console.log('[toggleFacility] Deselecting facility:', id);
-      newSet.delete(id);
-      clearNearbyRoadsForFacility(id);
-      clearNearbyBuildingFacilitiesForFacility(id);
+      console.log('[toggleFacility] Deselecting facility:', facilityKey);
+      newSet.delete(facilityKey);
+      clearNearbyRoadsForFacility(facilityKey);
+      clearNearbyBuildingFacilitiesForFacility(facilityKey);
     } else {
-      console.log('[toggleFacility] Selecting facility:', id);
-      newSet.add(id);
+      console.log('[toggleFacility] Selecting facility:', facilityKey);
+      newSet.add(facilityKey);
     }
 
     // UI 즉시 업데이트
     setSelectedFacilities(newSet);
-    priorityStore.toggleFacilitySelection(id);
+    priorityStore.toggleFacilitySelection(facilityKey);
 
     // 선택 해제 시 조기 종료
     if (isDeselecting) {
       renderNearbyStations(priorityStore.selectedStations);
-      // hideFacilityHtmlTags(); // Removed as HTML tags should always be visible
-      // if (newSet.size > 0) { // Removed as HTML tags should always be visible
-      //   const selectedFacilityObjects = facilities.filter(f => newSet.has(f.id));
-      //   showFacilityHtmlTags(selectedFacilityObjects);
-      // }
       console.log('[toggleFacility] END (deselect)');
       return;
     }
 
-    // 선택 시 데이터 로드 (백그라운드)
-    // facility는 이미 위에서 선언됨 (line 222)
-    if (!facility) {
-      console.error('[toggleFacility] Facility not found:', id);
-      return;
-    }
-
     // 도로 데이터 로드 (lazy loading)
-    let roadData = priorityStore.getRoadData(id);
+    let roadData = priorityStore.getRoadData(facilityKey);
     if (!roadData) {
       const [longitude, latitude] = facility.geometry.coordinates;
-      console.log('[toggleFacility] Loading road data for facility:', id);
-      roadData = await priorityStore.loadNearbyRoadsForFacility(id, longitude, latitude);
+      console.log('[toggleFacility] Loading road data for facility:', facilityKey);
+      roadData = await priorityStore.loadNearbyRoadsForFacility(facilityKey, longitude, latitude);
     }
 
     console.log('[toggleFacility] Road data:', roadData ? `${roadData.total} roads` : 'null');
     if (roadData) {
-      await renderNearbyRoadsForFacility(id, roadData);
+      await renderNearbyRoadsForFacility(facilityKey, roadData);
       const roadNames = new Set<string>();
       roadData.features.forEach(feature => roadNames.add(feature.properties.rn));
-      priorityStore.setNearbyRoadNames(id, roadNames);
+      priorityStore.setNearbyRoadNames(facilityKey, roadNames);
       console.log('[toggleFacility] Road names:', Array.from(roadNames));
     }
 
     // 건물 데이터 로드 (lazy loading)
-    let buildingData = priorityStore.getBuildingFacilitiesData(id);
+    let buildingData = priorityStore.getBuildingFacilitiesData(facilityKey);
     if (!buildingData) {
-      console.log('[toggleFacility] Loading building data for facility:', id, facility?.name);
-      buildingData = await priorityStore.loadBuildingFacilitiesForFacility(id);
+      console.log('[toggleFacility] Loading building data for facility:', facilityKey, facility?.name);
+      buildingData = await priorityStore.loadBuildingFacilitiesForFacility(facilityKey);
     }
 
     console.log('[toggleFacility] Building data:', buildingData ? `${buildingData.total} buildings` : 'null');
+
     if (buildingData) {
-      console.log('[toggleFacility] Rendering buildings for facility:', { id, name: facility?.name, buildingCount: buildingData.total });
-      await renderNearbyBuildingFacilitiesForFacility(id, buildingData);
+      console.log('[toggleFacility] Rendering buildings for facility:', { key: facilityKey, name: facility?.name, buildingCount: buildingData.total });
+      await renderNearbyBuildingFacilitiesForFacility(facilityKey, buildingData);
     }
 
     console.log('[toggleFacility] Store selected facilities:', priorityStore.selectedFacilityIds.size);
     console.log('[toggleFacility] Selected stations count:', priorityStore.selectedStations.length);
 
     renderNearbyStations(priorityStore.selectedStations);
-
-    // hideFacilityHtmlTags(); // Removed as HTML tags should always be visible
-    // const selectedFacilityObjects = facilities.filter(f => newSet.has(f.id)); // Removed as HTML tags should always be visible
-    // console.log('[toggleFacility] Showing HTML tags for:', selectedFacilityObjects.length, 'facilities'); // Removed as HTML tags should always be visible
-    // showFacilityHtmlTags(selectedFacilityObjects); // Removed as HTML tags should always be visible
-
     console.log('[toggleFacility] END');
   };
 
@@ -326,46 +320,47 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       renderNearbyStations([]);
       clearAllNearbyRoads();
       clearAllNearbyBuildingFacilities();
-      // hideFacilityHtmlTags(); // Removed as HTML tags should always be visible
     } else {
-      const allIds = facilities.map(f => f.id);
-      setSelectedFacilities(new Set(allIds));
+      const allKeys = facilities.map(f => `${f.id}_${f.type}`);
+      setSelectedFacilities(new Set(allKeys));
 
       // 순차 처리로 rate limiting 방지
       for (const facility of facilities) {
+        const facilityKey = `${facility.id}_${facility.type}`;
+
         // 도로 데이터 로드 (lazy loading)
-        let roadData = priorityStore.getRoadData(facility.id);
+        let roadData = priorityStore.getRoadData(facilityKey);
         if (!roadData) {
           const [longitude, latitude] = facility.geometry.coordinates;
-          roadData = await priorityStore.loadNearbyRoadsForFacility(facility.id, longitude, latitude);
+          roadData = await priorityStore.loadNearbyRoadsForFacility(facilityKey, longitude, latitude);
         }
 
         if (roadData) {
-          await renderNearbyRoadsForFacility(facility.id, roadData);
+          await renderNearbyRoadsForFacility(facilityKey, roadData);
           const roadNames = new Set<string>();
           roadData.features.forEach(feature => roadNames.add(feature.properties.rn));
-          priorityStore.setNearbyRoadNames(facility.id, roadNames);
+          priorityStore.setNearbyRoadNames(facilityKey, roadNames);
         }
 
         // 건물 데이터 로드 (lazy loading)
-        let buildingData = priorityStore.getBuildingFacilitiesData(facility.id);
+        let buildingData = priorityStore.getBuildingFacilitiesData(facilityKey);
         if (!buildingData) {
-          buildingData = await priorityStore.loadBuildingFacilitiesForFacility(facility.id);
+          buildingData = await priorityStore.loadBuildingFacilitiesForFacility(facilityKey);
         }
 
         if (buildingData) {
-          await renderNearbyBuildingFacilitiesForFacility(facility.id, buildingData);
+          await renderNearbyBuildingFacilitiesForFacility(facilityKey, buildingData);
         }
       }
 
-      allIds.forEach(id => {
-        if (!priorityStore.isFacilitySelected(id)) {
-          priorityStore.toggleFacilitySelection(id);
+      facilities.forEach(facility => {
+        const facilityKey = `${facility.id}_${facility.type}`;
+        if (!priorityStore.isFacilitySelected(facilityKey)) {
+          priorityStore.toggleFacilitySelection(facilityKey);
         }
       });
 
       renderNearbyStations(priorityStore.selectedStations);
-      // showFacilityHtmlTags(facilities); // Removed as HTML tags should always be visible
     }
   };
 
@@ -581,16 +576,17 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
               {/* 테이블 데이터 */}
               {facilities.map((facility) => {
                 const levelStyle = getLevelStyle(facility.predictedLevel);
-                const isSelected = selectedFacilities.has(facility.id);
+                const facilityKey = `${facility.id}_${facility.type}`;
+                const isSelected = selectedFacilities.has(facilityKey);
 
                 return (
                   <div
-                    key={`facility-${facility.id}`}
+                    key={facilityKey}
                     className={`flex items-center self-stretch border-b border-[#696A6A] ${isSelected ? 'bg-[rgba(255,208,64,0.2)]' : ''}`}
                     style={{ minHeight: '40px' }}
                   >
                     <div className="flex items-center justify-center" style={{ width: '40px', height: '40px', flexShrink: 0 }}>
-                      <input type="checkbox" className="custom-checkbox" checked={isSelected} onChange={() => toggleFacility(facility.id)} />
+                      <input type="checkbox" className="custom-checkbox" checked={isSelected} onChange={() => toggleFacility(facilityKey)} />
                     </div>
                     <div className="flex items-center justify-center text-white font-pretendard text-[16px] text-center" style={{ width: '40px', flexShrink: 0 }}>
                       {facility.rank}

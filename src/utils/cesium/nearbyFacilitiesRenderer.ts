@@ -17,6 +17,7 @@ import {
 // --- Type Definitions ---
 export type VulnerableFacility = {
   id: string;
+  type: 'senior' | 'childcare';
   rank: number;
   name: string;
   address: string;
@@ -175,7 +176,7 @@ function createFacilityEntity(
 ): Entity {
   const [lng, lat] = facility.geometry.coordinates;
   const facilityId = facility.id;
-  const entityId = `facility_${facilityId}`;
+  const entityId = `facility_${facilityId}_${facility.rank}`;
 
   // Terrain 높이 적용 + 태그가 지면 위로 뜨도록 약간의 오프셋 (1m)
   const key = `${lng.toFixed(6)}_${lat.toFixed(6)}`;
@@ -191,6 +192,7 @@ function createFacilityEntity(
     },
     properties: {
       facilityId: facilityId,
+      facilityRank: facility.rank,
       facilityName: facility.name,
       isFacility: true
     }
@@ -202,7 +204,7 @@ function createFacilityEntity(
  */
 function createFacilityHtmlElement(facility: VulnerableFacility): void {
   const facilityId = facility.id;
-  const entityId = `facility_${facilityId}`;
+  const entityId = `facility_${facilityId}_${facility.rank}`;
   const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
 
   if (!viewer) return;
@@ -327,7 +329,9 @@ function createPolygonHierarchies(
   let polygons: number[][][][] = [];
 
   // 타입 가드: 4중 배열인지 3중 배열인지 확인
-  const isMultiPolygon = Array.isArray(coords[0]) && Array.isArray(coords[0][0]) && Array.isArray((coords[0][0] as any)[0]);
+  const firstElement = coords[0];
+  const secondElement = Array.isArray(firstElement) ? firstElement[0] : undefined;
+  const isMultiPolygon = Array.isArray(secondElement) && Array.isArray(secondElement[0]);
   // console.log('[nearbyFacilitiesRenderer] isMultiPolygon:', isMultiPolygon); // 로그 제거
 
   if (isMultiPolygon) {
@@ -365,18 +369,19 @@ function createPolygonHierarchies(
  */
 function createBuildingOutlineEntity(
   facilityId: string,
+  facilityRank: number,
   geomShape: BuildingGeomShape,
   // borderColor: string
 ): Entity[] {
   // console.log(`[nearbyFacilitiesRenderer] createBuildingOutlineEntity for ${facilityId}`, geomShape); // 로그 제거
   const entities: Entity[] = [];
-  
+
   // geomShape.coordinates가 Polygon(3중)인지 MultiPolygon(4중)인지 확인 후 처리
   const hierarchies = createPolygonHierarchies(geomShape.coordinates);
 
   hierarchies.forEach((hierarchy, index) => {
     const entity = new Entity({
-      id: `facility_outline_${facilityId}_${index}`,
+      id: `facility_outline_${facilityId}_${facilityRank}_${index}`,
       polygon: new PolygonGraphics({
         hierarchy: hierarchy,
         material: Color.fromCssColorString('#FF0040').withAlpha(0.4),
@@ -447,30 +452,28 @@ export async function renderVulnerableFacilities(
     const buildingGeomMap = new Map<string, { geomShape: BuildingGeomShape; borderColor: string }>();
 
     if (vulnerableFacilitiesApiData) {
-      console.log('[nearbyFacilitiesRenderer] API data available. Processing building geometries...');
       // 모든 등급에서 건물 형상 정보 추출
       Object.values(vulnerableFacilitiesApiData.facilities_by_grade).forEach((facilityArray: BuildingFacilityData[]) => {
         if (!facilityArray) return;
-        
+
         facilityArray.forEach((facility: BuildingFacilityData) => {
           if (facility.geom_shape && facility.geom_shape.coordinates) {
-            // 해당 시설의 예측 등급에 따른 색상 가져오기
-            // API 데이터의 id는 number, facilities의 id는 string이므로 변환 필요
-            const vulnerableFacility = facilities.find(f => f.id === facility.id.toString());
-            
+            // ID와 type 모두 매칭 (같은 건물에 senior/childcare 모두 있을 수 있음)
+            const vulnerableFacility = facilities.find(f =>
+              f.id === facility.id.toString() && f.type === facility.type
+            );
+
             if (vulnerableFacility) {
               const levelStyle = getLevelStyle(vulnerableFacility.predictedLevel);
-              buildingGeomMap.set(facility.id.toString(), {
+              const mapKey = `${facility.id}_${facility.type}`;
+              buildingGeomMap.set(mapKey, {
                 geomShape: facility.geom_shape,
                 borderColor: levelStyle.borderColor
               });
-            } else {
-              // console.log(`[nearbyFacilitiesRenderer] Facility ID ${facility.id} not found in current list.`); // 너무 많으면 주석 처리
             }
           }
         });
       });
-      console.log(`[nearbyFacilitiesRenderer] buildingGeomMap size: ${buildingGeomMap.size}`);
     } else {
         console.warn('[nearbyFacilitiesRenderer] No API data available for building geometries.');
     }
@@ -481,10 +484,12 @@ export async function renderVulnerableFacilities(
       buildingOutlineDataSource.entities.removeAll();
 
       facilities.forEach(facility => {
-        const buildingGeom = buildingGeomMap.get(facility.id);
+        const mapKey = `${facility.id}_${facility.type}`;
+        const buildingGeom = buildingGeomMap.get(mapKey);
         if (buildingGeom) {
           const outlineEntities = createBuildingOutlineEntity(
             facility.id,
+            facility.rank,
             buildingGeom.geomShape,
             // buildingGeom.borderColor
           );
@@ -492,12 +497,8 @@ export async function renderVulnerableFacilities(
         }
       });
 
-      console.log(`[renderVulnerableFacilities] Rendered ${buildingOutlineDataSource.entities.values.length} building outlines`);
-    } else {
-        console.log('[nearbyFacilitiesRenderer] No building outlines to render.');
+      console.log(`[renderVulnerableFacilities] ${buildingOutlineDataSource.entities.values.length}개 건물 윤곽선 렌더링 완료`);
     }
-
-    console.log(`[renderVulnerableFacilities] Successfully rendered ${facilities.length} facilities (entities only).`);
 
   } catch (error) {
     console.error('[renderVulnerableFacilities] Failed to render facilities:', error);
@@ -545,19 +546,12 @@ export async function clearVulnerableFacilities(): Promise<void> {
  */
 export function showFacilityHtmlTags(facilities: VulnerableFacility[]): void {
   try {
-    console.log('[showFacilityHtmlTags] Showing HTML tags for facilities');
-
-    // HTML 엘리먼트 생성
     facilities.forEach(facility => {
       createFacilityHtmlElement(facility);
     });
-
-    // PostRender 리스너 등록
     attachFacilityPostRenderListener();
-
-    console.log(`[showFacilityHtmlTags] Successfully showed ${facilities.length} facility HTML tags`);
   } catch (error) {
-    console.error('[showFacilityHtmlTags] Failed to show facility HTML tags:', error);
+    console.error('[showFacilityHtmlTags] 시설 HTML 태그 표시 실패:', error);
   }
 }
 
@@ -566,30 +560,22 @@ export function showFacilityHtmlTags(facilities: VulnerableFacility[]): void {
  */
 export function hideFacilityHtmlTags(): void {
   try {
-    console.log('[hideFacilityHtmlTags] Hiding facility HTML tags');
-
     const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
     if (viewer && viewer.container) {
-      // HTML 엘리먼트 제거
       facilityElementsCache.forEach(element => {
         if (element.parentNode === viewer.container) {
           viewer.container.removeChild(element);
         }
       });
 
-      // PostRender 리스너 제거
       if (isFacilityPostRenderListenerAttached) {
         viewer.scene.postRender.removeEventListener(updateFacilityHtmlElementPositions);
         isFacilityPostRenderListenerAttached = false;
-        console.log('[hideFacilityHtmlTags] PostRender listener removed.');
       }
     }
 
-    // 캐시 정리
     facilityElementsCache.clear();
-
-    console.log('[hideFacilityHtmlTags] Successfully hid facility HTML tags');
   } catch (error) {
-    console.error('[hideFacilityHtmlTags] Failed to hide facility HTML tags:', error);
+    console.error('[hideFacilityHtmlTags] 시설 HTML 태그 숨김 실패:', error);
   }
 }
