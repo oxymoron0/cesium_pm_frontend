@@ -18,8 +18,9 @@ import { userStore } from './UserStore';
 import { administrativeStore } from './AdministrativeStore';
 import { abortJsonPreload } from '@/utils/cesium/jsonPreloader';
 import { abortCsvPreload } from '@/utils/cesium/csvPreloader';
+import { isCivil as getIsCivil } from "@/utils/env"
 // import { randomizeSimulationConcentration, ENABLE_MOCK_CONCENTRATION } from '@/utils/mockData/simulationConcentration';
-const IS_CIVIL_APP = import.meta.env.VITE_IS_CIVIL === 'true';
+const IS_CIVIL_APP = getIsCivil()
 
 // ============================================================================
 // SimulationStore Class
