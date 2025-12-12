@@ -7,10 +7,12 @@ import type { SimulationCivilStationData } from '@/types/simulation_request_type
 
 interface SimulationCivilStationHtmlRendererProps {
   dataSourceName?: string;
+  selectedEntityId?: string | null;
 }
 
 const SimulationCivilStationHtmlRenderer = ({
-  dataSourceName = 'simulation_civil_result_stations'
+  dataSourceName = 'simulation_civil_result_stations',
+  selectedEntityId = null
 }: SimulationCivilStationHtmlRendererProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   // HTML 엘리먼트 캐시 (매 프레임 생성 방지)
@@ -20,6 +22,10 @@ const SimulationCivilStationHtmlRenderer = ({
 
   // 로컬 선택 상태 (스토어와 동기화하지 않고 독립적으로 작동하거나, 필요시 useEffect로 동기화)
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSelectedStationId(selectedEntityId);
+  }, [selectedEntityId]);
 
   // ===== 데이터 조회 헬퍼 =====
   const getStationData = (entityId: string) => {

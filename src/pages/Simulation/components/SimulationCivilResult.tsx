@@ -273,7 +273,7 @@ const SimulationCivilResult = observer(function SimulationCivilResult() {
                   onClick={() => {
                      const entity = window.cviewer?.dataSources.getByName("simulation_civil_result_stations")[0]?.entities.getById(key);
                      if (entity) {
-                        window.cviewer?.flyTo(entity, { duration: 1.0 });
+                        // window.cviewer?.flyTo(entity, { duration: 1.0 });
                         setSelectedCivilStationId(r.id);
                      }
                   }}
@@ -323,7 +323,9 @@ const SimulationCivilResult = observer(function SimulationCivilResult() {
     <>
       {renderMainCivilContent()}
 
-      <SimulationCivilStationHtmlRenderer />
+      <SimulationCivilStationHtmlRenderer 
+        selectedEntityId={selectedStationId}
+      />
       {selectedCivilStationAnalysisId !== null && <SimulationCivilProgressIndicator />}
     </>
   );

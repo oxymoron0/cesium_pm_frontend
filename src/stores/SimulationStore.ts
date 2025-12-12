@@ -1167,6 +1167,12 @@ class SimulationStore {
     this.pollutantFilter = 'all';
     this.sortOrder = 'latest';
 
+    // 대민 초기화
+    this.isCivilInputDirty = false;
+    this.currentView = 'civilConfig';
+    this.selectedCivilSimulation = null;
+    this.selectedCivilStationAnalysisId = null;
+
     console.log('[SimulationStore] Cleanup completed - all state reset to initial');
   }
 
