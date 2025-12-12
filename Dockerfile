@@ -30,6 +30,13 @@ RUN echo 'server { \
     listen 8080; \
     server_name _; \
     root /usr/share/nginx/html; \
+    index index.html; \
+    \
+    # Static files (config.json, assets, etc.) \
+    location / { \
+        try_files $uri $uri/ /index.html; \
+        add_header Cache-Control "public, max-age=3600"; \
+    } \
     \
     # Simulation result files (JSON, CSV, GLB) \
     # Mount NFS or volume to /mnt/nfs at runtime \
