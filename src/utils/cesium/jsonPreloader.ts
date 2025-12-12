@@ -98,7 +98,7 @@ async function parseJson(jsonUrl: string, sampleRate: number = 1, signal?: Abort
       lon,
       lat,
       height,
-      position: Cartesian3.fromDegrees(lon, lat, height + 400),
+      position: Cartesian3.fromDegrees(lon, lat, height + 200),
       color: { r, g, b, a }
     });
   }
@@ -129,6 +129,15 @@ export async function preloadJson(
   currentAbortController = abortController;
   isPreloadAborted = false;
 
+  // 다른 uuid의 캐시 제거 (단일 시뮬레이션만 캐시 유지)
+  const existingUuids = Array.from(jsonCacheMap.keys());
+  existingUuids.forEach(existingUuid => {
+    if (existingUuid !== uuid) {
+      jsonCacheMap.delete(existingUuid);
+      console.log(` [JSON Preloader] Cleared cache for previous UUID: ${existingUuid}`);
+    }
+  });
+
   // 기존 캐시 확인
   let frameCache = jsonCacheMap.get(uuid);
 
@@ -154,7 +163,6 @@ export async function preloadJson(
   const basePath = import.meta.env.VITE_BASE_PATH || '/';
   const simPath = import.meta.env.VITE_SIM_PATH || 'sim';
   const normalizedPath = `${basePath}${simPath}/${uuid}/`;
-
   /* NAS 경로 테스트용 
     const basePath_nas = import.meta.env.VITE_API_BASE_PATH_TWO || '/';
     const normalizedPath = `${basePath_nas}${uuid}/`;
@@ -170,6 +178,7 @@ export async function preloadJson(
   console.log("[JSON Preloader] Base path:", normalizedPath);
   console.log("[JSON Preloader] Base path:", basePath);
   console.log("[JSON Preloader] Base path:", simPath);
+  console.log("[JSON Preloader] Base path:", uuid);
 
   // 기존에 로드된 프레임 수 계산
   let loadedCount = 0;
