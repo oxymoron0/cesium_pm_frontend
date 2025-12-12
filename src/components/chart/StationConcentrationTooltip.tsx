@@ -1,5 +1,6 @@
 import type { TimePeriod } from '@/stores/PriorityStatisticsStore'
 import type { StationConcentrationData } from '@/types/statistics'
+import { AIR_QUALITY_COLORS, AIR_QUALITY_STANDARDS } from '@/utils/airQuality'
 
 interface StationConcentrationTooltipProps {
   active?: boolean
@@ -9,18 +10,20 @@ interface StationConcentrationTooltipProps {
   period?: TimePeriod
 }
 
-// 농도 기준 레벨 판단
-// function getAirQualityLevel(value: number): { label: string; color: string } {
-//   if (value > 150) return { label: '매우나쁨', color: '#D32F2F' }
-//   if (value > 80) return { label: '나쁨', color: '#FF6B00' }
-//   if (value > 30) return { label: '보통', color: '#FFD040' }
-//   return { label: '좋음', color: '#4CAF50' }
-// }
+// PM10 기준 농도 레벨 판단 (프로젝트 중앙화된 기준 사용)
+function getAirQualityLevel(value: number): { label: string; color: string; textColor: string } {
+  const standards = AIR_QUALITY_STANDARDS.pm10
 
-// 농도 기준 레벨 판단
-function getAirQualityLevel(value: number): { label: '매우나쁨' | '나쁨'; color: string } {
-  if (value > 150) return { label: '매우나쁨', color: '#D32F2F' };
-  return { label: '나쁨', color: '#FF6B00' };
+  if (value <= standards.good.max) {
+    return { label: '좋음', color: AIR_QUALITY_COLORS.good, textColor: '#FFFFFF' }
+  }
+  if (value <= standards.normal.max) {
+    return { label: '보통', color: AIR_QUALITY_COLORS.normal, textColor: '#FFFFFF' }
+  }
+  if (value <= standards.bad.max) {
+    return { label: '나쁨', color: AIR_QUALITY_COLORS.bad, textColor: '#000000' }
+  }
+  return { label: '매우나쁨', color: AIR_QUALITY_COLORS.very_bad, textColor: '#FFFFFF' }
 }
 
 /**
@@ -73,7 +76,7 @@ export default function StationConcentrationTooltip({ active, payload, period }:
         }}>최고 농도</span>
         <div style={{
           backgroundColor: maxLevel.color,
-          color: '#FFFFFF',
+          color: maxLevel.textColor,
           fontSize: '12px',
           fontWeight: '600',
           fontFamily: 'Pretendard',
@@ -107,7 +110,7 @@ export default function StationConcentrationTooltip({ active, payload, period }:
           }}>평균</span>
           <div style={{
             backgroundColor: avgLevel.color,
-            color: '#FFFFFF',
+            color: avgLevel.textColor,
             fontSize: '12px',
             fontWeight: '600',
             fontFamily: 'Pretendard',

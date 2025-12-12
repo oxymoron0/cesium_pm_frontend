@@ -1,4 +1,5 @@
 import type { FacilityData } from '@/types/statistics'
+import { AIR_QUALITY_COLORS } from '@/utils/airQuality'
 
 interface FacilitySimulationTooltipProps {
   active?: boolean
@@ -55,7 +56,7 @@ export default function FacilitySimulationTooltip({ active, payload }: FacilityS
         marginTop: '8px'
       }}>
         <div style={{
-          backgroundColor: '#D32F2F',
+          backgroundColor: AIR_QUALITY_COLORS.very_bad,
           color: '#FFFFFF',
           fontSize: '12px',
           fontWeight: '600',
@@ -85,8 +86,8 @@ export default function FacilitySimulationTooltip({ active, payload }: FacilityS
         marginTop: '6px'
       }}>
         <div style={{
-          backgroundColor: '#FF6B00',
-          color: '#FFFFFF',
+          backgroundColor: AIR_QUALITY_COLORS.bad,
+          color: '#000000',
           fontSize: '12px',
           fontWeight: '600',
           fontFamily: 'Pretendard',
