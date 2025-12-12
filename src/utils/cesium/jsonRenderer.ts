@@ -9,24 +9,25 @@ const JSON_PRIMITIVE_GROUP_NAME = 'simulation_json_result';
 
 // 파티클 설정
 export const particleSettings = {
-  opacity: 0.8,         // [TEST] 0.01 → 0.8: 선명하게 보이도록 불투명도 증가
-  autoScale: false,     // [TEST] true → false: 거리별 크기 조정 비활성화
-  nearDistance: 0,
-  nearScale: 1.0,       // [TEST] 비활성화됨
-  farDistance: 8000,
-  farScale: 1.0,        // [TEST] 비활성화됨
-  // 시각적 효과 개선을 위한 추가 설정
-  contrast: 1.5,        // [TEST] 4.0 → 1.5: 선명도 위해 대비 완화
-  sizeSensitivity: 0.0, // [TEST] 1.0 → 0.0: 크기 변화 없음 (고정 크기)
-  sizeMultiplier: 0.3,  // [TEST] 기본 크기 배율 (1.0 = 원본, 0.3 = 30% 크기)
-  alphaMultiplier: 1.0, // [TEST] 2.0 → 1.0: 부스트 제거
-  threshold: 0.1,       // 렌더링 최소 임계값 (이 값 이하의 alpha를 가진 데이터는 렌더링 안함)
+  opacity: 1.0,         // opacity를 1.0으로 설정하여 point.color.a가 직접 투명도에 영향을 주도록 함
+  autoScale: true,       
+  nearDistance: 0,      
+  nearScale: 1.0,     
+  farDistance: 10000,    
+  farScale: 0.5,        
+  
+  // 기존 설정값들
+  contrast: 1.0,
+  sizeSensitivity: 0.0,
+  sizeMultiplier: 1.0,
+  alphaMultiplier: 1.0,
+  threshold: 0.0,
 
-  // 스파클(Sparkle) 효과 설정: 고농도 지역이 반짝거림
-  sparkleEnabled: false, // [TEST] true → false: 반짝임 비활성화
-  sparkleThreshold: 0.4, // 이 값 이상의 농도에서만 반짝임 (0.0 ~ 1.0)
-  sparkleSpeed: 0.4,     // 반짝임 속도
-  sparkleIntensity: 0.05  // 반짝임 강도 (알파값 변화폭 +/-)
+
+  sparkleEnabled: false,
+  sparkleThreshold: 0.4,
+  sparkleSpeed: 0.4,
+  sparkleIntensity: 0.05
 };
 
 
@@ -83,49 +84,26 @@ export function renderJsonFrame(uuid: string, frameIndex: number): boolean {
     }
 
     const position = point.position ?? Cartesian3.fromDegrees(point.lon, point.lat, point.height);
-    const intensity = point.color.a; // 0.0 ~ 1.0
     
-    // 1. 불투명도 대비(Contrast) 적용: 강한 신호는 더 진하게, 약한 신호는 더 흐리게 (Power curve)
-    // contrast가 1보다 크면 낮은 값은 더 급격히 줄어듦
-    const contrastAlpha = Math.pow(intensity, particleSettings.contrast);
-    
-    // 2. 최종 알파값 계산 (기본 opacity * 대비 적용된 알파 * 부스팅)
-    // clamp to 0.0 ~ 1.0
-    let finalAlpha = Math.min(1.0, contrastAlpha * particleSettings.opacity * particleSettings.alphaMultiplier);
-
-    // 스파클(Sparkle) 효과 적용
-    if (particleSettings.sparkleEnabled && intensity >= particleSettings.sparkleThreshold) {
-      // 모든 입자가 동시에 반짝이도록 위치 기반 오프셋 제거
-      const wave = Math.sin(frameIndex * particleSettings.sparkleSpeed);
-      
-      // 강도 조절: 1.0을 기준으로 +/- sparkleIntensity 만큼 변동
-      // 예: 0.4 강도면 0.6 ~ 1.4 배율 적용
-      const sparkleFactor = 1.0 + (wave * particleSettings.sparkleIntensity);
-      
-      finalAlpha *= sparkleFactor;
-      finalAlpha = Math.min(1.0, Math.max(0.0, finalAlpha)); // 클램핑
-    }
+    // 입력값이 매우 작으므로(예: ~0.0017) 증폭 계수(200.0)를 곱하여 보정
+    const alphaBoost = 100.0;
+    const finalAlpha = Math.min(1.0, 0.03 + (point.color.a * alphaBoost));
+  
 
     // JSON에서 제공된 색상 사용 (RGB + alpha)
     const color = new Color(
-      1.0,//point.color.r,
-      1.0,//point.color.g,
-      1.0,//point.color.b,
+      point.color.r,
+      point.color.g,
+      point.color.b,
       finalAlpha
     );
-
-    // 3. 크기 가중치 적용: 강도가 높을수록 점을 더 크게 그림
-    // sizeSensitivity가 0이면 원래 pointSize 사용
-    const scaleFactor = 1.0 + (intensity * particleSettings.sizeSensitivity);
-    const finalPixelSize = pointSize * scaleFactor * particleSettings.sizeMultiplier;
-
+    
     primitiveCollection.add({
       position: position,
-      pixelSize: finalPixelSize,
+      pixelSize: pointSize, 
       color: color,
-      // alpha가 높을수록 윤곽선을 더 뚜렷하게
-      outlineColor: Color.BLACK.withAlpha(finalAlpha * 0.8),
-      outlineWidth: finalAlpha > 0.3 ? 1 : 0,
+      outlineColor: Color.BLACK.withAlpha(finalAlpha * 0.5),
+      outlineWidth: finalAlpha > 0.7 ? 1 : 0,
       scaleByDistance: particleSettings.autoScale
         ? new NearFarScalar(
             particleSettings.nearDistance,
@@ -142,7 +120,7 @@ export function renderJsonFrame(uuid: string, frameIndex: number): boolean {
   // 장면에 추가
   addPrimitive(JSON_PRIMITIVE_GROUP_NAME, primitiveCollection);
 
-  console.log(`✅ Frame ${frameIndex} (Fog): ${dataPoints.length} points rendered`);
+  console.log(`✅ Frame ${frameIndex}: ${dataPoints.length} points rendered`);
   return true;
 }
 
