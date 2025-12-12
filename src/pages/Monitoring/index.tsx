@@ -3,6 +3,7 @@ import App from './App'
 import '@/index.css'
 import { cleanupAll } from './cleanup'
 import { userStore, type User } from '@/stores/UserStore'
+import { loadConfig } from '@/utils/env'
 
 let root: Root | null = null;
 
@@ -19,6 +20,9 @@ export async function bootstrap() {
 export async function mount(props: MountProps) {
   const { container, onCloseMicroApp, user } = props
   console.log('[qiankun] Monitoring mount', props);
+
+  // Load runtime configuration before rendering
+  await loadConfig();
 
   // Register user in UserStore (overrides default if provided)
   if (user) {
@@ -53,11 +57,16 @@ export async function unmount() {
 
 // 독립 실행 모드
 if (!window.__POWERED_BY_QIANKUN__) {
-  const container = document.getElementById('microapp-Monitoring') || document.getElementById('root');
-  if (container) {
-    root = createRoot(container);
-    root.render(
-      <App />
-    );
-  }
+  (async () => {
+    // Load runtime configuration before rendering
+    await loadConfig();
+
+    const container = document.getElementById('microapp-Monitoring') || document.getElementById('root');
+    if (container) {
+      root = createRoot(container);
+      root.render(
+        <App />
+      );
+    }
+  })();
 }

@@ -1,8 +1,9 @@
-import React, { Suspense, lazy } from 'react'
+import React, { Suspense, lazy, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 // Cesium CSS 명시적 로딩
 import 'cesium/Build/Cesium/Widgets/widgets.css'
+import { loadConfig, isConfigLoaded } from '@/utils/env'
 
 // Vite의 glob import를 사용하여 모든 페이지 자동 감지
 const pageModules = import.meta.glob('./pages/*/App.tsx', { eager: false })
@@ -37,9 +38,28 @@ const createPageComponent = (modulePath: string) => {
 
 // 개발 환경에서 페이지 선택을 위한 자동 라우터
 function DevRouter() {
+  const [configLoaded, setConfigLoaded] = useState(isConfigLoaded())
   const currentPath = window.location.pathname
   const pages = getPageInfo()
   const basePath = import.meta.env.DEV ? (import.meta.env.VITE_BASE_PATH || '/') : '/'
+
+  // 앱 시작 시 config.json 로드
+  useEffect(() => {
+    if (!configLoaded) {
+      loadConfig().then(() => {
+        setConfigLoaded(true)
+      })
+    }
+  }, [configLoaded])
+
+  // Config 로딩 중 표시
+  if (!configLoaded) {
+    return (
+      <div style={{ padding: '40px', textAlign: 'center' }}>
+        <p>설정 로딩 중...</p>
+      </div>
+    )
+  }
 
   // 현재 경로에서 페이지명 추출
   const getPageNameFromPath = (path: string) => {
