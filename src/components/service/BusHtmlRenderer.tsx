@@ -4,6 +4,7 @@ import { Entity, Cartographic, Cartesian3 } from 'cesium';
 import * as Cesium from 'cesium';
 import { busStore } from '@/stores/BusStore';
 import { airConfigStore } from '@/stores/AirConfigStore';
+import { isCivil as getIsCivil } from '@/utils/env';
 
 /**
  * BusHtmlRenderer
@@ -140,6 +141,63 @@ const BusHtmlRenderer = observer(() => {
     `;
   }, []);
 
+  // 대민 모드용 센서 HTML 생성 함수 (상태 아이콘 + 등급 텍스트)
+  const createCivilSensorHTML = useCallback((sensorData: { pm: number; fpm: number; voc: number }) => {
+    const pm10Value = Math.round(sensorData.pm * 10) / 10;
+    const pm25Value = Math.round(sensorData.fpm * 10) / 10;
+
+    // 센서 표시 여부 확인
+    const showPM10 = airConfigStore.isSensorVisible('pm10') && airConfigStore.shouldShowSensorByGrade('pm10', pm10Value);
+    const showPM25 = airConfigStore.isSensorVisible('pm25') && airConfigStore.shouldShowSensorByGrade('pm25', pm25Value);
+
+    // 모든 센서가 비활성화되면 숨김 처리
+    const shouldHide = !showPM10 && !showPM25;
+
+    // PM10 등급 계산 (매우 나쁨은 나쁨으로 통합)
+    const getPM10Grade = (value: number): { icon: string; text: string } => {
+      if (value <= 30) return { icon: '/icon/state_good.svg', text: '좋음' };
+      if (value <= 80) return { icon: '/icon/state_normal.svg', text: '보통' };
+      return { icon: '/icon/state_bad.svg', text: '나쁨' }; // 150 초과도 나쁨으로 표시
+    };
+
+    // PM2.5 등급 계산 (매우 나쁨은 나쁨으로 통합)
+    const getPM25Grade = (value: number): { icon: string; text: string } => {
+      if (value <= 15) return { icon: '/icon/state_good.svg', text: '좋음' };
+      if (value <= 35) return { icon: '/icon/state_normal.svg', text: '보통' };
+      return { icon: '/icon/state_bad.svg', text: '나쁨' }; // 75 초과도 나쁨으로 표시
+    };
+
+    const pm10Grade = getPM10Grade(pm10Value);
+    const pm25Grade = getPM25Grade(pm25Value);
+
+    // PM10 아이템 HTML
+    const pm10HTML = showPM10 ? `
+        <div style="display: flex; width: 64px; flex-direction: column; align-items: center; gap: 8px;">
+          <div style="color: #FFF; text-align: center; font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 14px; font-weight: 700; line-height: normal; white-space: nowrap;">미세먼지</div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 56px;">
+            <img src="${pm10Grade.icon}" alt="${pm10Grade.text}" style="width: 48px; height: 48px;" />
+            <div style="color: #FFF; text-align: center; font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 10px; font-weight: 400; line-height: normal;">${pm10Grade.text}</div>
+          </div>
+        </div>` : '';
+
+    // PM2.5 아이템 HTML
+    const pm25HTML = showPM25 ? `
+        <div style="display: flex; width: 64px; flex-direction: column; align-items: center; gap: 8px;">
+          <div style="color: #FFF; text-align: center; font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 14px; font-weight: 700; line-height: normal; white-space: nowrap;">초미세먼지</div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 56px;">
+            <img src="${pm25Grade.icon}" alt="${pm25Grade.text}" style="width: 48px; height: 48px;" />
+            <div style="color: #FFF; text-align: center; font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 10px; font-weight: 400; line-height: normal;">${pm25Grade.text}</div>
+          </div>
+        </div>` : '';
+
+    return `
+      <div class="sensor-container" style="display: ${shouldHide ? 'none' : 'flex'}; padding: 12px; justify-content: center; align-items: flex-start; gap: 8px; border-radius: 8px; border: 1px solid #C4C6C6; background: rgba(0, 0, 0, 0.80); pointer-events: none; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
+        ${pm10HTML}
+        ${pm25HTML}
+      </div>
+    `;
+  }, []);
+
   // 버스 정보 HTML 생성 함수 (추적 상태 반영)
   const createBusInfoHTML = useCallback((routeName: string, vehicleNumber: string) => {
     // 현재 추적 상태 확인
@@ -170,15 +228,18 @@ const BusHtmlRenderer = observer(() => {
 
   // 컨테이너 HTML 생성
   const generateContainerHTML = useCallback((routeName: string, vehicleNumber: string, sensorData: { pm: number; fpm: number; voc: number } | undefined) => {
+    const isCivil = getIsCivil();
     const busInfoHTML = createBusInfoHTML(routeName, vehicleNumber);
-    const sensorHTML = sensorData ? createSensorHTML(sensorData) : '';
+    const sensorHTML = sensorData
+      ? (isCivil ? createCivilSensorHTML(sensorData) : createSensorHTML(sensorData))
+      : '';
     return `
       <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
         ${busInfoHTML}
         ${sensorHTML}
       </div>
     `;
-  }, [createBusInfoHTML, createSensorHTML]);
+  }, [createBusInfoHTML, createSensorHTML, createCivilSensorHTML]);
 
   // 이벤트 등록 (단일 함수)
   const registerBusEvents = useCallback((element: HTMLElement, vehicleNumber: string) => {
