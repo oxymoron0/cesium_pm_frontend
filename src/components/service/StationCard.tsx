@@ -9,6 +9,7 @@ interface StationCardProps {
   isSelected?: boolean;
   onBookmarkToggle?: () => void;
   onSelect?: (stationId: string, stationName: string) => void;
+  onDetailClick?: (stationId: string, stationName: string) => void;
 }
 
 function StationCard({
