@@ -38,6 +38,7 @@ export interface PM10RankingItem {
   station_name: string
   route_name: string
   pm10_value: number
+  avg_pm10: number
   recorded_at: string
 }
 

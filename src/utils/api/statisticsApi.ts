@@ -42,7 +42,7 @@ export async function getPM10Ranking(
       stationName: `${item.station_name}\n<${item.station_id.slice(-5)}>`,
       stationId: item.station_id,
       maxConcentration: Math.round(item.pm10_value * 100) / 100,
-      avgConcentration: Math.round(item.pm10_value * 100) / 100
+      avgConcentration: Math.round(item.avg_pm10 * 100) / 100
     }));
   } catch (error) {
     console.error(`[getPM10Ranking] API 호출 실패 (period: ${period}):`, error);
