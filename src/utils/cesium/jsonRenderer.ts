@@ -9,7 +9,7 @@ const JSON_PRIMITIVE_GROUP_NAME = 'simulation_json_result';
 
 // 파티클 설정
 export const particleSettings = {
-  opacity: 1.0,         // opacity를 1.0으로 설정하여 point.color.a가 직접 투명도에 영향을 주도록 함
+  opacity: 0.03,         // opacity를 1.0으로 설정하여 point.color.a가 직접 투명도에 영향을 주도록 함
   autoScale: true,       
   nearDistance: 0,      
   nearScale: 1.0,     
@@ -85,9 +85,7 @@ export function renderJsonFrame(uuid: string, frameIndex: number): boolean {
 
     const position = point.position;
     
-    // 입력값이 매우 작으므로(예: ~0.0017) 증폭 계수(200.0)를 곱하여 보정
-    const alphaBoost = 100.0;
-    const finalAlpha = Math.min(1.0, 0.03 + (point.color.a * alphaBoost));
+    const finalAlpha = point.color.a * particleSettings.opacity;
   
 
     // JSON에서 제공된 색상 사용 (RGB + alpha)
