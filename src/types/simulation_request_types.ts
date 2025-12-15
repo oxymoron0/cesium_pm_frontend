@@ -253,10 +253,10 @@ export interface SimulationCivilQuickData {
   uuid: string;
   measured_at: string; // ISO 8601 string
   pm_type: "pm10" | "pm25" | string;
-  result_path: string;
   average_concentration: number;
   weather: Weather; // 기존 Weather 인터페이스 재사용 (WeatherData와 동일하다면)
   station_data: SimulationCivilStationData[];
+  json_count: number;
 }
 
 /**

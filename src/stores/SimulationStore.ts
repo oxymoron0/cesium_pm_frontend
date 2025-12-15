@@ -1297,7 +1297,7 @@ class SimulationStore {
       this.selectedCivilSimulation = data;
       
       // 2. GLB 프레임 수 설정 (json_count 활용)
-      this.glbCount = 100; //
+      this.glbCount = data?.json_count || 0; //
 
       // 3. 뷰 전환
       this.currentView = 'civilResult'; 

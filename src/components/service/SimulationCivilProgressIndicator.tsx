@@ -16,7 +16,7 @@ import {
 
 const SimulationCivilProgressIndicatorJson = observer(function SimulationCivilProgressIndicatorJson() {
   // 시민용 시뮬레이션 데이터에서 프레임 수 가져오기 (없으면 100)
-  const totalFrames = simulationStore.glbCount || 100;
+  const totalFrames = simulationStore.glbCount || 0;
   const delayMs = 50; // JSON 프레임 간격
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -32,11 +32,6 @@ const SimulationCivilProgressIndicatorJson = observer(function SimulationCivilPr
   const [opacity, setOpacity] = useState(0.8);
   const [minScale, setMinScale] = useState(1);
   const [maxScale, setMaxScale] = useState(8);
-  const [contrast, setContrast] = useState(1.5);
-  const [sizeSensitivity, setSizeSensitivity] = useState(0.0);
-  const [alphaMultiplier, setAlphaMultiplier] = useState(1.0);
-  const [threshold, setThreshold] = useState(0.1);
-  const [sizeMultiplier, setSizeMultiplier] = useState(0.3);
   const [cameraHeight, setCameraHeight] = useState<number>(0);
 
   const playIntervalRef = useRef<number | null>(null);
@@ -56,11 +51,6 @@ const SimulationCivilProgressIndicatorJson = observer(function SimulationCivilPr
     setOpacity(currentSettings.opacity);
     setMinScale(currentSettings.farScale);
     setMaxScale(currentSettings.nearScale);
-    setContrast(currentSettings.contrast);
-    setSizeSensitivity(currentSettings.sizeSensitivity);
-    setAlphaMultiplier(currentSettings.alphaMultiplier);
-    setThreshold(currentSettings.threshold);
-    setSizeMultiplier(currentSettings.sizeMultiplier);
   }, []);
 
   // 설정값 변경 시 실시간 적용
@@ -71,11 +61,6 @@ const SimulationCivilProgressIndicatorJson = observer(function SimulationCivilPr
       opacity,
       nearScale: maxScale,
       farScale: minScale,
-      contrast,
-      sizeSensitivity,
-      alphaMultiplier,
-      threshold,
-      sizeMultiplier
     });
 
     const params = getSimulationParams();
@@ -83,7 +68,7 @@ const SimulationCivilProgressIndicatorJson = observer(function SimulationCivilPr
       renderJsonFrame(params.uuid, currentFrame);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opacity, maxScale, minScale, contrast, sizeSensitivity, alphaMultiplier, threshold, sizeMultiplier, showSettings]);
+  }, [opacity, maxScale, minScale, showSettings]);
 
   // 카메라 높이 업데이트
   useEffect(() => {
@@ -128,8 +113,11 @@ const SimulationCivilProgressIndicatorJson = observer(function SimulationCivilPr
     clearJsonPrimitives();
   }, [currentSimulationUuid]);
 
-  const currentTimeSeconds = Math.floor((currentFrame * delayMs) / 1000);
-  const totalTimeSeconds = Math.floor(((totalFrames - 1) * delayMs) / 1000);
+  // 실제 체감 시간 (delayMs 50ms + 렌더링 오버헤드 약 50ms 가정)
+  const estimatedRealTimePerFrame = 100;
+  
+  const currentTimeSeconds = currentFrame === 0 ? 0 : Math.max(1, Math.ceil((currentFrame * estimatedRealTimePerFrame) / 1000));
+  const totalTimeSeconds = totalFrames > 0 ? Math.max(1, Math.ceil(((totalFrames - 1) * estimatedRealTimePerFrame) / 1000)) : 0;
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -145,7 +133,6 @@ const SimulationCivilProgressIndicatorJson = observer(function SimulationCivilPr
     if (simData?.uuid) {
       return {
         uuid: simData.uuid,
-        resultPath: simData.result_path, // 결과 경로 포함
         totalCount: totalFrames,
         frameIntervalMs: delayMs
       };
@@ -164,8 +151,7 @@ const SimulationCivilProgressIndicatorJson = observer(function SimulationCivilPr
 
     setIsPreloading(true);
     try {
-      // resultPath 전달 (경로가 필요하다면)
-      await preloadJson(params.uuid, params.resultPath || '', totalFrames, setPreloadProgress);
+      await preloadJson(params.uuid, '', totalFrames, setPreloadProgress);
     } catch (error) {
       console.error('JSON Preload failed:', error);
     } finally {
@@ -298,7 +284,6 @@ const SimulationCivilProgressIndicatorJson = observer(function SimulationCivilPr
                   <label className="text-white text-xs mb-1 block">Opacity: <span className="text-[#FFD040] font-mono">{opacity.toFixed(2)}</span></label>
                   <input type="range" min="0.01" max="1.0" step="0.01" value={opacity} onChange={(e) => setOpacity(parseFloat(e.target.value))} className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider" />
                </div>
-               {/* ... 나머지 슬라이더들 ... */}
              </div>
         </div>
       )}

@@ -97,10 +97,11 @@ const SimulationCivilList = observer(function SimulationCivilList() {
 
   const handleRunSimulation = (sim: SimulationCivilQuickData) => { // 타입은 SimulationCivilQuickData
     // 필요하다면 컨펌 모달을 띄울 수 있음
-    const confirmed = confirm("시뮬레이션을 재생하시겠습니까?");
-    if (confirmed) {
-      simulationStore.playCivilSimulation(sim);
-    }
+    // const confirmed = confirm("시뮬레이션을 재생하시겠습니까?");
+    // if (confirmed) {
+    //   simulationStore.playCivilSimulation(sim);
+    // }
+    simulationStore.playCivilSimulation(sim);
   };
 
   // 폰트 스타일

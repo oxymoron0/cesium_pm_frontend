@@ -52,7 +52,8 @@ const handleOnclose = async () => {
       <div style={{ display: isMinimized ? 'none' : 'contents' }}>
 
         <Spacer height={16} />
-        {(currentView === 'civilConfig' || currentView === 'civilList') && <SimulationCivilConfig onBack={handleOnclose} key={civilConfigKey}/>} 
+        {/* {(currentView === 'civilConfig' || currentView === 'civilList') && <SimulationCivilConfig onBack={handleOnclose} key={civilConfigKey}/>}  */}
+        {(currentView === 'civilConfig' || currentView === 'civilList') && <SimulationCivilConfig key={civilConfigKey}/>} 
         {currentView === 'civilResult' && <SimulationCivilResult />}
 
       </div>

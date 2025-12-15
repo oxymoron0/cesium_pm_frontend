@@ -75,7 +75,7 @@ const SimulationCivilRealTimeWeather = observer(function SimulationCivilRealTime
       {/* 목록 확인 버튼 */}
       <div className="w-full">
         <button
-          className={`w-full h-12 text-black font-bold text-lg rounded flex items-center justify-center gap-2 transition-colors ${hasError ? 'bg-[#5E5E5E]':'bg-[#CFFF40]'}`}
+          className={`w-full h-12 text-black font-bold text-lg rounded flex items-center justify-center gap-2 transition-colors cursor-pointer ${hasError ? 'bg-[#5E5E5E]':'bg-[#CFFF40]'}`}
           onClick={onShowListClick} // 상위 핸들러 호출
         >
           <Icon name="saas" className="w-5 h-5 text-black" />

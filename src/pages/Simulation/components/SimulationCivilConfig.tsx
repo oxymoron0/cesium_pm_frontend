@@ -9,13 +9,14 @@ import { isGeometrySuccess } from '@/types/administrative';
 import Info from '@/components/basic/Info';
 import SimulationCivilRealTimeWeather from './SimulationCivilRealTimeWeather';
 import SimulationCivilList from './SimulationCivilList';
-import Icon from '@/components/basic/Icon';
+// import Icon from '@/components/basic/Icon';
 
-interface SimulationCivilConfigProps {
-  onBack?: () => void;
-}
+// interface SimulationCivilConfigProps {
+//   onBack?: () => void;
+// }
 
-const SimulationCivilConfig = observer(function SimulationCivilConfig({ onBack } : SimulationCivilConfigProps)  {
+// const SimulationCivilConfig = observer(function SimulationCivilConfig({ onBack } : SimulationCivilConfigProps)  {
+const SimulationCivilConfig = observer(function SimulationCivilConfig()  {
   // Form state
   const [pollutant, setPollutant] = useState('PM10');
   const [concentration, setConcentration] = useState('');
@@ -185,9 +186,9 @@ useEffect(() => {
     <>
       {/* 2. 섹션 타이틀 */}
       <div className="flex items-center gap-2">
-        {simulationStore.currentView !== 'civilConfig' && (
+        {/* {simulationStore.currentView !== 'civilConfig' && (
           <Icon name="chevron-left" className="w-5 h-5 cursor-pointer" onClick={onBack}/>
-        )}
+        )} */}
         <div className="text-lg font-bold text-white mb-2">실시간 정류장 오염물질 시뮬레이션</div>
       </div>
       <Divider color="bg-[#C3C3C3]" />
