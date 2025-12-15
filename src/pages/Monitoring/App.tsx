@@ -103,6 +103,7 @@ const App = observer(function App(props: AppProps) {
       // 버스 시스템 초기화 및 애니메이션 자동 시작
       try {
         console.log('[App] Starting bus system initialization');
+        busStore.setActive(true);
         await busStore.initializeBusSystem();
         console.log('[App] Bus system initialized, starting animation system');
         await busStore.startAnimationSystem();
@@ -122,6 +123,7 @@ const App = observer(function App(props: AppProps) {
   useEffect(() => {
     return () => {
       console.log('[App] Component unmounting, cleaning up bus system');
+      busStore.setActive(false);
       busStore.cleanup();
     };
   }, [])
