@@ -1,4 +1,4 @@
-import { useState, Fragment, useEffect } from 'react';
+import { useState, Fragment, useEffect, useRef, useCallback } from 'react';
 import { observer } from 'mobx-react-lite';
 import Spacer from '@/components/basic/Spacer';
 import Button from '@/components/basic/Button';
@@ -8,6 +8,8 @@ import type { PMType } from '@/types/simulation_request_types';
 import SimulationDetailRow from '@/pages/Simulation/components/SimulationDetailRow';
 import Checkbox from './Checkbox';
 import { SimulationDataRangeModal } from './SimulationDataRangeModal';
+
+const POLLING_INTERVAL = 5000; // 5초
 
 
 // 3. 유틸리티 함수 (데이터 포맷팅)
@@ -44,10 +46,53 @@ const SimulationRunningList = observer(function SimulationRunningList() {
     itemsToDelete,
     isDateModalOpen, } = simulationStore;
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isInitialLoadRef = useRef(true);
 
+  // 현재 페이지 데이터 로드 함수 (폴링용 - silent 모드)
+  const loadCurrentPageData = useCallback(async (silent: boolean = false) => {
+    await simulationStore.loadSimulationList(currentPage, 7, undefined, silent);
+  }, [currentPage]);
+
+  // 최초 로드
   useEffect(() => {
     simulationStore.loadSimulationList(1);
-    return () => simulationStore.clearSimulationList(); // 언마운트 시 목록 초기화
+    isInitialLoadRef.current = false;
+  }, []);
+
+  // 5초마다 폴링 (currentPage 변경 시 interval 재설정)
+  useEffect(() => {
+    // 최초 로드 완료 후에만 폴링 시작
+    if (isInitialLoadRef.current) return;
+
+    // 기존 interval 정리
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
+
+    // 5초마다 현재 페이지 데이터 갱신 (silent 모드로 로딩 UI 깜빡임 방지)
+    pollingIntervalRef.current = setInterval(() => {
+      console.log(`[SimulationRunningList] Polling page ${currentPage}...`);
+      loadCurrentPageData(true);
+    }, POLLING_INTERVAL);
+
+    // cleanup
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, [currentPage, loadCurrentPageData]);
+
+  // 컴포넌트 언마운트 시 정리
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+      simulationStore.clearSimulationList();
+    };
   }, []);
 
   const handleToggleExpand = (uuid: string) => {

@@ -591,14 +591,20 @@ class SimulationStore {
    * 시뮬레이션 목록 조회
    * GET /api/v1/simulation/list
    *
-   * userId가 제공되지 않으면 userStore.user를 사용합니다.
+   * @param page - 페이지 번호
+   * @param limit - 페이지당 항목 수
+   * @param userId - 사용자 ID (선택)
+   * @param silent - true면 로딩 상태를 변경하지 않음 (폴링용)
    */
   async loadSimulationList(
     page: number = 1,
     limit: number = 7,
     userId?: string,
+    silent: boolean = false,
   ): Promise<void> {
-    this.isLoadingList = true;
+    if (!silent) {
+      this.isLoadingList = true;
+    }
     this.listError = null;
 
     try {
@@ -611,15 +617,27 @@ class SimulationStore {
         this.startDate,
         this.endDate,
       );
-      this.simulationList = response.simulations;
-      this.pagination = response.pagination;
+
+      // 비동기 작업 후 상태 변경은 runInAction으로 감싸서 MobX가 추적하도록 함
+      runInAction(() => {
+        this.simulationList = response.simulations;
+        this.pagination = response.pagination;
+      });
     } catch (error) {
       console.error('[SimulationStore] Failed to load simulation list:', error);
-      this.listError = error instanceof Error ? error.message : 'Unknown error occurred';
-      this.simulationList = [];
-      this.pagination = null;
+      runInAction(() => {
+        this.listError = error instanceof Error ? error.message : 'Unknown error occurred';
+        if (!silent) {
+          this.simulationList = [];
+          this.pagination = null;
+        }
+      });
     } finally {
-      this.isLoadingList = false;
+      if (!silent) {
+        runInAction(() => {
+          this.isLoadingList = false;
+        });
+      }
     }
   }
 
