@@ -98,6 +98,7 @@ export const API_PATHS = {
   PRIORITY_SEARCH: getApiPath('api/v1/priority/search'),
   STATION_STATISTICS: getApiPath('api/v1/stations/statistics/'),
   STATIONS_NEARBY_SENSOR: getApiPath('api/v1/stations/nearby-sensor'),
+  STATIONS_NEARBY_BAD_AIR_QUALITY: getApiPath('api/v1/stations/nearby-bad-air-quality'),
   ROAD_SEARCH: getApiPath('api/v1/road/search'),
 
   // PM10 랭킹 API (PM Backend)

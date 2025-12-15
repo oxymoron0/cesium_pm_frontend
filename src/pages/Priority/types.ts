@@ -48,6 +48,42 @@ export interface NearbyRoad {
 
 export type PriorityView = 'config' | 'customConfig' | 'result';
 
+// 주변 나쁨 대기질 정류장 API 요청 타입
+export interface NearbyBadAirQualityRequest {
+  lat: number;
+  lng: number;
+  radius?: number;  // default: 1000, max: 5000
+  datetime: string; // YYYY-MM-DD HH:MM format
+}
+
+// 주변 나쁨 대기질 정류장 API 응답 타입
+export interface NearbyBadAirQualityStationItem {
+  station_id: string;
+  station_name: string;
+  route_name: string;
+  geometry: {
+    type: 'Point';
+    coordinates: [number, number]; // [lng, lat]
+  };
+  distance_m: number;
+  measurements: {
+    recorded_at: string; // ISO 8601
+    pm10: number | null;
+    pm25: number | null;
+  }[];
+}
+
+export interface NearbyBadAirQualityResponse {
+  center: {
+    lat: number;
+    lng: number;
+  };
+  radius_m: number;
+  datetime: string;
+  stations: NearbyBadAirQualityStationItem[];
+  total: number;
+}
+
 // 정류장 통계 API 응답 타입
 export interface StationStatisticsItem {
   station_id: string;
