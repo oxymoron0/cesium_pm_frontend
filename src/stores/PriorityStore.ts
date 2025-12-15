@@ -916,6 +916,21 @@ class PriorityStore {
   }
 
   /**
+   * API 응답의 한글 등급을 내부 등급으로 변환
+   * @param levelText - "좋음" | "보통" | "나쁨" | "매우나쁨"
+   */
+  private convertLevelFromApi(levelText: string | undefined): 'good' | 'normal' | 'bad' | 'very-bad' | null {
+    if (!levelText) return null;
+    switch (levelText) {
+      case '좋음': return 'good';
+      case '보통': return 'normal';
+      case '나쁨': return 'bad';
+      case '매우나쁨': return 'very-bad';
+      default: return null;
+    }
+  }
+
+  /**
    * 단일 시설의 주변 정류장 로드 (실시간 API 사용)
    * GET /api/v1/stations/nearby-bad-air-quality
    * @param facility - 취약시설 정보
@@ -939,9 +954,12 @@ class PriorityStore {
 
     const [facilityLng, facilityLat] = facility.geometry.coordinates;
 
-    // datetime 형식 변환: "2025.01.15" + "14시" → "2025-01-15 14:00"
+    // datetime 형식 변환: "2025.01.15" + "17 ~ 18시" → "2025-01-15 17:00"
+    // config.time 예시: "17 ~ 18시", "14시", "9 ~ 10시"
     const dateStr = this.config.date.replace(/\./g, '-');
-    const hourStr = this.config.time.replace('시', '').trim().padStart(2, '0');
+    // 시작 시간만 추출: "17 ~ 18시" → "17", "14시" → "14"
+    const timeMatch = this.config.time.match(/(\d+)/);
+    const hourStr = timeMatch ? timeMatch[1].padStart(2, '0') : '00';
     const datetime = `${dateStr} ${hourStr}:00`;
 
     try {
@@ -962,17 +980,28 @@ class PriorityStore {
 
       const data: NearbyBadAirQualityResponse = await response.json();
 
+      // stations가 null이면 빈 배열 처리
+      if (!data.stations || data.stations.length === 0) {
+        console.log(`[PriorityStore] No nearby stations found for facility ${facilityKey}`);
+        runInAction(() => {
+          this.nearbyStationsCache.set(facilityKey, []);
+        });
+        return;
+      }
+
       // API 응답을 NearbyStation 형식으로 변환
       const validStations: NearbyStation[] = data.stations.map(apiStation => {
-        // measurements 배열에서 첫 번째 측정값 사용
-        const measurement = apiStation.measurements[0];
-        const pm10 = measurement?.pm10 ?? 0;
+        // sensor_data 배열에서 첫 번째 측정값 사용
+        const sensorReading = apiStation.sensor_data[0];
+        const pm10 = sensorReading?.pm10 ?? 0;
 
-        const recordedTime = new Date(measurement?.recorded_at || datetime);
+        const recordedTime = new Date(sensorReading?.recorded_at || datetime);
         const hours = recordedTime.getHours().toString().padStart(2, '0');
         const minutes = recordedTime.getMinutes().toString().padStart(2, '0');
 
-        const level = this.getPM10Level(pm10);
+        // API에서 level을 직접 제공하므로 사용, 없으면 계산
+        const levelFromApi = sensorReading?.pm10_level;
+        const level = this.convertLevelFromApi(levelFromApi) || this.getPM10Level(pm10);
 
         return {
           id: apiStation.station_id,

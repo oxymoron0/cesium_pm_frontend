@@ -56,32 +56,40 @@ export interface NearbyBadAirQualityRequest {
   datetime: string; // YYYY-MM-DD HH:MM format
 }
 
+// 센서 측정 데이터
+export interface SensorReading {
+  work_id: string;
+  recorded_at: string;           // ISO 8601 (UTC)
+  pm10: number;
+  pm25: number;
+  pm10_level: string;            // "좋음" | "보통" | "나쁨" | "매우나쁨"
+  pm25_level: string;
+  temperature: number;
+  humidity: number;
+  distance_meters: number;       // 정류장으로부터 측정 거리
+}
+
 // 주변 나쁨 대기질 정류장 API 응답 타입
 export interface NearbyBadAirQualityStationItem {
   station_id: string;
   station_name: string;
   route_name: string;
+  distance_meters: number;       // 중심점으로부터 거리
   geometry: {
     type: 'Point';
     coordinates: [number, number]; // [lng, lat]
   };
-  distance_m: number;
-  measurements: {
-    recorded_at: string; // ISO 8601
-    pm10: number | null;
-    pm25: number | null;
-  }[];
+  sensor_data: SensorReading[];
 }
 
 export interface NearbyBadAirQualityResponse {
-  center: {
-    lat: number;
-    lng: number;
-  };
-  radius_m: number;
-  datetime: string;
-  stations: NearbyBadAirQualityStationItem[];
-  total: number;
+  center_lat: number;
+  center_lng: number;
+  radius_meters: number;
+  target_time: string;           // "2025-12-15 17:00"
+  time_range: string;            // "2025-12-15 15:00 ~ 2025-12-15 19:00"
+  total_count: number;           // 0~5
+  stations: NearbyBadAirQualityStationItem[] | null;
 }
 
 // 정류장 통계 API 응답 타입
