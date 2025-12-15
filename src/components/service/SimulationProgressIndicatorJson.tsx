@@ -113,7 +113,10 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
     };
   }, []);
 
-  const currentSimulationUuid = simulationStore.selectedsimulationQuick?.uuid || simulationStore.simulationDetail?.uuid;
+  const currentSimulationUuid = 
+    simulationStore.currentView === 'quickResult' 
+      ? simulationStore.selectedsimulationQuick?.uuid 
+      : simulationStore.simulationDetail?.uuid;
 
   useEffect(() => {
     setIsPlaying(false);
@@ -128,8 +131,11 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
 
   }, [currentSimulationUuid]);
 
-  const currentTimeSeconds = Math.floor((currentFrame * delayMs) / 1000);
-  const totalTimeSeconds = Math.floor(((totalFrames - 1) * delayMs) / 1000);
+  // 실제 체감 시간 (delayMs 50ms + 렌더링 오버헤드 약 50ms 가정)
+  const estimatedRealTimePerFrame = 100;
+  
+  const currentTimeSeconds = currentFrame === 0 ? 0 : Math.max(1, Math.ceil((currentFrame * estimatedRealTimePerFrame) / 1000));
+  const totalTimeSeconds = totalFrames > 0 ? Math.max(1, Math.ceil(((totalFrames - 1) * estimatedRealTimePerFrame) / 1000)) : 0;
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -141,20 +147,22 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
   const progress = totalFrames > 1 ? (shownFrame / (totalFrames - 1)) * 100 : 0;
 
   const getSimulationParams = () => {
-    const { selectedsimulationQuick, simulationDetail } = simulationStore;
-    if (selectedsimulationQuick?.uuid) { // 빠른 실행
+    const { currentView, selectedsimulationQuick, simulationDetail } = simulationStore;
+    
+    if (currentView === 'quickResult' && selectedsimulationQuick?.uuid) {
       return {
         uuid: selectedsimulationQuick.uuid,
         totalCount: totalFrames,
         frameIntervalMs: delayMs
       };
-    } else if (simulationDetail) { // 맞춤 실행
+    } else if (currentView === 'result' && simulationDetail?.uuid) {
       return {
         uuid: simulationDetail.uuid,
         totalCount: totalFrames,
         frameIntervalMs: delayMs
       };
     }
+    // Fallback or other views (e.g. civilResult)
     return null;
   };
 
