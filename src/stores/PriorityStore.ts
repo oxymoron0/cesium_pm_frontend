@@ -758,7 +758,7 @@ class PriorityStore {
    */
   async loadAllNearbyRoads(): Promise<void> {
     const facilities = this.vulnerableFacilities.filter(
-      f => f.predictedLevel === 'very-bad' || f.predictedLevel === 'bad' || f.predictedLevel === 'good' || f.predictedLevel === 'normal'
+      f => f.predictedLevel === 'bad' || f.predictedLevel === 'very-bad'
     );
 
     if (facilities.length === 0) {
@@ -842,7 +842,7 @@ class PriorityStore {
    */
   async loadAllBuildingFacilities(): Promise<void> {
     const facilities = this.vulnerableFacilities.filter(
-      f => f.predictedLevel === 'very-bad' || f.predictedLevel === 'bad' || f.predictedLevel === 'good' || f.predictedLevel === 'normal'
+      f => f.predictedLevel === 'bad' || f.predictedLevel === 'very-bad'
     );
 
     if (facilities.length === 0) {
@@ -1036,7 +1036,7 @@ class PriorityStore {
    */
   async loadAllNearbyStations(): Promise<void> {
     const facilities = this.vulnerableFacilities.filter(
-      f => f.predictedLevel === 'very-bad' || f.predictedLevel === 'bad' || f.predictedLevel === 'good' || f.predictedLevel === 'normal'
+      f => f.predictedLevel === 'bad' || f.predictedLevel === 'very-bad'
     );
 
     if (facilities.length === 0) {
@@ -1122,13 +1122,16 @@ class PriorityStore {
   /**
    * 중복 제거된 취약시설 목록 (우선순위 오름차순 정렬)
    * ID + type 조합으로 중복 제거 (같은 건물에 senior/childcare 모두 있을 수 있음)
+   * 나쁨/매우나쁨 등급만 필터링
    */
   get uniqueVulnerableFacilities(): VulnerableFacility[] {
     const uniqueMap = new Map<string, VulnerableFacility>();
-    this.vulnerableFacilities.forEach(facility => {
-      const key = `${facility.id}_${facility.type}`;
-      uniqueMap.set(key, facility);
-    });
+    this.vulnerableFacilities
+      .filter(f => f.predictedLevel === 'bad' || f.predictedLevel === 'very-bad')
+      .forEach(facility => {
+        const key = `${facility.id}_${facility.type}`;
+        uniqueMap.set(key, facility);
+      });
     return Array.from(uniqueMap.values()).sort((a, b) => a.rank - b.rank);
   }
 }
