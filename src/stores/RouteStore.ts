@@ -6,6 +6,7 @@ import { showOnlyStationsForRoute, hideAllStations, sampleTerrainForRoute } from
 
 type RouteDirection = 'inbound' | 'outbound';
 type UIVersion = 'v1' | 'v2';
+type MonitoringTab = 'bus' | 'station';
 
 interface RouteLoadingState {
   routeInfoLoading: boolean;
@@ -25,6 +26,9 @@ class RouteStore {
 
   // UI 버전 상태
   uiVersion: UIVersion = 'v1';
+
+  // 모니터링 탭 상태 (버스번호 | 정류장)
+  monitoringTab: MonitoringTab = 'bus';
 
   // API 로딩 상태
   loadingState: RouteLoadingState = {
@@ -191,6 +195,14 @@ class RouteStore {
 
   get isV2(): boolean {
     return this.uiVersion === 'v2';
+  }
+
+  // ============================================================================
+  // 모니터링 탭 관리
+  // ============================================================================
+
+  setMonitoringTab(tab: MonitoringTab) {
+    this.monitoringTab = tab;
   }
 
   // ============================================================================
