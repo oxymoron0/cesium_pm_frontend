@@ -31,10 +31,6 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
   const [opacity, setOpacity] = useState(0.8);
   const [minScale, setMinScale] = useState(1);
   const [maxScale, setMaxScale] = useState(8);
-  const [contrast, setContrast] = useState(1.5);
-  const [sizeSensitivity, setSizeSensitivity] = useState(0.0);
-  const [alphaMultiplier, setAlphaMultiplier] = useState(1.0);
-  const [threshold, setThreshold] = useState(0.1);
   const [sizeMultiplier, setSizeMultiplier] = useState(0.3);
   const [cameraHeight, setCameraHeight] = useState<number>(0);
 
@@ -51,11 +47,6 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
     setOpacity(currentSettings.opacity);
     setMinScale(currentSettings.farScale);  // farScale = 멀 때 = 작게 = minScale
     setMaxScale(currentSettings.nearScale); // nearScale = 가까울 때 = 크게 = maxScale
-    setContrast(currentSettings.contrast);
-    setSizeSensitivity(currentSettings.sizeSensitivity);
-    setAlphaMultiplier(currentSettings.alphaMultiplier);
-    setThreshold(currentSettings.threshold);
-    setSizeMultiplier(currentSettings.sizeMultiplier);
   }, []);
 
   // 설정값 변경 시 실시간 적용
@@ -67,11 +58,6 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
       opacity,
       nearScale: maxScale,
       farScale: minScale,
-      contrast,
-      sizeSensitivity,
-      alphaMultiplier,
-      threshold,
-      sizeMultiplier
     });
 
     // 현재 프레임 재렌더링
@@ -80,7 +66,7 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
       renderJsonFrame(params.uuid, currentFrame);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 설정값 변경 시에만 재렌더링, currentFrame 변경은 제외
-  }, [opacity, maxScale, minScale, contrast, sizeSensitivity, alphaMultiplier, threshold, sizeMultiplier, showSettings]);
+  }, [opacity, maxScale, minScale, sizeMultiplier, showSettings]);
 
   // 카메라 높이 실시간 업데이트
   useEffect(() => {
@@ -373,70 +359,6 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
                 step="1"
                 value={maxScale}
                 onChange={(e) => setMaxScale(parseFloat(e.target.value))}
-                className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
-              />
-            </div>
-
-            {/* Contrast */}
-            <div>
-              <label className="text-white text-xs mb-1 block">
-                대비 (Contrast): <span className="text-[#FFD040] font-mono">{contrast.toFixed(1)}</span>
-              </label>
-              <input
-                type="range"
-                min="0.1"
-                max="5.0"
-                step="0.1"
-                value={contrast}
-                onChange={(e) => setContrast(parseFloat(e.target.value))}
-                className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
-              />
-            </div>
-
-            {/* Size Sensitivity */}
-            <div>
-              <label className="text-white text-xs mb-1 block">
-                크기 민감도 (Size Sensitivity): <span className="text-[#FFD040] font-mono">{sizeSensitivity.toFixed(1)}</span>
-              </label>
-              <input
-                type="range"
-                min="0.0"
-                max="5.0"
-                step="0.1"
-                value={sizeSensitivity}
-                onChange={(e) => setSizeSensitivity(parseFloat(e.target.value))}
-                className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
-              />
-            </div>
-
-            {/* Alpha Multiplier */}
-            <div>
-              <label className="text-white text-xs mb-1 block">
-                알파 부스트 (Alpha Multiplier): <span className="text-[#FFD040] font-mono">{alphaMultiplier.toFixed(1)}</span>
-              </label>
-              <input
-                type="range"
-                min="0.1"
-                max="10.0"
-                step="0.1"
-                value={alphaMultiplier}
-                onChange={(e) => setAlphaMultiplier(parseFloat(e.target.value))}
-                className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
-              />
-            </div>
-
-            {/* Threshold */}
-            <div>
-              <label className="text-white text-xs mb-1 block">
-                최소 투명도 임계값 (Threshold): <span className="text-[#FFD040] font-mono">{threshold.toFixed(2)}</span>
-              </label>
-              <input
-                type="range"
-                min="0.0"
-                max="0.5"
-                step="0.01"
-                value={threshold}
-                onChange={(e) => setThreshold(parseFloat(e.target.value))}
                 className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
               />
             </div>
