@@ -16,10 +16,7 @@ import { priorityStore } from '@/stores/PriorityStore';
 import { administrativeStore } from '@/stores/AdministrativeStore';
 import { renderAdministrativeBoundary, clearAdministrativeBoundary } from '@/utils/cesium/administrativeRenderer';
 import { isGeometrySuccess } from '@/types/administrative';
-import { stationStore } from '@/stores/StationStore';
-import { routeStore } from '@/stores/RouteStore';
 import type { PriorityConfig, VulnerableFacility } from '../types';
-import type { RouteStationFeature } from '@/utils/api/types';
 import Info from '@/components/basic/Info';
 import { API_PATHS } from '@/utils/api/config';
 
@@ -83,32 +80,6 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
           if (found) setSelectedNeighborhood(found.name);
         }
 
-        // RouteStore와 StationStore 초기화
-        if (routeStore.routeInfoList.length === 0) {
-          await routeStore.initializeRouteData();
-          const routeNames = Array.from(routeStore.routeGeomMap.keys());
-          if (routeNames.length > 0) {
-            const stationLoadPromises = routeNames.flatMap(routeName => [
-              stationStore.loadStations(routeName, 'inbound'),
-              stationStore.loadStations(routeName, 'outbound')
-            ]);
-            await Promise.all(stationLoadPromises);
-          }
-        }
-
-        // 모든 정류장 데이터
-        const allStations: RouteStationFeature[] = [];
-        stationStore.stationDataMap.forEach((stationData) => {
-          allStations.push(...stationData.features);
-        });
-
-        // 날짜 계산
-        const endDate = new Date(config.date);
-        const startDate = new Date(endDate);
-        startDate.setDate(startDate.getDate() - 7);
-        const startDateStr = startDate.toISOString().split('T')[0];
-        const endDateStr = endDate.toISOString().split('T')[0];
-
         // 취약시설 검색
         const neighborhoodCode = administrativeStore.selectedNeighborhoodCode === 'all'
           ? null
@@ -120,8 +91,8 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
           neighborhoodCode
         );
 
-        // 통합 초기화
-        await priorityStore.initializePriorityResultData(allStations, startDateStr, endDateStr);
+        // 통합 초기화 (주변 정류장은 취약시설 선택 시 실시간 API로 개별 로드)
+        await priorityStore.initializePriorityResultData();
 
         // 시뮬레이션 결과 렌더링 (초기화 중이므로 별도 로딩 표시 안함)
         if (priorityStore.simulationUuid && priorityStore.simulationGlbCount > 0) {
@@ -312,6 +283,10 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       await renderNearbyBuildingFacilitiesForFacility(facilityKey, buildingData);
     }
 
+    // 주변 정류장 데이터 로드 (실시간 API 사용)
+    console.log('[toggleFacility] Loading nearby stations for facility:', facilityKey);
+    await priorityStore.loadNearbyStationsForFacility(facility);
+
     console.log('[toggleFacility] Store selected facilities:', priorityStore.selectedFacilityIds.size);
     console.log('[toggleFacility] Selected stations count:', priorityStore.selectedStations.length);
 
@@ -358,6 +333,9 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
         if (buildingData) {
           await renderNearbyBuildingFacilitiesForFacility(facilityKey, buildingData);
         }
+
+        // 주변 정류장 데이터 로드 (실시간 API 사용)
+        await priorityStore.loadNearbyStationsForFacility(facility);
       }
 
       facilities.forEach(facility => {
