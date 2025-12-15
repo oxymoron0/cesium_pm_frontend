@@ -1,4 +1,4 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, runInAction } from 'mobx';
 import type {
   PriorityConfig,
   NearbyStation,
@@ -6,9 +6,9 @@ import type {
   VulnerableFacility,
   StationStatisticsResponse,
   RoadSearchResponse,
-  VulnerableFacilitiesApiResponse
+  VulnerableFacilitiesApiResponse,
+  NearbyBadAirQualityResponse
 } from '../pages/Priority/types';
-import type { RouteStationFeature } from '../utils/api/types';
 import { API_PATHS } from '../utils/api/config';
 import { searchNearbyRoads } from '../pages/Priority/api/roadSearch';
 import { fetchVulnerableFacilitiesData, searchNearbyBuildingFacilities } from '../pages/Priority/api/buildingFacilitiesSearch';
@@ -916,13 +916,12 @@ class PriorityStore {
   }
 
   /**
-   * 단일 시설의 주변 정류장 로드
+   * 단일 시설의 주변 정류장 로드 (실시간 API 사용)
+   * GET /api/v1/stations/nearby-bad-air-quality
    * @param facility - 취약시설 정보
-   * @param allStations - StationStore의 모든 정류장 데이터
    */
   async loadNearbyStationsForFacility(
-    facility: VulnerableFacility,
-    allStations: RouteStationFeature[]
+    facility: VulnerableFacility
   ): Promise<void> {
     const facilityKey = `${facility.id}_${facility.type}`;
 
@@ -931,93 +930,82 @@ class PriorityStore {
       return;
     }
 
+    // config에서 날짜/시간 가져오기
+    if (!this.config) {
+      console.log('[PriorityStore] Config not set, cannot load nearby stations');
+      this.nearbyStationsCache.set(facilityKey, []);
+      return;
+    }
+
     const [facilityLng, facilityLat] = facility.geometry.coordinates;
 
-    // 거리 계산 및 필터링
-    const stationsWithDistance = allStations.map(feature => {
-      const [stationLng, stationLat] = feature.geometry.coordinates;
-      const distance = this.calculateDistance(facilityLat, facilityLng, stationLat, stationLng);
-      return { ...feature, distance };
-    });
+    // datetime 형식 변환: "2025.01.15" + "14시" → "2025-01-15 14:00"
+    const dateStr = this.config.date.replace(/\./g, '-');
+    const hourStr = this.config.time.replace('시', '').trim().padStart(2, '0');
+    const datetime = `${dateStr} ${hourStr}:00`;
 
-    // 중복 제거 (같은 station_id)
-    const uniqueStations = stationsWithDistance.reduce((acc, station) => {
-      const existing = acc.find(s => s.properties.station_id === station.properties.station_id);
-      if (!existing) {
-        acc.push(station);
+    try {
+      console.log(`[PriorityStore] Loading nearby stations for facility ${facilityKey} at ${datetime}`);
+
+      const queryParams = new URLSearchParams({
+        lat: facilityLat.toString(),
+        lng: facilityLng.toString(),
+        radius: '100', // 100m (도로 조회와 동일)
+        datetime: datetime
+      });
+
+      const response = await fetch(`${API_PATHS.STATIONS_NEARBY_BAD_AIR_QUALITY}?${queryParams.toString()}`);
+
+      if (!response.ok) {
+        throw new Error(`Nearby bad air quality API failed: ${response.status}`);
       }
-      return acc;
-    }, [] as Array<RouteStationFeature & { distance: number }>);
 
-    // 거리 필터링: 3km 이내 정류장만 선택
-    const MAX_DISTANCE_KM = 3.0;
-    const MAX_STATIONS = 10;
+      const data: NearbyBadAirQualityResponse = await response.json();
 
-    const nearbyStations = uniqueStations
-      .filter(station => station.distance <= MAX_DISTANCE_KM)
-      .sort((a, b) => a.distance - b.distance)
-      .slice(0, MAX_STATIONS);
+      // API 응답을 NearbyStation 형식으로 변환
+      const validStations: NearbyStation[] = data.stations.map(apiStation => {
+        // measurements 배열에서 첫 번째 측정값 사용
+        const measurement = apiStation.measurements[0];
+        const pm10 = measurement?.pm10 ?? 0;
 
-    if (nearbyStations.length === 0) {
-      console.log(`[PriorityStore] No stations found within ${MAX_DISTANCE_KM}km for facility ${facilityKey}`);
-      this.nearbyStationsCache.set(facilityKey, []);
-      return;
-    }
-
-    // 정류장 통계 데이터와 매칭
-    if (!this.stationStatisticsData) {
-      console.log('[PriorityStore] Station statistics data not loaded yet');
-      this.nearbyStationsCache.set(facilityKey, []);
-      return;
-    }
-
-    const nearbyStationIds = new Set(nearbyStations.map(s => s.properties.station_id));
-    const filteredApiStations = this.stationStatisticsData.stations.filter(apiStation =>
-      nearbyStationIds.has(apiStation.station_id)
-    );
-
-    // NearbyStation 생성 (bad/very-bad만 필터링)
-    const validStations = nearbyStations
-      .map(feature => {
-        const apiStation = filteredApiStations.find(s => s.station_id === feature.properties.station_id);
-
-        if (!apiStation || !apiStation.max_pm10) {
-          return null;
-        }
-
-        const level = this.getPM10Level(apiStation.max_pm10);
-
-        if (level !== 'bad' && level !== 'very-bad') {
-          return null;
-        }
-
-        const recordedTime = new Date(apiStation.max_pm10_recorded_at);
+        const recordedTime = new Date(measurement?.recorded_at || datetime);
         const hours = recordedTime.getHours().toString().padStart(2, '0');
         const minutes = recordedTime.getMinutes().toString().padStart(2, '0');
 
+        const level = this.getPM10Level(pm10);
+
         return {
-          id: `${feature.properties.station_id}`,
-          stationName: feature.properties.station_name,
-          stationId: feature.properties.station_id,
+          id: apiStation.station_id,
+          stationName: apiStation.station_name,
+          stationId: apiStation.station_id,
           measurements: [{
             time: `${hours}:${minutes}`,
-            concentration: Math.round(apiStation.max_pm10),
+            concentration: Math.round(pm10),
             level
           }],
-          geometry: feature.geometry
-        } as NearbyStation;
-      })
-      .filter((station): station is NearbyStation => station !== null);
+          geometry: apiStation.geometry
+        };
+      });
 
-    console.log(`[PriorityStore] Found ${validStations.length} nearby stations with bad/very-bad levels for facility ${facilityKey}`);
-    this.nearbyStationsCache.set(facilityKey, validStations);
+      runInAction(() => {
+        this.nearbyStationsCache.set(facilityKey, validStations);
+      });
+
+      console.log(`[PriorityStore] Found ${validStations.length} nearby stations with bad air quality for facility ${facilityKey}`);
+    } catch (error) {
+      console.error(`[PriorityStore] Failed to load nearby stations for facility ${facilityKey}:`, error);
+      runInAction(() => {
+        this.nearbyStationsCache.set(facilityKey, []);
+      });
+    }
   }
 
   /**
    * 모든 취약시설의 주변 정류장 로드 (병렬 처리)
-   * @param allStations - StationStore의 모든 정류장 데이터
+   * 실시간 API를 사용하므로 초기화 시 호출하지 않음
+   * @deprecated 취약시설 선택 시 개별 호출로 변경됨
    */
-  async loadAllNearbyStations(allStations: RouteStationFeature[]): Promise<void> {
+  async loadAllNearbyStations(): Promise<void> {
     const facilities = this.vulnerableFacilities.filter(
       f => f.predictedLevel === 'very-bad' || f.predictedLevel === 'bad' || f.predictedLevel === 'good' || f.predictedLevel === 'normal'
     );
@@ -1030,7 +1018,7 @@ class PriorityStore {
     console.log(`[PriorityStore] Loading nearby stations for ${facilities.length} facilities`);
 
     const promises = facilities.map(facility =>
-      this.loadNearbyStationsForFacility(facility, allStations)
+      this.loadNearbyStationsForFacility(facility)
     );
 
     await Promise.all(promises);
@@ -1043,29 +1031,15 @@ class PriorityStore {
 
   /**
    * PriorityResult에서 필요한 모든 데이터 초기화
-   * @param allStations - StationStore의 모든 정류장 데이터
-   * @param startDate - 정류장 통계 시작일 (YYYY-MM-DD)
-   * @param endDate - 정류장 통계 종료일 (YYYY-MM-DD)
+   * 주변 정류장은 실시간 API를 사용하므로 취약시설 선택 시 개별 로드
    */
-  async initializePriorityResultData(
-    allStations: RouteStationFeature[],
-    startDate: string,
-    endDate: string
-  ): Promise<void> {
+  async initializePriorityResultData(): Promise<void> {
     console.log('[PriorityStore] 우선순위 결과 데이터 초기화를 시작합니다.');
 
     try {
-      // 1. 정류장 통계 데이터 로드
-      await this.loadStationStatistics(startDate, endDate);
-
-      // 2. 주변 정류장 로드
-      await this.loadAllNearbyStations(allStations);
-
-      // 3. 건물 시설물 전체 데이터 로드 (개별 검색 전에 필요)
-      // await this.loadBuildingFacilitiesData(); // NOTE: searchPriorityFacilities에서 호출하므로 여기서는 제거
-
-      // NOTE: 도로/건물 개별 검색은 lazy loading으로 처리
+      // NOTE: 도로/건물/정류장 개별 검색은 lazy loading으로 처리
       // - 체크박스 선택 시 toggleFacility()에서 로드
+      // - 주변 정류장은 실시간 API (nearby-bad-air-quality)를 사용
       // - 초기화 시 모든 시설의 데이터를 로드하면 429 Too Many Requests 발생
 
       console.log('[PriorityStore] 우선순위 결과 데이터 초기화를 완료했습니다.');
