@@ -7,27 +7,14 @@ import { createPrimitiveGroup, addPrimitive, removePrimitiveGroup, clearPrimitiv
 
 const JSON_PRIMITIVE_GROUP_NAME = 'simulation_json_result';
 
-// 파티클 설정
+// 파티클 설정 (main.js 동일)
 export const particleSettings = {
-  opacity: 0.03,         // opacity를 1.0으로 설정하여 point.color.a가 직접 투명도에 영향을 주도록 함
-  autoScale: true,       
-  nearDistance: 0,      
-  nearScale: 1.0,     
-  farDistance: 10000,    
-  farScale: 0.5,        
-  
-  // 기존 설정값들
-  contrast: 1.0,
-  sizeSensitivity: 0.0,
-  sizeMultiplier: 1.0,
-  alphaMultiplier: 1.0,
-  threshold: 0.0,
-
-
-  sparkleEnabled: false,
-  sparkleThreshold: 0.4,
-  sparkleSpeed: 0.4,
-  sparkleIntensity: 0.05
+  opacity: 0.005,
+  autoScale: true,
+  nearDistance: 0,
+  nearScale: 1.5,
+  farDistance: 10000,
+  farScale: 0.1,
 };
 
 
@@ -78,30 +65,21 @@ export function renderJsonFrame(uuid: string, frameIndex: number): boolean {
   const primitiveCollection = new PointPrimitiveCollection();
 
   for (const point of dataPoints) {
-    // 임계값 처리
-    if (point.color.a < particleSettings.threshold) {
-      continue;
-    }
-
     const position = point.position;
-    
-    const finalAlpha = point.color.a * particleSettings.opacity;
-  
 
-    // JSON에서 제공된 색상 사용 (RGB + alpha)
     const color = new Color(
       point.color.r,
       point.color.g,
       point.color.b,
-      finalAlpha
+      point.color.a * particleSettings.opacity
     );
-    
+
     primitiveCollection.add({
       position: position,
-      pixelSize: pointSize, 
+      pixelSize: pointSize,
       color: color,
-      outlineColor: Color.BLACK.withAlpha(finalAlpha * 0.5),
-      outlineWidth: finalAlpha > 0.7 ? 1 : 0,
+      outlineColor: Color.BLACK.withAlpha(color.alpha * 0.5),
+      outlineWidth: color.alpha > 0.7 ? 1 : 0,
       scaleByDistance: particleSettings.autoScale
         ? new NearFarScalar(
             particleSettings.nearDistance,
@@ -112,7 +90,6 @@ export function renderJsonFrame(uuid: string, frameIndex: number): boolean {
         : undefined,
       disableDepthTestDistance: 0
     });
-    
   }
 
   // 장면에 추가
