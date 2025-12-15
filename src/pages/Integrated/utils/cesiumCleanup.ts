@@ -17,6 +17,7 @@ const MONITORING_DATASOURCES = {
   routes: 'routes',
   stationsPrefix: 'stations_',
   busModels: 'bus_models',
+  searchStations: 'search_stations',
 };
 
 const SIMULATION_DATASOURCES = {
@@ -55,6 +56,9 @@ export function clearMonitoringCesium(): void {
     allDataSources
       .filter(name => name.startsWith(MONITORING_DATASOURCES.stationsPrefix))
       .forEach(name => clearDataSource(name));
+
+    // Clear search stations DataSource
+    clearDataSource(MONITORING_DATASOURCES.searchStations);
 
     // Remove bus models DataSource
     removeDataSource(MONITORING_DATASOURCES.busModels);
