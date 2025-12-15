@@ -26,7 +26,9 @@ interface MonitoringProps {
 }
 
 const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp }: MonitoringProps) {
-  const [selectedTab, setSelectedTab] = useState<'bus' | 'station'>('bus');
+  // routeStore에서 탭 상태 사용 (페이지 전환 후에도 유지)
+  const selectedTab = routeStore.monitoringTab;
+  const setSelectedTab = (tab: 'bus' | 'station') => routeStore.setMonitoringTab(tab);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 

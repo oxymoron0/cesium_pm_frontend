@@ -17,7 +17,10 @@ interface MonitoringPanelProps {
 }
 
 const MonitoringPanel = observer(function MonitoringPanel(props: MonitoringPanelProps) {
-  const [currentView, setCurrentView] = useState<ViewType>('routes');
+  // 선택된 노선이 있으면 stations 뷰로 시작 (페이지 전환 후 복귀 시 상태 유지)
+  const [currentView, setCurrentView] = useState<ViewType>(
+    routeStore.selectedRouteName ? 'stations' : 'routes'
+  );
 
   // Auto-render all routes and stations when data loading is complete
   useEffect(() => {
