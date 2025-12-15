@@ -86,6 +86,7 @@ const MonitoringView = observer(function MonitoringView({
       // 버스 시스템 초기화 및 애니메이션 시작
       try {
         console.log('[MonitoringView] Starting bus system initialization');
+        busStore.setActive(true);
         await busStore.initializeBusSystem();
         console.log('[MonitoringView] Bus system initialized, starting animation system');
         await busStore.startAnimationSystem();
@@ -103,6 +104,7 @@ const MonitoringView = observer(function MonitoringView({
     // 비활성화될 때: Cesium 정리 (MobX 상태는 유지)
     if (wasActiveRef.current && !isActive) {
       console.log('[MonitoringView] Deactivating - clearing Cesium entities');
+      busStore.setActive(false);  // 진행 중인 초기화 취소
       clearMonitoringCesium();
       busStore.cleanup();
     }
@@ -125,6 +127,7 @@ const MonitoringView = observer(function MonitoringView({
           }
 
           // 버스 시스템 재시작
+          busStore.setActive(true);
           await busStore.initializeBusSystem();
           await busStore.startAnimationSystem();
 
@@ -144,6 +147,7 @@ const MonitoringView = observer(function MonitoringView({
   useEffect(() => {
     return () => {
       console.log('[MonitoringView] Component unmounting, cleaning up');
+      busStore.setActive(false);  // 진행 중인 초기화 취소
       clearMonitoringCesium();
       busStore.cleanup();
     };

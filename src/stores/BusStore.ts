@@ -34,6 +34,9 @@ class BusStore {
   busData: BusTrajectoryData[] = []
   latestPositions: Map<string, BusPosition> = new Map()
 
+  // 버스 시스템 활성화 상태 (페이지 전환 시 취소용)
+  private _isActive = false
+
   // 실시간 폴링 상태
   isPolling = false
   pollInterval?: NodeJS.Timeout
@@ -53,8 +56,29 @@ class BusStore {
     makeAutoObservable(this)
   }
 
+  /**
+   * 버스 시스템 활성화 (초기화 전 호출 필요)
+   */
+  setActive(active: boolean): void {
+    this._isActive = active
+    console.log(`[BusStore] Active state set to: ${active}`)
+  }
+
+  /**
+   * 버스 시스템 활성화 상태 확인
+   */
+  get isActive(): boolean {
+    return this._isActive
+  }
+
   async initializeBusSystem() {
     if (this.isLoading) return
+
+    // 초기화 시작 전 활성화 상태 확인
+    if (!this._isActive) {
+      console.log('[BusStore] Initialization skipped - system not active')
+      return
+    }
 
     runInAction(() => {
       this.isLoading = true
@@ -62,6 +86,12 @@ class BusStore {
 
     try {
       const response = await getBusTrajectoryInitial()
+
+      // API 호출 후 활성화 상태 재확인 (페이지 전환 감지)
+      if (!this._isActive) {
+        console.log('[BusStore] Initialization cancelled after API call - system deactivated')
+        return
+      }
 
       runInAction(() => {
         // 초기 데이터에서도 각 버스별로 최신 2건만 저장
@@ -73,7 +103,23 @@ class BusStore {
         }))
       })
 
+      // GLB 렌더링 전 활성화 상태 재확인
+      if (!this._isActive) {
+        console.log('[BusStore] Initialization cancelled before rendering - system deactivated')
+        return
+      }
+
       await renderBusModels(this.busData)
+
+      // 렌더링 후 활성화 상태 재확인
+      if (!this._isActive) {
+        console.log('[BusStore] Initialization cancelled after rendering - system deactivated')
+        // 렌더링된 버스 모델 정리
+        const { clearBusModels } = await import('@/utils/cesium/glbRenderer')
+        clearBusModels()
+        return
+      }
+
       await this.updateLatestPositions()
 
       // 버스 애니메이션 상태 초기화
