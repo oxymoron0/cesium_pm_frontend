@@ -4,11 +4,12 @@
 import { Color, Cartesian3, PointPrimitiveCollection, NearFarScalar } from 'cesium';
 import { getCachedJsonFrameData } from './jsonPreloader';
 import { createPrimitiveGroup, addPrimitive, removePrimitiveGroup, clearPrimitiveGroup, findPrimitiveGroup } from './primitives';
+import { simulationStore } from '@/stores/SimulationStore';
 
 const JSON_PRIMITIVE_GROUP_NAME = 'simulation_json_result';
 
-// 파티클 설정 (main.js 동일)
-export const particleSettings = {
+// 맞춤실행용 설정 (작은 영역, 고밀도)
+export const customParticleSettings = {
   opacity: 0.005,
   autoScale: true,
   nearDistance: 0,
@@ -17,6 +18,30 @@ export const particleSettings = {
   farScale: 0.1,
 };
 
+// 빠른실행용 설정 (넓은 영역, 저밀도)
+export const quickParticleSettings = {
+  opacity: 0.05,
+  autoScale: true,
+  nearDistance: 0,
+  nearScale: 1.5,
+  farDistance: 10000,
+  farScale: 0.5,
+};
+
+// 현재 활성 설정 (UI 컨트롤용)
+export const particleSettings = { ...customParticleSettings };
+
+
+/**
+ * currentView에 따라 파티클 설정 초기화
+ */
+export function initializeParticleSettings(): void {
+  const baseSettings = simulationStore.currentView === 'result'
+    ? customParticleSettings
+    : quickParticleSettings;
+
+  Object.assign(particleSettings, baseSettings);
+}
 
 /**
  * 파티클 설정 업데이트

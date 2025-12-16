@@ -11,7 +11,7 @@ import { renderVulnerableFacilities, clearVulnerableFacilities, showFacilityHtml
 import { renderNearbyRoadsForFacility, clearNearbyRoadsForFacility, clearAllNearbyRoads } from '@/utils/cesium/nearbyRoadRenderer';
 import { renderNearbyBuildingFacilitiesForFacility, clearNearbyBuildingFacilitiesForFacility, clearAllNearbyBuildingFacilities } from '@/utils/cesium/nearbyBuildingFacilitiesRenderer';
 import { preloadSingleJsonFrame } from '@/utils/cesium/jsonPreloader';
-import { renderJsonFrame, clearJsonPrimitives } from '@/utils/cesium/jsonRenderer';
+import { renderJsonFrame, clearJsonPrimitives, initializeParticleSettings } from '@/utils/cesium/jsonRenderer';
 import { priorityStore } from '@/stores/PriorityStore';
 import { administrativeStore } from '@/stores/AdministrativeStore';
 import { renderAdministrativeBoundary, clearAdministrativeBoundary } from '@/utils/cesium/administrativeRenderer';
@@ -58,6 +58,9 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       setIsInitializing(true);
 
       try {
+        // 파티클 설정 초기화 (우선순위는 맞춤실행 설정 사용)
+        initializeParticleSettings();
+
         priorityStore.setConfig(config);
 
         // 행정구역 초기화

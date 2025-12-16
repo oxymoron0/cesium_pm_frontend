@@ -6,7 +6,8 @@ import {
   renderJsonFrame,
   clearJsonPrimitives,
   updateParticleSettings,
-  getParticleSettings
+  getParticleSettings,
+  initializeParticleSettings
 } from '@/utils/cesium/jsonRenderer';
 import {
   preloadJson,
@@ -28,10 +29,9 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
 
   // 파티클 설정 상태
   const [showSettings, setShowSettings] = useState(false);
-  const [opacity, setOpacity] = useState(0.8);
-  const [minScale, setMinScale] = useState(1);
-  const [maxScale, setMaxScale] = useState(8);
-  const [sizeMultiplier, setSizeMultiplier] = useState(0.3);
+  const [opacity, setOpacity] = useState(0);
+  const [minScale, setMinScale] = useState(0);
+  const [maxScale, setMaxScale] = useState(0);
   const [cameraHeight, setCameraHeight] = useState<number>(0);
 
   const playIntervalRef = useRef<number | null>(null);
@@ -41,9 +41,16 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
     isPlayingRef.current = isPlaying;
   }, [isPlaying]);
 
-  // 초기 설정값 로드
+  // 초기 설정값 로드 (currentView에 따라 분기)
   useEffect(() => {
+    console.log('[SimulationProgressIndicatorJson] currentView:', simulationStore.currentView);
+
+    // particleSettings를 currentView에 맞게 초기화
+    initializeParticleSettings();
+
     const currentSettings = getParticleSettings();
+    console.log('[SimulationProgressIndicatorJson] Loaded settings:', currentSettings);
+
     setOpacity(currentSettings.opacity);
     setMinScale(currentSettings.farScale);  // farScale = 멀 때 = 작게 = minScale
     setMaxScale(currentSettings.nearScale); // nearScale = 가까울 때 = 크게 = maxScale
@@ -66,7 +73,7 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
       renderJsonFrame(params.uuid, currentFrame);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 설정값 변경 시에만 재렌더링, currentFrame 변경은 제외
-  }, [opacity, maxScale, minScale, sizeMultiplier, showSettings]);
+  }, [opacity, maxScale, minScale, showSettings]);
 
   // 카메라 높이 실시간 업데이트
   useEffect(() => {
@@ -302,31 +309,15 @@ const SimulationProgressIndicatorJson = observer(function SimulationProgressIndi
             {/* Opacity */}
             <div>
               <label className="text-white text-xs mb-1 block">
-                Opacity: <span className="text-[#FFD040] font-mono">{opacity.toFixed(2)}</span>
+                Opacity: <span className="text-[#FFD040] font-mono">{opacity.toFixed(3)}</span>
               </label>
               <input
                 type="range"
-                min="0.01"
+                min="0.005"
                 max="1.0"
-                step="0.01"
+                step="0.005"
                 value={opacity}
                 onChange={(e) => setOpacity(parseFloat(e.target.value))}
-                className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
-              />
-            </div>
-
-            {/* Size Multiplier */}
-            <div>
-              <label className="text-white text-xs mb-1 block">
-                크기 배율 (Size Multiplier): <span className="text-[#FFD040] font-mono">{sizeMultiplier.toFixed(2)}</span>
-              </label>
-              <input
-                type="range"
-                min="0.1"
-                max="2.0"
-                step="0.05"
-                value={sizeMultiplier}
-                onChange={(e) => setSizeMultiplier(parseFloat(e.target.value))}
                 className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
               />
             </div>
