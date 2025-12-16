@@ -43,7 +43,8 @@ const SimulationView = observer(function SimulationView({
 
     isInitializedRef.current = true;
 
-    // Store 초기화 (Civil 모드 동기화)
+    // Store 상태 초기화 (초기 화면으로 복귀) + Civil 모드 동기화
+    simulationStore.cleanup();
     simulationStore.initializeCivilMode();
 
     // 초기 위치로 이동
