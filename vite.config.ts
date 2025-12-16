@@ -8,20 +8,47 @@ import fs from 'fs'
 const pageName = process.env.VITE_PAGE
 
 /**
+ * Civil base path plugin
+ * Rewrites VITE_CIVIL_BASE_PATH requests to VITE_BASE_PATH
+ * Keeps original base path functionality intact
+ */
+function civilBasePathPlugin(basePath: string, civilBasePath: string): Plugin {
+  return {
+    name: 'civil-base-path',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (!req.url) return next()
+
+        // Rewrite civil path to base path
+        if (req.url.startsWith(civilBasePath)) {
+          req.url = basePath + req.url.slice(civilBasePath.length)
+        }
+
+        next()
+      })
+    }
+  }
+}
+
+/**
  * Simulation files serving plugin
  * Serves files from local filesystem path (e.g., /mnt/nfs) during development
  */
-function simulationFilesPlugin(localPath: string, urlPrefix: string): Plugin {
+function simulationFilesPlugin(localPath: string, urlPrefixes: string[]): Plugin {
   return {
     name: 'simulation-files-server',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        if (!req.url?.startsWith(urlPrefix)) {
+        if (!req.url) return next()
+
+        // Check if URL matches any of the prefixes
+        const matchedPrefix = urlPrefixes.find(prefix => req.url?.startsWith(prefix))
+        if (!matchedPrefix) {
           return next()
         }
 
         // Remove URL prefix and decode
-        const relativePath = decodeURIComponent(req.url.slice(urlPrefix.length))
+        const relativePath = decodeURIComponent(req.url.slice(matchedPrefix.length))
         const filePath = path.join(localPath, relativePath)
 
         // Security: ensure path is within localPath
@@ -65,17 +92,25 @@ export default defineConfig(({ command, mode }) => {
 
   // 개발 환경: SPA 방식 (src/main.tsx 진입점)
   if (isDev) {
-    // 개발환경에서만 BASE_PATH 적용
     const env = loadEnv(mode, process.cwd(), '')
-    const basePath = env.VITE_BASE_PATH || './'
+    const basePath = env.VITE_BASE_PATH || '/bump-svc3d-front-pm/'
+    const civilBasePath = env.VITE_CIVIL_BASE_PATH || '/bump-svc3d-front-pm-public/'
     const simLocalPath = env.SIM_LOCAL_PATH || '/mnt/nfs'
-    const simUrlPrefix = `${basePath}${env.VITE_SIM_PATH || 'sim'}`
+    const simPath = env.VITE_SIM_PATH || 'sim'
+
+    // Simulation file prefixes for both base paths
+    const simUrlPrefixes = [
+      `${basePath}${simPath}`,
+      `${civilBasePath}${simPath}`,
+      `/${simPath}` // Root path fallback
+    ]
 
     return {
       plugins: [
+        civilBasePathPlugin(basePath, civilBasePath),
         react(),
         cesium(),
-        simulationFilesPlugin(simLocalPath, simUrlPrefix)
+        simulationFilesPlugin(simLocalPath, simUrlPrefixes)
       ],
       resolve: {
         alias: {
