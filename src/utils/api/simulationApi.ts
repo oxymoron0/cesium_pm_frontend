@@ -146,29 +146,22 @@ export async function getSimulationList(
  * 시뮬레이션(auto) 목록 조회
  * GET /api/v1/simulation_auto/list
  *
- * @param startDate - 시작일 (2025-10-23)
- * @param endDate - 종료일 (2025-10-30)
+ * @param startDateTime - 시작 일시 문자열 (예: "2025-12-16 06:30:00")
+ * @param endDateTime - 종료 일시 문자열 (예: "2025-12-16 06:40:00")
  * @param page - 페이지 번호 (기본값: 1)
  * @param limit - 페이지당 항목 수 (기본값: 7, 최대: 100)
  * @returns 시뮬레이션 목록과 페이지네이션 정보
  */
 export async function getSimulationQuickList(
-  startDate: Date,
-  endDate: Date,
+  startDateTime: string,
+  endDateTime: string,
   page: number = 1,
   limit: number = 7
 ): Promise<SimulationQuickDataResponse> {
   try {
-    const toYMDLocal = (d: Date): string => {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      return `${y}-${m}-${day}`;
-    };
-
     const params = new URLSearchParams({
-      start_date: toYMDLocal(startDate),
-      end_date: toYMDLocal(endDate),
+      start_date: startDateTime,
+      end_date: endDateTime,
       page: page.toString(),
       limit: limit.toString(),
     });
