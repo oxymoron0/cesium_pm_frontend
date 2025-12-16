@@ -2,6 +2,8 @@ import { useEffect, useRef, useCallback } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Entity } from 'cesium';
 import { stationSensorStore } from '@/stores/StationSensorStore';
+import { getAirQualityLevel } from '@/utils/airQuality';
+import { isCivil } from '@/utils/env';
 
 /**
  * StationSensorRenderer
@@ -13,54 +15,52 @@ const StationSensorRenderer = observer(() => {
   const sensorElementsRef = useRef<Map<string, HTMLDivElement>>(new Map());
   const lastUpdateTime = useRef<number>(0);
 
-  // 센서 색상 로직 (SensorItem.tsx와 동일)
-  const getSensorColor = useCallback((type: 'pm10' | 'pm25' | 'vocs', value: number): string => {
-    if (type === 'vocs') return '#C8C8C8';
-
-    if (type === 'pm10') {
-      if (value <= 30) return '#1C67D7';
-      if (value <= 80) return '#18A274';
-      if (value <= 150) return '#FEE046';
-      return '#D32F2D';
-    }
-
-    if (type === 'pm25') {
-      if (value <= 15) return '#1C67D7';
-      if (value <= 35) return '#18A274';
-      if (value <= 75) return '#FEE046';
-      return '#D32F2D';
-    }
-
-    return '#C8C8C8';
-  }, []);
-
   // 센서 HTML 생성 함수
+  // - Civil 모드: 등급 텍스트 표시 (좋음, 보통, 나쁨), VOCs 숨김
+  // - 일반 모드: 숫자 값 표시, VOCs 포함
   const createSensorHTML = useCallback((sensorData: { pm10: number; pm25: number; vocs: number } | undefined) => {
-    const pm10Display = sensorData ? sensorData.pm10.toString() : '---';
-    const pm25Display = sensorData ? sensorData.pm25.toString() : '---';
+    const civilMode = isCivil();
+
+    // 등급 정보 계산 (색상용)
+    const pm10Result = sensorData ? getAirQualityLevel('pm10', sensorData.pm10) : null;
+    const pm25Result = sensorData ? getAirQualityLevel('pm25', sensorData.pm25) : null;
+
+    // Civil 모드: 등급 텍스트, 일반 모드: 숫자 값
+    const pm10Display = civilMode
+      ? (pm10Result ? pm10Result.levelText : '---')
+      : (sensorData ? sensorData.pm10.toString() : '---');
+    const pm25Display = civilMode
+      ? (pm25Result ? pm25Result.levelText : '---')
+      : (sensorData ? sensorData.pm25.toString() : '---');
+
+    const pm10Color = pm10Result ? pm10Result.color : '#C8C8C8';
+    const pm25Color = pm25Result ? pm25Result.color : '#C8C8C8';
+
+    // 대민 모드에서는 VOCs 숨김
+    const showVocs = !civilMode;
     const vocsDisplay = sensorData ? sensorData.vocs.toString() : '---';
 
-    const pm10Color = sensorData ? getSensorColor('pm10', sensorData.pm10) : '#C8C8C8';
-    const pm25Color = sensorData ? getSensorColor('pm25', sensorData.pm25) : '#C8C8C8';
-    const vocsColor = sensorData ? getSensorColor('vocs', sensorData.vocs) : '#C8C8C8';
+    const vocsSection = showVocs ? `
+        <div style="display: flex; width: 60px; flex-direction: column; align-items: center; gap: 4px;">
+          <div style="color: #FFF; text-align: center; font-family: Pretendard; font-size: 10px; font-weight: 400;">VOCs</div>
+          <div style="color: #C8C8C8; text-align: center; font-family: Pretendard; font-size: 24px; font-weight: 800; letter-spacing: -0.8px;">${vocsDisplay}</div>
+        </div>
+    ` : '';
 
     return `
       <div style="display: flex; padding: 8px; flex-direction: row; justify-content: center; align-items: center; border-radius: 4px; background: rgba(30, 30, 30, 0.90);">
         <div style="display: flex; width: 60px; flex-direction: column; align-items: center; gap: 4px;">
-          <div style="color: #FFF; text-align: center; font-family: Pretendard; font-size: 10px; font-weight: 400;">미세먼지</div>
+          <div style="color: #FFF; text-align: center; font-family: Pretendard; font-size: 10px; font-weight: 400;">${civilMode ? '미세먼지' : 'PM10'}</div>
           <div style="color: ${pm10Color}; text-align: center; font-family: Pretendard; font-size: 24px; font-weight: 800; letter-spacing: -0.8px;">${pm10Display}</div>
         </div>
         <div style="display: flex; width: 60px; flex-direction: column; align-items: center; gap: 4px;">
-          <div style="color: #FFF; text-align: center; font-family: Pretendard; font-size: 10px; font-weight: 400;">초미세먼지</div>
+          <div style="color: #FFF; text-align: center; font-family: Pretendard; font-size: 10px; font-weight: 400;">${civilMode ? '초미세먼지' : 'PM2.5'}</div>
           <div style="color: ${pm25Color}; text-align: center; font-family: Pretendard; font-size: 24px; font-weight: 800; letter-spacing: -0.8px;">${pm25Display}</div>
         </div>
-        <div style="display: flex; width: 60px; flex-direction: column; align-items: center; gap: 4px;">
-          <div style="color: #FFF; text-align: center; font-family: Pretendard; font-size: 10px; font-weight: 400;">VOCs</div>
-          <div style="color: ${vocsColor}; text-align: center; font-family: Pretendard; font-size: 24px; font-weight: 800; letter-spacing: -0.8px;">${vocsDisplay}</div>
-        </div>
+        ${vocsSection}
       </div>
     `;
-  }, [getSensorColor]);
+  }, []);
 
   // 센서 Element 생성/업데이트
   const createOrUpdateSensorElement = useCallback((
