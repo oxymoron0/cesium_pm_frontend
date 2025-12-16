@@ -6,7 +6,8 @@ import {
   renderJsonFrame,
   clearJsonPrimitives,
   updateParticleSettings,
-  getParticleSettings
+  getParticleSettings,
+  initializeParticleSettings
 } from '@/utils/cesium/jsonRenderer';
 import {
   preloadJson,
@@ -29,9 +30,9 @@ const SimulationCivilProgressIndicatorJson = observer(function SimulationCivilPr
 
   // 파티클 설정 상태
   const [showSettings, setShowSettings] = useState(false);
-  const [opacity, setOpacity] = useState(0.8);
-  const [minScale, setMinScale] = useState(1);
-  const [maxScale, setMaxScale] = useState(8);
+  const [opacity, setOpacity] = useState(0);
+  const [minScale, setMinScale] = useState(0);
+  const [maxScale, setMaxScale] = useState(0);
   const [cameraHeight, setCameraHeight] = useState<number>(0);
 
   const playIntervalRef = useRef<number | null>(null);
@@ -47,7 +48,14 @@ const SimulationCivilProgressIndicatorJson = observer(function SimulationCivilPr
 
   // 초기 설정값 로드
   useEffect(() => {
+    console.log('[SimulationCivilProgressIndicatorJson] currentView:', simulationStore.currentView);
+
+    // particleSettings를 currentView에 맞게 초기화
+    initializeParticleSettings();
+
     const currentSettings = getParticleSettings();
+    console.log('[SimulationProgressIndicatorJson] Loaded settings:', currentSettings);
+
     setOpacity(currentSettings.opacity);
     setMinScale(currentSettings.farScale);
     setMaxScale(currentSettings.nearScale);
@@ -279,11 +287,52 @@ const SimulationCivilProgressIndicatorJson = observer(function SimulationCivilPr
                <button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-white text-xl leading-none">×</button>
              </div>
              <div className="space-y-3">
-               {/* 슬라이더들 (Opacity, Size, Scale 등 기존 코드 복사 사용) */}
-               <div>
-                  <label className="text-white text-xs mb-1 block">Opacity: <span className="text-[#FFD040] font-mono">{opacity.toFixed(2)}</span></label>
-                  <input type="range" min="0.01" max="1.0" step="0.01" value={opacity} onChange={(e) => setOpacity(parseFloat(e.target.value))} className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider" />
-               </div>
+              {/* 슬라이더들 (Opacity, Scale 등 기존 코드 복사 사용) */}
+                <div>
+                    <label className="text-white text-xs mb-1 block">
+                      Opacity: <span className="text-[#FFD040] font-mono">{opacity.toFixed(2)}</span></label>
+                    <input 
+                      type="range" 
+                      min="0.005" 
+                      max="1.0" 
+                      step="0.005" 
+                      value={opacity} 
+                      onChange={(e) => setOpacity(parseFloat(e.target.value))} 
+                      className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider" 
+                    />
+                </div>
+
+                {/* Min Scale (멀 때) */}
+                <div>
+                  <label className="text-white text-xs mb-1 block">
+                    Min Scale (멀 때): <span className="text-[#FFD040] font-mono">{minScale.toFixed(1)}</span>
+                  </label>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="20"
+                    step="0.1"
+                    value={minScale}
+                    onChange={(e) => setMinScale(parseFloat(e.target.value))}
+                    className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                </div>
+
+                {/* Max Scale (가까울 때) */}
+                <div>
+                  <label className="text-white text-xs mb-1 block">
+                    Max Scale (가까울 때): <span className="text-[#FFD040] font-mono">{maxScale.toFixed(1)}</span>
+                  </label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="100"
+                    step="1"
+                    value={maxScale}
+                    onChange={(e) => setMaxScale(parseFloat(e.target.value))}
+                    className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                </div>
              </div>
         </div>
       )}
