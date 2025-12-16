@@ -1,3 +1,4 @@
 {
-  "isCivil": false
+  "isCivil": false,
+  "basePath": "/bump-svc3d-front-pm/"
 }

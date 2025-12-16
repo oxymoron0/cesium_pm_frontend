@@ -21,6 +21,7 @@
 
 export interface RuntimeConfig {
   isCivil: boolean;
+  basePath: string;
 }
 
 // Cached configuration
@@ -87,4 +88,16 @@ export function isCivil(): boolean {
  */
 export function isConfigLoaded(): boolean {
   return cachedConfig !== null;
+}
+
+/**
+ * Get the base path for static assets
+ * Returns VITE_CIVIL_BASE_PATH if in civil mode, otherwise VITE_BASE_PATH
+ * Falls back to '/' if neither is defined
+ */
+export function getBasePath(): string {
+  if (isCivil()) {
+    return import.meta.env.VITE_CIVIL_BASE_PATH || '/';
+  }
+  return import.meta.env.VITE_BASE_PATH || '/';
 }
