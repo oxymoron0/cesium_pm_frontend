@@ -1,6 +1,7 @@
 import { stationStore } from '@/stores/StationStore';
 import { stationSensorStore } from '@/stores/StationSensorStore';
 import { createGeoJsonDataSource, findDataSource, clearDataSource } from './datasources';
+import { getBasePath } from '@/utils/env';
 import type { RouteStationFeature } from '../api/types';
 import type { GeoJsonDataSource } from 'cesium';
 import { Cartesian3, Entity, BillboardGraphics, CallbackProperty, ConstantProperty, HeightReference, Cartographic, sampleTerrainMostDetailed, HeadingPitchRange } from 'cesium';
@@ -191,7 +192,7 @@ export function setupStationHoverEvents(): void {
  */
 function createStationEntity(feature: RouteStationFeature, direction: 'inbound' | 'outbound'): Entity {
   const coords = feature.geometry.coordinates; // [lng, lat]
-  const basePath = import.meta.env.VITE_BASE_PATH || '/';
+  const basePath = getBasePath();
 
   // 캐시된 terrain 높이가 있으면 사용, 없으면 0 높이로 생성
   const cachedHeight = getCachedTerrainHeight(coords[0], coords[1]);

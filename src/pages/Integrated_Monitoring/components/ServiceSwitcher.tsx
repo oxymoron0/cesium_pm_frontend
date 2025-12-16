@@ -1,5 +1,6 @@
 import type { ServiceType } from '../types';
 import { SERVICE_CONFIGS } from '../types';
+import { getBasePath } from '@/utils/env';
 
 interface ServiceSwitcherProps {
   currentService: ServiceType;
@@ -13,7 +14,7 @@ const SERVICE_ICONS: Record<ServiceType, string> = {
 };
 
 function ServiceSwitcher({ currentService, onServiceChange }: ServiceSwitcherProps) {
-  const basePath = import.meta.env.VITE_BASE_PATH || '/';
+  const basePath = getBasePath();
 
   return (
     <div className="absolute top-[40px] right-[84px] z-[1001]">

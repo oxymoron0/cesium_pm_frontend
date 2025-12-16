@@ -8,6 +8,7 @@ import TabNavigation from '@/components/basic/TabNavigation';
 import { routeStore } from '@/stores/RouteStore';
 import { stationStore } from '@/stores/StationStore';
 import { stationSensorStore } from '@/stores/StationSensorStore';
+import { getBasePath } from '@/utils/env';
 
 interface StationInfoProps {
   onBackClick: () => void;
@@ -20,7 +21,7 @@ interface StationInfoProps {
  * RouteStore와 StationStore를 연동하여 방향별 정류장 목록을 제공
  */
 const StationInfo = observer(function StationInfo({ onBackClick, onCloseMicroApp }: StationInfoProps) {
-  const basePath = import.meta.env.VITE_BASE_PATH || '/';
+  const basePath = getBasePath();
 
   // RouteStore에서 선택된 노선 정보
   const selectedRouteName = routeStore.selectedRouteName;

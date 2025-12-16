@@ -2,6 +2,7 @@ import { Color, ColorBlendMode, Matrix4, Model } from 'cesium'
 import { flyToBoundingSphere } from './cameraUtils'
 import { getCachedGlbUrl, clearGlbCache } from './glbPreloader'
 import { createPrimitiveGroup, addPrimitive, removePrimitive, removePrimitiveGroup, clearPrimitiveGroup, getPrimitiveGroupInfo } from './primitives'
+import { getBasePath } from '@/utils/env'
 
 const PRIMITIVE_GROUP_NAME = 'simulation_glb_result'
 
@@ -129,7 +130,7 @@ export async function prepareSimulationGlb(params: {
   console.log('[GLB Prepare] 시작')
 
   // Build path using environment variables: VITE_BASE_PATH + VITE_SIM_PATH
-  const basePath = import.meta.env.VITE_BASE_PATH || '/'
+  const basePath = getBasePath()
   const simPath = import.meta.env.VITE_SIM_PATH || 'sim'
   const normalizedPath = `${basePath}${simPath}/${uuid}/`
 

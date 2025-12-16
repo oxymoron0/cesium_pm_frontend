@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getBasePath } from '@/utils/env';
 
 interface SearchBarProps {
   value?: string;
@@ -14,7 +15,7 @@ export default function SearchBar({
   onClear
 }: SearchBarProps) {
   const [inputValue, setInputValue] = useState(value);
-  const basePath = import.meta.env.VITE_BASE_PATH || '/';
+  const basePath = getBasePath();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;

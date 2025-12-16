@@ -1,6 +1,7 @@
 import { createGeoJsonDataSource, clearDataSource } from './datasources';
 import { setupStationHoverEvents } from './stationRenderer';
 import { stationSensorStore } from '@/stores/StationSensorStore';
+import { getBasePath } from '@/utils/env';
 import {
   Cartesian3,
   Entity,
@@ -120,7 +121,7 @@ function createSearchStationBillboardEntity(
   const [lng, lat] = nearbyStation.geometry.coordinates;
   const stationId = nearbyStation.stationId;
   const entityId = `station_${stationId}`;
-  const basePath = import.meta.env.VITE_BASE_PATH || '/';
+  const basePath = getBasePath();
 
   // Terrain 높이 적용 (기존 시스템과 동일한 키 형식)
   const key = `${lng.toFixed(6)}_${lat.toFixed(6)}`;

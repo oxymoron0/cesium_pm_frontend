@@ -3,6 +3,7 @@
  */
 
 import { Cartesian3, Cartographic, Math as CesiumMath } from 'cesium';
+import { getBasePath } from '@/utils/env';
 
 export interface JsonParticleDataPoint {
   lon: number;
@@ -160,7 +161,7 @@ export async function preloadJson(
   }
 
   // Build path using environment variables: VITE_BASE_PATH + VITE_SIM_PATH
-  const basePath = import.meta.env.VITE_BASE_PATH || '/';
+  const basePath = getBasePath();
   const simPath = import.meta.env.VITE_SIM_PATH || 'sim';
   const normalizedPath = `${basePath}${simPath}/${uuid}/`;
   /* NAS 경로 테스트용 
@@ -278,7 +279,7 @@ export async function preloadSingleJsonFrame(
   }
 
   // 경로 구성
-  const basePath = import.meta.env.VITE_BASE_PATH || '/';
+  const basePath = getBasePath();
   const simPath = import.meta.env.VITE_SIM_PATH || 'sim';
   const normalizedPath = `${basePath}${simPath}/${uuid}/`;
 

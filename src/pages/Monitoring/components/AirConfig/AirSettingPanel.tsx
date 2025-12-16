@@ -4,12 +4,12 @@ import SubTitle from '@/components/basic/SubTitle';
 import Divider from '@/components/basic/Divider';
 import { airConfigStore } from '@/stores/AirConfigStore';
 import { AIR_QUALITY_COLORS } from '@/utils/airQuality';
-import { isCivil } from '@/utils/env';
+import { isCivil, getBasePath } from '@/utils/env';
 import type { AirQualityLevel } from '@/utils/api/types';
 
 type SensorType = 'pm10' | 'pm25' | 'vocs';
 
-const basePath = import.meta.env.VITE_BASE_PATH || '/';
+const basePath = getBasePath();
 
 interface SensorButtonProps {
   icon: string;

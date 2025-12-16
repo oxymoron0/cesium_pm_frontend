@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { Entity} from 'cesium';
 import { simulationStore } from "@/stores/SimulationStore";
 import { setSelectedCivilStationId } from '@/utils/cesium/SimulationCivilResultRenderer';
+import { getBasePath } from '@/utils/env';
 import type { SimulationCivilStationData } from '@/types/simulation_request_types';
 
 interface SimulationCivilStationHtmlRendererProps {
@@ -79,7 +80,7 @@ const SimulationCivilStationHtmlRenderer = ({
   // ===== 상세 팝업 HTML 생성 =====
   const createPopupHTML = useCallback((stationData: SimulationCivilStationData) => {
     const { pm_label, measured_at } = stationData;
-    const basePath = import.meta.env.VITE_BASE_PATH || '/'
+    const basePath = getBasePath();
     const STATION_ICONS: Record<string, string> = {
       '좋음': 'state_good.svg',
       '보통': 'state_normal.svg',

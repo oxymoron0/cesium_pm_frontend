@@ -4,7 +4,7 @@ import { Entity, Cartographic, Cartesian3 } from 'cesium';
 import * as Cesium from 'cesium';
 import { busStore } from '@/stores/BusStore';
 import { airConfigStore } from '@/stores/AirConfigStore';
-import { isCivil as getIsCivil } from '@/utils/env';
+import { isCivil as getIsCivil, getBasePath } from '@/utils/env';
 
 /**
  * BusHtmlRenderer
@@ -143,7 +143,7 @@ const BusHtmlRenderer = observer(() => {
 
   // 대민 모드용 센서 HTML 생성 함수 (상태 아이콘 + 등급 텍스트)
   const createCivilSensorHTML = useCallback((sensorData: { pm: number; fpm: number; voc: number }) => {
-    const basePath = import.meta.env.VITE_BASE_PATH || '/';
+    const basePath = getBasePath();
     const pm10Value = Math.round(sensorData.pm * 10) / 10;
     const pm25Value = Math.round(sensorData.fpm * 10) / 10;
 

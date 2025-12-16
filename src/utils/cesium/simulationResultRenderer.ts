@@ -1,5 +1,6 @@
 import { Cartesian3, Entity, BillboardGraphics, HeightReference, ConstantProperty, Color, Cartographic, sampleTerrainMostDetailed, Viewer } from 'cesium';
 import { createGeoJsonDataSource, findDataSource } from './datasources';
+import { getBasePath } from '@/utils/env';
 import type { StationRow } from '@/pages/Simulation/components/SimulationQuickResult';
 
 const DATASOURCE_NAME = 'simulation_result_stations';
@@ -59,7 +60,7 @@ export async function renderSimulationResultStations(rows: StationRow[]): Promis
 
     dataSource.entities.removeAll();
 
-    const basePath = import.meta.env.VITE_BASE_PATH || '/';
+    const basePath = getBasePath();
 
     rows.forEach((row) => {
       const [lng, lat] = row.point;

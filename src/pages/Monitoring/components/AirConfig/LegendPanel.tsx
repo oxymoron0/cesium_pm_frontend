@@ -1,8 +1,9 @@
 import { useState, memo, useCallback } from 'react';
 import TabNavigation from '@/components/basic/TabNavigation';
 import { AIR_QUALITY_STANDARDS, AIR_QUALITY_COLORS } from '@/utils/airQuality';
+import { getBasePath } from '@/utils/env';
 
-const basePath = import.meta.env.VITE_BASE_PATH || '/';
+const basePath = getBasePath();
 
 type AirQualityLevel = 'good' | 'normal' | 'bad' | 'very_bad';
 

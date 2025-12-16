@@ -4,6 +4,7 @@
  */
 
 import { Cartesian3, Cartographic, Math as CesiumMath } from 'cesium';
+import { getBasePath } from '@/utils/env';
 
 export interface HeatmapDataPoint {
   lon: number;
@@ -269,7 +270,7 @@ export async function preloadHeatmap(
   }
 
   // Build path using environment variables: VITE_BASE_PATH + VITE_SIM_PATH
-  const basePath = import.meta.env.VITE_BASE_PATH || '/';
+  const basePath = getBasePath();
   const simPath = import.meta.env.VITE_SIM_PATH || 'sim';
   const normalizedPath = `${basePath}${simPath}/${uuid}/`;
 

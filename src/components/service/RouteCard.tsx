@@ -1,5 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import Item from '@/components/basic/Item';
+import { getBasePath } from '@/utils/env';
 
 interface RouteCardProps {
   routeNumber: string;
@@ -20,7 +21,7 @@ function RouteCard({
   onBookmarkToggle,
   onSelect
 }: RouteCardProps) {
-  const basePath = import.meta.env.VITE_BASE_PATH || '/';
+  const basePath = getBasePath();
 
   const handleCardClick = () => {
     onSelect?.(routeNumber);

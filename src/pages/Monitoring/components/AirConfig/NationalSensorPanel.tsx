@@ -1,7 +1,8 @@
 import { memo } from 'react';
 import { getAirQualityLevel } from '@/utils/airQuality';
+import { getBasePath } from '@/utils/env';
 
-const basePath = import.meta.env.VITE_BASE_PATH || '/';
+const basePath = getBasePath();
 
 /**
  * 국가측정망 측정소 데이터 타입

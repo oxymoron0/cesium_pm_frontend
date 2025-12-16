@@ -5,6 +5,8 @@
  * 네트워크 지연 없이 부드러운 재생 제공
  */
 
+import { getBasePath } from '@/utils/env';
+
 /**
  * 캐시 엔트리 타입
  */
@@ -79,7 +81,7 @@ export async function preloadSimulationGlbs(
   currentCachedUuid = uuid;
 
   // Build path using environment variables: VITE_BASE_PATH + VITE_SIM_PATH
-  const basePath = import.meta.env.VITE_BASE_PATH || '/';
+  const basePath = getBasePath();
   const simPath = import.meta.env.VITE_SIM_PATH || 'sim';
   const normalizedPath = `${basePath}${simPath}/${uuid}/`;
 

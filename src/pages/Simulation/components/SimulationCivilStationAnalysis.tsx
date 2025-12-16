@@ -2,8 +2,9 @@ import { observer } from 'mobx-react-lite';
 import { simulationStore } from '@/stores/SimulationStore';
 import Spacer from '@/components/basic/Spacer';
 import Icon from '@/components/basic/Icon'; // 적절한 아이콘이 없다면 대체 혹은 텍스트 사용
+import { getBasePath } from '@/utils/env';
 
-const basePath = import.meta.env.VITE_BASE_PATH || '/'
+const basePath = getBasePath();
 
 // 1. 등급별 활동 가이드 데이터 정의
 const ACTIVITY_GUIDES: Record<string, Array<{ title: string; desc: string; badge: string; color: string }>> = {

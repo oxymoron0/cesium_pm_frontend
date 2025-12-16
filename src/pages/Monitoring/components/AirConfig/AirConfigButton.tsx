@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { getBasePath } from '@/utils/env';
 
 interface AirConfigButtonProps {
   icon: string;
@@ -7,7 +8,7 @@ interface AirConfigButtonProps {
   onClick: () => void;
 }
 
-const basePath = import.meta.env.VITE_BASE_PATH || '/';
+const basePath = getBasePath();
 
 /**
  * AirConfigButton Component

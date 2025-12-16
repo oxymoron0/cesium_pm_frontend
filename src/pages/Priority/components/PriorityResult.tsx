@@ -19,8 +19,9 @@ import { isGeometrySuccess } from '@/types/administrative';
 import type { PriorityConfig, VulnerableFacility } from '../types';
 import Info from '@/components/basic/Info';
 import { API_PATHS } from '@/utils/api/config';
+import { getBasePath } from '@/utils/env';
 
-const basePath = import.meta.env.VITE_BASE_PATH || '/';
+const basePath = getBasePath();
 
 interface PriorityResultProps {
   config: PriorityConfig;

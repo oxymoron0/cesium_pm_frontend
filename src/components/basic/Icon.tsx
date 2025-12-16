@@ -1,3 +1,5 @@
+import { getBasePath } from '@/utils/env';
+
 interface IconProps {
   name: string;
   className?: string;
@@ -5,7 +7,7 @@ interface IconProps {
 }
 
 export default function Icon({ name, className = "", onClick }: IconProps) {
-  const basePath = import.meta.env.VITE_BASE_PATH || '/';
+  const basePath = getBasePath();
 
   const iconElement = (
     <img

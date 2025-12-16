@@ -10,6 +10,7 @@ import {
   Viewer
 } from 'cesium';
 import { createGeoJsonDataSource, findDataSource } from './datasources';
+import { getBasePath } from '@/utils/env';
 // CivilResult 컴포넌트의 StationRow 타입 사용
 import type { StationRow } from '@/pages/Simulation/components/SimulationCivilResult';
 
@@ -81,7 +82,7 @@ export async function renderCivilResultStations(rows: StationRow[]): Promise<voi
 
     dataSource.entities.removeAll();
 
-    const basePath = import.meta.env.VITE_BASE_PATH || '/';
+    const basePath = getBasePath();
 
     rows.forEach((row) => {
       const [lng, lat] = row.point;

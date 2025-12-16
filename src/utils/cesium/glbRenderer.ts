@@ -3,8 +3,9 @@ import { createDataSource, findDataSource, removeDataSource } from './datasource
 import { type BusTrajectoryData } from '@/utils/api/busApi'
 import { getPositionOnRoute, lerpProgress, calculateShortestPath } from './routePositionCalculator'
 import { routeStore } from '@/stores/RouteStore'
+import { getBasePath } from '@/utils/env';
 
-const basePath = import.meta.env.VITE_BASE_PATH || '/';
+const basePath = getBasePath();
 
 /**
  * 노선 번호에 따른 GLB 모델 URL 생성

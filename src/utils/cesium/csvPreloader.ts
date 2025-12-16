@@ -3,6 +3,7 @@
 // CSV 파티클 데이터 프리로더
 
 import proj4 from 'proj4';
+import { getBasePath } from '@/utils/env';
 
 export interface ParticleDataPoint {
   lon: number;
@@ -196,7 +197,7 @@ export async function preloadCsv(
   }
 
   // Build path using environment variables: VITE_BASE_PATH + VITE_SIM_PATH
-  const basePath = import.meta.env.VITE_BASE_PATH || '/';
+  const basePath = getBasePath();
   const simPath = import.meta.env.VITE_SIM_PATH || 'sim';
   const normalizedPath = `${basePath}${simPath}/${uuid}/`;
   console.log("[CSV Preloader] Base path:", normalizedPath)

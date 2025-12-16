@@ -1,4 +1,5 @@
 import { createDataSource, removeDataSource } from './datasources';
+import { getBasePath } from '@/utils/env';
 import {
   Cartesian3,
   Entity,
@@ -38,7 +39,7 @@ export async function renderLocationMarker(longitude: number, latitude: number, 
   if (!viewer) return;
 
   try {
-    const basePath = import.meta.env.VITE_BASE_PATH || '/';
+    const basePath = getBasePath();
     const MARKER_ENTITY_ID = 'simulation_location_marker';
 
     // 높이 포함한 정확한 3D 좌표 생성

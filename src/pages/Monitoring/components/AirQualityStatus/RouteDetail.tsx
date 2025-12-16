@@ -6,7 +6,7 @@ import { stationSensorStore } from '@/stores/StationSensorStore'
 import { busStore } from '@/stores/BusStore'
 import { getRouteStations } from '@/utils/api/routeApi'
 import { getAirQualityLevel, AIR_QUALITY_COLORS } from '@/utils/airQuality'
-import { isCivil } from '@/utils/env'
+import { isCivil, getBasePath } from '@/utils/env'
 import Title from '@/components/basic/Title'
 import AirQualityDisplay from '@/components/service/sensor/AirQualityDisplay'
 import type { RouteStationsResponse, AirQualityLevel } from '@/utils/api/types'
@@ -14,7 +14,7 @@ import type { RouteStationsResponse, AirQualityLevel } from '@/utils/api/types'
 // Default animation duration fallback (ms)
 const DEFAULT_ANIMATION_DURATION = 10000
 
-const basePath = import.meta.env.VITE_BASE_PATH || '/'
+const basePath = getBasePath()
 
 // Station icon mapping based on air quality level
 const STATION_ICONS: Record<AirQualityLevel, string> = {
