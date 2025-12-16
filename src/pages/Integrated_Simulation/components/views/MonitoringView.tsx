@@ -113,9 +113,13 @@ const MonitoringView = observer(function MonitoringView({
       stationDetailStore.closeModal();
     }
 
-    // 재활성화될 때: 이미 초기화되어 있으면 Cesium 렌더링 복원
+    // 재활성화될 때: Store 상태 초기화 후 Cesium 렌더링 복원
     if (!wasActiveRef.current && isActive && isInitializedRef.current && cesiumStatus === 'ready') {
-      console.log('[MonitoringView] Reactivating - restoring Cesium entities');
+      console.log('[MonitoringView] Reactivating - resetting store and restoring Cesium entities');
+
+      // Store 상태 초기화 (초기 화면으로 복귀)
+      routeStore.clearSelection();
+      stationDetailStore.closeModal();
 
       const restoreCesiumRendering = async () => {
         try {
