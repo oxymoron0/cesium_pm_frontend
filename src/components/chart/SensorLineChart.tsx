@@ -13,6 +13,7 @@ import {
 import { sensorSelectionStore } from '@/stores/SensorSelectionStore'
 import SensorTooltip from './SensorTooltip'
 import { AIR_QUALITY_STANDARDS, AIR_QUALITY_COLORS } from '@/utils/airQuality'
+import { isCivil } from '@/utils/env'
 import type { ChartDataPoint } from '@/utils/chart/sensorDataTransform'
 
 interface SensorLineChartProps {
@@ -58,10 +59,13 @@ const SensorLineChart = observer(function SensorLineChart({
   // 컬러맵이 켜져 있는지 확인 (PM10 또는 PM25가 명시적으로 선택된 경우)
   const isColorMapOn = sensorSelectionStore.selectedPMType !== null
 
+  // Civil 모드 여부
+  const civilMode = isCivil()
+
   // Y축 최대값과 배경 영역을 공기질 기준에 맞춰 계산
-  const { yAxisMax, zones } = useMemo(() => {
+  const { yAxisMax, zones, civilYAxisConfig } = useMemo(() => {
     if (!data || data.length === 0) {
-      return { yAxisMax: 100, zones: [] }
+      return { yAxisMax: 100, zones: [], civilYAxisConfig: null }
     }
 
     // 1. 데이터 최대값 계산
@@ -74,7 +78,7 @@ const SensorLineChart = observer(function SensorLineChart({
 
     // 컬러맵이 꺼져 있거나 VOCs 모드면 배경색 없이 Y축은 max * 1.2
     if (!isColorMapOn || (showVOCs && !showPM10 && !showPM25)) {
-      return { yAxisMax: Math.ceil(maxValue * 1.2) || 100, zones: [] }
+      return { yAxisMax: Math.ceil(maxValue * 1.2) || 100, zones: [], civilYAxisConfig: null }
     }
 
     // 2. 적용할 기준 선택 (PM10 우선)
@@ -131,8 +135,19 @@ const SensorLineChart = observer(function SensorLineChart({
       })
     }
 
-    return { yAxisMax: yMax, zones: zoneList }
-  }, [data, showPM10, showPM25, showVOCs, isColorMapOn])
+    // 5. Civil 모드용 Y축 설정 (등급 텍스트 표시)
+    const civilConfig = civilMode ? {
+      ticks: zoneList.map(zone => (zone.y1 + zone.y2) / 2), // 각 존의 중앙값
+      tickLabels: zoneList.map((_zone, index) => {
+        if (index === 0) return '좋음'
+        if (index === 1) return '보통'
+        if (index === 2) return '나쁨'
+        return '매우나쁨'
+      })
+    } : null
+
+    return { yAxisMax: yMax, zones: zoneList, civilYAxisConfig: civilConfig }
+  }, [data, showPM10, showPM25, showVOCs, isColorMapOn, civilMode])
 
   // Empty state
   if (!data || data.length === 0) {
@@ -177,13 +192,19 @@ const SensorLineChart = observer(function SensorLineChart({
         {/* Y Axis */}
         <YAxis
           domain={[0, yAxisMax]}
+          ticks={civilYAxisConfig?.ticks}
+          tickFormatter={civilYAxisConfig ? (value: number) => {
+            const index = civilYAxisConfig.ticks.indexOf(value)
+            return index >= 0 ? civilYAxisConfig.tickLabels[index] : ''
+          } : undefined}
           tick={{
             fill: '#FFF',
             fontFamily: 'Pretendard',
             fontSize: 12
           }}
           stroke="#666"
-          label={{
+          width={civilYAxisConfig ? 60 : 40}
+          label={civilYAxisConfig ? undefined : {
             value: isVOCsMode ? 'ppb' : 'μg/m³',
             angle: -90,
             position: 'insideLeft',
