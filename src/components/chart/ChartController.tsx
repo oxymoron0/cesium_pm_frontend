@@ -1,6 +1,7 @@
 import { observer } from 'mobx-react-lite'
 import { sensorSelectionStore } from '@/stores/SensorSelectionStore'
 import Icon from '@/components/basic/Icon'
+import { isCivil } from '@/utils/env'
 
 /**
  * ChartController Component
@@ -8,11 +9,18 @@ import Icon from '@/components/basic/Icon'
  * Conditional rendering based on selected sensor type
  * - Renders when PM sensors are selected
  * - Hidden when VOCs is selected
+ * - Hidden in Civil mode (colormap is always enabled)
  *
  * Purpose: Color map selector for PM10/PM25 visualization
  */
 const ChartController = observer(function ChartController() {
   const isPMMode = sensorSelectionStore.isPMSelected
+  const civilMode = isCivil()
+
+  // Civil 모드에서는 컬러맵 버튼 UI를 완전히 숨김 (컬러맵은 항상 활성화)
+  if (civilMode) {
+    return null
+  }
 
   return (
     <div

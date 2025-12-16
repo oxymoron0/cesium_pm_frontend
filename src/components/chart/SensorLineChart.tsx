@@ -56,11 +56,13 @@ const SensorLineChart = observer(function SensorLineChart({
   const showPM25 = isPMMode && (sensorSelectionStore.selectedPMType === null || sensorSelectionStore.isPM25Selected)
   const showVOCs = isVOCsMode
 
-  // 컬러맵이 켜져 있는지 확인 (PM10 또는 PM25가 명시적으로 선택된 경우)
-  const isColorMapOn = sensorSelectionStore.selectedPMType !== null
-
   // Civil 모드 여부
   const civilMode = isCivil()
+
+  // 컬러맵이 켜져 있는지 확인
+  // Civil 모드: 항상 활성화 (PM10 기준)
+  // 일반 모드: PM10 또는 PM25가 명시적으로 선택된 경우에만
+  const isColorMapOn = civilMode || sensorSelectionStore.selectedPMType !== null
 
   // Y축 최대값과 배경 영역을 공기질 기준에 맞춰 계산
   const { yAxisMax, zones, civilYAxisConfig } = useMemo(() => {
