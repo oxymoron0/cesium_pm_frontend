@@ -1,7 +1,7 @@
-import { useState, memo, useCallback } from 'react';
+import { useState, memo, useCallback, useMemo } from 'react';
 import TabNavigation from '@/components/basic/TabNavigation';
 import { AIR_QUALITY_STANDARDS, AIR_QUALITY_COLORS } from '@/utils/airQuality';
-import { getBasePath } from '@/utils/env';
+import { getBasePath, isCivil } from '@/utils/env';
 
 const basePath = getBasePath();
 
@@ -284,7 +284,8 @@ const VOCsContent = memo(function VOCsContent() {
   );
 });
 
-const TABS = ['미세먼지', '초미세먼지', 'VOCs'];
+const ALL_TABS = ['미세먼지', '초미세먼지', 'VOCs'];
+const CIVIL_TABS = ['미세먼지', '초미세먼지'];
 
 /**
  * LegendPanel Component
@@ -293,6 +294,10 @@ const TABS = ['미세먼지', '초미세먼지', 'VOCs'];
  */
 function LegendPanel() {
   const [activeTab, setActiveTab] = useState(0);
+  const civilMode = isCivil();
+
+  // Civil 모드에서는 VOCs 탭 숨김
+  const tabs = useMemo(() => civilMode ? CIVIL_TABS : ALL_TABS, [civilMode]);
 
   const handleTabChange = useCallback((index: number) => {
     setActiveTab(index);
@@ -302,7 +307,7 @@ function LegendPanel() {
     <div className="flex flex-col gap-3 w-full">
       {/* 탭 네비게이션 */}
       <TabNavigation
-        tabs={TABS}
+        tabs={tabs}
         activeTab={activeTab}
         onTabChange={handleTabChange}
       />
@@ -328,9 +333,12 @@ function LegendPanel() {
       <div style={{ display: activeTab === 1 ? 'block' : 'none' }}>
         <PM25Content />
       </div>
-      <div style={{ display: activeTab === 2 ? 'block' : 'none' }}>
-        <VOCsContent />
-      </div>
+      {/* Civil 모드에서는 VOCs 콘텐츠 숨김 */}
+      {!civilMode && (
+        <div style={{ display: activeTab === 2 ? 'block' : 'none' }}>
+          <VOCsContent />
+        </div>
+      )}
     </div>
   );
 }
