@@ -169,7 +169,13 @@ class SimulationStore {
         this.currentView = 'config';
       }
 
-      console.log(`[SimulationStore] Civil mode initialized: isCivil=${isCivil}, currentView=${this.currentView}`);
+      // Civil 모드에서는 기본 정렬을 농도 기준으로 설정
+      if (isCivil && this.civilSortKey === null) {
+        this.civilSortKey = 'concentration';
+        this.civilSortOrder = 'oldest'; // 높은 농도부터 (내림차순)
+      }
+
+      console.log(`[SimulationStore] Civil mode initialized: isCivil=${isCivil}, currentView=${this.currentView}, sortKey=${this.civilSortKey}`);
     });
   }
 
