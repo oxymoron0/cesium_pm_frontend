@@ -101,13 +101,16 @@ const MonitoringView = observer(function MonitoringView({
 
   // 서비스 전환 시 Cesium 정리/복원
   useEffect(() => {
-    // 비활성화될 때: Cesium 정리 (MobX 상태는 유지)
+    // 비활성화될 때: Cesium 정리 + Store 상태 초기화
     if (wasActiveRef.current && !isActive) {
-      console.log('[MonitoringView] Deactivating - clearing Cesium entities');
+      console.log('[MonitoringView] Deactivating - clearing Cesium entities and resetting store');
       busStore.setActive(false);  // 진행 중인 초기화 취소
       clearMonitoringCesium();
       busStore.cleanup();
       stationSensorStore.stopAutoUpdate();
+      // Store 상태 초기화 (초기 화면으로 복귀)
+      routeStore.clearSelection();
+      stationDetailStore.closeModal();
     }
 
     // 재활성화될 때: 이미 초기화되어 있으면 Cesium 렌더링 복원
@@ -152,6 +155,9 @@ const MonitoringView = observer(function MonitoringView({
       clearMonitoringCesium();
       busStore.cleanup();
       stationSensorStore.stopAutoUpdate();
+      // Store 상태 초기화 (초기 화면으로 복귀)
+      routeStore.clearSelection();
+      stationDetailStore.closeModal();
     };
   }, []);
 
