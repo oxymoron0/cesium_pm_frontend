@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { Entity} from 'cesium';
+import { Entity, HeadingPitchRange, Math} from 'cesium';
 import { simulationStore } from "@/stores/SimulationStore";
 import { setSelectedCivilStationId } from '@/utils/cesium/SimulationCivilResultRenderer';
 import { getBasePath } from '@/utils/env';
@@ -226,6 +226,22 @@ const SimulationCivilStationHtmlRenderer = ({
           btn.addEventListener('click', (e) => {
             e.stopPropagation(); // 지도 클릭 이벤트 전파 방지
             console.log(`[Popup] 정류장 상세 분석 실행: ${stationData.station_name}`);
+
+            const viewer = window.cviewer;
+            const dataSource = viewer?.dataSources.getByName(dataSourceName)[0];
+            const entity = dataSource?.entities.getById(entityId);
+
+            if (viewer && entity) {
+              viewer.flyTo(entity, {
+                duration: 1.5, // 이동 시간 (초)
+                offset: new HeadingPitchRange(
+                  0, // Heading (회전 없음)
+                  Math.toRadians(-45), // Pitch (45도 내려다보기)
+                  500 // Range (거리 500m)
+                )
+              });
+            }
+
             simulationStore.runCivilStationAnalysis(stationData.index);
           });
         }

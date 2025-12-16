@@ -51,6 +51,7 @@ const SimulationCivilConfig = observer(function SimulationCivilConfig()  {
     if (simulationStore.isCivilInputDirty !== isDirty) {
       simulationStore.setIsCivilInputDirty(isDirty);
     }
+    
   }, [concentration, windDirection, windSpeed, useCurrentWeather]); // 의존성 배열: 입력값들
 
   // 컴포넌트 언마운트 시 Dirty 상태 해제
@@ -158,13 +159,13 @@ useEffect(() => {
 
   // --- 유효성 검사 ---
   const isConcentrationInvalid = showError && concentration.trim() === '';
-  const isWindDirectionInvalid = showError && !useCurrentWeather && windDirection.trim() === '';
-  const isWindSpeedInvalid = showError && !useCurrentWeather && windSpeed.trim() === '';
+  const isWindDirectionInvalid = showError && windDirection.trim() === '';
+  const isWindSpeedInvalid = showError && windSpeed.trim() === '';
   
   const checkValidity = () => {
     const validConc = concentration.trim() !== '';
-    const validWindDir = useCurrentWeather || windDirection.trim() !== '';
-    const validWindSpd = useCurrentWeather || windSpeed.trim() !== '';
+    const validWindDir = windDirection.trim() !== ''; 
+    const validWindSpd = windSpeed.trim() !== '';
     return validConc && validWindDir && validWindSpd;
   };
 

@@ -7,38 +7,38 @@ import { getBasePath } from '@/utils/env';
 const basePath = getBasePath();
 
 // 1. 등급별 활동 가이드 데이터 정의
-const ACTIVITY_GUIDES: Record<string, Array<{ title: string; desc: string; badge: string; color: string }>> = {
+const ACTIVITY_GUIDES: Record<string, Array<{ title: string; desc: string; badge: string; color: string, text: string }>> = {
   '좋음': [
-    { title: '마스크', desc: '오늘은 맨얼굴로 바람맞아도 괜찮아요', badge: '필요 없음', color: '#1C67D7' },
-    { title: '자전거', desc: '오늘은 라이딩각, 바람이 스포트라이트 쏴줍니다', badge: '추천', color: '#1C67D7' },
-    { title: '산책', desc: '강아지도 신나는 날, 같이 산책 인증샷 남겨요', badge: '추천', color: '#1C67D7' },
-    { title: '야외 달리기', desc: '오늘은 러너`s 하이, 코스 좀 늘려도 돼요', badge: '추천', color: '#1C67D7' },
-    { title: '캠핑', desc: '이건 바로 차박각, 텐트 들고 지금 출발해도 좋아요.', badge: '좋음', color: '#1C67D7' },
-    { title: '별 관찰', desc: '오늘 밤은 별이 쏟아지듯 잘 보여요', badge: '최적', color: '#1C67D7' },
+    { title: '마스크', desc: '오늘은 맨얼굴로 바람맞아도 괜찮아요', badge: '필요 없음', color: '#1C67D7', text: '#FFFFFF' },
+    { title: '자전거', desc: '오늘은 라이딩각, 바람이 스포트라이트 쏴줍니다', badge: '추천', color: '#1C67D7', text: '#FFFFFF' },
+    { title: '산책', desc: '강아지도 신나는 날, 같이 산책 인증샷 남겨요', badge: '추천', color: '#1C67D7', text: '#FFFFFF' },
+    { title: '야외 달리기', desc: '오늘은 러너`s 하이, 코스 좀 늘려도 돼요', badge: '추천', color: '#1C67D7', text: '#FFFFFF' },
+    { title: '캠핑', desc: '이건 바로 차박각, 텐트 들고 지금 출발해도 좋아요.', badge: '좋음', color: '#1C67D7', text: '#FFFFFF' },
+    { title: '별 관찰', desc: '오늘 밤은 별이 쏟아지듯 잘 보여요', badge: '최적', color: '#1C67D7', text: '#FFFFFF' },
   ],
   '보통': [
-    { title: '마스크', desc: '가방에 KF80하나 챙겨두면 마음이 편해요', badge: '선택', color: '#18A274' },
-    { title: '자전거', desc: '동네 한 바퀴면 충분히 기분 전환돼요', badge: '양호', color: '#18A274' },
-    { title: '산책', desc: '짧게 돌고 바로 집콕, 반반 산책 추천합니다', badge: '양호', color: '#18A274' },
-    { title: '야외 달리기', desc: '5KM까지만 달리고, 카페로 직행 어떠세요?', badge: '조심', color: '#18A274' },
-    { title: '캠핑', desc: '오늘은 짧은 피크닉 모드, 가볍게 즐기고 빨리 복귀해요', badge: '양호', color: '#18A274' },
-    { title: '별 관찰', desc: '몇 개 별은 보이지만, 흐린 밤이네요', badge: '가능', color: '#18A274' },
+    { title: '마스크', desc: '가방에 KF80하나 챙겨두면 마음이 편해요', badge: '선택', color: '#01B56E', text: '#000000' },
+    { title: '자전거', desc: '동네 한 바퀴면 충분히 기분 전환돼요', badge: '양호', color: '#01B56E', text: '#000000' },
+    { title: '산책', desc: '짧게 돌고 바로 집콕, 반반 산책 추천합니다', badge: '양호', color: '#01B56E', text: '#000000' },
+    { title: '야외 달리기', desc: '5KM까지만 달리고, 카페로 직행 어떠세요?', badge: '조심', color: '#01B56E', text: '#000000' },
+    { title: '캠핑', desc: '오늘은 짧은 피크닉 모드, 가볍게 즐기고 빨리 복귀해요', badge: '양호', color: '#01B56E', text: '#000000' },
+    { title: '별 관찰', desc: '몇 개 별은 보이지만, 흐린 밤이네요', badge: '가능', color: '#01B56E', text: '#000000' },
   ],
   '나쁨': [
-    { title: '마스크', desc: 'KF94는 오늘 외출의 드레스 코드예요', badge: '착용 필수', color: '#FF7700' },
-    { title: '자전거', desc: '오늘은 페달 대신 대중교통이 더 낫겠어요', badge: '주의', color: '#FF7700' },
-    { title: '산책', desc: '오늘 산책은 FLEX 말고 PASS가 정답이에요', badge: '주의', color: '#FF7700' },
-    { title: '야외 달리기', desc: '러닝화 대신 헬스장 카드 꺼낼 차례예요', badge: '자제', color: '#FF7700' },
-    { title: '캠핑', desc: '오늘은 텐트보다 창문 닫힌 방이 더 안전해요', badge: '자제', color: '#FF7700' },
-    { title: '별 관찰', desc: '오늘은 별 대신 유튜브 밤하늘 영상이 더 선명해요', badge: '불가능', color: '#FF7700' },
+    { title: '마스크', desc: 'KF94는 오늘 외출의 드레스 코드예요', badge: '착용 필수', color: '#F9C700', text: '#000000' },
+    { title: '자전거', desc: '오늘은 페달 대신 대중교통이 더 낫겠어요', badge: '주의', color: '#F9C700', text: '#000000' },
+    { title: '산책', desc: '오늘 산책은 FLEX 말고 PASS가 정답이에요', badge: '주의', color: '#F9C700', text: '#000000' },
+    { title: '야외 달리기', desc: '러닝화 대신 헬스장 카드 꺼낼 차례예요', badge: '자제', color: '#F9C700' , text: '#000000'},
+    { title: '캠핑', desc: '오늘은 텐트보다 창문 닫힌 방이 더 안전해요', badge: '자제', color: '#F9C700', text: '#000000' },
+    { title: '별 관찰', desc: '오늘은 별 대신 유튜브 밤하늘 영상이 더 선명해요', badge: '불가능', color: '#F9C700', text: '#000000' },
   ]
   // '매우나쁨': [
-  //   { title: '마스크', desc: '외출은 최대한 자제하고, 나간다면 KF94 필수!', badge: '절대필수', color: '#D32F2D' }, // 빨간색
-  //   { title: '자전거', desc: '절대 금물! 호흡기 건강을 지키세요', badge: '금지', color: '#D32F2D' },
-  //   { title: '산책', desc: '이불 밖은 위험해요. 집에서 쉬세요', badge: '금지', color: '#D32F2D' },
-  //   { title: '야외 달리기', desc: '폐 건강을 위해 오늘은 참아주세요', badge: '금지', color: '#D32F2D' },
-  //   { title: '캠핑', desc: '오늘 캠핑은 건강에 해로울 수 있어요', badge: '취소', color: '#D32F2D' },
-  //   { title: '별 관찰', desc: '창문을 닫고 공기청정기를 가동하세요', badge: '금지', color: '#D32F2D' },
+  //   { title: '마스크', desc: '외출은 최대한 자제하고, 나간다면 KF94 필수!', badge: '절대필수', color: '#E53030' }, // 빨간색
+  //   { title: '자전거', desc: '절대 금물! 호흡기 건강을 지키세요', badge: '금지', color: '#E53030' },
+  //   { title: '산책', desc: '이불 밖은 위험해요. 집에서 쉬세요', badge: '금지', color: '#E53030' },
+  //   { title: '야외 달리기', desc: '폐 건강을 위해 오늘은 참아주세요', badge: '금지', color: '#E53030' },
+  //   { title: '캠핑', desc: '오늘 캠핑은 건강에 해로울 수 있어요', badge: '취소', color: '#E53030' },
+  //   { title: '별 관찰', desc: '창문을 닫고 공기청정기를 가동하세요', badge: '금지', color: '#E53030' },
   // ]
 };
 
@@ -47,9 +47,9 @@ const ACTIVITY_GUIDES: Record<string, Array<{ title: string; desc: string; badge
 const getStatusColor = (label: string) => {
   switch (label) {
     case '좋음': return '#1C67D7';
-    case '보통': return '#18A274';
-    case '나쁨': return '#FF7700';
-    case '매우나쁨': return '#D32F2D';
+    case '보통': return '#01B56E';
+    case '나쁨': return '#F9C700';
+    case '매우나쁨': return '#E53030';
     default: return '#A6A6A6';
   }
 };
@@ -85,6 +85,7 @@ const SimulationCivilStationAnalysis = observer(() => {
   // 실제로는 stationData.pm_label 또는 concentration 값에 따라 분기 필요
   const pmLabel = stationData.pm_label || '보통'; // 데이터 없을 시 기본값
   const statusColor = getStatusColor(pmLabel);
+  const statusTextColor = pmLabel === '보통' || pmLabel === '나쁨' ? 'text-[#000000]' : 'text-[#FFFFFF]'
   const statusImg = `${basePath}icon/${STATION_ICONS[pmLabel]}`
   const guides = ACTIVITY_GUIDES[pmLabel] || ACTIVITY_GUIDES['보통'];
 
@@ -109,13 +110,13 @@ const SimulationCivilStationAnalysis = observer(() => {
           </div>
           
           <div className="flex flex-col text-white">
-            <span className="text-sm opacity-90 font-medium">{dateStr}</span>
-            <span className="text-2xl font-bold">활동지수</span>
+            <span className={`${statusTextColor} text-sm opacity-90 font-medium`}>{dateStr}</span>
+            <span className={`${statusTextColor} text-2xl font-bold`}>활동지수</span>
           </div>
         </div>
 
         {/* 등급 뱃지 */}
-        <div className="text-white px-6 py-2 rounded-full font-bold text-lg z-10 border-3 border-[#000000]" style={{ backgroundColor: statusColor }}>
+        <div className={`${statusTextColor} px-6 py-2 rounded-full font-bold text-lg z-10 border-3 border-[#000000]`} style={{ backgroundColor: statusColor }}>
           {pmLabel}
         </div>
       </div>
@@ -142,7 +143,7 @@ const SimulationCivilStationAnalysis = observer(() => {
             <div className="flex justify-end mt-2">
               <div 
                 className="px-4 py-1 rounded-full text-white text-sm font-bold"
-                style={{ backgroundColor: statusColor }}
+                style={{ backgroundColor: statusColor, color : item.text}}
               >
                 {item.badge}
               </div>
