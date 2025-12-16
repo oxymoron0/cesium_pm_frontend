@@ -14,6 +14,9 @@ export interface SensorData {
   vocs: number;
 }
 
+// 자동 업데이트 주기 (밀리초)
+const AUTO_UPDATE_INTERVAL_MS = 60 * 1000; // 1분
+
 /**
  * StationSensorStore - 정류장 센서 표시 관리
  * 간단한 리스트 기반 접근 방식으로 어떤 정류장에 센서를 표시할지 관리
@@ -34,6 +37,12 @@ class StationSensorStore {
 
   // 호버 상태 관리
   hoveredStationId: string | null = null;
+
+  // 자동 업데이트 타이머 ID
+  private autoUpdateIntervalId: ReturnType<typeof setInterval> | null = null;
+
+  // 마지막 업데이트 시각
+  lastUpdatedAt: Date | null = null;
 
   constructor() {
     makeAutoObservable(this);
@@ -163,8 +172,10 @@ class StationSensorStore {
       });
 
       this.sensorDataMap = transformedData;
+      this.lastUpdatedAt = new Date();
       console.log('[StationSensorStore] 센서 데이터 로딩 완료:', {
         totalStations: this.sensorDataMap.size,
+        updatedAt: this.lastUpdatedAt.toLocaleTimeString(),
         sampleData: Array.from(this.sensorDataMap.entries()).slice(0, 3)
       });
 
@@ -199,6 +210,51 @@ class StationSensorStore {
       });
     });
   });
+
+  // ============================================================================
+  // 자동 업데이트 관리
+  // ============================================================================
+
+  /**
+   * 1분 주기 자동 업데이트 시작
+   * 최초 호출 시 즉시 데이터를 로드하고, 이후 1분마다 자동 갱신
+   */
+  startAutoUpdate = action(() => {
+    // 이미 실행 중이면 중복 시작 방지
+    if (this.autoUpdateIntervalId !== null) {
+      console.log('[StationSensorStore] 자동 업데이트가 이미 실행 중입니다.');
+      return;
+    }
+
+    console.log('[StationSensorStore] 자동 업데이트 시작 (주기: 1분)');
+
+    // 최초 데이터 로드
+    this.loadSensorData();
+
+    // 1분 주기 업데이트 설정
+    this.autoUpdateIntervalId = setInterval(() => {
+      console.log('[StationSensorStore] 자동 업데이트 실행...');
+      this.loadSensorData();
+    }, AUTO_UPDATE_INTERVAL_MS);
+  });
+
+  /**
+   * 자동 업데이트 중지
+   */
+  stopAutoUpdate = action(() => {
+    if (this.autoUpdateIntervalId !== null) {
+      clearInterval(this.autoUpdateIntervalId);
+      this.autoUpdateIntervalId = null;
+      console.log('[StationSensorStore] 자동 업데이트 중지됨');
+    }
+  });
+
+  /**
+   * 자동 업데이트 실행 상태 확인
+   */
+  get isAutoUpdateRunning(): boolean {
+    return this.autoUpdateIntervalId !== null;
+  }
 
   // ============================================================================
   // 상태 조회 메서드
