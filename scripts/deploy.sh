@@ -20,7 +20,8 @@ echo "Building new image..."
 docker build -t pm-frontend .
 
 echo "Starting new container..."
-docker run -d --name pm-frontend-test -p 17000:8080 -v "${SIM_LOCAL_PATH}:${SIM_LOCAL_PATH}" pm-frontend
+# docker run -d --name pm-frontend-test -p 17000:8080 -v "${SIM_LOCAL_PATH}:${SIM_LOCAL_PATH}" pm-frontend
+docker run -d -e IS_CIVIL=true --name pm-frontend-test -p 17000:8080 -v "${SIM_LOCAL_PATH}:${SIM_LOCAL_PATH}" pm-frontend
 
 echo "Deployment complete. Container status:"
 docker ps | grep pm-frontend-test
