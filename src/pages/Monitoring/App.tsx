@@ -88,9 +88,9 @@ const App = observer(function App(props: AppProps) {
           await Promise.all(stationLoadPromises);
           console.log('[App] Station data loading completed');
 
-          // StationStore 데이터가 로드된 후 실제 센서 데이터 로드
-          await stationSensorStore.loadSensorData();
-          console.log('[App] Sensor data loaded from API');
+          // StationStore 데이터가 로드된 후 센서 데이터 자동 업데이트 시작 (1분 주기)
+          stationSensorStore.startAutoUpdate();
+          console.log('[App] Sensor data auto-update started (1 min interval)');
 
           // 초기 방향을 inbound로 설정
           stationStore.setSelectedDirection('inbound');
@@ -122,9 +122,10 @@ const App = observer(function App(props: AppProps) {
   // Cleanup 함수 (컴포넌트 언마운트 시)
   useEffect(() => {
     return () => {
-      console.log('[App] Component unmounting, cleaning up bus system');
+      console.log('[App] Component unmounting, cleaning up');
       busStore.setActive(false);
       busStore.cleanup();
+      stationSensorStore.stopAutoUpdate();
     };
   }, [])
 

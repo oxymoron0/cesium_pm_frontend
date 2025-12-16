@@ -130,8 +130,9 @@ const App = observer(function App(props: AppProps) {
   // Cleanup 함수 (컴포넌트 언마운트 시)
   useEffect(() => {
     return () => {
-      console.log('[SamplePage] Component unmounting, cleaning up bus system')
+      console.log('[SamplePage] Component unmounting, cleaning up')
       busStore.cleanup()
+      stationSensorStore.stopAutoUpdate()
     }
   }, [])
 

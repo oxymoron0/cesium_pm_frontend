@@ -71,9 +71,9 @@ const MonitoringView = observer(function MonitoringView({
           await Promise.all(stationLoadPromises);
           console.log('[MonitoringView] Station data loading completed');
 
-          // 센서 데이터 로드
-          await stationSensorStore.loadSensorData();
-          console.log('[MonitoringView] Sensor data loaded from API');
+          // 센서 데이터 자동 업데이트 시작 (1분 주기)
+          stationSensorStore.startAutoUpdate();
+          console.log('[MonitoringView] Sensor data auto-update started (1 min interval)');
 
           // 초기 방향 설정
           stationStore.setSelectedDirection('inbound');
@@ -107,6 +107,7 @@ const MonitoringView = observer(function MonitoringView({
       busStore.setActive(false);  // 진행 중인 초기화 취소
       clearMonitoringCesium();
       busStore.cleanup();
+      stationSensorStore.stopAutoUpdate();
     }
 
     // 재활성화될 때: 이미 초기화되어 있으면 Cesium 렌더링 복원
@@ -150,6 +151,7 @@ const MonitoringView = observer(function MonitoringView({
       busStore.setActive(false);  // 진행 중인 초기화 취소
       clearMonitoringCesium();
       busStore.cleanup();
+      stationSensorStore.stopAutoUpdate();
     };
   }, []);
 
