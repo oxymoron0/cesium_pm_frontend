@@ -118,6 +118,8 @@ class RouteStore {
   clearSelection() {
     this.selectedRouteName = null;
     this.selectedDirection = null;
+    // 모니터링 탭 초기화
+    this.monitoringTab = 'bus';
     // focused route도 함께 제거
     removeFocusedRoute();
     // 모든 정류장 숨김
