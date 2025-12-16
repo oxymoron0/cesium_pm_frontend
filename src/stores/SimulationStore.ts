@@ -665,16 +665,23 @@ class SimulationStore {
     }
   }
 
+  /**
+   * 시뮬레이션(auto) 목록 조회
+   * @param startDateTime - 시작 일시 문자열 (예: "2025-12-16 06:30:00")
+   * @param endDateTime - 종료 일시 문자열 (예: "2025-12-16 23:50:00")
+   * @param page - 페이지 번호
+   * @param limit - 페이지당 항목 수
+   */
   async loadSimulationQuickList(
-    startDate : Date,
-    endDate : Date,
+    startDateTime: string,
+    endDateTime: string,
     page: number = 1,
     limit: number = 7,
   ): Promise<void> {
     this.isLoadingQuickList = true;
 
     try {
-      const response = await getSimulationQuickList(startDate, endDate, page, limit);
+      const response = await getSimulationQuickList(startDateTime, endDateTime, page, limit);
       this.simulationQuickList = response.simulations;
       this.paginationQuick = response.pagination ?? null;
 

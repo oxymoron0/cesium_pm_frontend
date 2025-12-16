@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { observer } from "mobx-react-lite";
 import Icon from "@/components/basic/Icon";
 import DatePicker from "@/components/basic/DatePicker";
@@ -24,6 +24,66 @@ const toLocalHM = (iso: string) =>
     minute: "2-digit",
     hour12: false,
   });
+
+// 시간 옵션 생성 (00시 ~ 23시)
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => i);
+
+// TODO: 백엔드가 시간대를 지원하면 true로 변경
+const INCLUDE_TIME_IN_API = false;
+
+// 시간 드롭다운 컴포넌트 (날짜 UI와 동일한 스타일)
+interface HourDropdownProps {
+  hour: number;
+  onHourChange: (h: number) => void;
+}
+
+function HourDropdown({ hour, onHourChange }: HourDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // 외부 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const formatHour = (n: number) => `${String(n).padStart(2, "0")}시`;
+
+  return (
+    <div ref={ref} className="relative flex items-center h-8">
+      <div
+        className="flex items-center px-3 py-1 rounded-[4px] cursor-pointer bg-black border border-[#696A6A]"
+        onClick={() => setOpen(!open)}
+      >
+        <span className="px-2 py-1 font-pretendard text-[14px] font-[400] leading-normal text-white">
+          {formatHour(hour)}
+        </span>
+        <Icon name="dropmenubtn" className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </div>
+      {open && (
+        <div
+          className="absolute top-[40px] left-0 z-[9999] w-[72px] max-h-[200px] overflow-y-auto rounded-[4px] bg-[#1E1E1E] border border-[#696A6A] shadow-lg"
+          style={{ scrollbarWidth: 'thin', scrollbarColor: '#FFD040 transparent' }}
+        >
+          {HOUR_OPTIONS.map((h) => (
+            <div
+              key={h}
+              onClick={() => { onHourChange(h); setOpen(false); }}
+              className={`px-3 py-2 text-[14px] cursor-pointer hover:bg-[#333] transition-colors ${hour === h ? 'text-[#FFD040] bg-[#2A2A2A]' : 'text-white'}`}
+            >
+              {formatHour(h)}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const SimulationQuick = observer(function SimulationQuick() {
   const [openRowIndex, setOpenRowIndex] = useState<number | null>(null);
@@ -52,9 +112,44 @@ const SimulationQuick = observer(function SimulationQuick() {
   const [openStart, setOpenStart] = useState(false);
   const [openEnd, setOpenEnd] = useState(false);
 
+  // 시간 상태 (시작: 00시, 종료: 23시)
+  const [startHour, setStartHour] = useState(0);
+  const [endHour, setEndHour] = useState(23);
+
+  // 날짜+시간을 조합하여 API 호출용 문자열 생성
+  // isEndTime이 true면 해당 시간의 59분 59초까지 포함 (17시 → 17:59:59)
+  const buildDateTimeString = useCallback((
+    date: Date,
+    hour: number,
+    isEndTime: boolean,
+    includeTime: boolean = true
+  ): string => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+
+    if (!includeTime) {
+      return `${y}-${m}-${d}`;
+    }
+
+    const hh = String(hour).padStart(2, "0");
+    // 종료 시간은 해당 시간의 59분 59초까지 포함
+    const mm = isEndTime ? "59" : "00";
+    const ss = isEndTime ? "59" : "00";
+    return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
+  }, []);
+
+  // 데이터 로드 함수
+  const loadData = useCallback((page: number = 1) => {
+    const startDateTime = buildDateTimeString(startDate, startHour, false, INCLUDE_TIME_IN_API);
+    const endDateTime = buildDateTimeString(endDate, endHour, true, INCLUDE_TIME_IN_API);
+    console.log(`[SimulationQuick] Loading data: ${startDateTime} ~ ${endDateTime}`);
+    simulationStore.loadSimulationQuickList(startDateTime, endDateTime, page, 7);
+  }, [buildDateTimeString, startDate, startHour, endDate, endHour]);
+
   useEffect(() => {
-    simulationStore.loadSimulationQuickList(startDate, endDate, 1, 7);
-  }, [startDate, endDate]);
+    loadData(1);
+  }, [loadData]);
 
   const simulations = simulationStore.simulationQuickList ?? [];
   const pagination = simulationStore.paginationQuick ?? {
@@ -86,12 +181,7 @@ const SimulationQuick = observer(function SimulationQuick() {
       (pagination.total_pages && nextPage > pagination.total_pages)
     )
       return;
-    simulationStore.loadSimulationQuickList(
-      startDate,
-      endDate,
-      nextPage,
-      pagination.limit
-    );
+    loadData(nextPage);
     setOpenRowIndex(null);
   };
 
@@ -220,8 +310,8 @@ const SimulationQuick = observer(function SimulationQuick() {
         시뮬레이션을 바로 실행할 수 있습니다.
       </div>
 
-      {/* 날짜 선택 영역 */}
-      <div className="flex w-full items-center">
+      {/* 날짜/시간 선택 영역 */}
+      <div className="flex w-full items-center flex-wrap gap-y-2">
         {/* 시작일 */}
         <div className="relative flex items-center gap-[7px] h-8">
           <div
@@ -240,12 +330,6 @@ const SimulationQuick = observer(function SimulationQuick() {
                 onChange={(d) => {
                   handleStartChange(d);
                   setOpenStart(false);
-                  simulationStore.loadSimulationQuickList(
-                    d,
-                    endDate,
-                    1,
-                    pagination.limit
-                  );
                 }}
                 onClose={() => setOpenStart(false)}
               />
@@ -253,7 +337,12 @@ const SimulationQuick = observer(function SimulationQuick() {
           )}
         </div>
 
-        <span className="mx-[10px] text-[#A6A6A6]">-</span>
+        {/* 시작 시간 */}
+        <div className="ml-2">
+          <HourDropdown hour={startHour} onHourChange={setStartHour} />
+        </div>
+
+        <span className="mx-[10px] text-[#A6A6A6]">~</span>
 
         {/* 종료일 */}
         <div className="relative flex items-center gap-[7px] h-8">
@@ -274,17 +363,16 @@ const SimulationQuick = observer(function SimulationQuick() {
                   const fixed = d < startDate ? startDate : d;
                   handleEndChange(fixed);
                   setOpenEnd(false);
-                  simulationStore.loadSimulationQuickList(
-                    startDate,
-                    fixed,
-                    1,
-                    pagination.limit
-                  );
                 }}
                 onClose={() => setOpenEnd(false)}
               />
             </div>
           )}
+        </div>
+
+        {/* 종료 시간 */}
+        <div className="ml-2">
+          <HourDropdown hour={endHour} onHourChange={setEndHour} />
         </div>
       </div>
 
