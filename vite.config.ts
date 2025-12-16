@@ -16,7 +16,7 @@ function civilBasePathPlugin(basePath: string, civilBasePath: string): Plugin {
   return {
     name: 'civil-base-path',
     configureServer(server) {
-      server.middlewares.use((req, res, next) => {
+      server.middlewares.use((req, _res, next) => {
         if (!req.url) return next()
 
         // Rewrite civil path to base path

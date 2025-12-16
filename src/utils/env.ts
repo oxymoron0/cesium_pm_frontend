@@ -21,7 +21,6 @@
 
 export interface RuntimeConfig {
   isCivil: boolean;
-  basePath: string;
 }
 
 // Cached configuration
