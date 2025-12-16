@@ -18,6 +18,7 @@ import { userStore } from '@/stores/UserStore';
 import { searchStations } from '@/utils/api/routeApi';
 import { renderSearchStations, updateSearchStationSelection, clearSearchStations } from '@/utils/cesium/searchStationRenderer';
 import { flyToSearchStation } from '@/utils/cesium/cameraUtils';
+import { isCivil } from '@/utils/env';
 import type { StationSearchResponse, RouteStationFeature } from '@/utils/api/types';
 
 interface MonitoringProps {
@@ -243,6 +244,10 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
     if (isSearchMode) {
       return `${searchQuery} 검색결과`;
     }
+    // Civil 모드에서는 검색 결과 문구만 표시
+    if (isCivil()) {
+      return '검색결과';
+    }
     return '저장한 정류장';
   };
 
@@ -257,35 +262,39 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
 
   const renderBusTab = () => (
     <>
-      <SubTitle> 저장한 버스 </SubTitle>
-      <Divider></Divider>
-      <Spacer height={16} />
-      <div className="flex flex-col items-start self-stretch gap-2">
-        {bookmarkStore.bookmarkedRoutes.length > 0 ? (
-          bookmarkStore.bookmarkedRoutes.map((routeName) => {
-            const routeInfo = routeStore.getRouteInfo(routeName);
-            if (!routeInfo) return null;
+      {!isCivil() && (
+        <>
+          <SubTitle> 저장한 버스 </SubTitle>
+          <Divider></Divider>
+          <Spacer height={16} />
+          <div className="flex flex-col items-start self-stretch gap-2">
+            {bookmarkStore.bookmarkedRoutes.length > 0 ? (
+              bookmarkStore.bookmarkedRoutes.map((routeName) => {
+                const routeInfo = routeStore.getRouteInfo(routeName);
+                if (!routeInfo) return null;
 
-            return (
-              <RouteCard
-                key={`bookmark-${routeName}`}
-                routeNumber={routeInfo.route_name}
-                description={`${routeInfo.origin} ↔ ${routeInfo.destination}`}
-                isExpress={false}
-                isBookmarked={true} // 저장한 버스 섹션이므로 항상 true
-                isSelected={routeStore.isRouteSelected(routeInfo.route_name)}
-                onBookmarkToggle={() => handleRouteBookmarkToggle(routeName)}
-                onSelect={onRouteSelect}
-              />
-            );
-          })
-        ) : (
-          <div className="text-gray-400 text-center p-4 bg-[#1A1A1A] rounded-lg w-full">
-            저장한 버스가 없습니다.
+                return (
+                  <RouteCard
+                    key={`bookmark-${routeName}`}
+                    routeNumber={routeInfo.route_name}
+                    description={`${routeInfo.origin} ↔ ${routeInfo.destination}`}
+                    isExpress={false}
+                    isBookmarked={true} // 저장한 버스 섹션이므로 항상 true
+                    isSelected={routeStore.isRouteSelected(routeInfo.route_name)}
+                    onBookmarkToggle={() => handleRouteBookmarkToggle(routeName)}
+                    onSelect={onRouteSelect}
+                  />
+                );
+              })
+            ) : (
+              <div className="text-gray-400 text-center p-4 bg-[#1A1A1A] rounded-lg w-full">
+                저장한 버스가 없습니다.
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      <Spacer height={16}/>
+          <Spacer height={16}/>
+        </>
+      )}
       <SubTitle> 노선도 </SubTitle>
       <Divider color="bg-white"></Divider>
       <Spacer height={16} />
@@ -382,87 +391,124 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
     );
   };
 
-  const renderStationTab = () => (
-    <>
-      <SearchInput
-        value={searchQuery}
-        placeholder="버스 정류장을 입력하세요."
-        onChange={handleSearchChange}
-      />
-      <Spacer height={16} />
+  const renderStationTab = () => {
+    // Civil 모드이고 검색 전인 경우 중앙 안내 메시지 표시
+    if (isCivil() && !isSearchMode) {
+      return (
+        <>
+          <SearchInput
+            value={searchQuery}
+            placeholder="버스 정류장을 입력하세요."
+            onChange={handleSearchChange}
+          />
+          <Spacer height={16} />
+          <div
+            className="flex flex-col items-center justify-center w-full"
+            style={{
+              height: '400px',
+              minHeight: '400px',
+              maxHeight: '400px'
+            }}
+          >
+            <span
+              style={{
+                color: '#A6A6A6',
+                fontFamily: 'Pretendard',
+                fontSize: '16px',
+                fontWeight: '400',
+                lineHeight: '24px',
+                textAlign: 'center'
+              }}
+            >
+              버스 정류장을 검색해주세요.
+            </span>
+          </div>
+        </>
+      );
+    }
 
-      <div className="flex items-center justify-between w-full">
-        <SubTitle>{getSubTitleText()}</SubTitle>
-        <span
+    return (
+      <>
+        <SearchInput
+          value={searchQuery}
+          placeholder="버스 정류장을 입력하세요."
+          onChange={handleSearchChange}
+        />
+        <Spacer height={16} />
+
+        <div className="flex items-center justify-between w-full">
+          <SubTitle>{getSubTitleText()}</SubTitle>
+          <span
+            style={{
+              color: '#A6A6A6',
+              fontFamily: 'Pretendard',
+              fontSize: '14px',
+              fontWeight: '400',
+              lineHeight: '20px'
+            }}
+          >
+            총 {totalItems}건
+          </span>
+        </div>
+
+        <Divider></Divider>
+        <Spacer height={16} />
+
+        <div
+          className="flex flex-col items-start self-stretch gap-2 px-1 py-1 overflow-y-auto"
           style={{
-            color: '#A6A6A6',
-            fontFamily: 'Pretendard',
-            fontSize: '14px',
-            fontWeight: '400',
-            lineHeight: '20px'
+            alignItems: 'flex-start',
+            height: '400px', // 고정 높이 (4개 StationCard 기준)
+            minHeight: '400px',
+            maxHeight: '400px',
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#FFD040 transparent'
           }}
         >
-          총 {totalItems}건
-        </span>
-      </div>
+          {isSearchLoading && !searchResults ? (
+            // 최초 검색 로딩 상태 (페이지 변경시에는 기존 데이터 유지)
+            <>
+              {[1, 2, 3, 4].map((index) => (
+                <div
+                  key={`search-skeleton-${index}`}
+                  className="bg-[#1A1A1A] rounded-lg p-4 animate-pulse w-full"
+                >
+                  <div className="w-3/4 h-4 mb-2 bg-gray-600 rounded"></div>
+                  <div className="w-1/2 h-3 bg-gray-600 rounded"></div>
+                </div>
+              ))}
+            </>
+          ) : searchError ? (
+            // 검색 에러 상태
+            <div className="text-red-400 text-center p-4 bg-[#1A1A1A] rounded-lg w-full">
+              {searchError}
+            </div>
+          ) : currentItems.length > 0 ? (
+            // 정상 데이터 표시
+            currentItems.map((station, index) => (
+              <StationCard
+                key={`${station.stationId}-${index}`}
+                stationId={station.stationId}
+                name={station.name}
+                description={station.description}
+                isBookmarked={station.isBookmarked}
+                isSelected={station.isSelected}
+                onBookmarkToggle={() => handleStationBookmarkToggle(station.stationId)}
+                onSelect={handleStationSelect}
+              />
+            ))
+          ) : (
+            // 빈 상태
+            <div className="text-gray-400 text-center p-4 bg-[#1A1A1A] rounded-lg w-full">
+              {isSearchMode ? '검색 결과가 없습니다.' : '저장된 정류장이 없습니다.'}
+            </div>
+          )}
+        </div>
 
-      <Divider></Divider>
-      <Spacer height={16} />
-
-      <div
-        className="flex flex-col items-start self-stretch gap-2 px-1 py-1 overflow-y-auto"
-        style={{
-          alignItems: 'flex-start',
-          height: '400px', // 고정 높이 (4개 StationCard 기준)
-          minHeight: '400px',
-          maxHeight: '400px',
-          scrollbarWidth: 'thin',
-          scrollbarColor: '#FFD040 transparent'
-        }}
-      >
-        {isSearchLoading && !searchResults ? (
-          // 최초 검색 로딩 상태 (페이지 변경시에는 기존 데이터 유지)
-          <>
-            {[1, 2, 3, 4].map((index) => (
-              <div
-                key={`search-skeleton-${index}`}
-                className="bg-[#1A1A1A] rounded-lg p-4 animate-pulse w-full"
-              >
-                <div className="w-3/4 h-4 mb-2 bg-gray-600 rounded"></div>
-                <div className="w-1/2 h-3 bg-gray-600 rounded"></div>
-              </div>
-            ))}
-          </>
-        ) : searchError ? (
-          // 검색 에러 상태
-          <div className="text-red-400 text-center p-4 bg-[#1A1A1A] rounded-lg w-full">
-            {searchError}
-          </div>
-        ) : currentItems.length > 0 ? (
-          // 정상 데이터 표시
-          currentItems.map((station, index) => (
-            <StationCard
-              key={`${station.stationId}-${index}`}
-              stationId={station.stationId}
-              name={station.name}
-              description={station.description}
-              isBookmarked={station.isBookmarked}
-              isSelected={station.isSelected}
-              onBookmarkToggle={() => handleStationBookmarkToggle(station.stationId)}
-              onSelect={handleStationSelect}
-            />
-          ))
-        ) : (
-          // 빈 상태
-          <div className="text-gray-400 text-center p-4 bg-[#1A1A1A] rounded-lg w-full">
-            {isSearchMode ? '검색 결과가 없습니다.' : '저장된 정류장이 없습니다.'}
-          </div>
-        )}
-      </div>
-
-      {renderPagination()}
-    </>
-  );
+        {renderPagination()}
+      </>
+    );
+  };
 
   return (
       <>

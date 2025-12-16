@@ -1,6 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import Item from '@/components/basic/Item';
-import { getBasePath } from '@/utils/env';
+import { getBasePath, isCivil } from '@/utils/env';
 
 interface StationCardProps {
   stationId?: string;
@@ -82,19 +82,21 @@ function StationCard({
           {description}
         </div>
       </div>
-      <div
-        className="flex items-center cursor-pointer"
-        onClick={(e) => {
-          e.stopPropagation();
-          onBookmarkToggle?.();
-        }}
-      >
-        <img
-          src={`${basePath}icon/bookmark_${isBookmarked ? 'on' : 'off'}.svg`}
-          alt={isBookmarked ? 'bookmarked' : 'not bookmarked'}
-          className="w-7 h-7"
-        />
-      </div>
+      {!isCivil() && (
+        <div
+          className="flex items-center cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            onBookmarkToggle?.();
+          }}
+        >
+          <img
+            src={`${basePath}icon/bookmark_${isBookmarked ? 'on' : 'off'}.svg`}
+            alt={isBookmarked ? 'bookmarked' : 'not bookmarked'}
+            className="w-7 h-7"
+          />
+        </div>
+      )}
     </Item>
   );
 }
