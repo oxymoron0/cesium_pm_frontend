@@ -1,6 +1,6 @@
 import type { ServiceType } from '../types';
 import { SERVICE_CONFIGS } from '../types';
-import { getBasePath } from '@/utils/env';
+import { getBasePath, isCivil } from '@/utils/env';
 
 interface ServiceSwitcherProps {
   currentService: ServiceType;
@@ -15,6 +15,12 @@ const SERVICE_ICONS: Record<ServiceType, string> = {
 
 function ServiceSwitcher({ currentService, onServiceChange }: ServiceSwitcherProps) {
   const basePath = getBasePath();
+  const civilMode = isCivil();
+
+  // Civil 모드에서는 우선순위 서비스를 숨김
+  const availableServices = civilMode
+    ? SERVICE_CONFIGS.filter((service) => service.id !== 'priority')
+    : SERVICE_CONFIGS;
 
   return (
     <div className="absolute top-[40px] right-[84px] z-[1001]">
@@ -23,7 +29,7 @@ function ServiceSwitcher({ currentService, onServiceChange }: ServiceSwitcherPro
         className="flex items-center gap-4 px-6 py-3 rounded-full border border-[#C4C6C6]"
         style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
       >
-        {SERVICE_CONFIGS.map((service) => {
+        {availableServices.map((service) => {
           const isActive = service.id === currentService;
           return (
             <button
