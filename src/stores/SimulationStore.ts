@@ -149,6 +149,30 @@ class SimulationStore {
     });
   }
 
+  /**
+   * Civil 모드 초기화 (loadConfig 이후 호출)
+   * 런타임 설정이 로드된 후 isCivilMode와 currentView를 동기화
+   */
+  initializeCivilMode() {
+    const isCivil = getIsCivil();
+
+    // 이미 올바른 상태면 skip
+    if (this.isCivilMode === isCivil) return;
+
+    runInAction(() => {
+      this.isCivilMode = isCivil;
+
+      // Civil 모드로 전환시 currentView도 업데이트
+      if (isCivil && this.currentView === 'config') {
+        this.currentView = 'civilConfig';
+      } else if (!isCivil && this.currentView === 'civilConfig') {
+        this.currentView = 'config';
+      }
+
+      console.log(`[SimulationStore] Civil mode initialized: isCivil=${isCivil}, currentView=${this.currentView}`);
+    });
+  }
+
   // ============================================================================
   // 시뮬레이션 Panel 변경
   // ============================================================================

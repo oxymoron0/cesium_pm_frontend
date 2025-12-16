@@ -3,6 +3,7 @@ import App from './App'
 import '@/index.css'
 import { cleanupAll } from './cleanup'
 import { userStore, type User } from '@/stores/UserStore'
+import { simulationStore } from '@/stores/SimulationStore'
 import { loadConfig } from '@/utils/env'
 
 let root: Root | null = null;
@@ -24,6 +25,9 @@ export async function mount(props: MountProps) {
 
   // Load runtime configuration before rendering
   await loadConfig();
+
+  // Sync SimulationStore with loaded config (Civil mode detection)
+  simulationStore.initializeCivilMode();
 
   // Register user in UserStore (overrides default if provided)
   if (user) {
@@ -61,6 +65,9 @@ if (!window.__POWERED_BY_QIANKUN__) {
   (async () => {
     // Load runtime configuration before rendering
     await loadConfig();
+
+    // Sync SimulationStore with loaded config (Civil mode detection)
+    simulationStore.initializeCivilMode();
 
     const container = document.getElementById('microapp-Simulation') || document.getElementById('root');
     if (container) {
