@@ -59,40 +59,74 @@ const SimulationCivilList = observer(function SimulationCivilList() {
   };
 
   const renderPagination = () => {
-    if (!paginationCivil || isLoadingCivilList) return <div className="h-[32px]" />;
+  if (!paginationCivil || isLoadingCivilList) return <div className="h-[32px]" />;
 
-    const { page, total_pages } = paginationCivil;
-    const pageNumbers = Array.from({ length: total_pages }, (_, i) => i + 1);
+  const { page, total_pages } = paginationCivil;
 
-    return (
-      <div
-        className="flex justify-center items-center gap-4 self-stretch"
-        style={{ fontFamily: 'Pretendard', fontSize: '14px', fontWeight: '600' }}
-      >
-        <Icon 
-          name="chevron-left" 
-          className={`w-4 h-4 ${page > 1 ? 'cursor-pointer' : 'opacity-50'}`}
-          onClick={() => page > 1 && handlePageChange(page - 1)} // 수정됨
-        />
-        
-        {pageNumbers.map(number => (
-          <span
-            key={number}
-            className="cursor-pointer"
-            style={{ color: number === page ? '#FFD040' : 'white' }}
-            onClick={() => handlePageChange(number)} // 수정됨
-          >
-            {number}
-          </span>
-        ))}
+  // [수정] 페이지 범위 계산 로직 (최대 5개 표시)
+  const calculatePageRange = () => {
+    const total = total_pages || 1;
+    const current = page;
+    const maxVisible = 5; // 한 번에 보여줄 최대 페이지 수
 
-        <Icon 
-          name="chevron-right" 
-          className={`w-4 h-4 ${page < total_pages ? 'cursor-pointer' : 'opacity-50'}`}
-          onClick={() => page < total_pages && handlePageChange(page + 1)} // 수정됨
-        />
-      </div>
-    );
+    let start = Math.max(1, current - 2);
+    let end = Math.min(total, current + 2);
+
+    // 보여줄 페이지 수가 5개 미만일 경우 범위 보정
+    if (end - start + 1 < maxVisible) {
+      if (start === 1) {
+        end = Math.min(total, start + maxVisible - 1);
+      } else if (end === total) {
+        start = Math.max(1, end - maxVisible + 1);
+      }
+    }
+
+    const pages = [];
+    for (let p = start; p <= end; p++) {
+      pages.push(p);
+    }
+    return pages;
+  };
+
+  const pageNumbers = calculatePageRange();
+
+  return (
+    <div
+      className="flex justify-center items-center gap-4 self-stretch"
+      style={{ fontFamily: 'Pretendard', fontSize: '14px', fontWeight: '600' }}
+    >
+      {/* 이전 페이지 버튼 (<) */}
+      <Icon 
+        name="chevron-left" 
+        className={`w-4 h-4 ${page > 1 ? 'cursor-pointer' : 'opacity-50 pointer-events-none'}`}
+        onClick={() => page > 1 && handlePageChange(page - 1)}
+      />
+      
+      {/* 페이지 번호 버튼들 */}
+      {pageNumbers.map(number => (
+        <span
+          key={number}
+          className="cursor-pointer flex items-center justify-center w-6 h-6 rounded"
+          style={{ 
+            color: number === page ? '#FFD040' : 'white',
+            fontWeight: number === page ? 'bold' : 'normal',
+            // 현재 페이지인 경우 시각적 강조 추가 가능 (선택 사항)
+            border: number === page ? '1px solid #FFD040' : 'none' 
+          }}
+          onClick={() => handlePageChange(number)}
+        >
+          {number}
+        </span>
+      ))}
+
+      {/* 다음 페이지 버튼 (>) */}
+      <Icon 
+        name="chevron-right" 
+        className={`w-4 h-4 ${page < total_pages ? 'cursor-pointer' : 'opacity-50 pointer-events-none'}`}
+        onClick={() => page < total_pages && handlePageChange(page + 1)}
+      />
+    </div>
+  );
   };
 
   const handleRunSimulation = (sim: SimulationCivilQuickData) => { // 타입은 SimulationCivilQuickData
