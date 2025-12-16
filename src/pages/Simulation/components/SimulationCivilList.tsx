@@ -14,7 +14,14 @@ const formatDate = (isoString: string) => {
   const M = String(date.getMonth() + 1).padStart(2, '0');
   const D = String(date.getDate()).padStart(2, '0');
   const h = String(date.getHours()).padStart(2, '0');
-  return `${Y}.${M}.${D} ${h}시`;
+  const m = String(date.getMinutes()).padStart(2, '0');
+  return (
+    <>
+      {`${Y}.${M}.${D}`} 
+      <br />
+      {`${h}시 ${m}분`}
+    </>
+  );
 };
 
 /**
@@ -159,7 +166,7 @@ const SimulationCivilList = observer(function SimulationCivilList() {
         {/* className='relative right-5' */}
         <div style={{ width: '40px', textAlign: 'center' }}>#</div>
         <div className={`flex flex-1 cursor-pointer ${civilSortKey === 'measured_at' && 'text-[#FFD040] font-bold'}`}>
-          <div style={{ flex: 1.1, textAlign: 'center' }} onClick={() => simulationStore.setCivilSort('measured_at')}>측정일시</div>
+          <div style={{ flex: 1.1, textAlign: 'center' }} onClick={() => simulationStore.setCivilSort('measured_at')}>측정시각</div>
           {renderSortIcon('measured_at')}
         </div>
         <div className={`flex flex-1 cursor-pointer ${civilSortKey === 'concentration' && 'text-[#FFD040] font-bold'}`}>

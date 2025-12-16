@@ -66,11 +66,11 @@ const getPmLabelStyle = (label: string) => {
     case '좋음':
       return { backgroundColor: '#1C67D7', color: '#FFFFFF' }; // 파란색
     case '보통':
-      return { backgroundColor: '#18A274', color: '#000000' }; // 녹색
+      return { backgroundColor: '#01B56E', color: '#000000' }; // 녹색
     case '나쁨':
-      return { backgroundColor: '#FF7700', color: '#000000' }; // 주황색
+      return { backgroundColor: '#F9C700', color: '#000000' }; // 주황색
     case '매우나쁨':
-      return { backgroundColor: '#D32F2D', color: '#FFFFFF' }; // 빨간색
+      return { backgroundColor: '#E53030', color: '#FFFFFF' }; // 빨간색
     default:
       return { backgroundColor: '#666666', color: '#FFFFFF' }; // 기본값 (회색)
   }
