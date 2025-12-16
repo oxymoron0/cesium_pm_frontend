@@ -17,7 +17,7 @@ import SimulationStationHtmlRenderer from "@/components/service/SimulationStatio
 import SimulationGlbHeatmapRender from "@/components/service/SimulationGlbHeatmapRender";
 import { cleanupAll } from "./cleanup";
 import SimulationCivilMain from "./components/SimulationCivilMain";
-import { isCivil as getIsCivil } from "@/utils/env";
+import { isCivil as getIsCivil, loadConfig } from "@/utils/env";
 
 interface AppProps {
   onCloseMicroApp?: () => void;
@@ -28,7 +28,16 @@ const App = observer(function App(props: AppProps) {
   const [cesiumStatus, setCesiumStatus] = useState<"loading" | "ready">(
     "loading"
   );
-  const isCivil = getIsCivil();
+  const [configLoaded, setConfigLoaded] = useState(false);
+  const [isCivil, setIsCivil] = useState(false);
+
+  // Load environment config first
+  useEffect(() => {
+    loadConfig().then(() => {
+      setIsCivil(getIsCivil());
+      setConfigLoaded(true);
+    });
+  }, []);
 
   useEffect(() => {
     const checkCesiumStatus = () => {
@@ -82,7 +91,8 @@ const App = observer(function App(props: AppProps) {
     <div className="relative w-full h-screen overflow-hidden pm-frontend-scope">
       {!isQiankun && <CesiumViewer />}
 
-      {!isCivil ? <>
+      {/* Config 로딩 완료 후 메인 UI 렌더링 */}
+      {configLoaded && (!isCivil ? <>
         {/* 행정 */}
         {cesiumStatus === "ready" && simulationStore.isDirectLocationMode && (
           <DirectLocationGuide />
@@ -168,7 +178,7 @@ const App = observer(function App(props: AppProps) {
           )}
 
         </>
-      }
+      )}
     </div>
   );
 });

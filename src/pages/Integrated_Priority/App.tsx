@@ -16,10 +16,13 @@ interface AppProps {
 const App = observer(function App(props: AppProps) {
   const [cesiumStatus, setCesiumStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [currentService, setCurrentService] = useState<ServiceType>('priority');
+  const [configLoaded, setConfigLoaded] = useState(false);
 
   // Load environment config
   useEffect(() => {
-    loadConfig();
+    loadConfig().then(() => {
+      setConfigLoaded(true);
+    });
   }, []);
 
   // Cesium 초기화 및 상태 감지
@@ -76,33 +79,40 @@ const App = observer(function App(props: AppProps) {
       {/* Cesium Viewer (독립 실행 모드에서만 렌더링) */}
       {!isQiankun && <CesiumViewer />}
 
-      {/* 서비스 전환 UI */}
-      <ServiceSwitcher
-        currentService={currentService}
-        onServiceChange={handleServiceChange}
-      />
+      {/* 서비스 전환 UI - config 로딩 완료 후 렌더링 */}
+      {configLoaded && (
+        <ServiceSwitcher
+          currentService={currentService}
+          onServiceChange={handleServiceChange}
+        />
+      )}
 
-      {/* 모니터링 뷰 */}
-      <MonitoringView
-        isActive={currentService === 'monitoring'}
-        cesiumStatus={cesiumStatus}
-        onCloseMicroApp={props.onCloseMicroApp}
-      />
+      {/* Config 로딩 완료 후 뷰 렌더링 */}
+      {configLoaded && (
+        <>
+          {/* 모니터링 뷰 */}
+          <MonitoringView
+            isActive={currentService === 'monitoring'}
+            cesiumStatus={cesiumStatus}
+            onCloseMicroApp={props.onCloseMicroApp}
+          />
 
-      {/* 시뮬레이션 뷰 */}
-      <SimulationView
-        isActive={currentService === 'simulation'}
-        cesiumStatus={cesiumStatus}
-        onCloseMicroApp={props.onCloseMicroApp}
-        dispatch={props.dispatch}
-      />
+          {/* 시뮬레이션 뷰 */}
+          <SimulationView
+            isActive={currentService === 'simulation'}
+            cesiumStatus={cesiumStatus}
+            onCloseMicroApp={props.onCloseMicroApp}
+            dispatch={props.dispatch}
+          />
 
-      {/* 우선순위 뷰 */}
-      <PriorityView
-        isActive={currentService === 'priority'}
-        cesiumStatus={cesiumStatus}
-        onCloseMicroApp={props.onCloseMicroApp}
-      />
+          {/* 우선순위 뷰 */}
+          <PriorityView
+            isActive={currentService === 'priority'}
+            cesiumStatus={cesiumStatus}
+            onCloseMicroApp={props.onCloseMicroApp}
+          />
+        </>
+      )}
 
       {/* 에러 상태 */}
       {cesiumStatus === 'error' && (
