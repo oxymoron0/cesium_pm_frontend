@@ -43,6 +43,9 @@ const SimulationView = observer(function SimulationView({
 
     isInitializedRef.current = true;
 
+    // Store 초기화 (Civil 모드 동기화)
+    simulationStore.initializeCivilMode();
+
     // 초기 위치로 이동
     if (window.cviewer) {
       flyToLocation(window.cviewer, 129.0545, 35.1598, 3000);
@@ -64,10 +67,11 @@ const SimulationView = observer(function SimulationView({
 
   // 서비스 전환 시 Cesium 정리/복원
   useEffect(() => {
-    // 비활성화될 때: Cesium 정리 (MobX 상태는 유지)
+    // 비활성화될 때: Cesium 정리 + Store 상태 초기화
     if (wasActiveRef.current && !isActive) {
-      console.log('[SimulationView] Deactivating - clearing Cesium entities');
+      console.log('[SimulationView] Deactivating - clearing Cesium entities and resetting store');
       clearSimulationCesium();
+      simulationStore.cleanup(); // Reset store state including currentView
     }
 
     // 재활성화될 때: 시뮬레이션은 현재 뷰 상태에 따라 자동으로 렌더링됨
@@ -84,6 +88,7 @@ const SimulationView = observer(function SimulationView({
     return () => {
       console.log('[SimulationView] Component unmounting, cleaning up');
       clearSimulationCesium();
+      simulationStore.cleanup(); // Reset store state including currentView
     };
   }, []);
 
