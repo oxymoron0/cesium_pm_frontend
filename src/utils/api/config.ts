@@ -50,6 +50,7 @@ export const API_PATHS = {
   SIMULATION_DETAIL_SUMMARY: (uuid: string) => getApiPath(`api/v1/simulation/${uuid}/vulnerable-facilities`),
   SIMULATION_GLB_COUNT: (uuid: string) => getApiPath(`api/v1/simulation/${uuid}/glb/count`),
   SIMULATION_DELETE: getApiPath(`/api/v1/simulation`),
+  SIMULATION_KILL: getApiPath('api/v1/simulation/kill'),
   SIMULATION_UPDATE_PRIVACY: (uuid: string) => getApiPath(`/api/v1/simulation/${uuid}/privacy`),
   SIMULATION_CURRENT_WEATHER: getApiPath('/api/v1/weather/current'),
   SIMULATION_VULNERABLE_FACILITIES_BY_UUID: (uuid: string) => getApiPath(`api/v1/simulation/${uuid}/vulnerable-facilities`),

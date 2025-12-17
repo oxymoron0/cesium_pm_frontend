@@ -333,16 +333,16 @@ export async function updateSimulationPrivacyAPI(
  * @param uuids - 삭제할 UUID 배열
  */
 export async function deleteSimulationsAPI(
-  userId: string, 
+  userId: string,
   uuids: string[]
-): Promise<SimulationResponse> { 
+): Promise<SimulationResponse> {
   try {
     const payload = {
       user_id: userId,
       uuids: uuids
     };
-    
-    const response = await del<SimulationResponse>(API_PATHS.SIMULATION_DELETE, { body: payload }); 
+
+    const response = await del<SimulationResponse>(API_PATHS.SIMULATION_DELETE, { body: payload });
 
     if (!response.ok) {
       throw new Error(
@@ -353,6 +353,25 @@ export async function deleteSimulationsAPI(
 
   } catch (error) {
     console.error('[deleteSimulationsAPI] API 호출 실패:', error);
+    throw error;
+  }
+}
+
+/**
+ * 진행중인 시뮬레이션 중지
+ * DELETE /api/v1/simulation/kill
+ */
+export async function killSimulationAPI(): Promise<SimulationResponse> {
+  try {
+    const response = await del<SimulationResponse>(API_PATHS.SIMULATION_KILL);
+
+    if (!response.ok) {
+      throw new Error(`API failed with status ${response.status}`);
+    }
+    return response.data;
+
+  } catch (error) {
+    console.error('[killSimulationAPI] API 호출 실패:', error);
     throw error;
   }
 }
