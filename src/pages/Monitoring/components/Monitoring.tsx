@@ -143,6 +143,13 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
   // 검색 결과 및 북마크 정류장 Cesium 렌더링 (통합)
   useEffect(() => {
     const renderStations = async () => {
+      // 정류장 탭이 아니면 렌더링하지 않고 기존 정류장 정리
+      if (selectedTab !== 'station') {
+        console.log('[Monitoring] Not on station tab, clearing stations');
+        await clearSearchStations();
+        return;
+      }
+
       // 렌더링할 Features 결정: 검색 모드면 searchResults, 북마크 모드면 bookmarkFeatures
       const featuresToRender = isSearchMode ? searchResults?.features : bookmarkFeatures;
 
@@ -158,18 +165,27 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
     };
 
     renderStations();
+
+    // 컴포넌트 언마운트 또는 의존성 변경 시 정류장 정리
+    return () => {
+      console.log('[Monitoring] Cleanup: clearing search stations');
+      clearSearchStations();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchResults, bookmarkFeatures, isSearchMode]); // selectedStationId 의도적으로 제외 (깜빡임 방지)
+  }, [searchResults, bookmarkFeatures, isSearchMode, selectedTab]); // selectedStationId 의도적으로 제외 (깜빡임 방지)
 
   // 선택 상태만 업데이트 (깜빡임 방지)
   useEffect(() => {
+    // 정류장 탭이 아니면 업데이트 불필요
+    if (selectedTab !== 'station') return;
+
     const featuresToRender = isSearchMode ? searchResults?.features : bookmarkFeatures;
 
     if (featuresToRender && featuresToRender.length > 0) {
       updateSearchStationSelection(selectedStationId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedStationId]); // isSearchMode, searchResults, bookmarkFeatures 의도적으로 제외 (깜빡임 방지)
+  }, [selectedStationId, selectedTab]); // isSearchMode, searchResults, bookmarkFeatures 의도적으로 제외 (깜빡임 방지)
 
   // 검색 API 호출 (검색어 변경시에만)
   useEffect(() => {
