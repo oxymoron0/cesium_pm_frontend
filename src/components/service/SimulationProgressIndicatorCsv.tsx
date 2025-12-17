@@ -236,16 +236,6 @@ const SimulationProgressIndicatorCsv = observer(function SimulationProgressIndic
                 opacity: totalFrames <= 0 || isPreloading ? 0.5 : 1
               }}
             />
-            <style>{`
-              input[type="range"]::-webkit-slider-thumb {
-                -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%;
-                background: #FFD040; box-shadow: 0 0 6px rgba(0,0,0,0.4); cursor: pointer;
-              }
-              input[type="range"]::-moz-range-thumb {
-                width: 16px; height: 16px; border-radius: 50%; background: #FFD040;
-                box-shadow: 0 0 6px rgba(0,0,0,0.4); cursor: pointer;
-              }
-            `}</style>
           </div>
           <div className="flex items-center gap-0.5 mt-2.5">
             <button
