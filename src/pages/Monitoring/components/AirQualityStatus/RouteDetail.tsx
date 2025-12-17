@@ -620,8 +620,7 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
           gap: '38px',
           maxHeight: 'calc(100vh - 400px)',
           minHeight: '200px',
-          paddingTop: '120px', // Space for bus sensor display above first row
-          marginTop: '-120px', // Compensate for padding to maintain visual alignment
+          paddingTop: '80px', // Space for bus sensor display above first row
           scrollbarWidth: 'thin',
           scrollbarColor: '#FFD040 transparent'
         }}
