@@ -87,6 +87,8 @@ html, body {
 }
 
 /* Re-establish common element resets within scope */
+/* Note: padding, border, background are NOT reset here to allow inline styles to work */
+/* The !important injection from postcss-force-important would override inline styles */
 .pm-frontend-scope button,
 .pm-frontend-scope input,
 .pm-frontend-scope select,
@@ -96,9 +98,6 @@ html, body {
   line-height: inherit;
   color: inherit;
   margin: 0;
-  padding: 0;
-  border: none;
-  background: transparent;
 }
 
 .pm-frontend-scope button {
