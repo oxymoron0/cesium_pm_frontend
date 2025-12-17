@@ -40,8 +40,10 @@ const RouteSelector = observer(function RouteSelector({ onRouteSelect }: RouteSe
 
   return (
     <div
-      className="flex flex-col self-stretch"
       style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignSelf: 'stretch',
         width: '308px',
         padding: '12px 0',
         gap: '10px'
@@ -51,8 +53,14 @@ const RouteSelector = observer(function RouteSelector({ onRouteSelect }: RouteSe
         <button
           key={route.route_name}
           onClick={() => handleRouteSelect(route.route_name)}
-          className="flex flex-col items-start self-stretch gap-1 text-left transition-colors"
           style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            alignSelf: 'stretch',
+            gap: '4px',
+            textAlign: 'left',
+            transition: 'background-color 0.2s, border-color 0.2s',
             borderRadius: '8px',
             border: selectedRoute === route.route_name
               ? '1px solid #FFD040'
@@ -60,7 +68,8 @@ const RouteSelector = observer(function RouteSelector({ onRouteSelect }: RouteSe
             background: selectedRoute === route.route_name
               ? 'rgba(255, 208, 64, 0.30)'
               : '#000',
-            padding: '16px 20px'
+            padding: '16px 20px',
+            cursor: 'pointer'
           }}
         >
           <div
