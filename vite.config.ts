@@ -187,7 +187,14 @@ export default defineConfig(({ command, mode }) => {
       cssCodeSplit: false
     },
     css: {
-      postcss: './postcss.config.js'
+      postcss: './postcss.config.js',
+      devSourcemap: true
+    },
+    esbuild: {
+      // Disable color minification to preserve rgba(0,0,0,0) format
+      minifyIdentifiers: true,
+      minifySyntax: true,
+      minifyWhitespace: true
     },
     base: basePath
   }
