@@ -24,6 +24,10 @@ const SimulationCivilConfig = observer(function SimulationCivilConfig()  {
   const [windSpeed, setWindSpeed] = useState('');
   const [useCurrentWeather, setUseCurrentWeather] = useState(false);
 
+  // 체크박스 체크 전 값 저장 (해제 시 복원용)
+  const [savedWindDirection, setSavedWindDirection] = useState('');
+  const [savedWindSpeed, setSavedWindSpeed] = useState('');
+
   // 에러 표시 상태 관리
   const [showError, setShowError] = useState(false);
   const isInputDisabled = simulationStore.currentView !== 'civilConfig';
@@ -129,17 +133,34 @@ const SimulationCivilConfig = observer(function SimulationCivilConfig()  {
     simulationStore.loadWeatherInfo();
   }, []);
 
-  // --- 기상 정보 동기화 ---
-useEffect(() => {
+  // --- 기상 정보 동기화 (currentWeather 로드 시) ---
+  useEffect(() => {
     const { currentWeather } = simulationStore;
+    // 체크박스가 체크된 상태에서 currentWeather가 로드되면 값 업데이트
     if (useCurrentWeather && currentWeather) {
       setWindDirection(String(currentWeather.wind_direction_1m));
       setWindSpeed(String(currentWeather.wind_speed_1m));
-    } else if (!useCurrentWeather) {
-      setWindDirection(windDirection);
-      setWindSpeed(windSpeed);
     }
-  }, [useCurrentWeather, simulationStore.currentWeather]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [simulationStore.currentWeather]);
+
+  // --- 체크박스 변경 핸들러 ---
+  const handleUseCurrentWeatherChange = (checked: boolean) => {
+    if (checked) {
+      // 체크 시: 현재 입력값 저장 후 실시간 기상 데이터로 변경
+      setSavedWindDirection(windDirection);
+      setSavedWindSpeed(windSpeed);
+      if (simulationStore.currentWeather) {
+        setWindDirection(String(simulationStore.currentWeather.wind_direction_1m));
+        setWindSpeed(String(simulationStore.currentWeather.wind_speed_1m));
+      }
+    } else {
+      // 체크 해제 시: 저장된 값으로 복원
+      setWindDirection(savedWindDirection);
+      setWindSpeed(savedWindSpeed);
+    }
+    setUseCurrentWeather(checked);
+  };
 
   
   const ERROR_COLOR = '#FF3333';
@@ -329,7 +350,7 @@ useEffect(() => {
               {!isInputDisabled && (
               <Checkbox
                 checked={useCurrentWeather}
-                onChange={setUseCurrentWeather}
+                onChange={handleUseCurrentWeatherChange}
                 label={simulationStore.weatherInfoLabel}
               />
               )}
