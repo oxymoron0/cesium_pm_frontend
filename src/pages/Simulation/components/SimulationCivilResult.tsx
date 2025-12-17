@@ -326,7 +326,7 @@ const SimulationCivilResult = observer(function SimulationCivilResult() {
       <SimulationCivilStationHtmlRenderer 
         selectedEntityId={selectedStationId}
       />
-      {selectedCivilStationAnalysisId !== null && <SimulationCivilProgressIndicator />}
+      {selectedCivilStationAnalysisId === null && <SimulationCivilProgressIndicator />}
     </>
   );
 });
