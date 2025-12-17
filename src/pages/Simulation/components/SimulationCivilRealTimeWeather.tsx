@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import Icon from '@/components/basic/Icon';
 import Spacer from '@/components/basic/Spacer';
 import { simulationStore } from '@/stores/SimulationStore';
+import { getBusTrajectoryLatest } from '@/utils/api/busApi';
 
 interface SimulationCivilRealTimeWeatherProps {
   onShowListClick: () => void;
@@ -12,14 +13,36 @@ interface SimulationCivilRealTimeWeatherProps {
 /**
  * 실시간 환경 정보 표시 컴포넌트 (시민용)
  */
-const SimulationCivilRealTimeWeather = observer(function SimulationCivilRealTimeWeather({ 
-  onShowListClick, 
+const SimulationCivilRealTimeWeather = observer(function SimulationCivilRealTimeWeather({
+  onShowListClick,
   hasError
 }: SimulationCivilRealTimeWeatherProps) {
   const { currentWeather } = simulationStore;
+  const [pm10Average, setPm10Average] = useState<number | null>(null);
+
+  // 기상 정보 및 버스 PM10 평균값 로드
+  const loadAllData = async () => {
+    simulationStore.loadWeatherInfo();
+
+    try {
+      const response = await getBusTrajectoryLatest();
+      if (response.data && response.data.length > 0) {
+        const pmValues = response.data
+          .map(bus => bus.sensor_data?.pm)
+          .filter((pm): pm is number => pm !== undefined && pm !== null);
+
+        if (pmValues.length > 0) {
+          const average = pmValues.reduce((sum, val) => sum + val, 0) / pmValues.length;
+          setPm10Average(Math.round(average));
+        }
+      }
+    } catch (error) {
+      console.error('[SimulationCivilRealTimeWeather] PM10 데이터 로드 실패:', error);
+    }
+  };
 
   useEffect(() => {
-    simulationStore.loadWeatherInfo();
+    loadAllData();
   }, []);
 
   const getCurrentFormattedTime = () => {
@@ -39,7 +62,7 @@ const SimulationCivilRealTimeWeather = observer(function SimulationCivilRealTime
         {/* 헤더 */}
         <div className="w-full bg-[#464646] py-2 px-4 flex justify-between items-center">
           <span className="text-white font-bold text-sm">실시간 환경 정보</span>
-          <Icon name="refresh" className="w-6 h-6 cursor-pointer text-white" onClick={() => simulationStore.loadWeatherInfo()} />
+          <Icon name="refresh" className="w-6 h-6 cursor-pointer text-white" onClick={loadAllData} />
         </div>
 
         {/* 컨텐츠 (읽기 전용) */}
@@ -56,7 +79,7 @@ const SimulationCivilRealTimeWeather = observer(function SimulationCivilRealTime
            <div className="flex items-center gap-4">
              <span className="text-white font-bold text-sm w-20">측정 물질</span>
              <div className="flex-1 h-8 px-3 flex items-center rounded border border-[#696A6A] bg-black text-[#FFFFFF] text-sm">
-               미세먼지(PM-10) &nbsp; <span className="text-white">103µg/m³</span>
+               미세먼지(PM-10) &nbsp; <span className="text-white">{pm10Average !== null ? `${pm10Average}µg/m³` : '-'}</span>
              </div>
            </div>
 
