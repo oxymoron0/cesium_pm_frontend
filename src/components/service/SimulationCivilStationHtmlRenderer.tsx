@@ -154,7 +154,7 @@ const SimulationCivilStationHtmlRenderer = ({
             cursor: pointer;
             display: ${simulationStore.selectedCivilStationAnalysisId === null ?  '' : 'none'}
           ">
-            정류장 시뮬레이션 실행
+            활동가이드 확인
           </button>
         </div>
       `;
