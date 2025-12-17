@@ -185,7 +185,7 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
       time: formatDateTime24(s.measured_at),
       pm10: `${
         Number.isFinite(s.concentration)
-          ? s.concentration.toFixed(2)
+          ? Math.floor(s.concentration)
           : s.concentration
       } μg/m³`,
       point: [
