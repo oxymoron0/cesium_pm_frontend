@@ -249,7 +249,7 @@ const StationDetail = observer(function StationDetail({
                 {selectedStationName || '정류장'}
               </div>
               <div style={{ color: '#C4C6C6', fontSize: '14px' }}>
-                {stationId} ({selectedDirectionName || (selectedDirection === 'inbound' ? '상행선' : selectedDirection === 'outbound' ? '하행선' : `${selectedRouteName || '노선'}번`)} 방면)
+                {stationId} ({selectedDirectionName || `${selectedDirection === 'inbound' ? '상행선' : selectedDirection === 'outbound' ? '하행선' : `${selectedRouteName || '노선'}번`} 방면`})
               </div>
             </div>
             <div
