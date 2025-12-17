@@ -35,8 +35,13 @@ const FACILITY_DATASOURCE_NAME = 'vulnerable_facilities';
 const FACILITY_BUILDING_OUTLINE_DATASOURCE_NAME = 'facility_building_outlines';
 const terrainHeightCache = new Map<string, number>();
 const facilityElementsCache = new Map<string, HTMLDivElement>();
+// facilityKey (${id}_${type}) → entityId 매핑
+const facilityKeyToEntityIdMap = new Map<string, string>();
 let isFacilityPostRenderListenerAttached = false;
 let isRenderingInProgress = false;
+
+// 선택된 시설 강조 색상 (밝은 초록색)
+const HIGHLIGHT_COLOR = '#4ADE80';
 
 // 건물 윤곽선 타입
 export interface BuildingGeomShape {
@@ -206,9 +211,13 @@ function createFacilityEntity(
 function createFacilityHtmlElement(facility: VulnerableFacility): void {
   const facilityId = facility.id;
   const entityId = `facility_${facilityId}_${facility.rank}`;
+  const facilityKey = `${facilityId}_${facility.type}`;
   const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
 
   if (!viewer) return;
+
+  // facilityKey → entityId 매핑 저장
+  facilityKeyToEntityIdMap.set(facilityKey, entityId);
 
   let element = facilityElementsCache.get(entityId);
   const styles = getLevelStyle(facility.predictedLevel);
@@ -252,7 +261,8 @@ function createFacilityHtmlElement(facility: VulnerableFacility): void {
                     backface-visibility: hidden;
                     -webkit-backface-visibility: hidden;
                     transform: translateZ(0);">
-          <span style="background: white;
+          <span data-rank-badge="${facilityKey}"
+                style="background: white;
                           position: absolute;
                           color: black;
                           border: 1px solid #C4C6C6;
@@ -532,6 +542,7 @@ export async function clearVulnerableFacilities(): Promise<void> {
 
     // 캐시 및 DataSource 정리
     facilityElementsCache.clear();
+    facilityKeyToEntityIdMap.clear();
     await clearDataSource(FACILITY_DATASOURCE_NAME);
     await clearDataSource(FACILITY_BUILDING_OUTLINE_DATASOURCE_NAME);
     terrainHeightCache.clear();
@@ -578,5 +589,94 @@ export function hideFacilityHtmlTags(): void {
     facilityElementsCache.clear();
   } catch (error) {
     console.error('[hideFacilityHtmlTags] 시설 HTML 태그 숨김 실패:', error);
+  }
+}
+
+/**
+ * 선택된 취약시설 강조 (순위 배지 + 건물 외곽선을 밝은 초록색으로)
+ * @param facilityKey - 시설 composite key (${id}_${type})
+ */
+export function highlightSelectedFacility(facilityKey: string): void {
+  try {
+    const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
+    if (!viewer) return;
+
+    // 1. HTML 순위 배지 강조
+    const rankBadge = document.querySelector(`[data-rank-badge="${facilityKey}"]`) as HTMLElement;
+    if (rankBadge) {
+      rankBadge.style.background = HIGHLIGHT_COLOR;
+      rankBadge.style.color = '#000000';
+      rankBadge.style.borderColor = HIGHLIGHT_COLOR;
+    }
+
+    // 2. 건물 외곽선 강조
+    const buildingOutlineDataSource = viewer.dataSources.getByName(FACILITY_BUILDING_OUTLINE_DATASOURCE_NAME)?.[0];
+    if (buildingOutlineDataSource) {
+      const entities = buildingOutlineDataSource.entities.values;
+      const [facilityId] = facilityKey.split('_');
+
+      entities.forEach(entity => {
+        const entityFacilityId = entity.properties?.facilityId?.getValue();
+        // entityId 패턴: facility_outline_${facilityId}_${rank}_${index}
+        // facilityId만 매칭 (같은 건물의 모든 폴리곤)
+        if (entityFacilityId === facilityId) {
+          // 폴리곤 색상 변경
+          if (entity.polygon) {
+            entity.polygon.material = Color.fromCssColorString(HIGHLIGHT_COLOR).withAlpha(0.4) as unknown as typeof entity.polygon.material;
+          }
+          // 외곽선 색상 변경
+          if (entity.polyline) {
+            entity.polyline.material = Color.fromCssColorString(HIGHLIGHT_COLOR) as unknown as typeof entity.polyline.material;
+          }
+        }
+      });
+    }
+
+    console.log(`[highlightSelectedFacility] Highlighted: ${facilityKey}`);
+  } catch (error) {
+    console.error('[highlightSelectedFacility] Failed:', error);
+  }
+}
+
+/**
+ * 취약시설 강조 해제 (원래 색상으로 복원)
+ * @param facilityKey - 시설 composite key (${id}_${type})
+ */
+export function unhighlightFacility(facilityKey: string): void {
+  try {
+    const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
+    if (!viewer) return;
+
+    // 1. HTML 순위 배지 원래 색상으로 복원
+    const rankBadge = document.querySelector(`[data-rank-badge="${facilityKey}"]`) as HTMLElement;
+    if (rankBadge) {
+      rankBadge.style.background = 'white';
+      rankBadge.style.color = 'black';
+      rankBadge.style.borderColor = '#C4C6C6';
+    }
+
+    // 2. 건물 외곽선 원래 색상으로 복원 (빨간색 #FF0040)
+    const buildingOutlineDataSource = viewer.dataSources.getByName(FACILITY_BUILDING_OUTLINE_DATASOURCE_NAME)?.[0];
+    if (buildingOutlineDataSource) {
+      const entities = buildingOutlineDataSource.entities.values;
+      const [facilityId] = facilityKey.split('_');
+      const originalColor = '#FF0040';
+
+      entities.forEach(entity => {
+        const entityFacilityId = entity.properties?.facilityId?.getValue();
+        if (entityFacilityId === facilityId) {
+          if (entity.polygon) {
+            entity.polygon.material = Color.fromCssColorString(originalColor).withAlpha(0.4) as unknown as typeof entity.polygon.material;
+          }
+          if (entity.polyline) {
+            entity.polyline.material = Color.fromCssColorString(originalColor) as unknown as typeof entity.polyline.material;
+          }
+        }
+      });
+    }
+
+    console.log(`[unhighlightFacility] Unhighlighted: ${facilityKey}`);
+  } catch (error) {
+    console.error('[unhighlightFacility] Failed:', error);
   }
 }
