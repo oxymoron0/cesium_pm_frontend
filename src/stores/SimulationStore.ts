@@ -1,4 +1,5 @@
 import { makeAutoObservable, observable, runInAction } from 'mobx';
+import { Cartographic, sampleTerrainMostDetailed } from 'cesium';
 import type { AddressSearchResult, SimulationConfig, SimulationView, SimulationConfirmType } from '../pages/Simulation/types';
 import type {
   SimulationRequest,
@@ -13,7 +14,7 @@ import type {
   SimulationCivilQuickData,
 } from '../types/simulation_request_types';
 import type { VulnerableFacilitiesResponse } from '@/utils/api/types';
-import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck, reverseGeocodeAPI, searchAddressAPI, getVulnerableFacilities, getSimulationCivilList } from '@/utils/api';
+import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck, reverseGeocodeAPI, searchAddressAPI, getVulnerableFacilities, getSimulationCivilList, killSimulationAPI } from '@/utils/api';
 import { userStore } from './UserStore';
 import { administrativeStore } from './AdministrativeStore';
 import { abortJsonPreload } from '@/utils/cesium/jsonPreloader';
@@ -279,15 +280,36 @@ class SimulationStore {
   // 주소 선택
   // ============================================================================
 
-  selectAddress(addressId: string) {
+  async selectAddress(addressId: string) {
     this.selectedAddressId = addressId;
 
     // 선택된 주소의 좌표를 selectedLocation에 설정
     const address = this.currentResults.find(result => result.id === addressId);
     if (address?.geometry) {
       const [lng, lat] = address.geometry.coordinates;
-      const height = address.height ?? 0;
-      this.selectedLocation = { lng, lat, height };
+
+      // address.height가 있으면 사용, 없으면 Cesium terrain에서 가져오기
+      let height = address.height ?? 0;
+
+      if (height === 0) {
+        try {
+          const viewer = window.cviewer;
+          if (viewer?.terrainProvider) {
+            const position = Cartographic.fromDegrees(lng, lat);
+            const sampledPositions = await sampleTerrainMostDetailed(viewer.terrainProvider, [position]);
+            if (sampledPositions[0]?.height) {
+              height = sampledPositions[0].height;
+              console.log(`[SimulationStore] Terrain height sampled: ${height.toFixed(2)}m at (${lng}, ${lat})`);
+            }
+          }
+        } catch (error) {
+          console.warn('[SimulationStore] Failed to sample terrain height:', error);
+        }
+      }
+
+      runInAction(() => {
+        this.selectedLocation = { lng, lat, height };
+      });
     }
   }
 
@@ -893,8 +915,9 @@ class SimulationStore {
   // ============================================================================
 
   get isAllSelectedOnPage(): boolean {
-    if (this.simulationList.length === 0) return false;
-    return this.simulationList.every(sim => this.itemsToDelete.has(sim.uuid));
+    const mySimulations = this.simulationList.filter(sim => sim.user_id === userStore.currentUser);
+    if (mySimulations.length === 0) return false;
+    return mySimulations.every(sim => this.itemsToDelete.has(sim.uuid));
   }
 
   /**
@@ -922,15 +945,16 @@ class SimulationStore {
   }
 
   /**
-   * 현재 페이지 전체 선택/해제
+   * 현재 페이지 전체 선택/해제 (내 시뮬레이션만 대상)
    */
   toggleSelectAllOnPage() {
+    const mySimulations = this.simulationList.filter(sim => sim.user_id === userStore.currentUser);
     if (this.isAllSelectedOnPage) {
-      // 모든 항목이 선택된 경우 -> 현재 페이지 항목 모두 선택 해제
-      this.simulationList.forEach(sim => this.itemsToDelete.delete(sim.uuid));
+      // 내 시뮬레이션이 모두 선택된 경우 -> 선택 해제
+      mySimulations.forEach(sim => this.itemsToDelete.delete(sim.uuid));
     } else {
-      // 모든 항목이 선택되지 않은 경우 -> 현재 페이지 항목 모두 선택
-      this.simulationList.forEach(sim => this.itemsToDelete.add(sim.uuid));
+      // 내 시뮬레이션 중 선택되지 않은 것이 있는 경우 -> 모두 선택
+      mySimulations.forEach(sim => this.itemsToDelete.add(sim.uuid));
     }
   }
 
@@ -985,6 +1009,24 @@ class SimulationStore {
 
     } catch (error) {
       console.error("Failed to delete simulations", error);
+    }
+  }
+
+  /**
+   * 진행중인 시뮬레이션 중지
+   * DELETE /api/v1/simulation/kill
+   */
+  async killSimulation(): Promise<boolean> {
+    try {
+      await killSimulationAPI();
+      console.log('[SimulationStore] Simulation killed successfully');
+
+      // 목록 새로고침
+      await this.loadSimulationList(this.currentPage);
+      return true;
+    } catch (error) {
+      console.error('[SimulationStore] Failed to kill simulation:', error);
+      return false;
     }
   }
 
