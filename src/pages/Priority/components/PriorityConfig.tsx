@@ -62,6 +62,21 @@ const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [administrativeStore.districts.length, districtCode, provinceCode]);
 
+  // Reload neighborhoods when empty but district is selected
+  // (다른 서비스에서 administrativeStore 상태가 변경된 경우 대응)
+  useEffect(() => {
+    if (
+      administrativeStore.neighborhoods.length === 0 &&
+      districtCode &&
+      provinceCode &&
+      administrativeStore.districts.length > 0
+    ) {
+      console.log('[PriorityConfig] Reloading neighborhoods - array was empty');
+      administrativeStore.loadNeighborhoods(provinceCode, districtCode);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [administrativeStore.neighborhoods.length, districtCode, provinceCode, administrativeStore.districts.length]);
+
   // Auto-select '전체' for neighborhoods
   useEffect(() => {
     if (administrativeStore.neighborhoods.length > 0 && !neighborhoodCode && districtCode) {
