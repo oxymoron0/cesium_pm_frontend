@@ -26,8 +26,7 @@ function ServiceSwitcher({ currentService, onServiceChange }: ServiceSwitcherPro
     <div className="fixed top-[40px] right-[84px] z-[1500]">
       {/* Pill-shaped Panel */}
       <div
-        className="flex items-center gap-4 px-6 py-3 rounded-full border border-[#C4C6C6]"
-        style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+        className="flex items-center gap-4 px-6 py-3 rounded-full border border-[#C4C6C6] bg-black/80"
       >
         {availableServices.map((service) => {
           const isActive = service.id === currentService;
