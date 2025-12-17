@@ -43,6 +43,21 @@ html, body {
   --text-2xl: 24px;
   --text-2xl--line-height: 1.333;
 
+  /* Tailwind v4 base CSS variables (normally set by preflight) */
+  --tw-border-style: solid;
+  --tw-gradient-from: transparent;
+  --tw-gradient-to: transparent;
+  --tw-gradient-stops: initial;
+  --tw-gradient-via-stops: initial;
+  --tw-gradient-from-position: 0%;
+  --tw-gradient-to-position: 100%;
+  --tw-ring-color: rgba(59, 130, 246, 0.5);
+  --tw-ring-offset-width: 0px;
+  --tw-ring-offset-color: #fff;
+  --tw-ring-inset: ;
+  --tw-shadow: 0 0 #0000;
+  --tw-shadow-colored: 0 0 #0000;
+
   /* Re-establish essential properties for the container */
   /* Fixed positioning ensures full viewport coverage in both standalone and Qiankun modes */
   display: block;
@@ -102,6 +117,19 @@ html, body {
 
 .pm-frontend-scope button {
   cursor: pointer;
+}
+
+/* Form elements: restore browser default appearance for background */
+/* all: initial on parent breaks default styling, so we restore it */
+.pm-frontend-scope input,
+.pm-frontend-scope select,
+.pm-frontend-scope textarea {
+  background-color: revert;
+  border: revert;
+}
+
+.pm-frontend-scope img {
+  background-color: revert;
 }
 
 .pm-frontend-scope a {
@@ -211,6 +239,27 @@ html, body {
     border-color: #FFD040;
   }
 
+}
+
+/* Gradient utilities - Tailwind v4 preflight 제외로 인해 직접 정의 */
+/* postcss-prefix-selector가 자동으로 .pm-frontend-scope prefix 추가 */
+/* Base variables are now defined in .pm-frontend-scope above */
+
+.bg-gradient-to-b {
+  background-image: linear-gradient(to bottom, var(--tw-gradient-stops)) !important;
+}
+
+.bg-gradient-to-r {
+  background-image: linear-gradient(to right, var(--tw-gradient-stops)) !important;
+}
+
+.from-\[\#FDF106\] {
+  --tw-gradient-from: #FDF106 !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, transparent) !important;
+}
+
+.to-\[\#FFD040\] {
+  --tw-gradient-to: #FFD040 !important;
 }
 
 @source "./src/**/*.{js,ts,jsx,tsx}";
