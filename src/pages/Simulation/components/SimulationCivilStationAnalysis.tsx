@@ -89,14 +89,9 @@ const SimulationCivilStationAnalysis = observer(() => {
   const statusImg = `${basePath}icon/${STATION_ICONS[pmLabel]}`
   const guides = ACTIVITY_GUIDES[pmLabel] || ACTIVITY_GUIDES['보통'];
 
-  const fontPretendard = { fontFamily: 'Pretendard', lineHeight: 'normal' };
-
   return (
     <>
       <Spacer height={24} />
-
-      <div className="text-white font-bold text-lg mb-2" style={fontPretendard}>활동가이드</div>
-      <div className="w-full h-[1px] bg-[#C3C3C3] mb-4"></div>
 
       {/* 1. 상단 배너 (활동 지수) */}
       <div 
