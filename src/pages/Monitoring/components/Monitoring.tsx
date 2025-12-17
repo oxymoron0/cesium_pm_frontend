@@ -142,6 +142,8 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
 
   // 검색 결과 및 북마크 정류장 Cesium 렌더링 (통합)
   useEffect(() => {
+    let isCancelled = false;
+
     const renderStations = async () => {
       // 정류장 탭이 아니면 렌더링하지 않고 기존 정류장 정리
       if (selectedTab !== 'station') {
@@ -154,25 +156,40 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
       const featuresToRender = isSearchMode ? searchResults?.features : bookmarkFeatures;
 
       if (featuresToRender && featuresToRender.length > 0) {
+        // Race condition 방지: 이전 렌더링이 취소되었으면 새 렌더링 진행 안함
+        if (isCancelled) return;
+
         console.log(`[Monitoring] Rendering ${isSearchMode ? 'search' : 'bookmark'} stations to Cesium:`, featuresToRender.length);
         await renderSearchStations(featuresToRender, null); // 선택 상태 없이 렌더링
+
+        // 렌더링 완료 후에도 취소 확인
+        if (isCancelled) return;
+
         // 렌더링 후 현재 선택 상태 적용
         updateSearchStationSelection(selectedStationId);
-      } else {
-        console.log('[Monitoring] Clearing station rendering from Cesium');
-        await clearSearchStations();
+      } else if (selectedTab === 'station') {
+        // 정류장 탭이지만 렌더링할 데이터가 없는 경우 (검색 전 상태)
+        // 기존 렌더링은 유지하고 로그만 출력
+        console.log('[Monitoring] Station tab active but no features to render yet');
       }
     };
 
     renderStations();
 
-    // 컴포넌트 언마운트 또는 의존성 변경 시 정류장 정리
+    // cleanup: 새로운 렌더링 시작 시 이전 렌더링 취소 플래그 설정
     return () => {
-      console.log('[Monitoring] Cleanup: clearing search stations');
-      clearSearchStations();
+      isCancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchResults, bookmarkFeatures, isSearchMode, selectedTab]); // selectedStationId 의도적으로 제외 (깜빡임 방지)
+
+  // 컴포넌트 언마운트 시에만 정류장 정리 (별도 useEffect)
+  useEffect(() => {
+    return () => {
+      console.log('[Monitoring] Component unmounting: clearing search stations');
+      clearSearchStations();
+    };
+  }, []);
 
   // 선택 상태만 업데이트 (깜빡임 방지)
   useEffect(() => {
@@ -241,7 +258,7 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
   };
 
   const handleStationSelect = (stationId: string, stationName: string) => {
-    console.log('Station selected:', { stationId, stationName });
+    console.log('[Monitoring] Station selected:', { stationId, stationName, isSearchMode });
     setSelectedStationId(stationId);
 
     // Cesium 선택 상태 즉시 업데이트
@@ -251,8 +268,15 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
     // 검색 모드면 searchResults.features, 북마크 모드면 bookmarkFeatures 사용
     const featuresToUse = isSearchMode ? searchResults?.features : bookmarkFeatures;
 
-    if (featuresToUse) {
+    if (featuresToUse && featuresToUse.length > 0) {
+      console.log('[Monitoring] Flying to station with features count:', featuresToUse.length);
       flyToSearchStation(featuresToUse, stationId, 500);
+    } else {
+      console.warn('[Monitoring] No features available for camera movement:', {
+        isSearchMode,
+        hasSearchResults: !!searchResults?.features,
+        hasBookmarkFeatures: !!bookmarkFeatures
+      });
     }
   };
 
