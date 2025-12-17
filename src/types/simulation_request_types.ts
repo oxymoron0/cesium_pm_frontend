@@ -91,6 +91,7 @@ export interface SimulationListItem {
   index: number;                     // List index
   uuid: string;                      // Simulation UUID
   simulation_name: string;           // Simulation name
+  user_id: string;                   // User ID who created the simulation
   pm_type: PMType;                   // PM type (pm10 or pm25)
   requested_at: string;              // Request timestamp (ISO 8601)
   status: string;                    // Status ("대기", "진행중", "완료", "실패")

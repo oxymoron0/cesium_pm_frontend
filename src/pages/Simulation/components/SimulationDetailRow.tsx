@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { SimulationListItem, PMType } from '@/types/simulation_request_types';
 import Icon from '@/components/basic/Icon';
 import { simulationStore } from '@/stores/SimulationStore';
+import { userStore } from '@/stores/UserStore';
 
 /**
  * 상세 정보 항목 렌더링 컴포넌트
@@ -98,31 +99,35 @@ const SimulationDetailRow: React.FC<{ sim: SimulationListItem }> = ({ sim }) => 
         </DetailItem>
         
         <DetailItem label="공개 설정">
-          <div className="flex items-center gap-2">
-            <select
-              value={String(isPrivateSelected)}
-              onChange={handleSelectChange}
-              className="h-7 pl-3 pr-6 bg-black rounded border border-[#696A6A] appearance-none cursor-pointer" //
-              style={{
-                fontFamily: 'Pretendard',
-                lineHeight: 'normal',
-                fontSize: '14px', 
-                fontWeight: '400', 
-                color: '#FFFFFF',
-              }}
-            >
-              <option value="false">공개</option>
-              <option value="true">비공개</option>
-            </select>
-            <div className="absolute left-51">
-              <Icon name="dropmenubtn" className="w-4 h-4" />
+          {sim.user_id === userStore.currentUser ? (
+            <div className="flex items-center gap-2">
+              <select
+                value={String(isPrivateSelected)}
+                onChange={handleSelectChange}
+                className="h-7 pl-3 pr-6 bg-black rounded border border-[#696A6A] appearance-none cursor-pointer"
+                style={{
+                  fontFamily: 'Pretendard',
+                  lineHeight: 'normal',
+                  fontSize: '14px',
+                  fontWeight: '400',
+                  color: '#FFFFFF',
+                }}
+              >
+                <option value="false">공개</option>
+                <option value="true">비공개</option>
+              </select>
+              <div className="absolute left-51">
+                <Icon name="dropmenubtn" className="w-4 h-4" />
+              </div>
+              <span className="flex items-center justify-center w-auto h-7 cursor-pointer py-1 px-3 rounded-[4px] border border-[#FFD040] font-bold"
+                style={isPrivateSelected === sim.is_private ? {backgroundColor:'black', color:'#FFD040'} : {backgroundColor:'#FFD040', color:'black'}}
+                onClick={handleSavePrivacy}>
+                저장하기
+              </span>
             </div>
-            <span className="flex items-center justify-center w-auto h-7 cursor-pointer py-1 px-3 rounded-[4px] border border-[#FFD040] font-bold"
-              style={isPrivateSelected === sim.is_private ? {backgroundColor:'black', color:'#FFD040'} : {backgroundColor:'#FFD040', color:'black'}}
-              onClick={handleSavePrivacy}>
-              저장하기
-            </span>
-          </div>
+          ) : (
+            <span>{sim.is_private ? '비공개' : '공개'}</span>
+          )}
         </DetailItem>
       </div>
     </div>

@@ -4,6 +4,7 @@ import Spacer from '@/components/basic/Spacer';
 import Button from '@/components/basic/Button';
 import Icon from '@/components/basic/Icon';
 import { simulationStore } from '@/stores/SimulationStore';
+import { userStore } from '@/stores/UserStore';
 import type { PMType } from '@/types/simulation_request_types';
 import SimulationDetailRow from '@/pages/Simulation/components/SimulationDetailRow';
 import Checkbox from './Checkbox';
@@ -16,6 +17,7 @@ const POLLING_INTERVAL = 5000; // 5초
 const formatPollutant = (pm_type: PMType) => {
   if (pm_type === 'pm10') return '미세먼지';
   if (pm_type === 'pm25') return '초미세먼지';
+  if (pm_type === 'vocs') return 'VOCs';
   return pm_type;
 };
 
@@ -176,6 +178,7 @@ const SimulationRunningList = observer(function SimulationRunningList() {
               <option value="all">오염 물질 전체</option>
               <option value="pm10">미세먼지 (PM-10)</option>
               <option value="pm25">초미세먼지 (PM-2.5)</option>
+              <option value="vocs">휘발성유기화합물 (VOCs)</option>
             </select>
             <div className="absolute right-2 top-1/2 -translate-y-1/4 pointer-events-none">
               <Icon name="dropmenubtn" className="w-4 h-4" />
@@ -265,7 +268,9 @@ const SimulationRunningList = observer(function SimulationRunningList() {
           >
             {isDeleteMode && (
               <div style={{ width: '40px' }}>
-                <Checkbox checked={itemsToDelete.has(sim.uuid)} onChange={() => simulationStore.toggleItemForDelete(sim.uuid)} />
+                {sim.user_id === userStore.currentUser && (
+                  <Checkbox checked={itemsToDelete.has(sim.uuid)} onChange={() => simulationStore.toggleItemForDelete(sim.uuid)} />
+                )}
               </div>
             )}
             {/* # */}
@@ -275,26 +280,25 @@ const SimulationRunningList = observer(function SimulationRunningList() {
 
             {/* 시뮬레이션 제목 */}
             <div style={{ flex: 2 }} className="flex items-center gap-2">
-              {sim.is_private ? (
+              {sim.user_id === userStore.currentUser ? (
                 <div className="flex flex-col items-start">
                   <span
                     className="px-2 py-0.5 rounded"
-                    style={{ 
+                    style={{
                       fontFamily: 'Pretendard',
                       lineHeight: 'normal',
-                      fontSize: '12px', 
+                      fontSize: '12px',
                       fontWeight: '400',
-                      backgroundColor: 'rgba(20, 184, 166, 0.3)', 
+                      backgroundColor: 'rgba(20, 184, 166, 0.3)',
                       color: '#6EE7B7' }}
                   >
                     내 시뮬레이션
                   </span>
                   <span>{sim.simulation_name}</span>
                 </div>
-              ) : 
+              ) :
                 <span style={{ color: '#A6A6A6' }}>{sim.simulation_name}</span>
               }
-              {/* <span style={{ color: '#A6A6A6' }}>{sim.simulation_name}</span> */}
             </div>
 
             {/* 오염물질 */}
@@ -311,13 +315,13 @@ const SimulationRunningList = observer(function SimulationRunningList() {
             {/* 상세 */}
             <div style={{ flex: 2 }} className="flex justify-between items-center">
               <div className="flex-1 flex justify-center items-center">
-                {sim.status === '진행중' && (
-                  <div 
+                {sim.status === '진행중' && sim.user_id === userStore.currentUser && (
+                  <div
                     className="flex items-center justify-center w-auto h-8 cursor-pointer py-1 px-3 rounded-[4px] text-[#FFD040] border border-[#FFD040] bg-black"
                     onClick={async () => {
                       const result = await simulationStore.openModal('stopSim');
                       if (result === 'confirm') {
-                        //TODO 중지로직 추가해야함
+                        await simulationStore.killSimulation();
                       }
                     }}
                   >
@@ -337,18 +341,6 @@ const SimulationRunningList = observer(function SimulationRunningList() {
                     실행
                   </Button>
                 )}
-                {sim.status === '대기' &&                   
-                <div 
-                    className="flex items-center justify-center w-auto h-8 cursor-pointer py-1 px-3 rounded-[4px] text-black border border-[#FFD040] bg-[#FFD040]"
-                    onClick={async () => {
-                      const result = await simulationStore.openModal('startSim');
-                      if (result === 'confirm') {
-                        //TODO 시작로직 추가해야함
-                      }
-                    }}
-                  >
-                    분석 시작
-                </div>}
               </div>
               <Icon 
                   name="dropmenubtn" 
