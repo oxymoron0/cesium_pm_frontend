@@ -43,7 +43,7 @@ RUN echo 'server { \
     # Mount NFS or volume to /mnt/nfs at runtime \
     # Path: /bump-svc3d-front-pm/sim/{uuid}/Finedust_XXXX.{json|csv|glb} \
     location /sim/ { \
-        alias /NDATA/output; \
+        alias /NDATA/output/; \
         autoindex off; \
         add_header Access-Control-Allow-Origin *; \
         add_header Cache-Control "public, max-age=3600"; \

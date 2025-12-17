@@ -30,5 +30,7 @@ echo "[entrypoint] Generated $CONFIG_PATH"
 echo "[entrypoint] isCivil=${IS_CIVIL}"
 echo "[entrypoint] basePath=${SELECTED_BASE_PATH}"
 
-# Execute the main container command (nginx)
+ln -s /NDATA/output/ /usr/share/nginx/html/sim
+
+# Execute CMD (nginx)
 exec "$@"
