@@ -46,7 +46,7 @@ let currentAbortController: AbortController | null = null;
  * 시뮬레이션 GLB 파일 일괄 프리로드
  *
  * 경로 구조: ${VITE_SIM_PATH}/${uuid}/Finedust_XXXX.glb
- * - Dev: Vite plugin serves from SIM_LOCAL_PATH (e.g., /mnt/nfs)
+ * - Dev: Vite plugin serves from SIM_LOCAL_PATH (e.g., /NDATA/output/)
  * - Prod: nginx serves from mounted path
  *
  * @param uuid - 시뮬레이션 UUID

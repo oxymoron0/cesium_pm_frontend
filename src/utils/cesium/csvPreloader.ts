@@ -157,7 +157,7 @@ async function parseCSV(
  * CSV 파일들을 프리로드
  *
  * 경로 구조: ${VITE_SIM_PATH}/${uuid}/Finedust_XXXX.csv
- * - Dev: Vite plugin serves from SIM_LOCAL_PATH (e.g., /mnt/nfs)
+ * - Dev: Vite plugin serves from SIM_LOCAL_PATH (e.g., /NDATA/output/)
  * - Prod: nginx serves from mounted path
  */
 export async function preloadCsv(
