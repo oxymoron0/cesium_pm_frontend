@@ -416,29 +416,7 @@ export default function SensorTooltip({ active, payload, label, showPM10 = true,
         </div>
       )}
 
-      {/* VOCs Air Quality Level */}
-      {showVOCs && vocValue !== undefined && (
-        <div
-          style={{
-            marginLeft: '14px',
-            padding: '2px 6px',
-            borderRadius: '3px',
-            background: getAirQualityLevel('vocs', vocValue).color + '20',
-            display: 'inline-block'
-          }}
-        >
-          <span
-            style={{
-              color: getAirQualityLevel('vocs', vocValue).color,
-              fontFamily: 'Pretendard',
-              fontSize: '11px',
-              fontWeight: 500
-            }}
-          >
-            {getAirQualityLevel('vocs', vocValue).levelText}
-          </span>
-        </div>
-      )}
+      {/* VOCs는 공식 등급 기준이 없으므로 등급 표시하지 않음 */}
     </div>
   )
 }

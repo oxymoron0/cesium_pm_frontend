@@ -264,7 +264,11 @@ const ConcentrationRankings = observer(function ConcentrationRankings({
                         textAlign: 'center'
                       }}
                     >
-                      {type === 'high' ? '나쁨' : '좋음'}({item.value.toFixed(0)} {unit})
+                      {/* VOCs는 등급 기준이 없으므로 값만 표시 */}
+                      {isVOCsMode
+                        ? `${item.value.toFixed(0)} ${unit}`
+                        : `${type === 'high' ? '나쁨' : '좋음'}(${item.value.toFixed(0)} ${unit})`
+                      }
                     </div>
                   )}
                 </div>
