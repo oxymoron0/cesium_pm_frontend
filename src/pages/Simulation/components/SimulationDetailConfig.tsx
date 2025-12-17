@@ -22,8 +22,8 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
   const [title, setTitle] = useState('');
   const [pollutant, setPollutant] = useState('');
   const [concentration, setConcentration] = useState('');
-  const [windDirection, setWindDirection] = useState('270');
-  const [windSpeed, setWindSpeed] = useState('2.31');
+  const [windDirection, setWindDirection] = useState('');
+  const [windSpeed, setWindSpeed] = useState('');
   const [useCurrentWeather, setUseCurrentWeather] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
 
@@ -56,8 +56,8 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
       setWindDirection(String(weatherData.wind_direction_1m));
       setWindSpeed(String(weatherData.wind_speed_1m));
     } else if (!useCurrentWeather) {
-      setWindDirection('270');
-      setWindSpeed('2.31');
+      setWindDirection('');
+      setWindSpeed('');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [useCurrentWeather, simulationStore.currentWeather])
@@ -392,7 +392,7 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
                     onChange={(e) => setWindDirection(e.target.value)}
                     placeholder="예 : 270"
                     disabled={useCurrentWeather}
-                    className={`w-full h-8 px-3 py-1 bg-black rounded border border-[#696A6A] text-white outline-none 
+                    className={`w-full h-8 px-3 py-1 bg-black rounded border border-[#696A6A] text-white outline-none placeholder:text-[#696A6A]
                       ${useCurrentWeather ? 'disabled:bg-[#333] disabled:text-[#A6A6A6]' : ''
                     }`}
                     style={{
@@ -441,7 +441,7 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
                     onChange={(e) => setWindSpeed(e.target.value)}
                     placeholder="예 : 2.31"
                     disabled={useCurrentWeather}
-                    className={`w-full h-8 px-3 py-1 bg-black rounded border border-[#696A6A] text-white outline-none 
+                    className={`w-full h-8 px-3 py-1 bg-black rounded border border-[#696A6A] text-white outline-none placeholder:text-[#696A6A]
                       ${useCurrentWeather ? 'disabled:bg-[#333] disabled:text-[#A6A6A6]' : ''
                     }`}
                     style={{
@@ -587,16 +587,20 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
             if (isNaN(concentrationValue)) return alert('농도 값 유효하지 않음') // 농도 값 유효성 검사
 
             // useCurrentWeather 체크 여부에 따른 weather 객체 구성
-            const weatherPayload: Weather = useCurrentWeather && simulationStore.currentWeather 
+            // 기본값: 풍향 270°, 풍속 2.31 m/s
+            const DEFAULT_WIND_DIRECTION = 270;
+            const DEFAULT_WIND_SPEED = 2.31;
+
+            const weatherPayload: Weather = useCurrentWeather && simulationStore.currentWeather
             ? {
                 ...simulationStore.currentWeather
-              } 
+              }
             :
               {
-                wind_direction_10m: parseFloat(windDirection) || 0,
-                wind_speed_10m: parseFloat(windSpeed) || 0,
-                wind_direction_1m: parseFloat(windDirection) || 0, // 임시로 10m값 사용
-                wind_speed_1m: parseFloat(windSpeed) || 0, // 임시로 10m값 사용
+                wind_direction_10m: parseFloat(windDirection) || DEFAULT_WIND_DIRECTION,
+                wind_speed_10m: parseFloat(windSpeed) || DEFAULT_WIND_SPEED,
+                wind_direction_1m: parseFloat(windDirection) || DEFAULT_WIND_DIRECTION,
+                wind_speed_1m: parseFloat(windSpeed) || DEFAULT_WIND_SPEED,
                 humidity: 60, // 임시값
                 sea_level_pressure: 1013, // 임시값
                 temperature: 20, // 임시값
