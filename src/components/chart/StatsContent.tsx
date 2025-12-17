@@ -174,11 +174,24 @@ const StatsContent = observer(function StatsContent({
   const getTitleAndInfo = () => {
     const civilMode = isCivil()
 
-    // Civil 모드: 간소화된 제목
+    // Civil 모드: Figma 디자인 기준 제목 및 Info 문구
     if (civilMode) {
-      const periodPrefix = period === 'today' ? '일간별' : (period === 'week' ? '주간별' : '월간별')
-      const title = `${periodPrefix} 미세먼지 상태 현황`
-      return { title, info: undefined }
+      if (period === 'today') {
+        return {
+          title: '시간대별 미세먼지 현황',
+          info: '시간대별 미세먼지 등급 비교를 통해, 오늘 외부 활동에 적합한 시간을 안내합니다.'
+        }
+      } else if (period === 'week') {
+        return {
+          title: '일자별 미세먼지 현황',
+          info: '최근 7일간 미세먼지 등급을 비교해 외부 활동에 참고할 수 있는 날짜 정보를 안내합니다.'
+        }
+      } else {
+        return {
+          title: '주간 별 미세먼지 현황',
+          info: '최근 1개월간 미세먼지 등급을 비교해 외부 활동에 참고할 수 있는 날짜 정보를 안내합니다.'
+        }
+      }
     }
 
     // 일반 모드
