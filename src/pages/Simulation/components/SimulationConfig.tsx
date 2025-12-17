@@ -101,8 +101,8 @@ const SimulationConfig = observer(function SimulationConfig({ onLocationComplete
       () => simulationStore.selectedLocation,
       (selectedLocation) => {
         if (selectedLocation) {
-          // 위치가 선택되면 마커 렌더링
-          renderLocationMarker(selectedLocation.lng, selectedLocation.lat);
+          // 위치가 선택되면 마커 렌더링 (height 포함)
+          renderLocationMarker(selectedLocation.lng, selectedLocation.lat, selectedLocation.height);
         } else {
           // 위치 선택이 해제되면 마커 제거
           clearLocationMarker();

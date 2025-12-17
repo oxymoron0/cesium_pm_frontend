@@ -68,7 +68,7 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
       () => simulationStore.selectedLocation,
       (selectedLocation) => {
         if (selectedLocation) {
-          renderLocationMarker(selectedLocation.lng, selectedLocation.lat);
+          renderLocationMarker(selectedLocation.lng, selectedLocation.lat, selectedLocation.height);
         }
       },
       { fireImmediately: true }
@@ -624,7 +624,7 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
                     location: {
                       longitude: selectedLocation?.geometry?.coordinates[0] ?? 0,
                       latitude: selectedLocation?.geometry?.coordinates[1] ?? 0,
-                      height: selectedLocation?.height ?? 0,
+                      height: simulationStore.selectedLocation?.height ?? 0,
                     },
                     concentration: concentrationValue, // 숫자 값 사용
                   },

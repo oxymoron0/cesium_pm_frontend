@@ -49,7 +49,7 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
 
   useEffect(() => {
     if (!simulationDetail) return;
-    renderLocationMarker(centerLng, centerLat);
+    renderLocationMarker(centerLng, centerLat, 0);
     return () => {
       clearLocationMarker();
       clearSimulationGlbs();
