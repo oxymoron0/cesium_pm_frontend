@@ -102,23 +102,22 @@ html, body {
 }
 
 /* Re-establish common element resets within scope */
-/* Note: padding, border, background are NOT reset here to allow inline styles to work */
-/* The !important injection from postcss-force-important would override inline styles */
+/* !important ensures these styles override parent app cascading styles */
 .pm-frontend-scope button,
 .pm-frontend-scope input,
 .pm-frontend-scope select,
 .pm-frontend-scope textarea {
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  color: inherit;
-  margin: 0;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  color: inherit !important;
+  margin: 0 !important;
 }
 
 .pm-frontend-scope button {
-  cursor: pointer;
-  border: none;
-  background: transparent;
+  cursor: pointer !important;
+  border: none !important;
+  background: transparent !important;
 }
 
 /* Form elements: restore browser default appearance for background */
@@ -126,8 +125,8 @@ html, body {
 .pm-frontend-scope input,
 .pm-frontend-scope select,
 .pm-frontend-scope textarea {
-  background-color: black;
-  border: 1px solid rgb(73, 73, 73);
+  background-color: black !important;
+  border: 1px solid rgb(73, 73, 73) !important;
 }
 
 .pm-frontend-scope input.input-borderless {
