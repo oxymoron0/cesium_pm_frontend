@@ -5,7 +5,7 @@ import { getBasePath, isCivil } from '@/utils/env';
 interface StationCardProps {
   stationId?: string;
   name: string;
-  description: string;
+  description?: string;
   isBookmarked?: boolean;
   isSelected?: boolean;
   onBookmarkToggle?: () => void;
@@ -30,57 +30,43 @@ function StationCard({
     }
   };
 
-  // 텍스트 길이에 따른 동적 폰트 크기 계산
-  const getNameFontSize = (text: string) => {
-    const length = text.length;
-    if (length > 15) return '18px';      // 매우 긴 텍스트
-    if (length > 12) return '20px';      // 긴 텍스트
-    if (length > 8) return '22px';       // 중간 텍스트
-    return '24px';                       // 기본 크기
-  };
-
-  const getNameLineHeight = (text: string) => {
-    const length = text.length;
-    if (length > 15) return '20px';      // 매우 긴 텍스트
-    if (length > 12) return '22px';      // 긴 텍스트
-    if (length > 8) return '24px';       // 중간 텍스트
-    return '24px';                       // 기본 크기
-  };
-
   return (
-    <Item 
+    <Item
+      size="compact"
       className={`cursor-pointer transition-all ${
         isSelected ? 'ring-2 ring-[#FFD040] bg-[#2A2A2A]' : 'hover:bg-[#1A1A1A]'
       }`}
       onClick={handleCardClick}
     >
-      <div className="flex flex-col flex-1 gap-2">
+      <div className="flex flex-1 items-center gap-3 min-w-0">
         <div
+          className="truncate"
           style={{
             color: '#FFF',
             fontFamily: 'Pretendard',
-            fontSize: getNameFontSize(name),
+            fontSize: '18px',
             fontStyle: 'normal',
             fontWeight: '700',
-            lineHeight: getNameLineHeight(name),
-            wordBreak: 'keep-all',
-            overflowWrap: 'break-word'
+            lineHeight: '24px'
           }}
         >
           {name}
         </div>
-        <div
-          style={{
-            color: '#A6A6A6',
-            fontFamily: 'Pretendard',
-            fontSize: '14px',
-            fontStyle: 'normal',
-            fontWeight: '400',
-            lineHeight: '24px'
-          }}
-        >
-          {description}
-        </div>
+        {description && (
+          <div
+            className="truncate flex-shrink-0"
+            style={{
+              color: '#A6A6A6',
+              fontFamily: 'Pretendard',
+              fontSize: '14px',
+              fontStyle: 'normal',
+              fontWeight: '400',
+              lineHeight: '24px'
+            }}
+          >
+            {description}
+          </div>
+        )}
       </div>
       {!isCivil() && (
         <div
