@@ -68,16 +68,19 @@ export async function renderSearchStations(
 ): Promise<void> {
   try {
     console.log('[renderSearchStations] Starting Billboard render with', searchFeatures.length, 'stations');
+    console.log('[renderSearchStations] First station:', searchFeatures[0]?.properties?.station_name);
 
     // 기존 검색 결과 정리
     await clearSearchStations();
+    console.log('[renderSearchStations] Previous stations cleared');
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const viewer = (window as unknown as { cviewer: any }).cviewer;
     if (!viewer) {
-      console.warn('[renderSearchStations] Cesium viewer not available');
+      console.warn('[renderSearchStations] Cesium viewer not available - cannot render');
       return;
     }
+    console.log('[renderSearchStations] Cesium viewer available');
 
     if (searchFeatures.length === 0) {
       console.log('[renderSearchStations] No search features to render');
@@ -94,10 +97,12 @@ export async function renderSearchStations(
     await sampleTerrainForSearchStations(searchFeatures);
 
     // 기존 Billboard 시스템을 활용한 Entity 생성
+    console.log('[renderSearchStations] Creating Billboard entities...');
     searchFeatures.forEach(feature => {
       const entity = createSearchStationBillboardEntity(feature);
       dataSource.entities.add(entity);
     });
+    console.log(`[renderSearchStations] Added ${dataSource.entities.values.length} entities to DataSource`);
 
     // 검색 결과 정류장들에 대한 센서 데이터 생성
     const searchStationIds = searchFeatures.map(feature => feature.properties.station_id);
@@ -105,6 +110,10 @@ export async function renderSearchStations(
 
     // 호버 이벤트 설정 (한 번만 실행)
     setupStationHoverEvents();
+
+    // DataSource가 viewer에 추가되었는지 확인
+    const addedDataSources = viewer.dataSources.getByName(SEARCH_DATASOURCE_NAME);
+    console.log(`[renderSearchStations] DataSource '${SEARCH_DATASOURCE_NAME}' found in viewer:`, addedDataSources.length > 0);
 
     console.log(`[renderSearchStations] Successfully rendered ${searchFeatures.length} search stations with Billboards`);
 
