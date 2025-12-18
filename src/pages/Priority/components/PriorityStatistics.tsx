@@ -37,15 +37,14 @@ const PriorityStatistics = observer(function PriorityStatistics({ onClose }: Pri
 
   return (
     <div
-      className="fixed z-[1002] flex flex-col items-center overflow-hidden rounded-[10px] border-t-[1.25px] border-t-yellow-400 pb-8 px-5 pt-8 text-white text-sm"
+      className="fixed z-[1002] flex flex-col items-center overflow-hidden rounded-[10px] border-t-[1.25px] border-t-yellow-400 pb-6 px-5 pt-6 text-white text-sm"
       style={{
-        width: 'calc(100vw - 40px)',
-        height: isStatisticsPopupMinimized ? 'auto' : 'calc(100vh - 64px)',
-        top: '32px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        backgroundColor: 'rgba(0, 0, 0, 0.65)',
-        gap: isStatisticsPopupMinimized ? '0' : '1rem'
+        width: '1660px',
+        height: isStatisticsPopupMinimized ? 'auto' : '680px',
+        bottom: '88px',
+        right: '90px',
+        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        gap: isStatisticsPopupMinimized ? '0' : '0.75rem'
       }}
     >
       <Title
@@ -63,7 +62,7 @@ const PriorityStatistics = observer(function PriorityStatistics({ onClose }: Pri
         />
 
         {/* 탭 콘텐츠 영역 */}
-        <div className="flex flex-1 w-full" style={{ minHeight: '500px' }}>
+        <div className="flex flex-1 w-full" style={{ minHeight: 0 }}>
           {renderTabContent()}
         </div>
       </div>
