@@ -50,9 +50,17 @@ const RouteSelector = observer(function RouteSelector({ onRouteSelect }: RouteSe
       }}
     >
       {routes.map((route) => (
-        <button
+        <div
           key={route.route_name}
           onClick={() => handleRouteSelect(route.route_name)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              handleRouteSelect(route.route_name)
+            }
+          }}
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -97,7 +105,7 @@ const RouteSelector = observer(function RouteSelector({ onRouteSelect }: RouteSe
               {route.origin} ↔ {route.destination}
             </div>
           )}
-        </button>
+        </div>
       ))}
 
       {/* UI Version Toggle */}

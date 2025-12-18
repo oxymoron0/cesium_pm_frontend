@@ -22,15 +22,24 @@ const AirConfigButton = memo(function AirConfigButton({
   onClick
 }: AirConfigButtonProps) {
   return (
-    <button
+    <div
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick()
+        }
+      }}
       className={`
         flex flex-col items-center justify-center gap-1
         w-[72px] h-[72px] rounded-lg
-        border-2 border-white
+        cursor-pointer
         transition-[background-color] duration-200 ease-out
         ${isActive ? 'bg-[#FFD040]' : 'bg-[#1A1A1A]'}
       `}
+      style={{ border: '2px solid white' }}
     >
       <img
         src={`${basePath}icon/${icon}`}
@@ -51,7 +60,7 @@ const AirConfigButton = memo(function AirConfigButton({
       >
         {label}
       </span>
-    </button>
+    </div>
   );
 });
 

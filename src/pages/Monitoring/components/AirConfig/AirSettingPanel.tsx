@@ -34,9 +34,17 @@ const SensorButton = memo(function SensorButton({
   className = 'w-[112px]'
 }: SensorButtonProps) {
   return (
-    <button
+    <div
       onClick={onClick}
-      className={`flex flex-col items-center justify-center gap-2 h-[112px] rounded-lg transition-all duration-200 ease-out ${className}`}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick()
+        }
+      }}
+      className={`flex flex-col items-center justify-center gap-2 h-[112px] rounded-lg cursor-pointer transition-all duration-200 ease-out ${className}`}
       style={{
         backgroundColor: isActive ? 'rgba(255, 208, 64, 0.30)' : 'transparent',
         border: isActive ? '1px solid #FFD040' : '1px solid white',
@@ -59,7 +67,7 @@ const SensorButton = memo(function SensorButton({
       >
         {label}
       </span>
-    </button>
+    </div>
   );
 });
 
@@ -81,16 +89,24 @@ const GradeCheckbox = memo(function GradeCheckbox({
   onClick
 }: GradeCheckboxProps) {
   return (
-    <button
+    <div
       onClick={onClick}
-      className="flex items-center gap-2 transition-opacity duration-200 ease-out"
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick()
+        }
+      }}
+      className="flex items-center gap-2 cursor-pointer transition-opacity duration-200 ease-out"
       style={{ opacity: isChecked ? 1 : 0.5 }}
     >
       {/* 체크박스 */}
       <div
-        className="w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ease-out"
+        className="w-5 h-5 rounded flex items-center justify-center transition-all duration-200 ease-out"
         style={{
-          borderColor: isChecked ? color : '#FFFFFF',
+          border: `2px solid ${isChecked ? color : '#FFFFFF'}`,
           backgroundColor: isChecked ? color : 'transparent',
         }}
       >
@@ -102,7 +118,7 @@ const GradeCheckbox = memo(function GradeCheckbox({
       </div>
       {/* 라벨 */}
       <span className="text-sm text-white">{label}</span>
-    </button>
+    </div>
   );
 });
 
