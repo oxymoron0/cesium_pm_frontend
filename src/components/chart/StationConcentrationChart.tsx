@@ -37,17 +37,32 @@ function CustomXAxisTick({ x, y, payload }: CustomTickProps) {
         <text
           key={index}
           x={0}
-          y={index * 14}
-          dy={12}
+          y={index * 18}
+          dy={14}
           textAnchor="middle"
           fill="#999"
-          fontSize={11}
+          fontSize={14}
         >
           {line}
         </text>
       ))}
     </g>
   )
+}
+
+const getEmptyMessage = (period: TimePeriod): string => {
+  switch (period) {
+    case 'realtime':
+      return '실시간 나쁨 이상 농도가 없습니다'
+    case 'today':
+      return '오늘 나쁨 이상 농도가 없습니다'
+    case 'week':
+      return '최근 7일간 나쁨 이상 농도가 없습니다'
+    case 'month':
+      return '최근 1개월간 나쁨 이상 농도가 없습니다'
+    default:
+      return '데이터가 없습니다'
+  }
 }
 
 const StationConcentrationChart = function StationConcentrationChart({ data, period }: StationConcentrationChartProps) {
@@ -62,7 +77,7 @@ const StationConcentrationChart = function StationConcentrationChart({ data, per
         fontFamily: 'Pretendard',
         fontSize: '14px'
       }}>
-        데이터가 없습니다
+        {getEmptyMessage(period)}
       </div>
     )
   }
