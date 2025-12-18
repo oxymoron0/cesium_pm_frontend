@@ -225,6 +225,9 @@ class PriorityStore {
   // 패널 최소화 상태
   isMinimized: boolean = false;
 
+  // 취약시설 타입 필터 ('all' | 'senior' | 'childcare')
+  facilityTypeFilter: 'all' | 'senior' | 'childcare' = 'all';
+
   constructor() {
     makeAutoObservable(this);
     // Mock 데이터로 캐시 초기화
@@ -329,6 +332,24 @@ class PriorityStore {
   }
 
   // ============================================================================
+  // 취약시설 타입 필터 관리
+  // ============================================================================
+
+  /**
+   * 취약시설 타입 필터 설정
+   */
+  setFacilityTypeFilter(filter: 'all' | 'senior' | 'childcare') {
+    this.facilityTypeFilter = filter;
+  }
+
+  /**
+   * 취약시설 타입 필터 초기화
+   */
+  resetFacilityTypeFilter() {
+    this.facilityTypeFilter = 'all';
+  }
+
+  // ============================================================================
   // 읍면동 데이터 조회
   // ============================================================================
 
@@ -411,6 +432,10 @@ class PriorityStore {
 
   clearRoadSelection() {
     this.selectedRoadIds.clear();
+  }
+
+  selectAllRoads(roadIds: string[]) {
+    roadIds.forEach(id => this.selectedRoadIds.add(id));
   }
 
   isRoadSelected(roadId: string): boolean {
@@ -1123,8 +1148,24 @@ class PriorityStore {
    * 중복 제거된 취약시설 목록 (우선순위 오름차순 정렬)
    * ID + type 조합으로 중복 제거 (같은 건물에 senior/childcare 모두 있을 수 있음)
    * 나쁨/매우나쁨 등급만 필터링
+   * facilityTypeFilter에 따라 타입 필터링 적용
    */
   get uniqueVulnerableFacilities(): VulnerableFacility[] {
+    const uniqueMap = new Map<string, VulnerableFacility>();
+    this.vulnerableFacilities
+      .filter(f => f.predictedLevel === 'bad' || f.predictedLevel === 'very-bad')
+      .filter(f => this.facilityTypeFilter === 'all' || f.type === this.facilityTypeFilter)
+      .forEach(facility => {
+        const key = `${facility.id}_${facility.type}`;
+        uniqueMap.set(key, facility);
+      });
+    return Array.from(uniqueMap.values()).sort((a, b) => a.rank - b.rank);
+  }
+
+  /**
+   * 전체 취약시설 목록 (필터 미적용, Cesium 렌더링용)
+   */
+  get allVulnerableFacilities(): VulnerableFacility[] {
     const uniqueMap = new Map<string, VulnerableFacility>();
     this.vulnerableFacilities
       .filter(f => f.predictedLevel === 'bad' || f.predictedLevel === 'very-bad')
