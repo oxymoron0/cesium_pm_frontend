@@ -617,10 +617,10 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
       <div
         className="flex flex-col overflow-y-auto"
         style={{
-          gap: '38px',
+          gap: '20px',
           maxHeight: 'calc(100vh - 400px)',
           minHeight: '200px',
-          paddingTop: '80px', // Space for bus sensor display above first row
+          paddingTop: '55px', // Space for bus sensor display above first row
           scrollbarWidth: 'thin',
           scrollbarColor: '#FFD040 transparent'
         }}
