@@ -47,13 +47,13 @@ const MonitoringView = observer(function MonitoringView({
         flyToLocation(window.cviewer, 129.053233, 35.162913, 1000);
       }
 
-      // RouteStore와 BookmarkStore를 병렬로 로드
-      console.log('[MonitoringView] Starting parallel RouteStore and BookmarkStore initialization');
+      // RouteStore와 노선 북마크를 병렬로 로드 (정류장 북마크는 정류장 탭 클릭 시 로드)
+      console.log('[MonitoringView] Starting parallel RouteStore and RouteBookmarks initialization');
       await Promise.all([
         routeStore.initializeRouteData(),
-        bookmarkStore.initializeBookmarks(userStore.currentUser)
+        bookmarkStore.loadRouteBookmarks(userStore.currentUser)
       ]);
-      console.log('[MonitoringView] RouteStore and BookmarkStore initialization completed');
+      console.log('[MonitoringView] RouteStore and RouteBookmarks initialization completed');
 
       // RouteStore 초기화 완료 후 StationStore 초기화
       const routeNames = routeStore.routeInfoList.map(route => route.route_name);
@@ -101,18 +101,26 @@ const MonitoringView = observer(function MonitoringView({
 
   // 서비스 전환 시 Cesium 정리/복원
   useEffect(() => {
-    // 비활성화될 때: Cesium 정리 (MobX 상태는 유지)
+    // 비활성화될 때: Cesium 정리 + Store 상태 초기화
     if (wasActiveRef.current && !isActive) {
-      console.log('[MonitoringView] Deactivating - clearing Cesium entities');
+      console.log('[MonitoringView] Deactivating - clearing Cesium entities and resetting store');
       busStore.setActive(false);  // 진행 중인 초기화 취소
       clearMonitoringCesium();
       busStore.cleanup();
       stationSensorStore.stopAutoUpdate();
+      bookmarkStore.clearStationBookmarks();  // 정류장 북마크 초기화 (다른 서비스에서 렌더링 방지)
+      // Store 상태 초기화 (초기 화면으로 복귀)
+      routeStore.clearSelection();
+      stationDetailStore.closeModal();
     }
 
-    // 재활성화될 때: 이미 초기화되어 있으면 Cesium 렌더링 복원
+    // 재활성화될 때: Store 상태 초기화 후 Cesium 렌더링 복원
     if (!wasActiveRef.current && isActive && isInitializedRef.current && cesiumStatus === 'ready') {
-      console.log('[MonitoringView] Reactivating - restoring Cesium entities');
+      console.log('[MonitoringView] Reactivating - resetting store and restoring Cesium entities');
+
+      // Store 상태 초기화 (초기 화면으로 복귀)
+      routeStore.clearSelection();
+      stationDetailStore.closeModal();
 
       const restoreCesiumRendering = async () => {
         try {
@@ -152,6 +160,10 @@ const MonitoringView = observer(function MonitoringView({
       clearMonitoringCesium();
       busStore.cleanup();
       stationSensorStore.stopAutoUpdate();
+      bookmarkStore.clearStationBookmarks();  // 정류장 북마크 초기화
+      // Store 상태 초기화 (초기 화면으로 복귀)
+      routeStore.clearSelection();
+      stationDetailStore.closeModal();
     };
   }, []);
 
