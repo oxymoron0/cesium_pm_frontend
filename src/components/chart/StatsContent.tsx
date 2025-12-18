@@ -229,7 +229,7 @@ const StatsContent = observer(function StatsContent({
       }}
     >
       {/* SubTitle */}
-      <SubTitle info={info}>{title}</SubTitle>
+      <SubTitle info={info} tooltipAlign="right">{title}</SubTitle>
 
       {/* Tab Navigation (hidden in VOCs mode) */}
       {!isVOCsMode && (
