@@ -82,7 +82,7 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
   const isSearchMode = searchQuery.trim().length > 0;
 
   // MobX observable의 내용 변경을 감지하기 위해 크기를 별도 변수로 추출
-  const bookmarkedStationsSize = bookmarkStore.bookmarkedStations.size;
+  const bookmarkedStationsSize = bookmarkStore.bookmarkedStations.length;
   const stationDataMapSize = stationStore.stationDataMap.size;
 
   // 북마크된 정류장의 GeoJSON Features 추출 (Cesium 렌더링용)
