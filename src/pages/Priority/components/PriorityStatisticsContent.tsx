@@ -24,11 +24,11 @@ const StatisticsContent = observer(function StatisticsContent({ period }: { peri
   const facilityType = priorityStatisticsStore.facilityType
 
   useEffect(() => {
-    // Load data on mount if not already loaded
-    if (!priorityStatisticsStore.hasData(period) && !isLoading) {
+    // Load data on mount if not already attempted
+    if (!priorityStatisticsStore.hasAttemptedLoad(period)) {
       priorityStatisticsStore.loadPeriodData(period)
     }
-  }, [period, isLoading])
+  }, [period])
 
   return (
     <div
@@ -159,7 +159,7 @@ const StatisticsContent = observer(function StatisticsContent({ period }: { peri
               데이터 로딩 중...
             </div>
           ) : (
-            <FacilitySimulationChart data={toJS(facilityData)} selectedType={facilityType} />
+            <FacilitySimulationChart data={toJS(facilityData)} selectedType={facilityType} period={period} />
           )}
         </div>
       </PriorityChartContainer>

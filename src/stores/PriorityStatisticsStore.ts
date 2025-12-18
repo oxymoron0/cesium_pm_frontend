@@ -327,6 +327,15 @@ class PriorityStatisticsStore {
     return data.stationData.length > 0 || data.facilityData.length > 0
   }
 
+  /**
+   * Check if data loading has been attempted for a specific period
+   * Returns true if data was loaded (even if empty) or if currently loading
+   */
+  hasAttemptedLoad(period: TimePeriod): boolean {
+    const data = this.getPeriodData(period)
+    return data.lastLoaded !== null || data.isLoading
+  }
+
   // ============================================================================
   // Data Loading Methods
   // ============================================================================
