@@ -102,40 +102,40 @@ const StatisticsContent = observer(function StatisticsContent({ period }: { peri
             취약시설별 시뮬레이션 매우나쁨, 나쁨 횟수
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button
+            <div
               onClick={() => priorityStatisticsStore.setFacilityType('bad')}
               style={{
                 backgroundColor: facilityType === 'bad' ? '#FFD040' : '#666',
                 color: facilityType === 'bad' ? '#000' : '#FFF',
-                border: 'none',
                 borderRadius: '16px',
                 padding: '6px 16px',
                 fontSize: '12px',
                 fontWeight: '600',
                 fontFamily: 'Pretendard',
                 cursor: 'pointer',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                userSelect: 'none'
               }}
             >
               나쁨
-            </button>
-            <button
+            </div>
+            <div
               onClick={() => priorityStatisticsStore.setFacilityType('veryBad')}
               style={{
                 backgroundColor: facilityType === 'veryBad' ? '#FFD040' : '#666',
                 color: facilityType === 'veryBad' ? '#000' : '#FFF',
-                border: 'none',
                 borderRadius: '16px',
                 padding: '6px 16px',
                 fontSize: '12px',
                 fontWeight: '600',
                 fontFamily: 'Pretendard',
                 cursor: 'pointer',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                userSelect: 'none'
               }}
             >
               매우나쁨
-            </button>
+            </div>
           </div>
         </div>
         <div style={{

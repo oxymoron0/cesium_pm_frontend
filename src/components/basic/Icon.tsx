@@ -19,13 +19,13 @@ export default function Icon({ name, className = "", onClick }: IconProps) {
 
   if (onClick) {
     return (
-      <button
+      <div
         onClick={onClick}
         className="cursor-pointer hover:opacity-70 transition-opacity"
-        type="button"
+        style={{ userSelect: 'none' }}
       >
         {iconElement}
-      </button>
+      </div>
     );
   }
 

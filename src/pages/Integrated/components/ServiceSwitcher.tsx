@@ -31,10 +31,11 @@ function ServiceSwitcher({ currentService, onServiceChange }: ServiceSwitcherPro
         {availableServices.map((service) => {
           const isActive = service.id === currentService;
           return (
-            <button
+            <div
               key={service.id}
               onClick={() => onServiceChange(service.id)}
               className="flex flex-col items-center justify-center h-[56px] py-[12px] cursor-pointer transition-all duration-200 hover:opacity-80"
+              style={{ userSelect: 'none' }}
             >
               {/* Icon Container - fixed size for consistent alignment */}
               <div className="flex items-center justify-center w-[28px] h-[28px]">
@@ -60,7 +61,7 @@ function ServiceSwitcher({ currentService, onServiceChange }: ServiceSwitcherPro
               >
                 {service.label}
               </span>
-            </button>
+            </div>
           );
         })}
       </div>
