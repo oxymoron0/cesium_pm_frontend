@@ -52,6 +52,37 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
   // 중복 제거된 facilities (이제 PriorityStore에서 가져옴)
   const facilities = priorityStore.uniqueVulnerableFacilities;
+  const facilityTypeFilter = priorityStore.facilityTypeFilter;
+
+  // 필터 변경 시 선택 상태 초기화
+  useEffect(() => {
+    // 필터 변경 시 기존 선택 중 필터에 맞지 않는 항목 제거
+    const filteredKeys = new Set(facilities.map(f => `${f.id}_${f.type}`));
+    const newSelectedFacilities = new Set<string>();
+
+    selectedFacilities.forEach(key => {
+      if (filteredKeys.has(key)) {
+        newSelectedFacilities.add(key);
+      } else {
+        // 선택 해제된 항목의 강조 해제
+        unhighlightFacility(key);
+        clearNearbyRoadsForFacility(key);
+        clearNearbyBuildingFacilitiesForFacility(key);
+      }
+    });
+
+    setSelectedFacilities(newSelectedFacilities);
+
+    // Store의 선택 상태도 동기화
+    priorityStore.clearFacilitySelection();
+    newSelectedFacilities.forEach(key => {
+      priorityStore.toggleFacilitySelection(key);
+    });
+
+    // 정류장 재렌더링
+    renderNearbyStations(priorityStore.selectedStations);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facilityTypeFilter]);
 
   // 초기화
   useEffect(() => {
@@ -114,6 +145,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
     // Cleanup
     return () => {
       priorityStore.closeDropdown();
+      priorityStore.resetFacilityTypeFilter();
       clearAdministrativeBoundary();
       clearVulnerableFacilities();
       clearAllNearbyRoads();
@@ -438,6 +470,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
 
     setSelectedFacilities(new Set());
     priorityStore.clearFacilitySelection();
+    priorityStore.resetFacilityTypeFilter();
 
     let neighborhoodCode: string | null = null;
     let selectedName: string = value;
@@ -580,8 +613,18 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
                 <div className="flex items-center justify-center text-white font-pretendard text-[14px] font-bold text-center" style={{ width: '40px', height: '54px', flexShrink: 0 }}>
                   우선<br />순위
                 </div>
-                <div className="flex items-center justify-center text-white font-pretendard text-[14px] font-bold text-center" style={{ width: '100px', height: '54px', flexShrink: 0 }}>
-                  취약시설명
+                <div className="flex items-center justify-center relative" style={{ width: '100px', height: '54px', flexShrink: 0 }}>
+                  <select
+                    className="text-white font-pretendard text-[14px] font-bold text-center bg-transparent border-none cursor-pointer appearance-none pr-4"
+                    value={priorityStore.facilityTypeFilter}
+                    onChange={(e) => priorityStore.setFacilityTypeFilter(e.target.value as 'all' | 'senior' | 'childcare')}
+                    style={{ outline: 'none' }}
+                  >
+                    <option value="all" className="bg-black text-white">전체</option>
+                    <option value="senior" className="bg-black text-white">경로당</option>
+                    <option value="childcare" className="bg-black text-white">어린이집</option>
+                  </select>
+                  <span className="absolute right-2 pointer-events-none text-white text-[10px]">▼</span>
                 </div>
                 <div className="flex flex-1 items-center justify-center text-white font-pretendard text-[14px] font-bold text-center" style={{ height: '54px' }}>
                   주소

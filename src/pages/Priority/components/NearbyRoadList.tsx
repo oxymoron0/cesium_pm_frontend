@@ -23,15 +23,43 @@ const NearbyRoadList = observer(function NearbyRoadList({ roads, onClose }: Near
     });
   }, [roads]);
 
-  const toggleRoad = (roadName: string) => {
+  const toggleRoad = (roadId: string) => {
     // Store 상태 토글
-    priorityStore.toggleRoadSelection(roadName);
+    priorityStore.toggleRoadSelection(roadId);
 
     // Cesium Entity visibility 토글
-    const isSelected = priorityStore.isRoadSelected(roadName);
-    toggleRoadVisibility(roadName, isSelected);
+    const isSelected = priorityStore.isRoadSelected(roadId);
+    toggleRoadVisibility(roadId, isSelected);
 
-    console.log(`[NearbyRoadList] Toggled road "${roadName}" visibility: ${isSelected}`);
+    console.log(`[NearbyRoadList] Toggled road "${roadId}" visibility: ${isSelected}`);
+  };
+
+  // 전체 선택 상태 계산
+  const allRoadIds = roads.map(road => road.id);
+  const selectedCount = allRoadIds.filter(id => priorityStore.isRoadSelected(id)).length;
+  const isAllSelected = selectedCount === roads.length;
+  const isPartialSelected = selectedCount > 0 && selectedCount < roads.length;
+
+  const toggleAllRoads = () => {
+    if (isAllSelected) {
+      // 전체 해제
+      allRoadIds.forEach(id => {
+        if (priorityStore.isRoadSelected(id)) {
+          priorityStore.toggleRoadSelection(id);
+          toggleRoadVisibility(id, false);
+        }
+      });
+      console.log('[NearbyRoadList] Deselected all roads');
+    } else {
+      // 전체 선택
+      allRoadIds.forEach(id => {
+        if (!priorityStore.isRoadSelected(id)) {
+          priorityStore.toggleRoadSelection(id);
+          toggleRoadVisibility(id, true);
+        }
+      });
+      console.log('[NearbyRoadList] Selected all roads');
+    }
   };
 
   // Early return after hooks
@@ -47,6 +75,41 @@ const NearbyRoadList = observer(function NearbyRoadList({ roads, onClose }: Near
 
       <Spacer height={16} />
       * 취약시설 주변 공기질 개선을 위한 살수차 우선 투입 도로 정보를 확인하세요.
+
+      {/* 전체 선택 */}
+      <Spacer height={12} />
+      <div
+        className="flex items-center gap-3 px-4 py-2"
+        style={{
+          backgroundColor: '#3A3A3A',
+          borderRadius: '4px',
+          cursor: 'pointer'
+        }}
+        onClick={toggleAllRoads}
+      >
+        <input
+          type="checkbox"
+          className="flex-shrink-0 custom-checkbox"
+          checked={isAllSelected}
+          ref={(el) => {
+            if (el) el.indeterminate = isPartialSelected;
+          }}
+          onChange={toggleAllRoads}
+          onClick={(e) => e.stopPropagation()}
+        />
+        <span
+          className="font-pretendard"
+          style={{
+            color: '#FFF',
+            fontSize: '14px',
+            fontWeight: '500',
+            lineHeight: '20px'
+          }}
+        >
+          전체 선택 ({selectedCount}/{roads.length})
+        </span>
+      </div>
+      <Spacer height={8} />
 
       {/* 도로 목록 */}
       <div
