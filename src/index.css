@@ -117,6 +117,8 @@ html, body {
 
 .pm-frontend-scope button {
   cursor: pointer;
+  border: none;
+  background: transparent;
 }
 
 /* Form elements: restore browser default appearance for background */
@@ -124,8 +126,13 @@ html, body {
 .pm-frontend-scope input,
 .pm-frontend-scope select,
 .pm-frontend-scope textarea {
-  background-color: revert;
-  border: revert;
+  background-color: black;
+  border: 1px solid rgb(73, 73, 73);
+}
+
+.pm-frontend-scope input.input-borderless {
+  border: none !important;
+  background-color: transparent !important;
 }
 
 .pm-frontend-scope img {
