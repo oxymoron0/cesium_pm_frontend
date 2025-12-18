@@ -7,7 +7,7 @@ import DongDropdown from './DongDropdown';
 import NearbyStationList from './NearbyStationList';
 import { renderNearbyStations, clearNearStations } from '@/utils/cesium/nearbyStationRenderer';
 import { flyToFacility } from '@/utils/cesium/cameraUtils';
-import { renderVulnerableFacilities, clearVulnerableFacilities, showFacilityHtmlTags, hideFacilityHtmlTags } from '@/utils/cesium/nearbyFacilitiesRenderer';
+import { renderVulnerableFacilities, clearVulnerableFacilities, showFacilityHtmlTags, hideFacilityHtmlTags, highlightSelectedFacility, unhighlightFacility } from '@/utils/cesium/nearbyFacilitiesRenderer';
 import { renderNearbyRoadsForFacility, clearNearbyRoadsForFacility, clearAllNearbyRoads } from '@/utils/cesium/nearbyRoadRenderer';
 import { renderNearbyBuildingFacilitiesForFacility, clearNearbyBuildingFacilitiesForFacility, clearAllNearbyBuildingFacilities } from '@/utils/cesium/nearbyBuildingFacilitiesRenderer';
 import { preloadSingleJsonFrame } from '@/utils/cesium/jsonPreloader';
@@ -236,9 +236,13 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       newSet.delete(facilityKey);
       clearNearbyRoadsForFacility(facilityKey);
       clearNearbyBuildingFacilitiesForFacility(facilityKey);
+      // 선택 해제 시 강조 해제 (배지 + 건물 외곽선 원래 색상으로)
+      unhighlightFacility(facilityKey);
     } else {
       console.log('[toggleFacility] Selecting facility:', facilityKey);
       newSet.add(facilityKey);
+      // 선택 시 강조 (배지 + 건물 외곽선 초록색으로)
+      highlightSelectedFacility(facilityKey);
 
       // 선택한 시설로 카메라 이동 (줌인 + 중앙 배치)
       const [longitude, latitude] = facility.geometry.coordinates;
@@ -301,6 +305,8 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
   // 전체 토글
   const toggleAll = async () => {
     if (selectedFacilities.size === facilities.length) {
+      // 전체 해제 시 모든 강조 해제
+      facilities.forEach(f => unhighlightFacility(`${f.id}_${f.type}`));
       setSelectedFacilities(new Set());
       priorityStore.clearFacilitySelection();
       renderNearbyStations([]);
@@ -309,6 +315,8 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
     } else {
       const allKeys = facilities.map(f => `${f.id}_${f.type}`);
       setSelectedFacilities(new Set(allKeys));
+      // 전체 선택 시 모든 강조 적용
+      facilities.forEach(f => highlightSelectedFacility(`${f.id}_${f.type}`));
 
       // 순차 처리로 rate limiting 방지
       for (const facility of facilities) {

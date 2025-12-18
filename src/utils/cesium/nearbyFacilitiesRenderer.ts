@@ -245,7 +245,8 @@ function createFacilityHtmlElement(facility: VulnerableFacility): void {
                   -webkit-backface-visibility: hidden;
                   user-select: none;">
 
-        <div style="background: rgba(0, 0, 0, 0.8);
+        <div data-facility-card="${facilityKey}"
+             style="background: rgba(0, 0, 0, 0.8);
                     color: white;
                     border: 1px solid #C4C6C6;
                     border-radius: 12px;
@@ -593,7 +594,7 @@ export function hideFacilityHtmlTags(): void {
 }
 
 /**
- * 선택된 취약시설 강조 (순위 배지 + 건물 외곽선을 밝은 초록색으로)
+ * 선택된 취약시설 강조 (카드 border + 순위 배지 + 건물 외곽선을 밝은 초록색으로)
  * @param facilityKey - 시설 composite key (${id}_${type})
  */
 export function highlightSelectedFacility(facilityKey: string): void {
@@ -601,7 +602,13 @@ export function highlightSelectedFacility(facilityKey: string): void {
     const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
     if (!viewer) return;
 
-    // 1. HTML 순위 배지 강조
+    // 1. HTML 카드 컨테이너 border 강조
+    const facilityCard = document.querySelector(`[data-facility-card="${facilityKey}"]`) as HTMLElement;
+    if (facilityCard) {
+      facilityCard.style.border = `2px solid ${HIGHLIGHT_COLOR}`;
+    }
+
+    // 2. HTML 순위 배지 강조
     const rankBadge = document.querySelector(`[data-rank-badge="${facilityKey}"]`) as HTMLElement;
     if (rankBadge) {
       rankBadge.style.background = HIGHLIGHT_COLOR;
@@ -639,7 +646,7 @@ export function highlightSelectedFacility(facilityKey: string): void {
 }
 
 /**
- * 취약시설 강조 해제 (원래 색상으로 복원)
+ * 취약시설 강조 해제 (카드 border + 순위 배지 + 건물 외곽선을 원래 색상으로 복원)
  * @param facilityKey - 시설 composite key (${id}_${type})
  */
 export function unhighlightFacility(facilityKey: string): void {
@@ -647,7 +654,13 @@ export function unhighlightFacility(facilityKey: string): void {
     const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
     if (!viewer) return;
 
-    // 1. HTML 순위 배지 원래 색상으로 복원
+    // 1. HTML 카드 컨테이너 border 원래 색상으로 복원
+    const facilityCard = document.querySelector(`[data-facility-card="${facilityKey}"]`) as HTMLElement;
+    if (facilityCard) {
+      facilityCard.style.border = '1px solid #C4C6C6';
+    }
+
+    // 2. HTML 순위 배지 원래 색상으로 복원
     const rankBadge = document.querySelector(`[data-rank-badge="${facilityKey}"]`) as HTMLElement;
     if (rankBadge) {
       rankBadge.style.background = 'white';
