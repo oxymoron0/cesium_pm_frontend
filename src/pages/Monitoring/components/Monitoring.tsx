@@ -268,6 +268,11 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
       setSelectedStationId(null);
       clearSearchStations();
     }
+
+    // 정류장 탭 클릭 시 정류장 북마크 로드 (아직 로드되지 않은 경우에만)
+    if (newTab === 'station' && !bookmarkStore.isStationBookmarksLoaded) {
+      bookmarkStore.loadStationBookmarks(userStore.currentUser);
+    }
   };
 
   const getActiveTabIndex = () => {

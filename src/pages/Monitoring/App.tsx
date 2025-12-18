@@ -64,13 +64,13 @@ const App = observer(function App(props: AppProps) {
       }
       isInitialized = true;
 
-      // RouteStore와 BookmarkStore를 병렬로 로드 (최대 성능)
-      console.log('[App] Starting parallel RouteStore and BookmarkStore initialization');
+      // RouteStore와 노선 북마크를 병렬로 로드 (정류장 북마크는 정류장 탭 클릭 시 로드)
+      console.log('[App] Starting parallel RouteStore and RouteBookmarks initialization');
       await Promise.all([
         routeStore.initializeRouteData(),
-        bookmarkStore.initializeBookmarks(userStore.currentUser)
+        bookmarkStore.loadRouteBookmarks(userStore.currentUser)
       ]);
-      console.log('[App] RouteStore and BookmarkStore initialization completed');
+      console.log('[App] RouteStore and RouteBookmarks initialization completed');
       
       // RouteStore 초기화 완료 후 즉시 StationStore 초기화
       const routeNames = routeStore.routeInfoList.map(route => route.route_name);
@@ -126,6 +126,7 @@ const App = observer(function App(props: AppProps) {
       busStore.setActive(false);
       busStore.cleanup();
       stationSensorStore.stopAutoUpdate();
+      bookmarkStore.clearStationBookmarks();  // 정류장 북마크 초기화
     };
   }, [])
 
