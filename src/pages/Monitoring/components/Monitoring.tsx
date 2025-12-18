@@ -81,6 +81,10 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
   const itemsPerPage = 4;
   const isSearchMode = searchQuery.trim().length > 0;
 
+  // MobX observable의 내용 변경을 감지하기 위해 크기를 별도 변수로 추출
+  const bookmarkedStationsSize = bookmarkStore.bookmarkedStations.size;
+  const stationDataMapSize = stationStore.stationDataMap.size;
+
   // 북마크된 정류장의 GeoJSON Features 추출 (Cesium 렌더링용)
   const bookmarkFeatures = useMemo(() => {
     if (isSearchMode) return null;
@@ -98,9 +102,9 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
     });
 
     return features.length > 0 ? features : null;
-    // MobX observer는 observable 변경 시 자동으로 재렌더링하므로 의존성 필요
+    // bookmarkedStationsSize, stationDataMapSize: MobX observable Map/Set 변경 감지용 (참조 비교 우회)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSearchMode, bookmarkStore.bookmarkedStations, stationStore.stationDataMap]);
+  }, [isSearchMode, bookmarkedStationsSize, stationDataMapSize]);
 
   // 현재 표시할 데이터 계산
   const getCurrentData = () => {
@@ -145,6 +149,16 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
     let isCancelled = false;
 
     const renderStations = async () => {
+      // 디버그 로그: 현재 상태 출력
+      console.log('[Monitoring] Render useEffect triggered:', {
+        selectedTab,
+        isSearchMode,
+        hasSearchResults: !!searchResults,
+        searchResultsCount: searchResults?.features?.length ?? 0,
+        hasBookmarkFeatures: !!bookmarkFeatures,
+        bookmarkFeaturesCount: bookmarkFeatures?.length ?? 0
+      });
+
       // 정류장 탭이 아니면 렌더링하지 않고 기존 정류장 정리
       if (selectedTab !== 'station') {
         console.log('[Monitoring] Not on station tab, clearing stations');
@@ -157,20 +171,32 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
 
       if (featuresToRender && featuresToRender.length > 0) {
         // Race condition 방지: 이전 렌더링이 취소되었으면 새 렌더링 진행 안함
-        if (isCancelled) return;
+        if (isCancelled) {
+          console.log('[Monitoring] Render cancelled before execution');
+          return;
+        }
 
         console.log(`[Monitoring] Rendering ${isSearchMode ? 'search' : 'bookmark'} stations to Cesium:`, featuresToRender.length);
         await renderSearchStations(featuresToRender, null); // 선택 상태 없이 렌더링
 
         // 렌더링 완료 후에도 취소 확인
-        if (isCancelled) return;
+        if (isCancelled) {
+          console.log('[Monitoring] Render cancelled after renderSearchStations');
+          return;
+        }
 
         // 렌더링 후 현재 선택 상태 적용
         updateSearchStationSelection(selectedStationId);
+        console.log('[Monitoring] Station rendering completed successfully');
       } else if (selectedTab === 'station') {
         // 정류장 탭이지만 렌더링할 데이터가 없는 경우 (검색 전 상태)
-        // 기존 렌더링은 유지하고 로그만 출력
-        console.log('[Monitoring] Station tab active but no features to render yet');
+        // Civil 모드에서는 기존 렌더링 정리 (검색 결과가 없으면 정류장 표시 안함)
+        if (isCivil() && !isSearchMode) {
+          await clearSearchStations();
+          console.log('[Monitoring] Civil mode: Station tab active, cleared previous stations, waiting for search');
+        } else {
+          console.log('[Monitoring] Station tab active but no features to render yet');
+        }
       }
     };
 

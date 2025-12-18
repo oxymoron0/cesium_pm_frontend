@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Entity } from 'cesium';
+import { routeStore } from '@/stores/RouteStore';
 import { stationStore } from '@/stores/StationStore';
 import { stationSensorStore } from '@/stores/StationSensorStore';
 import { stationDetailStore } from '@/stores/StationDetailStore';
@@ -14,6 +15,9 @@ const StationHtmlRenderer = observer(() => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stationElementsRef = useRef<Map<string, HTMLDivElement>>(new Map());
   const lastUpdateTime = useRef<number>(0);
+
+  // MobX observer가 monitoringTab 변경을 추적하도록 컴포넌트 본문에서 접근
+  const monitoringTab = routeStore.monitoringTab;
 
   // 스테이션 태그 HTML 생성 함수
   const createStationTagHTML = useCallback((
@@ -283,8 +287,8 @@ const StationHtmlRenderer = observer(() => {
             }
           });
         }
-        // 검색 정류장 DataSource 처리
-        else if (dataSource?.name === 'search_stations' && dataSource.show && dataSource.entities) {
+        // 검색 정류장 DataSource 처리: 정류장 탭일 때만 렌더링
+        else if (dataSource?.name === 'search_stations' && dataSource.show && dataSource.entities && monitoringTab === 'station') {
           const entities = dataSource.entities.values;
           if (!entities) continue;
 
@@ -328,7 +332,7 @@ const StationHtmlRenderer = observer(() => {
     } catch (error) {
       console.error('[StationHtmlRenderer] Position update error:', error);
     }
-  }, [createOrUpdateStationElement]);
+  }, [createOrUpdateStationElement, monitoringTab]);
 
   useEffect(() => {
     let postRenderCallback: (() => void) | null = null;
