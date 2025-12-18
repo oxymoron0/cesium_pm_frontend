@@ -66,7 +66,7 @@ export default function Select({
           ))}
         </select>
         {/* 드롭다운 화살표 (선택사항) */}
-        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-white text-xs">
+        <div className="absolute right-3 top-2 transform -translate-y-1/2 pointer-events-none text-white text-xs">
           ▼
         </div>
       </div>

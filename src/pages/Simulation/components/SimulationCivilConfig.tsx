@@ -275,10 +275,10 @@ const SimulationCivilConfig = observer(function SimulationCivilConfig()  {
                     }}
                     disabled={isInputDisabled}
                     placeholder="예 : 100"
-                    className={`w-full h-full px-3 rounded text-justify focus:outline-none ${isConcentrationInvalid ? 'placeholder-[#FF3333]' : 'placeholder-[#696A6A]'}`}
+                    className={`input-override w-full h-full px-3 rounded text-justify focus:outline-none ${isConcentrationInvalid ? 'placeholder-[#FF3333]' : 'placeholder-[#696A6A]'}`}
                     style={getInputStyle(isConcentrationInvalid)}
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2" 
+                  <span className="absolute right-3 top-2 -translate-y-1/2" 
                     style={{fontFamily: 'Pretendard', lineHeight: 'normal', fontSize: '15px', fontWeight: '400', color: '#FFFFFF'}}>µg/m³</span>
                 </div>
               </div>
@@ -306,7 +306,7 @@ const SimulationCivilConfig = observer(function SimulationCivilConfig()  {
                     className={`w-full h-full px-3 rounded focus:outline-none ${isWindDirectionInvalid ? 'placeholder-[#FF3333]' : 'placeholder-[#696A6A]'}`}
                     style={getInputStyle(isWindDirectionInvalid)}
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2" 
+                  <span className="absolute right-3 top-2 -translate-y-1/2" 
                   style={{fontFamily: 'Pretendard', lineHeight: 'normal', fontSize: '15px', fontWeight: '400', color: '#FFFFFF'}}>°</span>
                 </div>
               </div>
@@ -324,7 +324,7 @@ const SimulationCivilConfig = observer(function SimulationCivilConfig()  {
                     className={`w-full h-full px-3 rounded focus:outline-none ${isWindSpeedInvalid ? 'placeholder-[#FF3333]' : 'placeholder-[#696A6A]'}`}
                     style={getInputStyle(isWindSpeedInvalid)}
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2" 
+                  <span className="absolute right-3 top-2 -translate-y-1/2" 
                   style={{fontFamily: 'Pretendard', lineHeight: 'normal', fontSize: '15px', fontWeight: '400', color: '#FFFFFF'}}>m/s</span>
                 </div>
               </div>
