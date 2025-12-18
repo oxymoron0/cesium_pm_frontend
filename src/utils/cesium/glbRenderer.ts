@@ -94,6 +94,8 @@ export async function renderBusModels(busData: BusTrajectoryData[]): Promise<voi
         minimumPixelSize: 48,
         maximumScale: 48,
         heightReference: HeightReference.CLAMP_TO_GROUND,
+        // disableDepthTestDistance는 ModelGraphics 타입에 없지만 런타임에서 지원될 수 있음
+        ...({ disableDepthTestDistance: Number.POSITIVE_INFINITY } as Record<string, unknown>),
       }),
     })
 
