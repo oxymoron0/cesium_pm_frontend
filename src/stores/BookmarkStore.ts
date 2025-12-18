@@ -15,6 +15,7 @@ import type {
 interface BookmarkLoadingState {
   routeBookmarksLoading: boolean;
   stationBookmarksLoading: boolean;
+  stationBookmarksLoaded: boolean; // 정류장 북마크 로드 완료 플래그
   error: string | null;
 }
 
@@ -33,6 +34,7 @@ class BookmarkStore {
   loadingState: BookmarkLoadingState = {
     routeBookmarksLoading: false,
     stationBookmarksLoading: false,
+    stationBookmarksLoaded: false,
     error: null
   };
 
@@ -176,6 +178,12 @@ class BookmarkStore {
    * @param user - 사용자 ID
    */
   async loadStationBookmarks(user: string): Promise<void> {
+    // 이미 로드된 경우 스킵
+    if (this.loadingState.stationBookmarksLoaded) {
+      console.log('[BookmarkStore] Station bookmarks already loaded, skipping');
+      return;
+    }
+
     this.setStationBookmarksLoading(true);
 
     try {
@@ -187,6 +195,7 @@ class BookmarkStore {
         this.stationBookmarks.add(bookmark.station_id);
       });
 
+      this.loadingState.stationBookmarksLoaded = true;
       console.log(`[BookmarkStore] Station bookmarks loaded: ${this.stationBookmarks.size} stations`);
     } catch (error) {
       console.error('[BookmarkStore] Failed to load station bookmarks:', error);
@@ -195,6 +204,15 @@ class BookmarkStore {
       this.setStationBookmarksLoading(false);
     }
   }
+
+  /**
+   * 정류장 북마크 데이터 초기화 (페이지 이탈 시 호출)
+   */
+  clearStationBookmarks = action(() => {
+    this.stationBookmarks.clear();
+    this.loadingState.stationBookmarksLoaded = false;
+    console.log('[BookmarkStore] Station bookmarks cleared');
+  });
 
   /**
    * 정류장 북마크 토글 (추가/제거) - Optimistic UI Update
@@ -299,6 +317,10 @@ class BookmarkStore {
     return !!this.loadingState.error;
   }
 
+  get isStationBookmarksLoaded(): boolean {
+    return this.loadingState.stationBookmarksLoaded;
+  }
+
   // ============================================================================
   // 초기화 및 정리
   // ============================================================================
@@ -312,6 +334,7 @@ class BookmarkStore {
     this.loadingState = {
       routeBookmarksLoading: false,
       stationBookmarksLoading: false,
+      stationBookmarksLoaded: false,
       error: null
     };
     console.log('[BookmarkStore] All bookmarks cleared');
