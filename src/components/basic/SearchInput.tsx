@@ -25,7 +25,7 @@ export default function SearchInput({
         value={value}
         onChange={(e) => onChange?.(e.target.value)}
         placeholder={placeholder}
-        className="flex-1 bg-transparent outline-none text-white placeholder-[#A6A6A6]"
+        className="flex-1 bg-transparent outline-none text-white placeholder-[#A6A6A6] input-borderless"
         style={{
           fontFamily: 'Pretendard',
           fontSize: '14px',
