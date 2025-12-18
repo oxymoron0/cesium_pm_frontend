@@ -55,7 +55,7 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
     const bookmarkedStations: Array<{
       stationId: string;
       name: string;
-      description: string;
+      description?: string;
       isBookmarked: boolean;
     }> = [];
 
@@ -67,7 +67,7 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
           bookmarkedStations.push({
             stationId: feature.properties.station_id,
             name: feature.properties.station_name,
-            description: `${feature.properties.ars_id} (${feature.properties.city})`,
+            description: (feature.properties.ars_id && feature.properties.ars_id !== 'undefined') ? `${feature.properties.ars_id} (${feature.properties.city})` : feature.properties.city,
             isBookmarked: true
           });
           break; // 찾았으면 다음 stationId로
@@ -78,7 +78,7 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
     return bookmarkedStations;
   };
 
-  const itemsPerPage = 4;
+  const itemsPerPage = 8;
   const isSearchMode = searchQuery.trim().length > 0;
 
   // MobX observable의 내용 변경을 감지하기 위해 크기를 별도 변수로 추출
@@ -113,7 +113,7 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
       const allItems = searchResults.features.map(feature => ({
         stationId: feature.properties.station_id,
         name: feature.properties.station_name,
-        description: `${feature.properties.ars_id} (${feature.properties.city})`,
+        description: (feature.properties.ars_id && feature.properties.ars_id !== 'undefined') ? `${feature.properties.ars_id} (${feature.properties.city})` : feature.properties.city,
         isBookmarked: bookmarkStore.isStationBookmarked(feature.properties.station_id),
         isSelected: selectedStationId === feature.properties.station_id
       }));
@@ -524,9 +524,9 @@ const Monitoring = observer(function Monitoring({ onRouteSelect, onCloseMicroApp
           className="flex flex-col items-start self-stretch gap-2 px-1 py-1 overflow-y-auto"
           style={{
             alignItems: 'flex-start',
-            height: '400px', // 고정 높이 (4개 StationCard 기준)
-            minHeight: '400px',
-            maxHeight: '400px',
+            height: '456px', // 고정 높이 (8개 StationCard 기준: 48px * 8 + 8px * 7)
+            minHeight: '456px',
+            maxHeight: '456px',
             scrollbarWidth: 'thin',
             scrollbarColor: '#FFD040 transparent'
           }}
