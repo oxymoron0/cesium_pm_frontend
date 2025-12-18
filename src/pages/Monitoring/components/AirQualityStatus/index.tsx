@@ -54,6 +54,7 @@ const AirQualityStatus = observer(function AirQualityStatus({ onClose, initialSt
       position="center"
       marginHorizontal={20}
       marginVertical={32}
+      allowOverflow={true}
     >
       <Title onClose={onClose}>노선별 실시간 공기질 현황</Title>
 
