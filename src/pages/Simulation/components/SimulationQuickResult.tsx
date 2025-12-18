@@ -183,11 +183,7 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
       id: s.index,
       name: s.station_name, // station_id가 있다면 뒤에 ()로 붙이고 싶으면 `${s.station_name}${s.station_id ? ` (${s.station_id})` : ""}`
       time: formatDateTime24(s.measured_at),
-      pm10: `${
-        Number.isFinite(s.concentration)
-          ? Math.floor(s.concentration)
-          : s.concentration
-      } μg/m³`,
+      pm10: `${Math.floor(Number(s.concentration) || 0)} μg/m³`,
       point: [
         s.location?.coordinates?.[0] ?? 0,
         s.location?.coordinates?.[1] ?? 0,

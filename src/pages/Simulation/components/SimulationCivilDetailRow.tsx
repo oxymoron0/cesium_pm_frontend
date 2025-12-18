@@ -118,7 +118,7 @@ const SimulationCivilDetailRow = ({ data }: SimulationCivilDetailRowProps) => {
                 <div className="flex-1 text-center text-white">{station.station_name}</div>
                 <div className="w-40 text-center">{formatTimeOnly(station.measured_at)}</div>
                 <div className="w-32 text-center text-white font-bold">
-                  {Math.round(station.concentration)} µg/m³
+                  {Math.floor(station.concentration)} µg/m³
                 </div>
               </div>
             ))}

@@ -292,7 +292,7 @@ const SimulationQuick = observer(function SimulationQuick() {
                   </div>
                   <div className="w-[20%]">
                     {typeof st.concentration === "number"
-                      ? `${st.concentration} μg/m³`
+                      ? `${Math.floor(st.concentration)} μg/m³`
                       : st.concentration ?? "-"}
                   </div>
                 </div>

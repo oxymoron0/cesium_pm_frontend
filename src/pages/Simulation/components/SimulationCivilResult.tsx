@@ -196,7 +196,7 @@ const SimulationCivilResult = observer(function SimulationCivilResult() {
       id: st.index,
       name: st.station_name,
       time: formatDateTimeKOR(st.measured_at),
-      pm10: `${Math.round(st.concentration)}`,
+      pm10: `${Math.floor(st.concentration)}`,
       pmLabel: st.pm_label || '-',
       point: [st.location.coordinates[0], st.location.coordinates[1]],
     }));
