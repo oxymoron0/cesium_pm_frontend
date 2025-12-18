@@ -287,51 +287,29 @@ const SimulationCivilProgressIndicatorJson = observer(function SimulationCivilPr
                <button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-white text-xl leading-none">×</button>
              </div>
              <div className="space-y-3">
-              {/* 슬라이더들 (Opacity, Scale 등 기존 코드 복사 사용) */}
+              {/* Opacity 슬라이더 */}
                 <div>
                     <label className="text-white text-xs mb-1 block">
-                      Opacity: <span className="text-[#FFD040] font-mono">{opacity.toFixed(2)}</span></label>
-                    <input 
-                      type="range" 
-                      min="0.005" 
-                      max="1.0" 
-                      step="0.005" 
-                      value={opacity} 
-                      onChange={(e) => setOpacity(parseFloat(e.target.value))} 
-                      className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider" 
+                      투명도 (Opacity): <span className="text-[#FFD040] font-mono">{opacity.toFixed(2)}</span></label>
+                    <input
+                      type="range"
+                      min="0.005"
+                      max="1.0"
+                      step="0.005"
+                      value={opacity}
+                      onChange={(e) => setOpacity(parseFloat(e.target.value))}
+                      className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
                     />
                 </div>
 
-                {/* Min Scale (멀 때) */}
-                <div>
-                  <label className="text-white text-xs mb-1 block">
-                    Min Scale (멀 때): <span className="text-[#FFD040] font-mono">{minScale.toFixed(1)}</span>
-                  </label>
-                  <input
-                    type="range"
-                    min="0.1"
-                    max="20"
-                    step="0.1"
-                    value={minScale}
-                    onChange={(e) => setMinScale(parseFloat(e.target.value))}
-                    className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
-                  />
-                </div>
-
-                {/* Max Scale (가까울 때) */}
-                <div>
-                  <label className="text-white text-xs mb-1 block">
-                    Max Scale (가까울 때): <span className="text-[#FFD040] font-mono">{maxScale.toFixed(1)}</span>
-                  </label>
-                  <input
-                    type="range"
-                    min="1"
-                    max="100"
-                    step="1"
-                    value={maxScale}
-                    onChange={(e) => setMaxScale(parseFloat(e.target.value))}
-                    className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
-                  />
+                {/* 안내 문구 */}
+                <div className="mt-3 p-3 bg-gray-800/50 rounded border border-gray-600">
+                  <p className="text-gray-300 text-xs leading-relaxed">
+                    <span className="text-[#FFD040] font-semibold">※ 안내사항</span><br />
+                    본 시각화 설정은 시뮬레이션 결과의 가시성 향상을 위한 표시 옵션입니다.
+                    투명도 조정은 실제 대기질 농도와 무관하며, 동일한 시뮬레이션 데이터를
+                    다른 방식으로 표현하는 것입니다.
+                  </p>
                 </div>
              </div>
         </div>
