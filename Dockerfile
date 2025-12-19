@@ -1,6 +1,10 @@
 # Multi-stage build
 FROM node:22.16.0-alpine3.22 AS builder
 
+# Build arguments
+ARG PROJECT_NAME=bump-svc3d-front-uaqms
+ARG IS_CIVIL=false
+
 WORKDIR /app
 
 # Copy package files
@@ -13,11 +17,17 @@ RUN pnpm install
 # Copy source code
 COPY . .
 
+# Override VITE_BASE_PATH in .env.production based on PROJECT_NAME
+RUN sed -i "s|^VITE_BASE_PATH=.*|VITE_BASE_PATH=\"/${PROJECT_NAME}/\"|" .env.production
+
 # Build the project
 RUN pnpm build
 
 # Production stage
 FROM nginx:alpine3.22
+
+# Re-declare ARG for this stage
+ARG IS_CIVIL=false
 
 # Copy built files from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
@@ -58,8 +68,8 @@ EXPOSE 8080
 # Volume for simulation result files
 VOLUME ["/NDATA/output"]
 
-# Runtime environment variables (can be overridden at container start)
-ENV IS_CIVIL=false
+# Runtime environment variables (set from build ARG, can be overridden at container start)
+ENV IS_CIVIL=${IS_CIVIL}
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]
