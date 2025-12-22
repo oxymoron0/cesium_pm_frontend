@@ -784,7 +784,7 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
                       return (
                         <div
                           key={`empty_${colIndex}_${rowIndex}`}
-                          style={{ flex: '1 0 0', minWidth: 0, height: '80px' }}
+                          style={{ flex: '1 0 0', minWidth: 0, height: '98px' }}
                         />
                       )
                     }
@@ -824,7 +824,7 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
                           gap: '8px',
                           flex: '1 0 0',
                           minWidth: 0,
-                          height: '80px',
+                          height: '98px',
                           opacity: isSelected ? 1 : 0.8,
                           transition: 'opacity 0.2s'
                         }}

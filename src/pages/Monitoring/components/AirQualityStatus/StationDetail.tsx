@@ -125,6 +125,23 @@ const StationDetail = observer(function StationDetail({
 
         // 좌측 센서 정보 업데이트 (오늘 데이터 기준)
         if (stationLatestData) {
+          // 시간대 보정 체크: hourly가 latest보다 미래로 나오면 (음수 차이) Hourly DB 시간대 오류
+          let correctedHourlyTimestamp: string | null = null
+          if (hourly24Data.length > 0) {
+            const latestTime = new Date(stationLatestData.recorded_at).getTime()
+            const hourlyTime = new Date(hourly24Data[hourly24Data.length - 1].hour).getTime()
+
+            if (latestTime - hourlyTime < 0) {
+              // 음수: Hourly DB가 KST를 Z suffix로 저장한 경우 → hourly를 -9시간 보정
+              const correctedDate = new Date(hourlyTime - (9 * 60 * 60 * 1000))
+              correctedHourlyTimestamp = correctedDate.toISOString()
+              console.log('[StationDetail] Hourly 시간대 보정 적용 (-9h):', {
+                original: hourly24Data[hourly24Data.length - 1].hour,
+                corrected: correctedHourlyTimestamp
+              })
+            }
+          }
+
           // Latest Data를 Hourly 형식으로 변환 (현재값)
           const latestAsHourly: HourlyDataPoint = {
             hour: stationLatestData.recorded_at,
@@ -145,13 +162,14 @@ const StationDetail = observer(function StationDetail({
           // Hourly 데이터가 있는 경우 비교 처리
           if (hourly24Data.length > 0) {
             const latestHourlyData = hourly24Data[hourly24Data.length - 1]
-            const timeDiff = formatTimeDifference(stationLatestData.recorded_at, latestHourlyData.hour)
+            const hourlyTimestampToUse = correctedHourlyTimestamp || latestHourlyData.hour
+            const timeDiff = formatTimeDifference(stationLatestData.recorded_at, hourlyTimestampToUse)
 
             setPreviousSensorData(latestHourlyData)
             setTimeComparisonData({
               timeDiff,
               latestTimestamp: stationLatestData.recorded_at,
-              hourlyTimestamp: latestHourlyData.hour
+              hourlyTimestamp: hourlyTimestampToUse
             })
           } else {
             setPreviousSensorData(null)
