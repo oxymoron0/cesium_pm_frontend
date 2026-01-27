@@ -277,23 +277,33 @@ const StationInfo = observer(function StationInfo({ onBackClick, onCloseMicroApp
       <Spacer height={16} />
       
       {/* 하단 체크박스 */}
-      <div className="flex items-center gap-2" style={{ justifyContent: 'flex-end' }}>
-        <input
-          type="checkbox"
-          checked={isAirQualityVisible}
-          onChange={(e) => handleAirQualityToggle(e.target.checked)}
+      <div
+        className="flex items-center gap-2 cursor-pointer"
+        style={{ justifyContent: 'flex-end' }}
+        onClick={() => handleAirQualityToggle(!isAirQualityVisible)}
+        role="checkbox"
+        aria-checked={isAirQualityVisible}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleAirQualityToggle(!isAirQualityVisible);
+          }
+        }}
+      >
+        <div
+          className="w-4 h-4 rounded flex items-center justify-center transition-all duration-200"
           style={{
-            width: '16px',
-            height: '16px',
-            appearance: 'none',
-            WebkitAppearance: 'none',
             backgroundColor: isAirQualityVisible ? '#FFD040' : 'transparent',
             border: `1px solid ${isAirQualityVisible ? '#FFD040' : '#A6A6A6'}`,
-            borderRadius: '4px',
-            cursor: 'pointer',
-            position: 'relative'
           }}
-        />
+        >
+          {isAirQualityVisible && (
+            <svg width="10" height="8" viewBox="0 0 12 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 5L4.5 8.5L11 1" stroke="#000000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
+        </div>
         <span
           style={{
             color: '#A6A6A6',
