@@ -24,6 +24,7 @@ interface AppProps {
 const App = observer(function App(props: AppProps) {
   const [cesiumStatus, setCesiumStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [currentView, setCurrentView] = useState<PriorityView>('config')
+  const [previousView, setPreviousView] = useState<PriorityView>('config')
   const [configData, setConfigData] = useState<PriorityConfigData | null>(null)
   const [locationMode, setLocationMode] = useState<'address' | 'point'>('address')
   const [isStatisticsPopupOpen, setIsStatisticsPopupOpen] = useState(false)
@@ -113,6 +114,7 @@ const App = observer(function App(props: AppProps) {
               onCustomConfig={() => setCurrentView('customConfig')}
               onSearch={(config) => {
                 setConfigData(config)
+                setPreviousView('config')
                 setCurrentView('result')
               }}
             />
@@ -124,6 +126,7 @@ const App = observer(function App(props: AppProps) {
               }}
               onSearch={(config) => {
                 setConfigData(config)
+                setPreviousView('customConfig')
                 setCurrentView('result')
               }}
               locationMode={locationMode}
@@ -135,7 +138,7 @@ const App = observer(function App(props: AppProps) {
                 config={configData}
                 onBack={() => {
                   priorityStore.resetResultState()
-                  setCurrentView('config')
+                  setCurrentView(previousView)
                 }}
                 onClose={props.onCloseMicroApp}
               />
