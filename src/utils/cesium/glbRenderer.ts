@@ -1,4 +1,4 @@
-import { Model, Cartesian3, HeadingPitchRange, Transforms, Matrix4, HeadingPitchRoll, CustomShader, Cartographic, sampleTerrainMostDetailed } from 'cesium'
+import { Model, Cartesian3, HeadingPitchRange, Transforms, Matrix4, HeadingPitchRoll, CustomShader, Cartographic, sampleTerrainMostDetailed, ScreenSpaceEventHandler, ScreenSpaceEventType, Cartesian2, Math as CesiumMath } from 'cesium'
 import { createPrimitiveGroup, addPrimitive, removePrimitiveGroup, findPrimitiveGroup } from './primitives'
 import { type BusTrajectoryData } from '@/utils/api/busApi'
 import { getPositionOnRoute, lerpProgress, calculateShortestPath } from './routePositionCalculator'
@@ -433,11 +433,16 @@ export function getBusAnimationState(vehicleNumber: string): BusProgressAnimatio
 
 let trackedVehicleNumber: string | null = null
 let trackingListener: (() => void) | null = null
-// 카메라 오프셋: heading(좌우), pitch(상하), range(거리)를 별도 관리
+let inputHandler: ScreenSpaceEventHandler | null = null
+
+// 카메라 오프셋: heading(좌우), pitch(상하), range(거리)
 let currentHeading = 0
 let currentPitch = -0.4
 let currentRange = 180
-let lastDistance: number | null = null  // 이전 프레임의 카메라-버스 거리 (휠 조작 감지용)
+
+// 마우스 드래그 상태
+let isDragging = false
+let lastMousePosition: Cartesian2 | null = null
 
 /**
  * 특정 버스에 카메라 추적 시작
@@ -463,13 +468,51 @@ export function trackBusEntity(vehicleNumber: string): boolean {
   currentHeading = 0
   currentPitch = -0.4
   currentRange = 180
-  lastDistance = null
 
   // 초기 카메라 이동: lookAt으로 버스를 화면 중앙에 배치
   const initialOffset = new HeadingPitchRange(currentHeading, currentPitch, currentRange)
   viewer.camera.lookAt(initialPosition, initialOffset)
 
-  // postRender 리스너: lookAt 유지 + 사용자 조작(heading/pitch/range) 반영
+  // 입력 핸들러 설정 (마우스 드래그, 휠)
+  inputHandler = new ScreenSpaceEventHandler(viewer.scene.canvas)
+
+  // 마우스 왼쪽 버튼 누름 - 드래그 시작
+  inputHandler.setInputAction((click: { position: Cartesian2 }) => {
+    isDragging = true
+    lastMousePosition = click.position.clone()
+  }, ScreenSpaceEventType.LEFT_DOWN)
+
+  // 마우스 왼쪽 버튼 뗌 - 드래그 종료
+  inputHandler.setInputAction(() => {
+    isDragging = false
+    lastMousePosition = null
+  }, ScreenSpaceEventType.LEFT_UP)
+
+  // 마우스 이동 - heading/pitch 조절
+  inputHandler.setInputAction((movement: { startPosition: Cartesian2; endPosition: Cartesian2 }) => {
+    if (!isDragging || !lastMousePosition) return
+
+    const deltaX = movement.endPosition.x - lastMousePosition.x
+    const deltaY = movement.endPosition.y - lastMousePosition.y
+
+    // heading: 좌우 드래그 (감도 조절)
+    currentHeading -= deltaX * 0.005
+
+    // pitch: 상하 드래그 (감도 조절, 범위 제한)
+    currentPitch -= deltaY * 0.005
+    currentPitch = CesiumMath.clamp(currentPitch, -CesiumMath.PI_OVER_TWO + 0.1, -0.05)
+
+    lastMousePosition = movement.endPosition.clone()
+  }, ScreenSpaceEventType.MOUSE_MOVE)
+
+  // 마우스 휠 - range(거리/높이) 조절
+  inputHandler.setInputAction((delta: number) => {
+    // delta > 0: 휠 위로 (줌 인), delta < 0: 휠 아래로 (줌 아웃)
+    const zoomFactor = delta > 0 ? 0.8 : 1.25
+    currentRange = CesiumMath.clamp(currentRange * zoomFactor, 30, 3000)
+  }, ScreenSpaceEventType.WHEEL)
+
+  // postRender 리스너: 버스 위치에 lookAt 적용
   trackingListener = () => {
     if (!trackedVehicleNumber) return
 
@@ -481,27 +524,6 @@ export function trackBusEntity(vehicleNumber: string): boolean {
 
     try {
       const busPosition = Matrix4.getTranslation(trackedModel.modelMatrix, new Cartesian3())
-
-      // 사용자 heading/pitch 반영 (드래그 조작)
-      currentHeading = viewer.camera.heading
-      currentPitch = viewer.camera.pitch
-
-      // 사용자 휠 조작 감지: 현재 거리와 이전 거리의 차이를 range에 적용
-      const currentDistance = Cartesian3.distance(viewer.camera.position, busPosition)
-
-      if (lastDistance !== null) {
-        // 휠 조작으로 인한 거리 변화량을 range에 적용
-        const distanceDelta = currentDistance - lastDistance
-        // 변화량이 작은 경우만 적용 (버스 이동으로 인한 큰 변화는 무시)
-        if (Math.abs(distanceDelta) < 100) {
-          currentRange = Math.max(50, Math.min(2000, currentRange + distanceDelta))
-        }
-      }
-
-      // 현재 거리를 저장 (다음 프레임 비교용)
-      lastDistance = currentDistance
-
-      // 버스 위치를 중심으로 lookAt 적용
       const offset = new HeadingPitchRange(currentHeading, currentPitch, currentRange)
       viewer.camera.lookAt(busPosition, offset)
     } catch (error) {
@@ -522,18 +544,25 @@ export function stopTracking(): void {
   const viewer = getViewer()
   if (!viewer) return
 
+  // 입력 핸들러 정리
+  if (inputHandler) {
+    inputHandler.destroy()
+    inputHandler = null
+  }
+
   if (trackingListener) {
     viewer.scene.postRender.removeEventListener(trackingListener)
     trackingListener = null
   }
 
+  // 드래그 상태 초기화
+  isDragging = false
+  lastMousePosition = null
+
   if (trackedVehicleNumber) {
     console.log(`[stopTracking] Stopped tracking bus ${trackedVehicleNumber}`)
     trackedVehicleNumber = null
   }
-
-  // 상태 초기화
-  lastDistance = null
 
   // 카메라 잠금 해제 (자유 이동 모드로 복원)
   viewer.camera.lookAtTransform(Matrix4.IDENTITY)
