@@ -298,7 +298,8 @@ export interface StationSensorResponse {
 // =============================================================================
 
 /**
- * 센서 평균 수치 (hourly/daily 공통)
+ * 센서 평균 수치 (hourly/daily 공통) - Legacy nested format
+ * @deprecated 실제 API는 flat 구조를 반환, 이 타입은 하위 호환성 유지용
  */
 export interface SensorReadings {
   humidity: number    // 습도 (%)
@@ -310,21 +311,37 @@ export interface SensorReadings {
 }
 
 /**
- * 시간별 센서 데이터 포인트
+ * 시간별 센서 데이터 포인트 (Nested API 구조)
+ * GET /api/v1/sensor-data/stations/{station_id}/hourly
  */
 export interface HourlyDataPoint {
-  hour: string                    // ISO datetime string
-  average_readings: SensorReadings
-  sample_count: number           // 해당 시간 샘플 수
+  hour: string           // ISO datetime string
+  average_readings: {
+    humidity: number       // 습도 (%)
+    temperature: number    // 온도 (°C)
+    voc: number           // 휘발성 유기화합물 (ppb)
+    co2: number           // 이산화탄소 (ppm)
+    pm: number            // 미세먼지 PM10 (μg/m³)
+    fpm: number           // 초미세먼지 PM2.5 (μg/m³)
+  }
+  sample_count: number  // 해당 시간 샘플 수
 }
 
 /**
- * 일별 센서 데이터 포인트
+ * 일별 센서 데이터 포인트 (Nested API 구조)
+ * GET /api/v1/sensor-data/stations/{station_id}/daily
  */
 export interface DailyDataPoint {
-  date: string                   // ISO datetime string
-  average_readings: SensorReadings
-  created_at: string            // 생성 시간
+  date: string           // ISO datetime string
+  average_readings: {
+    humidity: number       // 습도 (%)
+    temperature: number    // 온도 (°C)
+    voc: number           // 휘발성 유기화합물 (ppb)
+    co2: number           // 이산화탄소 (ppm)
+    pm: number            // 미세먼지 PM10 (μg/m³)
+    fpm: number           // 초미세먼지 PM2.5 (μg/m³)
+  }
+  sample_count: number   // 해당 날짜 샘플 수
 }
 
 /**

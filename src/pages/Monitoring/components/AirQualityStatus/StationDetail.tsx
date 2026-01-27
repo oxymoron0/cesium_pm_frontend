@@ -151,7 +151,7 @@ const StationDetail = observer(function StationDetail({
               voc: stationLatestData.sensor_data.voc,
               co2: stationLatestData.sensor_data.co2,
               pm: stationLatestData.sensor_data.pm,
-              fpm: stationLatestData.sensor_data.fpm
+              fpm: stationLatestData.sensor_data.fpm,
             },
             sample_count: 1
           }
