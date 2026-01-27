@@ -306,7 +306,7 @@ const SimulationCivilProgressIndicatorJson = observer(function SimulationCivilPr
                 <div className="mt-3 p-3 bg-gray-800/50 rounded border border-gray-600">
                   <p className="text-gray-300 text-xs leading-relaxed">
                     <span className="text-[#FFD040] font-semibold">※ 안내사항</span><br />
-                    본 설정 기능은 시뮬레이션 결과의 가시성 향상을 위한 표시 옵션으로 서비스 활용 시 참고 부탁드립니다.
+                    본 설정 기능은 시뮬레이션 결과의 단순 가시성 향상을 위한 표시 옵션으로 서비스 활용 시 참고 부탁드립니다.
                   </p>
                 </div>
              </div>

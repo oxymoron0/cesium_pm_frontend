@@ -9,8 +9,8 @@ interface SimulationCivilMainProps {
   onCloseMicroApp?: () => void;
 }
 
-const SimulationCivilMain = observer(function App({onCloseMicroApp}: SimulationCivilMainProps) {  
-  const { currentView, isMinimized, isCivilInputDirty, civilConfigKey } = simulationStore;
+const SimulationCivilMain = observer(function App({onCloseMicroApp}: SimulationCivilMainProps) {
+  const { currentView, isMinimized, isCivilInputDirty, civilConfigKey, isStationAnalysisMode } = simulationStore;
 
 const handleOnclose = async () => {
     // 설정 화면이고, 입력값이 있다면 경고 팝업
@@ -37,15 +37,15 @@ const handleOnclose = async () => {
   return (
     <>
       <Title
-        info="※ 부산진구에서 발생한 미세먼지(PM-10)의 확산을 시뮬레이션할 수 있습니다."
-        infoTitle={(currentView === 'civilConfig' || currentView === 'civilList') ? "시뮬레이션" 
-          : currentView === 'civilResult' ? "시뮬레이션 설정 정보" 
+        info={currentView === 'civilConfig' ? "※ 부산진구에서 발생한 미세먼지(PM-10)의 확산을 시뮬레이션할 수 있습니다." : undefined}
+        infoTitle={(currentView === 'civilConfig' || currentView === 'civilList') ? "시뮬레이션"
+          : currentView === 'civilResult' && !isStationAnalysisMode ? "시뮬레이션 설정 정보"
           : "상세 시뮬레이션 결과"}
         onClose={handleOnclose}
         onMinimize={() => simulationStore.toggleMinimize()}
       >
-        {(currentView === 'civilConfig' || currentView === 'civilList') ? "시뮬레이션" 
-          : currentView === 'civilResult' ? "시뮬레이션 설정 정보" 
+        {(currentView === 'civilConfig' || currentView === 'civilList') ? "시뮬레이션"
+          : currentView === 'civilResult' && !isStationAnalysisMode ? "시뮬레이션 설정 정보"
           : "상세 시뮬레이션 결과"}
       </Title>
 

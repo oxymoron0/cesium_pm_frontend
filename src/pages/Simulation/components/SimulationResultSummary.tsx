@@ -86,7 +86,7 @@ const SimulationResultSummary = observer(function SimulationResultSummary({ onCl
 
   return (
     <>
-      <Panel width="540px" maxHeight="calc(100vh - 160px)" >
+      <Panel width="540px" maxHeight="calc(100vh - 160px)" allowOverflow>
         <Title
           onClose={onClose}
           onMinimize={() => simulationStore.toggleResultPopupMinimize()}
