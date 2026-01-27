@@ -177,9 +177,9 @@ export function TodayContent() {
   return <StatisticsContent period="today" />
 }
 
-// 최근 7일 탭 콘텐츠 컴포넌트
-export function WeekContent() {
-  return <StatisticsContent period="week" />
+// 최근 1년 탭 콘텐츠 컴포넌트
+export function YearContent() {
+  return <StatisticsContent period="year" />
 }
 
 // 최근 1개월 탭 콘텐츠 컴포넌트

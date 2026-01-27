@@ -56,8 +56,8 @@ const getEmptyMessage = (period: TimePeriod): string => {
       return '실시간 나쁨 이상 농도가 없습니다'
     case 'today':
       return '오늘 나쁨 이상 농도가 없습니다'
-    case 'week':
-      return '최근 7일간 나쁨 이상 농도가 없습니다'
+    case 'year':
+      return '최근 1년간 나쁨 이상 농도가 없습니다'
     case 'month':
       return '최근 1개월간 나쁨 이상 농도가 없습니다'
     default:

@@ -175,7 +175,7 @@ export const MOCK_FACILITY_DATA: FacilityData[] = [
 /**
  * Time period type for statistics data
  */
-export type TimePeriod = 'realtime' | 'today' | 'week' | 'month'
+export type TimePeriod = 'realtime' | 'today' | 'month' | 'year'
 
 /**
  * Facility type selection for chart display
@@ -242,7 +242,7 @@ class PriorityStatisticsStore {
    * Initialize data map with default values for all time periods
    */
   private initializeDataMap() {
-    const periods: TimePeriod[] = ['realtime', 'today', 'week', 'month']
+    const periods: TimePeriod[] = ['realtime', 'today', 'month', 'year']
     periods.forEach(period => {
       this.dataMap.set(period, {
         stationData: [],
@@ -390,11 +390,11 @@ class PriorityStatisticsStore {
     }
 
     // TimePeriod를 PM10 Ranking API period로 매핑
-    const periodMap: Record<TimePeriod, 'current' | 'today' | 'week' | 'month'> = {
+    const periodMap: Record<TimePeriod, 'current' | 'today' | 'month' | 'year'> = {
       'realtime': 'current',
       'today': 'today',
-      'week': 'week',
-      'month': 'month'
+      'month': 'month',
+      'year': 'year'
     }
 
     const apiPeriod = periodMap[period]
@@ -414,11 +414,11 @@ class PriorityStatisticsStore {
     }
 
     // TimePeriod를 Alert Ranking API period로 매핑
-    const periodMap: Record<TimePeriod, 'current' | 'today' | 'week' | 'month'> = {
+    const periodMap: Record<TimePeriod, 'current' | 'today' | 'month' | 'year'> = {
       'realtime': 'current',
       'today': 'today',
-      'week': 'week',
-      'month': 'month'
+      'month': 'month',
+      'year': 'year'
     }
 
     const apiPeriod = periodMap[period]
@@ -440,7 +440,7 @@ class PriorityStatisticsStore {
    * Load all periods data
    */
   async loadAllPeriods(): Promise<void> {
-    const periods: TimePeriod[] = ['realtime', 'today', 'week', 'month']
+    const periods: TimePeriod[] = ['realtime', 'today', 'month', 'year']
     await Promise.all(periods.map(period => this.loadPeriodData(period)))
   }
 

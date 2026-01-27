@@ -9,7 +9,7 @@ import type { StationConcentrationData, FacilityData, PM10RankingResponse, Alert
 /**
  * PM10 랭킹 API period 매핑
  */
-type PM10RankingPeriod = 'current' | 'today' | 'week' | 'month';
+type PM10RankingPeriod = 'current' | 'today' | 'month' | 'year';
 
 /**
  * PM10 랭킹 데이터 조회

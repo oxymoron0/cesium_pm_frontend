@@ -5,8 +5,8 @@ import TabNavigation from '@/components/basic/TabNavigation';
 import {
   RealtimeContent,
   TodayContent,
-  WeekContent,
-  MonthContent
+  MonthContent,
+  YearContent
 } from './PriorityStatisticsContent';
 import { priorityStatisticsStore } from '@/stores/PriorityStatisticsStore';
 
@@ -25,9 +25,9 @@ const PriorityStatistics = observer(function PriorityStatistics({ onClose }: Pri
       case 1:
         return <TodayContent />;
       case 2:
-        return <WeekContent />;
-      case 3:
         return <MonthContent />;
+      case 3:
+        return <YearContent />;
       default:
         return <RealtimeContent />;
     }
@@ -56,7 +56,7 @@ const PriorityStatistics = observer(function PriorityStatistics({ onClose }: Pri
 
       <div style={{ display: isStatisticsPopupMinimized ? 'none' : 'contents' }}>
         <TabNavigation
-          tabs={['실시간', '오늘', '최근 7일', '최근 1개월']}
+          tabs={['실시간', '오늘', '최근 1개월', '최근 1년']}
           activeTab={activeTab}
           onTabChange={setActiveTab}
         />
