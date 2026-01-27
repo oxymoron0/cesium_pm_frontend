@@ -28,7 +28,9 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
   const [isPublic, setIsPublic] = useState(true);
 
   // Validation: Check if all required fields are filled
-  const isFormValid = title.trim() !== '' && pollutant !== '' && concentration.trim() !== '';
+  // Weather is valid if: 1) useCurrentWeather is checked, OR 2) Both windDirection and windSpeed are filled
+  const isWeatherValid = useCurrentWeather || (windDirection.trim() !== '' && windSpeed.trim() !== '');
+  const isFormValid = title.trim() !== '' && pollutant !== '' && concentration.trim() !== '' && isWeatherValid;
 
   // Options
   const pollutantOptions = [

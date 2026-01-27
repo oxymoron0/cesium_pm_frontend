@@ -241,7 +241,9 @@ const SimulationCivilConfig = observer(function SimulationCivilConfig()  {
           <div className="flex items-center justify-between">
             <div className="w-24 flex items-center gap-1">
               <span style={{fontFamily: 'Pretendard', lineHeight: 'normal', fontSize: '15px', fontWeight: '700', color: '#FFFFFF'}}>오염물질</span>
-              <Info infoTitle="오염물질">* 미세먼지(PM-10)의 시뮬레이션 예상 농도를 입력해주세요. 19개소 정류장의 평균값으로 입력됩니다.</Info>
+              {simulationStore.currentView === 'civilConfig' && (
+                <Info infoTitle="오염물질">* 미세먼지(PM-10)의 시뮬레이션 예상 농도를 입력해주세요. 19개소 정류장의 평균값으로 입력됩니다.</Info>
+              )}
             </div>
             
             <div className={`flex gap-4 items-center ${simulationStore.currentView === 'civilConfig' && 'flex-1'}`}>
@@ -289,7 +291,9 @@ const SimulationCivilConfig = observer(function SimulationCivilConfig()  {
           <div className="flex items-center justify-between">
             <div className="w-24 flex items-center gap-1">
               <span style={{fontFamily: 'Pretendard', lineHeight: 'normal', fontSize: '15px', fontWeight: '700', color: '#FFFFFF'}}>기상 조건</span>
-              <Info infoTitle="기상 조건">* 시뮬레이션 시점의 기상 조건을 직접 입력하거나, 현재 기상정보를 적용할 수 있습니다.</Info>
+              {simulationStore.currentView === 'civilConfig' && (
+                <Info infoTitle="기상 조건">* 시뮬레이션 시점의 기상 조건을 직접 입력하거나, 현재 기상정보를 적용할 수 있습니다.</Info>
+              )}
             </div>
             
             <div className={`flex gap-4 items-center ${simulationStore.currentView === 'civilConfig' && 'flex-1'}`}>

@@ -21,8 +21,8 @@ const SimulationMain = observer(function SimulationMain({ onCloseMicroApp }: Sim
   return (
     <>
       <Title
-        info="※ 시뮬레이션 실행을 위한 설정 페이지입니다."
-        infoTitle="시뮬레이션"
+        info={!isQuickView ? "※ 시뮬레이션 실행을 위한 설정 페이지입니다." : undefined}
+        infoTitle={!isQuickView ? "시뮬레이션" : undefined}
         onClose={onCloseMicroApp}
         onMinimize={() => simulationStore.toggleMinimize()}
       >
