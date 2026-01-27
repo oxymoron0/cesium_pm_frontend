@@ -46,7 +46,7 @@ function Panel({
   return (
     <div
       className={`
-        fixed z-[1002] flex flex-col justify-start items-start
+        fixed z-[1200] flex flex-col justify-start items-start
         ${allowOverflow ? 'overflow-visible' : 'overflow-hidden'} rounded-[10px] border-t-[1.25px] border-t-yellow-400
         pb-[32px] px-[20px] pt-[32px] text-white text-sm
         ${className}
