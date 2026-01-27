@@ -170,6 +170,20 @@ export async function getDailySensorData(stationId: string, days: number = 30): 
   try {
     const response = await get<DailySensorDataResponse>(API_PATHS.SENSOR_DATA_DAILY(stationId, days));
 
+    // 404는 일별 데이터가 없는 정상적인 상황 - 빈 응답 반환
+    if (response.status === 404) {
+      console.log(`[getDailySensorData] 일별 데이터 없음 (정류장 ID: ${stationId}, days: ${days})`)
+      return {
+        status: 'success',
+        data: {
+          station_id: stationId,
+          route_name: '',
+          station_name: '',
+          daily_data: []
+        }
+      }
+    }
+
     if (!response.ok) {
       throw new Error(`Daily sensor data API failed with status ${response.status}`);
     }
@@ -177,7 +191,17 @@ export async function getDailySensorData(stationId: string, days: number = 30): 
     return response.data;
   } catch (error) {
     console.error(`[getDailySensorData] API 호출 실패 (정류장 ID: ${stationId}, days: ${days}):`, error);
-    throw error;
+    // 네트워크 오류 등의 경우에도 빈 응답 반환하여 전체 로딩이 실패하지 않도록 함
+    return {
+      status: 'error',
+      data: {
+        station_id: stationId,
+        route_name: '',
+        station_name: '',
+        daily_data: []
+      },
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }
   }
 }
 
