@@ -1,5 +1,5 @@
-import { Entity, ModelGraphics, Cartesian3, HeightReference, HeadingPitchRange, ConstantPositionProperty, Transforms, Matrix4, HeadingPitchRoll, ConstantProperty } from 'cesium'
-import { createDataSource, findDataSource, removeDataSource } from './datasources'
+import { Model, Cartesian3, HeadingPitchRange, Transforms, Matrix4, HeadingPitchRoll, CustomShader, Cartographic, sampleTerrainMostDetailed } from 'cesium'
+import { createPrimitiveGroup, addPrimitive, removePrimitiveGroup, findPrimitiveGroup } from './primitives'
 import { type BusTrajectoryData } from '@/utils/api/busApi'
 import { getPositionOnRoute, lerpProgress, calculateShortestPath } from './routePositionCalculator'
 import { routeStore } from '@/stores/RouteStore'
@@ -14,7 +14,7 @@ function getBusModelUrl(routeName: string): string {
   return `${basePath}BusanBus_num${routeName}.glb`
 }
 
-const DATASOURCE_NAME = 'bus_models'
+const PRIMITIVE_GROUP_NAME = 'bus_models'
 
 /**
  * Cesium viewer 가용성 체크
@@ -29,20 +29,136 @@ function getViewer() {
 }
 
 /**
- * 버스 GLB 모델을 렌더링하는 함수
+ * 3D Tiles 뒤에 있어도 항상 보이도록 하는 CustomShader
+ * depth buffer를 0으로 설정하여 occlusion을 무시
+ */
+const ALWAYS_ON_TOP_SHADER = new CustomShader({
+  fragmentShaderText: `
+    void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
+      #ifdef GL_EXT_frag_depth
+        gl_FragDepthEXT = 0.0;
+      #endif
+      czm_writeLogDepth(1.0);
+    }
+  `
+})
+
+// =============================================================================
+// Terrain Height Cache
+// =============================================================================
+
+const terrainHeightCache = new Map<string, number>()
+
+/**
+ * 동기식 terrain 높이 조회 (globe 캐시 사용)
+ * preRender/postRender에서 안전하게 사용 가능
+ */
+function getTerrainHeightSync(longitude: number, latitude: number): number {
+  const key = `${longitude.toFixed(6)}_${latitude.toFixed(6)}`
+  if (terrainHeightCache.has(key)) {
+    return terrainHeightCache.get(key)!
+  }
+
+  const viewer = getViewer()
+  if (!viewer?.scene?.globe) return 0
+
+  try {
+    const cartographic = Cartographic.fromDegrees(longitude, latitude)
+    const height = viewer.scene.globe.getHeight(cartographic)
+    const finalHeight = (height != null && height >= 0) ? height : 0
+    terrainHeightCache.set(key, finalHeight)
+    return finalHeight
+  } catch {
+    return 0
+  }
+}
+
+/**
+ * 특정 좌표의 terrain 높이를 비동기로 가져오는 함수 (초기 배치용)
+ * 결과는 캐싱되어 재사용됨
+ */
+async function getTerrainHeight(longitude: number, latitude: number): Promise<number> {
+  const key = `${longitude.toFixed(6)}_${latitude.toFixed(6)}`
+  if (terrainHeightCache.has(key)) {
+    return terrainHeightCache.get(key)!
+  }
+
+  const viewer = getViewer()
+  if (!viewer?.terrainProvider) return 0
+
+  try {
+    const cartographic = Cartographic.fromDegrees(longitude, latitude)
+    const positions = await sampleTerrainMostDetailed(viewer.terrainProvider, [cartographic])
+    const height = positions[0]?.height || 0
+
+    terrainHeightCache.set(key, height)
+    return height
+  } catch (error) {
+    console.warn('[glbRenderer] Terrain sampling failed:', error)
+    return 0
+  }
+}
+
+// =============================================================================
+// Bus Model Registry
+// =============================================================================
+
+// 버스 Model 레지스트리 (vehicleNumber -> Model)
+const busModels = new Map<string, Model>()
+
+/**
+ * 버스 Model 조회
+ */
+export function getBusEntity(vehicleNumber: string): Model | undefined {
+  return busModels.get(vehicleNumber)
+}
+
+// =============================================================================
+// Progress 기반 애니메이션 시스템
+// =============================================================================
+
+interface BusProgressAnimationState {
+  vehicleNumber: string
+  routeName: string
+  animationProgress: number  // 0-1
+  targetProgress: number      // 0-1
+  isAnimating: boolean
+  startTime?: number         // Animation start timestamp (ms)
+  endTime?: number           // Animation end timestamp (ms)
+  startProgress?: number     // Initial progress at animation start (0-1)
+  model?: Model              // 해당 버스의 Model 참조
+}
+
+// 버스별 progress 애니메이션 상태
+const busProgressAnimations = new Map<string, BusProgressAnimationState>()
+
+// preRender 이벤트 리스너 (전역 단일 리스너)
+let preRenderListener: (() => void) | null = null
+let isPreRenderActive = false
+
+/**
+ * 버스 GLB 모델을 렌더링하는 함수 (Primitive-based)
  * @param busData - Bus trajectory API에서 받은 데이터
  */
 export async function renderBusModels(busData: BusTrajectoryData[]): Promise<void> {
   const viewer = getViewer()
   if (!viewer) return
 
-  // 기존 DataSource 제거 후 새로 생성
-  removeDataSource(DATASOURCE_NAME)
-  const dataSource = createDataSource(DATASOURCE_NAME)
+  // 기존 Primitive 그룹 제거
+  removePrimitiveGroup(PRIMITIVE_GROUP_NAME)
+  busModels.clear()
+  busProgressAnimations.clear()
+
+  // 새 Primitive 그룹 생성
+  try {
+    createPrimitiveGroup(PRIMITIVE_GROUP_NAME)
+  } catch {
+    console.warn('[renderBusModels] Primitive group already exists, continuing...')
+  }
 
   // 각 버스의 초기 위치 계산 및 GLB 모델 배치
-  busData.forEach((bus) => {
-    if (bus.positions.length === 0) return
+  for (const bus of busData) {
+    if (bus.positions.length === 0) continue
 
     // 최신 위치(마지막 위치) 사용
     const latestPosition = bus.positions[bus.positions.length - 1]
@@ -61,112 +177,80 @@ export async function renderBusModels(busData: BusTrajectoryData[]): Promise<voi
 
     // 노선 좌표에서 위치 계산 (초기 배치 위치 기준)
     const routeGeom = routeStore.getRouteGeom(bus.route_name)
-    let position: Cartesian3
+    let longitude: number
+    let latitude: number
     let heading = 0
 
     if (routeGeom?.entire?.coordinates) {
       const routePosition = getPositionOnRoute(routeGeom.entire.coordinates, initialProgressPercent)
       if (routePosition) {
-        position = Cartesian3.fromDegrees(routePosition.longitude, routePosition.latitude, 0)
+        longitude = routePosition.longitude
+        latitude = routePosition.latitude
         heading = routePosition.heading
       } else {
         // fallback: 직접 좌표 사용
-        position = Cartesian3.fromDegrees(latestPosition.position.longitude, latestPosition.position.latitude, 0)
+        longitude = latestPosition.position.longitude
+        latitude = latestPosition.position.latitude
       }
     } else {
       // fallback: 직접 좌표 사용
-      position = Cartesian3.fromDegrees(latestPosition.position.longitude, latestPosition.position.latitude, 0)
+      longitude = latestPosition.position.longitude
+      latitude = latestPosition.position.latitude
     }
+
+    // Terrain 높이 샘플링
+    const terrainHeight = await getTerrainHeight(longitude, latitude)
+    const position = Cartesian3.fromDegrees(longitude, latitude, terrainHeight)
 
     // GLB 모델의 기본 방향 보정 (-90도)
     const adjustedHeading = heading - Math.PI / 2
     const hpr = new HeadingPitchRoll(adjustedHeading, 0, 0)
-    const orientation = Transforms.headingPitchRollQuaternion(position, hpr)
+    const modelMatrix = Transforms.headingPitchRollToFixedFrame(position, hpr)
 
-    const entity = new Entity({
-      id: `bus_model_${bus.vehicle_number}`,
-      name: `Bus ${bus.vehicle_number} (Route ${bus.route_name})`,
-      position: new ConstantPositionProperty(position),
-      orientation: new ConstantProperty(orientation),
-      model: new ModelGraphics({
-        uri: getBusModelUrl(bus.route_name),
+    try {
+      // Model 생성 (CustomShader 적용으로 건물에 가려져도 보임)
+      const model = await Model.fromGltfAsync({
+        url: getBusModelUrl(bus.route_name),
+        modelMatrix: modelMatrix,
         scale: 1,
         minimumPixelSize: 48,
         maximumScale: 48,
-        heightReference: HeightReference.CLAMP_TO_GROUND,
-      }),
-    })
+        customShader: ALWAYS_ON_TOP_SHADER
+      })
 
-    dataSource.entities.add(entity)
+      addPrimitive(PRIMITIVE_GROUP_NAME, model)
+      busModels.set(bus.vehicle_number, model)
 
-    // 버스 애니메이션 상태 초기화
-    // animationProgress: 초기 배치 위치 (-3%)
-    // targetProgress: 최신 위치 (애니메이션 목표)
-    const initialProgressNormalized = initialProgressPercent / 100
-    const latestProgressNormalized = latestProgressPercent / 100
+      // 버스 애니메이션 상태 초기화
+      const initialProgressNormalized = initialProgressPercent / 100
+      const latestProgressNormalized = latestProgressPercent / 100
 
-    busProgressAnimations.set(bus.vehicle_number, {
-      vehicleNumber: bus.vehicle_number,
-      routeName: bus.route_name,
-      animationProgress: initialProgressNormalized,
-      targetProgress: latestProgressNormalized,
-      isAnimating: false
-    })
+      busProgressAnimations.set(bus.vehicle_number, {
+        vehicleNumber: bus.vehicle_number,
+        routeName: bus.route_name,
+        animationProgress: initialProgressNormalized,
+        targetProgress: latestProgressNormalized,
+        isAnimating: false,
+        model: model
+      })
 
-    console.log(`[renderBusModels] Bus ${bus.vehicle_number}: Initial position ${initialProgressPercent.toFixed(2)}% → Latest ${latestProgressPercent.toFixed(2)}%`)
-  })
+      console.log(`[renderBusModels] Bus ${bus.vehicle_number}: Initial position ${initialProgressPercent.toFixed(2)}% → Latest ${latestProgressPercent.toFixed(2)}%`)
+    } catch (error) {
+      console.error(`[renderBusModels] Failed to create model for bus ${bus.vehicle_number}:`, error)
+    }
+  }
 }
-
-/**
- * 모든 버스 모델을 제거하는 함수
- */
-export function clearBusModels(): void {
-  removeDataSource(DATASOURCE_NAME)
-  stopAllProgressAnimations()
-  busProgressAnimations.clear()
-}
-
-/**
- * 특정 버스 Entity 검색
- */
-export function getBusEntity(vehicleNumber: string): Entity | undefined {
-  const dataSource = findDataSource(DATASOURCE_NAME)
-  if (!dataSource) return undefined
-
-  return dataSource.entities.getById(`bus_model_${vehicleNumber}`)
-}
-
-// =============================================================================
-// Progress 기반 애니메이션 시스템 (MATCHING_ROUTE_BUS_SAMPLE_FUNC.txt 방식)
-// =============================================================================
-
-interface BusProgressAnimationState {
-  vehicleNumber: string
-  routeName: string
-  animationProgress: number  // 0-1
-  targetProgress: number      // 0-1
-  isAnimating: boolean
-  startTime?: number         // Animation start timestamp (ms)
-  endTime?: number           // Animation end timestamp (ms)
-  startProgress?: number     // Initial progress at animation start (0-1)
-}
-
-// 버스별 progress 애니메이션 상태
-const busProgressAnimations = new Map<string, BusProgressAnimationState>()
-
-// preRender 이벤트 리스너 (전역 단일 리스너)
-let preRenderListener: (() => void) | null = null
-let isPreRenderActive = false
 
 /**
  * Progress 기반 애니메이션 루프 (preRender)
+ * 동기 함수로 구현하여 프레임 드롭 방지
  */
-function animationLoop() {
+function animationLoop(): void {
   const currentTime = Date.now()
 
-  busProgressAnimations.forEach((state, vehicleNumber) => {
-    const entity = getBusEntity(vehicleNumber)
-    if (!entity) return
+  for (const [vehicleNumber, state] of busProgressAnimations) {
+    const model = busModels.get(vehicleNumber)
+    if (!model) continue
 
     // 시간 기반 애니메이션이 설정된 경우
     if (state.startTime !== undefined && state.endTime !== undefined && state.startProgress !== undefined) {
@@ -214,25 +298,25 @@ function animationLoop() {
     // 노선 좌표에서 위치 계산
     const routeGeom = routeStore.getRouteGeom(state.routeName)
     if (!routeGeom?.entire?.coordinates) {
-      return
+      continue
     }
 
     const progressPercent = state.animationProgress * 100
     const routePosition = getPositionOnRoute(routeGeom.entire.coordinates, progressPercent)
 
     if (routePosition) {
-      const position = Cartesian3.fromDegrees(routePosition.longitude, routePosition.latitude, 0)
-
-      // 위치 업데이트
-      entity.position = new ConstantPositionProperty(position)
+      // Terrain 높이 샘플링 (동기식, 캐시 활용)
+      const terrainHeight = getTerrainHeightSync(routePosition.longitude, routePosition.latitude)
+      const position = Cartesian3.fromDegrees(routePosition.longitude, routePosition.latitude, terrainHeight)
 
       // 방향 업데이트 (GLB 모델 기본 방향 보정 -90도)
       const adjustedHeading = routePosition.heading - Math.PI / 2
       const hpr = new HeadingPitchRoll(adjustedHeading, 0, 0)
-      const orientation = Transforms.headingPitchRollQuaternion(position, hpr)
-      entity.orientation = new ConstantProperty(orientation)
+
+      // Model의 modelMatrix 업데이트
+      model.modelMatrix = Transforms.headingPitchRollToFixedFrame(position, hpr)
     }
-  })
+  }
 }
 
 /**
@@ -344,6 +428,235 @@ export function getBusAnimationState(vehicleNumber: string): BusProgressAnimatio
 }
 
 // =============================================================================
+// 카메라 추적 (Manual Tracking for Primitives)
+// =============================================================================
+
+let trackedVehicleNumber: string | null = null
+let trackingListener: (() => void) | null = null
+// 카메라 오프셋: heading(좌우), pitch(상하), range(거리)를 별도 관리
+let currentHeading = 0
+let currentPitch = -0.4
+let currentRange = 180
+let lastDistance: number | null = null  // 이전 프레임의 카메라-버스 거리 (휠 조작 감지용)
+
+/**
+ * 특정 버스에 카메라 추적 시작
+ * lookAt 방식으로 버스를 항상 중심에 두고, 사용자가 heading/pitch/range 조절 가능
+ */
+export function trackBusEntity(vehicleNumber: string): boolean {
+  const viewer = getViewer()
+  const model = busModels.get(vehicleNumber)
+  if (!viewer || !model) {
+    console.error(`[trackBusEntity] Bus ${vehicleNumber} not found`)
+    return false
+  }
+
+  // 기존 추적 중지
+  stopTracking()
+
+  trackedVehicleNumber = vehicleNumber
+
+  // 현재 버스 위치
+  const initialPosition = Matrix4.getTranslation(model.modelMatrix, new Cartesian3())
+
+  // 초기 카메라 오프셋 설정
+  currentHeading = 0
+  currentPitch = -0.4
+  currentRange = 180
+  lastDistance = null
+
+  // 초기 카메라 이동: lookAt으로 버스를 화면 중앙에 배치
+  const initialOffset = new HeadingPitchRange(currentHeading, currentPitch, currentRange)
+  viewer.camera.lookAt(initialPosition, initialOffset)
+
+  // postRender 리스너: lookAt 유지 + 사용자 조작(heading/pitch/range) 반영
+  trackingListener = () => {
+    if (!trackedVehicleNumber) return
+
+    const trackedModel = busModels.get(trackedVehicleNumber)
+    if (!trackedModel) {
+      stopTracking()
+      return
+    }
+
+    try {
+      const busPosition = Matrix4.getTranslation(trackedModel.modelMatrix, new Cartesian3())
+
+      // 사용자 heading/pitch 반영 (드래그 조작)
+      currentHeading = viewer.camera.heading
+      currentPitch = viewer.camera.pitch
+
+      // 사용자 휠 조작 감지: 현재 거리와 이전 거리의 차이를 range에 적용
+      const currentDistance = Cartesian3.distance(viewer.camera.position, busPosition)
+
+      if (lastDistance !== null) {
+        // 휠 조작으로 인한 거리 변화량을 range에 적용
+        const distanceDelta = currentDistance - lastDistance
+        // 변화량이 작은 경우만 적용 (버스 이동으로 인한 큰 변화는 무시)
+        if (Math.abs(distanceDelta) < 100) {
+          currentRange = Math.max(50, Math.min(2000, currentRange + distanceDelta))
+        }
+      }
+
+      // 현재 거리를 저장 (다음 프레임 비교용)
+      lastDistance = currentDistance
+
+      // 버스 위치를 중심으로 lookAt 적용
+      const offset = new HeadingPitchRange(currentHeading, currentPitch, currentRange)
+      viewer.camera.lookAt(busPosition, offset)
+    } catch (error) {
+      console.warn('[trackBusEntity] Failed to update camera position:', error)
+    }
+  }
+
+  viewer.scene.postRender.addEventListener(trackingListener)
+
+  console.log(`[trackBusEntity] Started tracking bus ${vehicleNumber}`)
+  return true
+}
+
+/**
+ * 카메라 추적 중지
+ */
+export function stopTracking(): void {
+  const viewer = getViewer()
+  if (!viewer) return
+
+  if (trackingListener) {
+    viewer.scene.postRender.removeEventListener(trackingListener)
+    trackingListener = null
+  }
+
+  if (trackedVehicleNumber) {
+    console.log(`[stopTracking] Stopped tracking bus ${trackedVehicleNumber}`)
+    trackedVehicleNumber = null
+  }
+
+  // 상태 초기화
+  lastDistance = null
+
+  // 카메라 잠금 해제 (자유 이동 모드로 복원)
+  viewer.camera.lookAtTransform(Matrix4.IDENTITY)
+}
+
+/**
+ * 현재 추적 중인 버스 정보 반환
+ */
+export function getCurrentTrackedBus(): string | null {
+  return trackedVehicleNumber
+}
+
+// =============================================================================
+// Cleanup
+// =============================================================================
+
+/**
+ * 모든 버스 모델을 제거하는 함수
+ */
+export function clearBusModels(): void {
+  stopTracking()
+  stopAllProgressAnimations()
+  stopProgressAnimationSystem()
+  removePrimitiveGroup(PRIMITIVE_GROUP_NAME)
+  busModels.clear()
+  busProgressAnimations.clear()
+  terrainHeightCache.clear()
+}
+
+// =============================================================================
+// 유틸리티
+// =============================================================================
+
+/**
+ * 버스 모델 수 반환
+ */
+export function getBusModelCount(): number {
+  return busModels.size
+}
+
+/**
+ * 버스 모델 가시성 토글
+ */
+export function toggleBusModels(visible?: boolean): void {
+  const group = findPrimitiveGroup(PRIMITIVE_GROUP_NAME)
+  if (!group) return
+
+  const newVisibility = visible !== undefined ? visible : !group.show
+  group.show = newVisibility
+
+  // 모든 모델의 show 속성 업데이트
+  busModels.forEach(model => {
+    model.show = newVisibility
+  })
+}
+
+// =============================================================================
+// Bus Position API (for BusHtmlRenderer)
+// =============================================================================
+
+/**
+ * 모든 버스의 현재 위치 반환
+ * BusHtmlRenderer에서 사용
+ */
+export function getAllBusPositions(): Map<string, { position: Cartesian3; routeName: string }> {
+  const result = new Map<string, { position: Cartesian3; routeName: string }>()
+
+  busModels.forEach((model, vehicleNumber) => {
+    const state = busProgressAnimations.get(vehicleNumber)
+    if (model && state) {
+      const position = Matrix4.getTranslation(model.modelMatrix, new Cartesian3())
+      result.set(vehicleNumber, { position, routeName: state.routeName })
+    }
+  })
+
+  return result
+}
+
+/**
+ * 특정 버스의 현재 위치 반환
+ */
+export function getBusPosition(vehicleNumber: string): Cartesian3 | undefined {
+  const model = busModels.get(vehicleNumber)
+  if (!model) return undefined
+  return Matrix4.getTranslation(model.modelMatrix, new Cartesian3())
+}
+
+/**
+ * 특정 버스 모델에 시선 이동
+ */
+export function flyToBusModel(vehicleNumber: string): void {
+  const viewer = getViewer()
+  const model = busModels.get(vehicleNumber)
+  if (!viewer || !model) return
+
+  try {
+    const targetPosition = Matrix4.getTranslation(model.modelMatrix, new Cartesian3())
+
+    // 카메라 오프셋 (heading: 0, pitch: -30도, range: 200m)
+    const heading = 0
+    const pitch = -0.5 // radians (~-30도)
+    const range = 200
+
+    viewer.camera.flyTo({
+      destination: targetPosition,
+      orientation: {
+        heading: heading,
+        pitch: pitch,
+        roll: 0
+      },
+      duration: 1.5,
+      complete: () => {
+        // flyTo 완료 후 lookAt으로 정확한 위치 조정
+        viewer.camera.lookAt(targetPosition, new HeadingPitchRange(heading, pitch, range))
+        viewer.camera.lookAtTransform(Matrix4.IDENTITY)
+      }
+    })
+  } catch (error) {
+    console.error(`[flyToBusModel] Failed to fly to bus ${vehicleNumber}:`, error)
+  }
+}
+
+// =============================================================================
 // 레거시: 직접 좌표 기반 애니메이션 (하위 호환성)
 // =============================================================================
 
@@ -382,47 +695,34 @@ function calculateHeading(startPosition: Cartesian3, targetPosition: Cartesian3)
 }
 
 /**
- * 위치와 heading으로부터 orientation quaternion 생성
- */
-function createOrientationFromHeading(position: Cartesian3, heading: number) {
-  const adjustedHeading = heading - Math.PI / 2
-  const hpr = new HeadingPitchRoll(adjustedHeading, 0, 0)
-  const quaternion = Transforms.headingPitchRollQuaternion(position, hpr)
-  return quaternion
-}
-
-/**
  * 개별 버스를 특정 위치로 애니메이션 이동 (레거시)
  * @deprecated progress 기반 애니메이션 사용 권장
  */
-export function animateSingleBus(
+export async function animateSingleBus(
   vehicleNumber: string,
   targetLongitude: number,
   targetLatitude: number,
   durationSeconds: number = 3
-): boolean {
+): Promise<boolean> {
   const viewer = getViewer()
   if (!viewer) return false
 
-  const entity = getBusEntity(vehicleNumber)
-  if (!entity) {
+  const model = busModels.get(vehicleNumber)
+  if (!model) {
     console.error(`[animateSingleBus] Bus ${vehicleNumber} not found`)
     return false
   }
 
   stopSingleBusAnimation(vehicleNumber)
 
-  const currentPos = entity.position?.getValue(viewer.clock.currentTime)
-  if (!currentPos) {
-    console.error(`[animateSingleBus] Cannot get current position for bus ${vehicleNumber}`)
-    return false
-  }
+  const currentPos = Matrix4.getTranslation(model.modelMatrix, new Cartesian3())
 
-  const targetPosition = Cartesian3.fromDegrees(targetLongitude, targetLatitude, 0)
+  const terrainHeight = await getTerrainHeight(targetLongitude, targetLatitude)
+  const targetPosition = Cartesian3.fromDegrees(targetLongitude, targetLatitude, terrainHeight)
   const movementHeading = calculateHeading(currentPos, targetPosition)
 
   const animation: BusAnimation = {
-    startPosition: currentPos,
+    startPosition: currentPos.clone(),
     targetPosition,
     startTime: Date.now(),
     duration: durationSeconds * 1000
@@ -435,9 +735,9 @@ export function animateSingleBus(
     const progress = Math.min(elapsed / animation.duration, 1.0)
 
     if (progress >= 1.0) {
-      entity.position = new ConstantPositionProperty(targetPosition)
-      const finalOrientation = createOrientationFromHeading(targetPosition, movementHeading)
-      entity.orientation = new ConstantProperty(finalOrientation)
+      const adjustedHeading = movementHeading - Math.PI / 2
+      const hpr = new HeadingPitchRoll(adjustedHeading, 0, 0)
+      model.modelMatrix = Transforms.headingPitchRollToFixedFrame(targetPosition, hpr)
       stopSingleBusAnimation(vehicleNumber)
       return
     }
@@ -450,10 +750,9 @@ export function animateSingleBus(
       new Cartesian3()
     )
 
-    entity.position = new ConstantPositionProperty(currentPosition)
-
-    const orientation = createOrientationFromHeading(currentPosition, movementHeading)
-    entity.orientation = new ConstantProperty(orientation)
+    const adjustedHeading = movementHeading - Math.PI / 2
+    const hpr = new HeadingPitchRoll(adjustedHeading, 0, 0)
+    model.modelMatrix = Transforms.headingPitchRollToFixedFrame(currentPosition, hpr)
   }, 16)
 
   return true
@@ -471,135 +770,4 @@ export function stopSingleBusAnimation(vehicleNumber: string): void {
   }
 
   busAnimations.delete(vehicleNumber)
-}
-
-// =============================================================================
-// 카메라 추적
-// =============================================================================
-
-/**
- * 특정 버스에 카메라 추적 시작
- */
-export function trackBusEntity(vehicleNumber: string): boolean {
-  const viewer = getViewer()
-  if (!viewer) return false
-
-  const entity = getBusEntity(vehicleNumber)
-  if (!entity) {
-    console.error(`[trackBusEntity] Bus ${vehicleNumber} not found`)
-    return false
-  }
-
-  const DEFAULT_CAMERA_OFFSET = new HeadingPitchRange(0, -0.4, 180)
-  let preservedOffset: HeadingPitchRange | undefined
-
-  if (viewer.trackedEntity) {
-    try {
-      const currentTrackedId = viewer.trackedEntity.id
-      const newEntityId = `bus_model_${vehicleNumber}`
-
-      if (currentTrackedId === newEntityId) {
-        const currentEntityPosition = viewer.trackedEntity.position?.getValue(viewer.clock.currentTime)
-        if (currentEntityPosition) {
-          const cameraPosition = viewer.camera.position
-          const distance = Cartesian3.distance(cameraPosition, currentEntityPosition)
-          const heading = viewer.camera.heading
-          const pitch = viewer.camera.pitch
-
-          preservedOffset = new HeadingPitchRange(heading, pitch, distance)
-        }
-      }
-    } catch (error) {
-      console.warn('[trackBusEntity] Failed to preserve camera offset:', error)
-    }
-  }
-
-  viewer.trackedEntity = entity
-
-  const offsetToApply = preservedOffset || DEFAULT_CAMERA_OFFSET
-
-  viewer.scene.postRender.addEventListener(function applyOffset() {
-    try {
-      const newEntityPosition = entity.position?.getValue(viewer.clock.currentTime)
-      if (newEntityPosition) {
-        viewer.camera.lookAt(
-          newEntityPosition,
-          new HeadingPitchRange(
-            offsetToApply.heading,
-            offsetToApply.pitch,
-            offsetToApply.range
-          )
-        )
-
-        viewer.scene.postRender.removeEventListener(applyOffset)
-      }
-    } catch (error) {
-      console.warn('[trackBusEntity] Failed to apply preserved offset:', error)
-      viewer.scene.postRender.removeEventListener(applyOffset)
-    }
-  })
-
-  return true
-}
-
-/**
- * 카메라 추적 중지
- */
-export function stopTracking(): void {
-  const viewer = getViewer()
-  if (!viewer) return
-
-  viewer.trackedEntity = undefined
-}
-
-/**
- * 현재 추적 중인 버스 정보 반환
- */
-export function getCurrentTrackedBus(): string | null {
-  const viewer = getViewer()
-  if (!viewer || !viewer.trackedEntity) return null
-
-  const entityId = viewer.trackedEntity.id
-  if (entityId.startsWith('bus_model_')) {
-    return entityId.replace('bus_model_', '')
-  }
-
-  return null
-}
-
-// =============================================================================
-// 유틸리티
-// =============================================================================
-
-/**
- * 버스 모델 수 반환
- */
-export function getBusModelCount(): number {
-  const dataSource = findDataSource(DATASOURCE_NAME)
-  return dataSource ? dataSource.entities.values.length : 0
-}
-
-/**
- * 버스 모델 DataSource 가시성 토글
- */
-export function toggleBusModels(visible?: boolean): void {
-  const dataSource = findDataSource(DATASOURCE_NAME)
-  if (dataSource) {
-    dataSource.show = visible !== undefined ? visible : !dataSource.show
-  }
-}
-
-/**
- * 특정 버스 모델에 시선 이동
- */
-export function flyToBusModel(vehicleNumber: string): void {
-  const viewer = getViewer()
-  if (!viewer) return
-
-  const entity = getBusEntity(vehicleNumber)
-  if (entity) {
-    viewer.flyTo(entity, {
-      offset: new HeadingPitchRange(0, -0.5, 200)
-    })
-  }
 }

@@ -5,18 +5,19 @@
  * Used when switching between services to clear visual elements while preserving UI state
  */
 
-import { clearDataSource, removeDataSource, listDataSources } from '@/utils/cesium/datasources';
+import { clearDataSource, listDataSources } from '@/utils/cesium/datasources';
 import { clearLocationMarker } from '@/utils/cesium/locationMarker';
 import { clearAdministrativeBoundary } from '@/utils/cesium/administrativeRenderer';
 import { disableDirectLocationClickHandler } from '@/utils/cesium/directLocationRenderer';
+import { clearBusModels } from '@/utils/cesium/glbRenderer';
 
 /**
  * DataSource name patterns for each service
+ * Note: busModels is now managed as Primitives via glbRenderer, not DataSource
  */
 const MONITORING_DATASOURCES = {
   routes: 'routes',
   stationsPrefix: 'stations_',
-  busModels: 'bus_models',
   searchStations: 'search_stations',
 };
 
@@ -60,8 +61,8 @@ export function clearMonitoringCesium(): void {
     // Clear search stations DataSource
     clearDataSource(MONITORING_DATASOURCES.searchStations);
 
-    // Remove bus models DataSource
-    removeDataSource(MONITORING_DATASOURCES.busModels);
+    // Clear bus models (Primitive-based, not DataSource)
+    clearBusModels();
 
     console.log('[clearMonitoringCesium] Monitoring Cesium entities cleared');
   } catch (error) {

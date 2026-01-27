@@ -10,6 +10,7 @@ import {
   setBusTargetProgress,
   getBusAnimationState
 } from '@/utils/cesium/glbRenderer'
+import { calculateShortestPath } from '@/utils/cesium/routePositionCalculator'
 
 // 개별 버스 애니메이션을 위한 인터페이스
 interface BusAnimationState {
@@ -354,6 +355,11 @@ class BusStore {
 
   /**
    * 기존 애니메이션 중단 후 새 애니메이션 즉시 시작
+   *
+   * 속도 계산 원리:
+   * 1. 실제 이동 거리: 현재 애니메이션 위치 → 새 센서 목표
+   * 2. 기준 속도: 센서 간 거리 / 센서 시간 차이
+   * 3. Duration = 실제 거리 / 기준 속도 (일관된 속도 유지)
    */
   private interruptAndUpdateAnimation(
     vehicleNumber: string,
@@ -369,7 +375,7 @@ class BusStore {
       console.log(`[BusStore] Interrupted existing animation for bus ${vehicleNumber}`)
     }
 
-    // 2. Cesium에서 현재 animationProgress 가져오기
+    // 2. Cesium에서 현재 animationProgress 가져오기 (0-1)
     const cesiumState = getBusAnimationState(vehicleNumber)
     const currentProgress = cesiumState?.animationProgress ?? 0
 
@@ -378,25 +384,45 @@ class BusStore {
       console.error(`[BusStore] Missing progress_percent for bus ${vehicleNumber}`)
       return
     }
-
-    const targetProgressPercent = newPosition.progress_percent
-
-    // 4. Duration 계산: 이전 위치와 새 위치의 시간 차이 - 이미 경과한 시간
-    const timeDiff = BusStore.getTimeDifferenceInSeconds(previousPosition, newPosition)
-    let durationSeconds = timeDiff && timeDiff > 0 ? timeDiff : 2.0
-
-    // 이미 경과한 시간 고려 (현재 진행 중인 애니메이션이 있었다면)
-    if (animationState.currentAnimation) {
-      const elapsedMs = Date.now() - animationState.currentAnimation.startTime
-      const elapsedSeconds = elapsedMs / 1000
-      durationSeconds = Math.max(durationSeconds - elapsedSeconds, 2.0)
+    if (previousPosition.progress_percent === undefined || previousPosition.progress_percent === null) {
+      console.error(`[BusStore] Missing progress_percent in previousPosition for bus ${vehicleNumber}`)
+      return
     }
+
+    const targetProgress = newPosition.progress_percent / 100  // 0-1
+
+    // 4. 실제 이동 거리 계산: 현재 위치 → 새 목표 (0-1 범위)
+    const actualDistance = Math.abs(calculateShortestPath(currentProgress, targetProgress))
+
+    // 5. 센서 간 예상 거리 계산: 이전 센서 → 새 센서 (0-1 범위)
+    const expectedDistance = Math.abs(calculateShortestPath(
+      previousPosition.progress_percent / 100,
+      newPosition.progress_percent / 100
+    ))
+
+    // 6. 센서 시간 차이 (초)
+    const sensorTimeDiff = BusStore.getTimeDifferenceInSeconds(previousPosition, newPosition) || 10
+
+    // 7. 기준 속도 계산: 예상 거리 / 센서 시간 차이 (%/초)
+    const baseSpeed = expectedDistance > 0 ? expectedDistance / sensorTimeDiff : 0
+
+    // 8. Duration 계산: 실제 거리 / 기준 속도
+    let durationSeconds: number
+    if (baseSpeed > 0.0001) {
+      durationSeconds = actualDistance / baseSpeed
+    } else {
+      // 속도 계산 불가 시 센서 시간 차이 사용
+      durationSeconds = sensorTimeDiff
+    }
+
+    // 9. 범위 제한: 최소 0.5초, 최대 센서 시간 차이의 2배
+    durationSeconds = Math.max(0.5, Math.min(sensorTimeDiff * 2, durationSeconds))
 
     const duration = durationSeconds / this.animationSystem.playbackSpeed
 
-    console.log(`[BusStore] Immediate update for bus ${vehicleNumber}: ${(currentProgress * 100).toFixed(2)}% → ${targetProgressPercent.toFixed(2)}% over ${duration.toFixed(1)}s`)
+    console.log(`[BusStore] Immediate update for bus ${vehicleNumber}: ${(currentProgress * 100).toFixed(2)}% → ${newPosition.progress_percent.toFixed(2)}% | actual: ${(actualDistance * 100).toFixed(2)}%, expected: ${(expectedDistance * 100).toFixed(2)}%, duration: ${duration.toFixed(1)}s`)
 
-    // 5. 애니메이션 상태 업데이트
+    // 10. 애니메이션 상태 업데이트
     runInAction(() => {
       animationState.isAnimating = true
       animationState.positionQueue = [] // 큐 비우기 (즉시 갱신이므로 큐 불필요)
@@ -408,10 +434,10 @@ class BusStore {
       }
     })
 
-    // 6. Cesium 애니메이션 시작 (현재 위치에서 새 목표로)
-    setBusTargetProgress(vehicleNumber, targetProgressPercent, duration)
+    // 11. Cesium 애니메이션 시작 (현재 위치에서 새 목표로)
+    setBusTargetProgress(vehicleNumber, newPosition.progress_percent, duration)
 
-    // 7. 애니메이션 완료 타이머 설정
+    // 12. 애니메이션 완료 타이머 설정
     animationState.currentAnimation!.timer = setTimeout(() => {
       this.onAnimationComplete(vehicleNumber)
     }, duration * 1000)

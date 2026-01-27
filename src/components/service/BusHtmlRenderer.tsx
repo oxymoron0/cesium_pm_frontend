@@ -1,10 +1,9 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { observer } from 'mobx-react-lite';
-import { Entity, Cartographic, Cartesian3 } from 'cesium';
-import * as Cesium from 'cesium';
 import { busStore } from '@/stores/BusStore';
 import { airConfigStore } from '@/stores/AirConfigStore';
 import { isCivil as getIsCivil, getBasePath } from '@/utils/env';
+import { getBusPosition } from '@/utils/cesium/glbRenderer';
 
 /**
  * BusHtmlRenderer
@@ -22,40 +21,6 @@ const BusHtmlRenderer = observer(() => {
     lastGradeVisibility?: string;
   }>>(new Map());
   const lastUpdateTime = useRef<number>(0);
-  const terrainHeightCache = useRef<Map<string, number>>(new Map());
-
-  // Terrain 높이 계산 함수 (Viewer 내장 데이터 활용)
-  const getTerrainHeight = useCallback((longitude: number, latitude: number): number => {
-    const key = `${longitude.toFixed(6)}_${latitude.toFixed(6)}`;
-
-    // 캐시에서 확인
-    if (terrainHeightCache.current.has(key)) {
-      return terrainHeightCache.current.get(key)!;
-    }
-
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const viewer = (window as unknown as { cviewer: { scene: any } }).cviewer;
-      if (!viewer?.scene?.globe) {
-        terrainHeightCache.current.set(key, 0);
-        return 0;
-      }
-
-      // 이미 로드된 terrain에서 높이 값 동기 조회 (네트워크 요청 없음)
-      const cartographic = Cartographic.fromDegrees(longitude, latitude);
-      const rawHeight = viewer.scene.globe.getHeight(cartographic);
-
-      // null, undefined, 음수 값 모두 0으로 처리
-      const height = (rawHeight != null && rawHeight >= 0) ? rawHeight : 0;
-
-      terrainHeightCache.current.set(key, height);
-      return height;
-    } catch (error) {
-      console.error('[BusHtmlRenderer] Terrain height calculation error:', error);
-      terrainHeightCache.current.set(key, 0);
-      return 0;
-    }
-  }, []);
 
   // 센서 데이터 HTML 생성 함수 (AirQualityDisplay 스타일 기반)
   const createSensorHTML = useCallback((sensorData: { pm: number; fpm: number; voc: number }) => {
@@ -354,72 +319,32 @@ const BusHtmlRenderer = observer(() => {
     lastUpdateTime.current = now;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const viewer = (window as unknown as { cviewer: { scene: any; clock: any; dataSources: any } }).cviewer;
-    if (!viewer || !viewer.scene || !viewer.clock || !containerRef.current) {
+    const viewer = (window as unknown as { cviewer: { scene: any } }).cviewer;
+    if (!viewer || !viewer.scene || !containerRef.current) {
       return;
     }
 
     try {
-
       const currentBusIds = new Set<string>();
 
-      // 버스 모델 DataSource 찾기
-      const busDataSource = viewer.dataSources.getByName('bus_models');
-      if (busDataSource.length > 0 && busDataSource[0].show && busDataSource[0].entities) {
-        const dataSource = busDataSource[0];
-        const entities = dataSource.entities.values;
+      // Primitive 기반: busStore.busData를 직접 순회하고 glbRenderer에서 위치 조회
+      busStore.busData.forEach((bus) => {
+        const position = getBusPosition(bus.vehicle_number);
+        if (!position) return;
 
-        entities.forEach((entity: Entity) => {
-          try {
-            if (entity.id?.startsWith('bus_model_') && entity.position) {
-              // 버스 Entity의 실제 화면 위치 계산 (terrain-aware)
-              const entityPosition = entity.position.getValue(viewer.clock.currentTime);
+        // position은 이미 terrain-aware Cartesian3이므로 바로 화면 좌표로 변환
+        const screenPosition = viewer.scene.cartesianToCanvasCoordinates(position);
 
-              if (entityPosition) {
-                // Bus position에서 longitude, latitude 추출
-                const cartographic = Cartographic.fromCartesian(entityPosition);
-                const longitude = Cesium.Math.toDegrees(cartographic.longitude);
-                const latitude = Cesium.Math.toDegrees(cartographic.latitude);
+        if (screenPosition &&
+            screenPosition.x >= -100 && screenPosition.x <= window.innerWidth + 100 &&
+            screenPosition.y >= -100 && screenPosition.y <= window.innerHeight - 50) {
 
-                // Terrain 높이 계산 (동기식)
-                const terrainHeight = getTerrainHeight(longitude, latitude);
-
-                // 새로운 terrain-aware position 생성
-                const actualPosition = Cartesian3.fromDegrees(longitude, latitude, terrainHeight);
-
-                // terrain-aware position을 화면 좌표로 변환
-                const screenPosition = viewer.scene.cartesianToCanvasCoordinates(actualPosition);
-
-                if (screenPosition &&
-                    screenPosition.x >= -100 && screenPosition.x <= window.innerWidth + 100 &&
-                    screenPosition.y >= -100 && screenPosition.y <= window.innerHeight - 50) {
-
-                  const vehicleNumber = entity.id.replace('bus_model_', '');
-                  const busData = busStore.busData.find(bus => bus.vehicle_number === vehicleNumber);
-                  if (busData) {
-                    const latestPosition = busData.positions[busData.positions.length - 1];
-                    const sensorData = latestPosition?.sensor_data;
-                    createOrUpdateBusElement(vehicleNumber, busData.route_name, sensorData, screenPosition.x, screenPosition.y);
-                    currentBusIds.add(vehicleNumber);
-                  }
-                }
-              }
-            }
-          } catch (error) {
-            // DeveloperError 상세 로깅
-            if (error instanceof Error && error.name === 'DeveloperError') {
-              console.warn('[BusHtmlRenderer] DeveloperError details:', {
-                message: error.message,
-                entityId: entity.id,
-                hasPosition: !!entity.position,
-                stack: error.stack
-              });
-            } else {
-              console.debug('[BusHtmlRenderer] Entity processing error:', error);
-            }
-          }
-        });
-      }
+          const latestPosition = bus.positions[bus.positions.length - 1];
+          const sensorData = latestPosition?.sensor_data;
+          createOrUpdateBusElement(bus.vehicle_number, bus.route_name, sensorData, screenPosition.x, screenPosition.y);
+          currentBusIds.add(bus.vehicle_number);
+        }
+      });
 
       // 더 이상 표시되지 않는 버스 Element 제거
       busElementsRef.current.forEach((busInfo, vehicleNumber) => {
@@ -432,7 +357,7 @@ const BusHtmlRenderer = observer(() => {
     } catch (error) {
       console.error('[BusHtmlRenderer] Position update error:', error);
     }
-  }, [createOrUpdateBusElement, getTerrainHeight]);
+  }, [createOrUpdateBusElement]);
 
   useEffect(() => {
     let postRenderCallback: (() => void) | null = null;
