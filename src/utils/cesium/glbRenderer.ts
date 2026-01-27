@@ -442,7 +442,6 @@ let currentRange = 180
 
 // 마우스 드래그 상태
 let isDragging = false
-let lastMousePosition: Cartesian2 | null = null
 
 /**
  * 특정 버스에 카메라 추적 시작
@@ -461,6 +460,12 @@ export function trackBusEntity(vehicleNumber: string): boolean {
 
   trackedVehicleNumber = vehicleNumber
 
+  // 기본 카메라 컨트롤러 비활성화 (충돌 방지)
+  viewer.scene.screenSpaceCameraController.enableRotate = false
+  viewer.scene.screenSpaceCameraController.enableZoom = false
+  viewer.scene.screenSpaceCameraController.enableTilt = false
+  viewer.scene.screenSpaceCameraController.enableLook = false
+
   // 현재 버스 위치
   const initialPosition = Matrix4.getTranslation(model.modelMatrix, new Cartesian3())
 
@@ -477,38 +482,35 @@ export function trackBusEntity(vehicleNumber: string): boolean {
   inputHandler = new ScreenSpaceEventHandler(viewer.scene.canvas)
 
   // 마우스 왼쪽 버튼 누름 - 드래그 시작
-  inputHandler.setInputAction((click: { position: Cartesian2 }) => {
+  inputHandler.setInputAction(() => {
     isDragging = true
-    lastMousePosition = click.position.clone()
   }, ScreenSpaceEventType.LEFT_DOWN)
 
   // 마우스 왼쪽 버튼 뗌 - 드래그 종료
   inputHandler.setInputAction(() => {
     isDragging = false
-    lastMousePosition = null
   }, ScreenSpaceEventType.LEFT_UP)
 
   // 마우스 이동 - heading/pitch 조절
+  // startPosition과 endPosition을 직접 사용하여 프레임 간 delta를 정확히 계산
   inputHandler.setInputAction((movement: { startPosition: Cartesian2; endPosition: Cartesian2 }) => {
-    if (!isDragging || !lastMousePosition) return
+    if (!isDragging) return
 
-    const deltaX = movement.endPosition.x - lastMousePosition.x
-    const deltaY = movement.endPosition.y - lastMousePosition.y
+    const deltaX = movement.endPosition.x - movement.startPosition.x
+    const deltaY = movement.endPosition.y - movement.startPosition.y
 
-    // heading: 좌우 드래그 (감도 조절)
-    currentHeading -= deltaX * 0.005
+    // heading: 좌우 드래그 (오른쪽 드래그 → 시계방향 회전)
+    currentHeading += deltaX * 0.005
 
-    // pitch: 상하 드래그 (감도 조절, 범위 제한)
+    // pitch: 상하 드래그 (위로 드래그 → 위에서 내려다봄)
     currentPitch -= deltaY * 0.005
     currentPitch = CesiumMath.clamp(currentPitch, -CesiumMath.PI_OVER_TWO + 0.1, -0.05)
-
-    lastMousePosition = movement.endPosition.clone()
   }, ScreenSpaceEventType.MOUSE_MOVE)
 
   // 마우스 휠 - range(거리/높이) 조절
   inputHandler.setInputAction((delta: number) => {
     // delta > 0: 휠 위로 (줌 인), delta < 0: 휠 아래로 (줌 아웃)
-    const zoomFactor = delta > 0 ? 0.8 : 1.25
+    const zoomFactor = delta > 0 ? 0.85 : 1.18
     currentRange = CesiumMath.clamp(currentRange * zoomFactor, 30, 3000)
   }, ScreenSpaceEventType.WHEEL)
 
@@ -557,12 +559,17 @@ export function stopTracking(): void {
 
   // 드래그 상태 초기화
   isDragging = false
-  lastMousePosition = null
 
   if (trackedVehicleNumber) {
     console.log(`[stopTracking] Stopped tracking bus ${trackedVehicleNumber}`)
     trackedVehicleNumber = null
   }
+
+  // 기본 카메라 컨트롤러 복원
+  viewer.scene.screenSpaceCameraController.enableRotate = true
+  viewer.scene.screenSpaceCameraController.enableZoom = true
+  viewer.scene.screenSpaceCameraController.enableTilt = true
+  viewer.scene.screenSpaceCameraController.enableLook = true
 
   // 카메라 잠금 해제 (자유 이동 모드로 복원)
   viewer.camera.lookAtTransform(Matrix4.IDENTITY)
