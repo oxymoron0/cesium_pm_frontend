@@ -23,7 +23,7 @@ function ServiceSwitcher({ currentService, onServiceChange }: ServiceSwitcherPro
     : SERVICE_CONFIGS;
 
   return (
-    <div className="fixed top-[40px] right-[84px] z-[1500]">
+    <div className="fixed top-[40px] right-[84px] z-[1100]">
       {/* Pill-shaped Panel */}
       <div
         className="flex items-center gap-4 px-6 py-3 rounded-full border border-[#C4C6C6] bg-black/80"
