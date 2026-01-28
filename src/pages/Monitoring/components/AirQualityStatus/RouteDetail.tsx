@@ -16,6 +16,29 @@ const DEFAULT_ANIMATION_DURATION = 10000
 
 const basePath = getBasePath()
 
+// Edge colors for route line highlighting
+const EDGE_COLORS = {
+  normal: '#656565',
+  highlighted: '#FFD040'  // Yellow for Busanjin-gu edges
+} as const
+
+// Calculate which edges should be highlighted (both stations in target district)
+function calculateEdgeHighlights(
+  flatStations: Array<{ properties: { is_in_target_district: boolean } }>
+): Map<number, boolean> {
+  const highlights = new Map<number, boolean>()
+
+  for (let i = 0; i < flatStations.length - 1; i++) {
+    const current = flatStations[i]
+    const next = flatStations[i + 1]
+    // Edge is highlighted only if BOTH stations are in target district
+    const isHighlighted = current.properties.is_in_target_district && next.properties.is_in_target_district
+    highlights.set(i, isHighlighted)
+  }
+
+  return highlights
+}
+
 // Station icon mapping based on air quality level
 const STATION_ICONS: Record<AirQualityLevel, string> = {
   good: 'station_good.svg',
@@ -516,6 +539,11 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
     return displayTypes
   }, [flatStations, busPositions])
 
+  // Calculate edge highlights for Busanjin-gu stations
+  const edgeHighlights = useMemo(() => {
+    return calculateEdgeHighlights(flatStations)
+  }, [flatStations])
+
   // Find selected station from flat list
   const selectedStation = flatStations.find(
     station => station.properties.station_id === selectedStationId
@@ -645,7 +673,7 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
                 key={`row-${colIndex}`}
                 style={{ position: 'relative' }}
               >
-                {/* Horizontal connecting line */}
+                {/* Horizontal connecting line - base gray layer (ORIGINAL STYLE) */}
                 <div
                   style={{
                     position: 'absolute',
@@ -653,25 +681,165 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
                     left: isEvenRow ? '30px' : `calc(30px + ${emptyPercentage}% - ${emptySlots * 6}px)`,
                     right: isEvenRow ? `calc(30px + ${emptyPercentage}% - ${emptySlots * 6}px)` : '30px',
                     height: '2px',
-                    backgroundColor: '#656565',
+                    backgroundColor: EDGE_COLORS.normal,
                     zIndex: 0
                   }}
                 />
 
-                {/* Vertical connector to next row */}
-                {!isLastRow && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '18px',
-                      [isEvenRow ? 'right' : 'left']: '30px',
-                      width: '2px',
-                      height: `${80 - 18 + 38 + 18}px`, // 118px: remaining row + gap + next row top
-                      backgroundColor: '#656565',
-                      zIndex: 0
-                    }}
-                  />
-                )}
+                {/* Highlighted edge overlay segments (Busanjin-gu) */}
+                {(() => {
+                  const segments: JSX.Element[] = []
+                  const stationsInColumn = stationGrid.map(row => row[colIndex]).filter(s => s !== null)
+
+                  // Horizontal edges between consecutive stations
+                  for (let i = 0; i < stationsInColumn.length - 1; i++) {
+                    const flatIndex = colIndex * ROW_COUNT + i
+                    const isHighlighted = edgeHighlights.get(flatIndex) ?? false
+
+                    if (!isHighlighted) continue  // Only render highlighted segments
+
+                    const visualSlot = isEvenRow ? i : (stationsInColumn.length - 2 - i)
+                    const leftPercent = ((visualSlot + 0.5) / ROW_COUNT) * 100
+                    const widthPercent = 100 / ROW_COUNT
+
+                    segments.push(
+                      <div
+                        key={`edge_h_${colIndex}_${i}`}
+                        style={{
+                          position: 'absolute',
+                          top: '16px',  // Slightly higher to overlay gray line
+                          left: `calc(30px + ${leftPercent}% - ${leftPercent * 0.6}px)`,
+                          width: `calc(${widthPercent}% - ${widthPercent * 0.06}px)`,
+                          height: '4px',  // Thicker than gray line
+                          backgroundColor: EDGE_COLORS.highlighted,
+                          zIndex: 1  // Above base gray line
+                        }}
+                      />
+                    )
+                  }
+
+                  // Horizontal edge from last station to OUTGOING vertical connector
+                  if (!isLastRow) {
+                    const outgoingEdgeIndex = (colIndex + 1) * ROW_COUNT - 1
+                    const isOutgoingHighlighted = edgeHighlights.get(outgoingEdgeIndex) ?? false
+
+                    if (isOutgoingHighlighted && stationsInColumn.length > 0) {
+                      // For even rows: segment goes from last station to right edge
+                      // For odd rows: segment goes from last station (leftmost visual) to left edge
+                      const lastStationSlot = isEvenRow
+                        ? stationsInColumn.length - 1  // Rightmost station
+                        : 0  // Leftmost visual station (last in data order appears leftmost due to row-reverse)
+
+                      const stationCenterPercent = ((lastStationSlot + 0.5) / ROW_COUNT) * 100
+
+                      if (isEvenRow) {
+                        // From station center to right edge
+                        segments.push(
+                          <div
+                            key={`edge_h_to_v_out_${colIndex}`}
+                            style={{
+                              position: 'absolute',
+                              top: '16px',
+                              left: `calc(30px + ${stationCenterPercent}% - ${stationCenterPercent * 0.6}px)`,
+                              right: '29px',
+                              height: '4px',
+                              backgroundColor: EDGE_COLORS.highlighted,
+                              zIndex: 1
+                            }}
+                          />
+                        )
+                      } else {
+                        // From left edge to station center
+                        segments.push(
+                          <div
+                            key={`edge_h_to_v_out_${colIndex}`}
+                            style={{
+                              position: 'absolute',
+                              top: '16px',
+                              left: '29px',
+                              width: `calc(${stationCenterPercent}% - ${stationCenterPercent * 0.6}px + 1px)`,
+                              height: '4px',
+                              backgroundColor: EDGE_COLORS.highlighted,
+                              zIndex: 1
+                            }}
+                          />
+                        )
+                      }
+                    }
+                  }
+
+                  // Horizontal edge from INCOMING vertical connector to first station
+                  if (colIndex > 0) {
+                    const incomingEdgeIndex = colIndex * ROW_COUNT - 1  // Last edge of previous row
+                    const isIncomingHighlighted = edgeHighlights.get(incomingEdgeIndex) ?? false
+
+                    if (isIncomingHighlighted && stationsInColumn.length > 0) {
+                      // Previous row exits from opposite side of current row's exit
+                      // Even row: incoming from LEFT, first station at leftmost (slot 0)
+                      // Odd row: incoming from RIGHT, first station at rightmost (slot 9 due to row-reverse)
+
+                      if (isEvenRow) {
+                        // Incoming from LEFT, first station at visual slot 0
+                        const firstStationSlot = 0
+                        const stationCenterPercent = ((firstStationSlot + 0.5) / ROW_COUNT) * 100
+                        segments.push(
+                          <div
+                            key={`edge_v_to_h_in_${colIndex}`}
+                            style={{
+                              position: 'absolute',
+                              top: '16px',
+                              left: '29px',
+                              width: `calc(${stationCenterPercent}% - ${stationCenterPercent * 0.6}px + 1px)`,
+                              height: '4px',
+                              backgroundColor: EDGE_COLORS.highlighted,
+                              zIndex: 1
+                            }}
+                          />
+                        )
+                      } else {
+                        // Incoming from RIGHT, first station at visual slot 9 (rightmost due to row-reverse)
+                        const firstStationSlot = ROW_COUNT - 1
+                        const stationCenterPercent = ((firstStationSlot + 0.5) / ROW_COUNT) * 100
+                        segments.push(
+                          <div
+                            key={`edge_v_to_h_in_${colIndex}`}
+                            style={{
+                              position: 'absolute',
+                              top: '16px',
+                              left: `calc(30px + ${stationCenterPercent}% - ${stationCenterPercent * 0.6}px)`,
+                              right: '29px',
+                              height: '4px',
+                              backgroundColor: EDGE_COLORS.highlighted,
+                              zIndex: 1
+                            }}
+                          />
+                        )
+                      }
+                    }
+                  }
+
+                  return segments
+                })()}
+
+                {/* Vertical connector to next row (ORIGINAL POSITION STYLE) */}
+                {!isLastRow && (() => {
+                  const edgeIndex = (colIndex + 1) * ROW_COUNT - 1
+                  const isHighlighted = edgeHighlights.get(edgeIndex) ?? false
+
+                  return (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '18px',
+                        [isEvenRow ? 'right' : 'left']: isHighlighted ? '29px' : '30px',
+                        width: isHighlighted ? '4px' : '2px',
+                        height: `${80 - 18 + 38 + 18}px`, // 118px: remaining row + gap + next row top
+                        backgroundColor: isHighlighted ? EDGE_COLORS.highlighted : EDGE_COLORS.normal,
+                        zIndex: isHighlighted ? 1 : 0
+                      }}
+                    />
+                  )
+                })()}
 
                 {/* Bus icons on horizontal line */}
                 {busPositions
