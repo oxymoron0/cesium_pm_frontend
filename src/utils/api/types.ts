@@ -80,6 +80,7 @@ export interface RouteStationProperties {
   dong?: string;
   ars_id: string;
   progress_percent: number;  // Position on route (0-100)
+  is_in_target_district: boolean;  // Whether station is in target district (e.g., Busanjin-gu)
 }
 
 /**
