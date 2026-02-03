@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import type {
-  PriorityConfig,
+  PriorityConfigBase,
   NearbyStation,
   NearbyRoad,
   VulnerableFacility,
@@ -181,7 +181,7 @@ class PriorityStore {
   // ============================================================================
 
   // 설정 데이터
-  config: PriorityConfig | null = null;
+  config: PriorityConfigBase | null = null;
 
   // 드롭다운 상태
   isDropdownOpen: boolean = false;
@@ -260,7 +260,7 @@ class PriorityStore {
   // 설정 관리
   // ============================================================================
 
-  setConfig(config: PriorityConfig) {
+  setConfig(config: PriorityConfigBase) {
     this.config = config;
   }
 
