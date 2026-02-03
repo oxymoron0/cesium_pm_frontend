@@ -33,9 +33,9 @@ const ConcentrationRankings = observer(function ConcentrationRankings({
   const isVOCsMode = sensorSelectionStore.isVOCsSelected
   const unit = isVOCsMode ? 'ppb' : 'μg/m³'
 
-  // Civil 모드에서는 날짜 기반 제목 사용
+  // Civil 모드에서는 시간대 기반 제목 사용
   const title = civilMode
-    ? (type === 'high' ? '미세먼지 주의 날짜' : '미세먼지 양호 날짜')
+    ? (type === 'high' ? '미세먼지 주의 시간대' : '미세먼지 양호 시간대')
     : (type === 'high' ? '고농도 시간대 TOP3' : '저농도 시간대 TOP3')
 
   const description = civilMode
@@ -166,7 +166,7 @@ const ConcentrationRankings = observer(function ConcentrationRankings({
                   textAlign: 'center'
                 }}
               >
-                {civilMode ? '날짜' : '시간'}
+                시간
               </div>
               <div
                 style={{
