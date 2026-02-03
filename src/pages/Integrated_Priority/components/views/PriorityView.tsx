@@ -111,7 +111,7 @@ const PriorityView = observer(function PriorityView({
               onClose={onCloseMicroApp}
               onCustomConfig={() => setCurrentView('customConfig')}
               onSearch={(config) => {
-                setConfigData(config);
+                setConfigData({ ...config, sourceView: 'config' });
                 setCurrentView('result');
               }}
             />
@@ -122,7 +122,7 @@ const PriorityView = observer(function PriorityView({
                 setCurrentView('config');
               }}
               onSearch={(config) => {
-                setConfigData(config);
+                setConfigData({ ...config, sourceView: 'customConfig' });
                 setCurrentView('result');
               }}
               locationMode={locationMode}
@@ -134,7 +134,7 @@ const PriorityView = observer(function PriorityView({
                 config={configData}
                 onBack={() => {
                   priorityStore.resetResultState();
-                  setCurrentView('config');
+                  setCurrentView(configData?.sourceView ?? 'config');
                 }}
                 onClose={onCloseMicroApp}
               />
