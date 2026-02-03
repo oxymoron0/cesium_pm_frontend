@@ -1,6 +1,8 @@
 import { observer } from 'mobx-react-lite';
 import { simulationStore } from '@/stores/SimulationStore';
 import Spacer from '@/components/basic/Spacer';
+import SubTitle from '@/components/basic/SubTitle';
+import Divider from '@/components/basic/Divider';
 import Icon from '@/components/basic/Icon'; // 적절한 아이콘이 없다면 대체 혹은 텍스트 사용
 import { getBasePath } from '@/utils/env';
 
@@ -91,10 +93,14 @@ const SimulationCivilStationAnalysis = observer(() => {
 
   return (
     <>
-      <Spacer height={24} />
+      {/* 활동가이드 섹션 헤더 */}
+      <SubTitle>활동가이드</SubTitle>
+      <Divider />
+
+      <Spacer height={16} />
 
       {/* 1. 상단 배너 (활동 지수) */}
-      <div 
+      <div
         className="w-full rounded-[30px] p-6 flex items-center justify-between relative overflow-hidden"
         style={{ backgroundColor: statusColor }}
       >
