@@ -149,6 +149,50 @@ export function getCircularBarAngle(sensorType: SensorType, value: number): numb
 }
 
 /**
+ * 정규화된 구간 상수
+ * 각 공기질 등급이 25%씩 차지 (좋음: 0-25%, 보통: 25-50%, 나쁨: 50-75%, 매우나쁨: 75-100%)
+ */
+export const NORMALIZED_ZONES = {
+  good: { min: 0, max: 25 },
+  normal: { min: 25, max: 50 },
+  bad: { min: 50, max: 75 },
+  very_bad: { min: 75, max: 100 }
+} as const
+
+/**
+ * 센서 값을 0-100% 스케일로 정규화
+ * 각 공기질 등급이 25%씩 차지하여 PM10과 PM25를 동일 스케일에서 비교 가능
+ *
+ * @param sensorType - 센서 타입 ('pm10', 'pm25', 'vocs')
+ * @param value - 센서 측정값
+ * @returns 정규화된 백분율 (0-100)
+ */
+export function normalizeToPercentage(sensorType: SensorType, value: number): number {
+  if (sensorType === 'vocs') return 0
+
+  const standards = AIR_QUALITY_STANDARDS[sensorType]
+  const maxValue = getCircularBarMaxValue(sensorType)
+  const percentPerRange = 25
+
+  if (value <= standards.good.max) {
+    // 좋음 구간: 0-25%
+    return (value / standards.good.max) * percentPerRange
+  } else if (value <= standards.normal.max) {
+    // 보통 구간: 25-50%
+    const ratio = (value - standards.good.max) / (standards.normal.max - standards.good.max)
+    return percentPerRange + (ratio * percentPerRange)
+  } else if (value <= standards.bad.max) {
+    // 나쁨 구간: 50-75%
+    const ratio = (value - standards.normal.max) / (standards.bad.max - standards.normal.max)
+    return percentPerRange * 2 + (ratio * percentPerRange)
+  } else {
+    // 매우나쁨 구간: 75-100%
+    const ratio = Math.min((value - standards.bad.max) / (maxValue - standards.bad.max), 1)
+    return percentPerRange * 3 + (ratio * percentPerRange)
+  }
+}
+
+/**
  * 센서 타입별 기본 정보 반환
  */
 export function getSensorInfo(sensorType: SensorType) {
