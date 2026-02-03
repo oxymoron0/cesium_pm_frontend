@@ -2,11 +2,17 @@
 
 import type { GeoJSONPoint } from "@/utils/api/types";
 
-export interface PriorityConfig {
+// Base config without navigation metadata (used by child components)
+export interface PriorityConfigBase {
   date: string;
   time: string;
   city: string;
   district: string;
+}
+
+// Full config with navigation metadata (used by App.tsx state)
+export interface PriorityConfig extends PriorityConfigBase {
+  sourceView: 'config' | 'customConfig';
 }
 
 export interface VulnerableFacility {
