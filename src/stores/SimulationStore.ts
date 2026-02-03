@@ -1411,6 +1411,35 @@ class SimulationStore {
     return this.selectedCivilStationAnalysisId !== null;
   }
 
+  /**
+   * Step-by-step back navigation for civil mode
+   * Flow: StationAnalysis → civilResult → civilList → civilConfig
+   * @returns true if at initial screen (ready to close app)
+   */
+  goBackCivil(): boolean {
+    // Priority 1: Close station analysis if open
+    if (this.isStationAnalysisMode) {
+      this.closeCivilStationAnalysis();
+      return false;
+    }
+
+    // Priority 2: From result → list
+    if (this.currentView === 'civilResult') {
+      this.selectedCivilSimulation = null;
+      this.setCurrentView('civilList');
+      return false;
+    }
+
+    // Priority 3: From list → config
+    if (this.currentView === 'civilList') {
+      this.setCurrentView('civilConfig');
+      return false;
+    }
+
+    // At initial screen - signal to close app
+    return true;
+  }
+
 }
 
 export const simulationStore = new SimulationStore();
