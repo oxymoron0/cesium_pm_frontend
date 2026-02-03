@@ -1,32 +1,35 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import ReactDOM from 'react-dom';
 import { Entity, HeadingPitchRange, Math} from 'cesium';
 import { simulationStore } from "@/stores/SimulationStore";
-import { setSelectedCivilStationId } from '@/utils/cesium/SimulationCivilResultRenderer';
+import { setSelectedCivilStationId, getSelectedCivilStationId } from '@/utils/cesium/SimulationCivilResultRenderer';
 import { getBasePath } from '@/utils/env';
 import type { SimulationCivilStationData } from '@/types/simulation_request_types';
 
-interface SimulationCivilStationHtmlRendererProps {
-  dataSourceName?: string;
-  selectedEntityId?: string | null;
-}
-
-const SimulationCivilStationHtmlRenderer = ({
-  dataSourceName = 'simulation_civil_result_stations',
-  selectedEntityId = null
-}: SimulationCivilStationHtmlRendererProps) => {
+const SimulationCivilStationHtmlRenderer = () => {
+  const dataSourceName = 'simulation_civil_result_stations';
   const containerRef = useRef<HTMLDivElement>(null);
   // HTML 엘리먼트 캐시 (매 프레임 생성 방지)
   const stationElementsRef = useRef<Map<string, HTMLDivElement>>(new Map());
   const sensorElementsRef = useRef<Map<string, HTMLDivElement>>(new Map());
   const lastUpdateTime = useRef<number>(0);
 
-  // 로컬 선택 상태 (스토어와 동기화하지 않고 독립적으로 작동하거나, 필요시 useEffect로 동기화)
+  // 로컬 선택 상태 (polling으로 전역 상태와 동기화)
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
 
+  // Polling으로 전역 선택 상태 동기화
   useEffect(() => {
-    setSelectedStationId(selectedEntityId);
-  }, [selectedEntityId]);
+    const intervalId = setInterval(() => {
+      const raw = getSelectedCivilStationId();
+      if (raw === null) {
+        setSelectedStationId(null);
+      } else {
+        const normalized = typeof raw === 'number' ? `station_${raw}` : String(raw);
+        setSelectedStationId(normalized);
+      }
+    }, 16);
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   // ===== 데이터 조회 헬퍼 =====
   const getStationData = (entityId: string) => {
@@ -145,14 +148,18 @@ const SimulationCivilStationHtmlRenderer = ({
           <button data-role="run-station-sim" style="
             width: 100%;
             height: 36px;
-            background-color: #CFFF40;
+            background-color: #CFFF40 !important;
+            background: #CFFF40 !important;
             border: none;
             border-radius: 6px;
-            color: black;
+            color: #000000 !important;
             font-size: 13px;
             font-weight: 700;
             cursor: pointer;
-            display: ${simulationStore.selectedCivilStationAnalysisId === null ?  '' : 'none'}
+            display: ${simulationStore.selectedCivilStationAnalysisId === null ? 'block' : 'none'};
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
           ">
             활동가이드 확인
           </button>
@@ -217,8 +224,9 @@ const SimulationCivilStationHtmlRenderer = ({
       if (!popupEl) {
         popupEl = document.createElement('div');
         popupEl.style.position = 'absolute';
-        popupEl.style.transform = 'translate(-50%, 40px)'; 
+        popupEl.style.transform = 'translate(-50%, 40px)';
         popupEl.style.zIndex = '30';
+        popupEl.style.pointerEvents = 'auto'; // 클릭 가능하게
         popupEl.innerHTML = createPopupHTML(stationData);
 
         const btn = popupEl.querySelector('[data-role="run-station-sim"]');
@@ -322,23 +330,27 @@ const SimulationCivilStationHtmlRenderer = ({
       if (!viewer.isDestroyed()) {
         viewer.scene.postRender.removeEventListener(onPostRender);
       }
-      // 컴포넌트 언마운트 시 모든 DOM 제거
+      // 주의: onPostRender 변경 시 DOM을 삭제하지 않음 (버튼 클릭 문제 방지)
+    };
+  }, [onPostRender]);
+
+  // 컴포넌트 언마운트 시에만 DOM 정리 (별도 useEffect)
+  useEffect(() => {
+    return () => {
       stationElementsRef.current.forEach(el => el.remove());
       stationElementsRef.current.clear();
       sensorElementsRef.current.forEach(el => el.remove());
       sensorElementsRef.current.clear();
     };
-  }, [onPostRender]);
-  
-  const rendererContent = (
-    <div 
-      ref={containerRef} 
-      // z-index는 팝업(보통 50)보다 낮고 지도보다 높게 설정 (예: 10)
-      className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-10" 
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-visible z-10"
+      style={{ overflow: 'visible' }}
     />
   );
-  
-  return ReactDOM.createPortal(rendererContent, document.body);
 };
 
 export default SimulationCivilStationHtmlRenderer;
