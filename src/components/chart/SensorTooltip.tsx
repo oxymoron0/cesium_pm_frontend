@@ -2,10 +2,18 @@ import type { TooltipProps } from 'recharts'
 import { getAirQualityLevel } from '@/utils/airQuality'
 import { isCivil } from '@/utils/env'
 
+interface ChartDataPoint {
+  pm10: number | null
+  pm25: number | null
+  voc: number | null
+  pm10Normalized?: number | null
+  pm25Normalized?: number | null
+}
+
 interface PayloadItem {
   dataKey?: string
   value?: number
-  payload?: unknown
+  payload?: ChartDataPoint
 }
 
 interface SensorTooltipProps extends TooltipProps<number, string> {
@@ -31,13 +39,19 @@ export default function SensorTooltip({ active, payload, label, showPM10 = true,
   }
 
   // Find PM10, PM25, and VOC data from payload
-  const pm10Data = payload.find((p: PayloadItem) => p.dataKey === 'pm10')
-  const pm25Data = payload.find((p: PayloadItem) => p.dataKey === 'pm25')
+  // dataKey가 정규화된 값(pm10Normalized, pm25Normalized)일 수 있으므로 둘 다 확인
+  const pm10Data = payload.find((p: PayloadItem) =>
+    p.dataKey === 'pm10' || p.dataKey === 'pm10Normalized'
+  )
+  const pm25Data = payload.find((p: PayloadItem) =>
+    p.dataKey === 'pm25' || p.dataKey === 'pm25Normalized'
+  )
   const vocData = payload.find((p: PayloadItem) => p.dataKey === 'voc')
 
-  const pm10Value = pm10Data?.value as number | undefined
-  const pm25Value = pm25Data?.value as number | undefined
-  const vocValue = vocData?.value as number | undefined
+  // 항상 원본(raw) 값 사용 - payload.payload에서 접근
+  const pm10Value = pm10Data?.payload?.pm10 ?? undefined
+  const pm25Value = pm25Data?.payload?.pm25 ?? undefined
+  const vocValue = vocData?.payload?.voc ?? undefined
 
   // Civil 모드: 간소화된 툴팁 (상태만 표시)
   if (civilMode) {
