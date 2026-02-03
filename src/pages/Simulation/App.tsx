@@ -15,6 +15,7 @@ import { clearLocationMarker } from "@/utils/cesium/locationMarker";
 import { disableDirectLocationClickHandler } from "@/utils/cesium/directLocationRenderer";
 import SimulationStationHtmlRenderer from "@/components/service/SimulationStationHtmlRenderer";
 import SimulationGlbHeatmapRender from "@/components/service/SimulationGlbHeatmapRender";
+import SimulationCivilStationHtmlRenderer from "@/components/service/SimulationCivilStationHtmlRenderer";
 import { cleanupAll } from "./cleanup";
 import SimulationCivilMain from "./components/SimulationCivilMain";
 import { isCivil as getIsCivil, loadConfig } from "@/utils/env";
@@ -157,16 +158,21 @@ const App = observer(function App(props: AppProps) {
         )}
         </> :
         <>
-        {/* 대민 */}
+          {/* 대민 - HTML Overlay (Panel 외부, root div 직접 자식) */}
+          {cesiumStatus === "ready" && simulationStore.currentView === "civilResult" && (
+            <SimulationCivilStationHtmlRenderer />
+          )}
+
+          {/* 대민 */}
           <Panel
             position="left"
-          width={
-            (simulationStore.currentView === 'civilConfig' || 
-            simulationStore.currentView === 'civilResult') 
-            && !simulationStore.isStationAnalysisMode
-            ? "540px" 
-            : "720px"
-          }
+            width={
+              (simulationStore.currentView === 'civilConfig' ||
+              simulationStore.currentView === 'civilResult')
+              && !simulationStore.isStationAnalysisMode
+              ? "540px"
+              : "720px"
+            }
             maxHeight="calc(100vh - 50px)"
             allowOverflow={true}
           >
