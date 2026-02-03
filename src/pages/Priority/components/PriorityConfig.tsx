@@ -13,12 +13,12 @@ import { priorityStore } from '@/stores/PriorityStore';
 import { administrativeStore } from '@/stores/AdministrativeStore';
 import { renderAdministrativeBoundary, clearAdministrativeBoundary } from '@/utils/cesium/administrativeRenderer';
 import { isGeometrySuccess } from '@/types/administrative';
-import type { PriorityConfig as PriorityConfigData } from '../types';
+import type { PriorityConfigBase } from '../types';
 
 interface PriorityConfigProps {
   onClose?: () => void;
   onCustomConfig?: () => void;
-  onSearch?: (config: PriorityConfigData) => void;
+  onSearch?: (config: PriorityConfigBase) => void;
 }
 
 const PriorityConfig = observer(function PriorityConfig({ onClose, onCustomConfig, onSearch }: PriorityConfigProps) {
