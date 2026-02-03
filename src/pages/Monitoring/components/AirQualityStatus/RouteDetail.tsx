@@ -1,6 +1,7 @@
 import { observer } from 'mobx-react-lite'
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { routeStore } from '@/stores/RouteStore'
+import { calculateDirectionSplitPoint } from '@/utils/cesium/routePositionCalculator'
 import { stationDetailStore } from '@/stores/StationDetailStore'
 import { stationSensorStore } from '@/stores/StationSensorStore'
 import { busStore } from '@/stores/BusStore'
@@ -379,21 +380,35 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
 
   // Merge inbound and outbound stations into a single array with direction info
   // Convert direction-based progress (0-100 each) to entire route progress (0-100 total)
-  // Inbound: 0-100% → 0-50%, Outbound: 0-100% → 50-100%
-  const flatStations = useMemo(() => [
-    ...(stationData.inbound?.features.map(f => ({
-      ...f,
-      direction: 'inbound' as const,
-      directionName: stationData.inbound?.direction_name || '상행선',
-      entireProgress: f.properties.progress_percent * 0.5 // 0-100 → 0-50
-    })) || []),
-    ...(stationData.outbound?.features.map(f => ({
-      ...f,
-      direction: 'outbound' as const,
-      directionName: stationData.outbound?.direction_name || '하행선',
-      entireProgress: 50 + f.properties.progress_percent * 0.5 // 0-100 → 50-100
-    })) || [])
-  ], [stationData.inbound, stationData.outbound])
+  // Split point is calculated dynamically based on actual route geometry distances
+  const flatStations = useMemo(() => {
+    // Get route geometry for dynamic split point calculation
+    const routeGeom = selectedRoute ? routeStore.getRouteGeom(selectedRoute) : undefined
+    // Calculate actual split point based on inbound/entire length ratio
+    // Falls back to 50% if routeGeom is not available
+    const splitPoint = routeGeom ? calculateDirectionSplitPoint(routeGeom) : 50
+
+    const stations = [
+      ...(stationData.inbound?.features.map(f => ({
+        ...f,
+        direction: 'inbound' as const,
+        directionName: stationData.inbound?.direction_name || '상행선',
+        // Inbound: 0-100% → 0-splitPoint%
+        entireProgress: f.properties.progress_percent * (splitPoint / 100)
+      })) || []),
+      ...(stationData.outbound?.features.map(f => ({
+        ...f,
+        direction: 'outbound' as const,
+        directionName: stationData.outbound?.direction_name || '하행선',
+        // Outbound: 0-100% → splitPoint-100%
+        entireProgress: splitPoint + f.properties.progress_percent * ((100 - splitPoint) / 100)
+      })) || [])
+    ]
+
+    // Sort by entireProgress to ensure correct order on the route diagram
+    // This handles cases where outbound stations are returned in reverse order from API
+    return stations.sort((a, b) => a.entireProgress - b.entireProgress)
+  }, [stationData.inbound, stationData.outbound, selectedRoute])
 
   // Convert to 2D array: 10 rows, columns vary based on station count
   const ROW_COUNT = 10
@@ -414,6 +429,10 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
   // Uses entireProgress (0-100 for whole route) to match Cesium's coordinate system
   const busPositions = useMemo(() => {
     if (flatStations.length < 2) return []
+
+    // Get split point for direction determination
+    const routeGeom = selectedRoute ? routeStore.getRouteGeom(selectedRoute) : undefined
+    const splitPoint = routeGeom ? calculateDirectionSplitPoint(routeGeom) : 50
 
     // Helper to find station pair for a given progress on entire route
     const findStationPair = (busProgress: number) => {
@@ -449,25 +468,85 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
       return null
     }
 
+    // Helper to determine bus direction by finding the nearest station
+    // Stations have accurate direction info, so this is more reliable than route coordinates
+    const determineBusDirection = (longitude: number, latitude: number): 'inbound' | 'outbound' => {
+      if (flatStations.length === 0) {
+        return 'inbound' // fallback
+      }
+
+      let nearestStation = flatStations[0]
+      let minDist = Infinity
+
+      for (const station of flatStations) {
+        const [stationLon, stationLat] = station.geometry.coordinates
+        const dist = Math.sqrt(
+          Math.pow(longitude - stationLon, 2) + Math.pow(latitude - stationLat, 2)
+        )
+        if (dist < minDist) {
+          minDist = dist
+          nearestStation = station
+        }
+      }
+
+      return nearestStation.direction
+    }
+
+    // Convert direction-specific progress (0-100) to entire route progress (0-100)
+    const convertToEntireProgress = (directionProgress: number, direction: 'inbound' | 'outbound'): number => {
+      if (direction === 'inbound') {
+        // Inbound: 0-100% → 0-splitPoint%
+        return directionProgress * (splitPoint / 100)
+      } else {
+        // Outbound: 0-100% → splitPoint-100%
+        return splitPoint + directionProgress * ((100 - splitPoint) / 100)
+      }
+    }
+
     return operatingBusData.map(bus => {
       // Get sorted positions (oldest to newest)
       const sortedPositions = [...bus.positions].sort(
         (a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()
       )
 
-      // Get previous and current progress values
+      // Get previous and current position data
       const prevPosition = sortedPositions.length >= 2 ? sortedPositions[sortedPositions.length - 2] : sortedPositions[0]
       const currPosition = sortedPositions[sortedPositions.length - 1]
+
+      // Determine bus direction based on current GPS position
+      const busDirection = determineBusDirection(
+        currPosition.position.longitude,
+        currPosition.position.latitude
+      )
+      const isInbound = busDirection === 'inbound'
 
       // Get this bus's individual animation progress (0-1)
       const busProgress = busAnimationProgress.get(bus.vehicle_number) ?? 0
 
-      // Interpolate progress based on this bus's animation state
-      const prevProgress = prevPosition?.progress_percent ?? currPosition.progress_percent
-      const currProgress = currPosition.progress_percent
-      const animatedProgress = prevProgress + (currProgress - prevProgress) * busProgress
+      // Convert direction-specific progress to entire route progress
+      const prevProgressRaw = prevPosition?.progress_percent ?? currPosition.progress_percent
+      const currProgressRaw = currPosition.progress_percent
 
-      // Find station pair using entire route progress (same as Cesium)
+      const prevEntireProgress = convertToEntireProgress(prevProgressRaw, busDirection)
+      const currEntireProgress = convertToEntireProgress(currProgressRaw, busDirection)
+
+      const progressDelta = currEntireProgress - prevEntireProgress
+
+      // Handle various movement scenarios
+      let animatedProgress: number
+
+      if (Math.abs(progressDelta) > 30) {
+        // Large jump: skip animation, use current position directly
+        animatedProgress = currEntireProgress
+      } else if (progressDelta < 0) {
+        // Backward movement: use current position directly
+        animatedProgress = currEntireProgress
+      } else {
+        // Normal forward movement: animate from prev to curr
+        animatedProgress = prevEntireProgress + progressDelta * busProgress
+      }
+
+      // Find station pair using entire route progress
       const stationPair = findStationPair(animatedProgress)
 
       if (!stationPair) return null
@@ -486,6 +565,7 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
       return {
         vehicleNumber: bus.vehicle_number,
         animatedProgress,
+        progressDelta, // Direction of movement: positive = forward (index increasing), negative = backward
         factor: Math.max(0, Math.min(1, factor)),
         lowerCol,
         lowerRow,
@@ -493,10 +573,11 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
         upperRow,
         lowerIndex,
         upperIndex,
-        sensorData
+        sensorData,
+        isInbound
       }
     }).filter((pos): pos is NonNullable<typeof pos> => pos !== null)
-  }, [flatStations, operatingBusData, busAnimationProgress, ROW_COUNT])
+  }, [flatStations, operatingBusData, busAnimationProgress, ROW_COUNT, selectedRoute])
 
   // Calculate station display type based on bus positions
   // - upcoming: 3 stations ahead of any bus (in travel direction)
@@ -512,24 +593,40 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
 
     // For each bus, mark stations relative to its position
     busPositions.forEach(pos => {
-      // Bus is between lowerIndex and upperIndex
-      // Current bus position index (round up to nearest station)
-      const busStationIndex = pos.upperIndex
+      // Determine movement direction based on progressDelta
+      // If progressDelta >= 0: bus is moving forward (index increasing direction)
+      // If progressDelta < 0: bus is moving backward (index decreasing direction)
+      const isMovingForward = pos.progressDelta >= 0
 
-      // Mark 3 stations ahead as upcoming (including station at bus position)
-      for (let i = 0; i <= 2; i++) {
-        const upcomingIndex = busStationIndex + i
-        if (upcomingIndex < flatStations.length) {
-          displayTypes.set(upcomingIndex, 'upcoming')
+      if (isMovingForward) {
+        // Forward movement: upcoming = higher index, passed = lower index
+        // Mark 3 stations ahead as upcoming
+        for (let i = 0; i <= 2; i++) {
+          const upcomingIndex = pos.upperIndex + i
+          if (upcomingIndex < flatStations.length) {
+            displayTypes.set(upcomingIndex, 'upcoming')
+          }
         }
-      }
-
-      // Mark 2 stations behind as passed (with air quality colors)
-      for (let i = 0; i <= 1; i++) {
-        const passedIndex = pos.lowerIndex - i
-        if (passedIndex >= 0) {
-          // Only set to passed if not already set to upcoming (upcoming takes priority)
-          if (displayTypes.get(passedIndex) !== 'upcoming') {
+        // Mark 2 stations behind as passed
+        for (let i = 0; i <= 1; i++) {
+          const passedIndex = pos.lowerIndex - i
+          if (passedIndex >= 0 && displayTypes.get(passedIndex) !== 'upcoming') {
+            displayTypes.set(passedIndex, 'passed')
+          }
+        }
+      } else {
+        // Backward movement: upcoming = lower index, passed = higher index
+        // Mark 3 stations ahead as upcoming (in backward direction)
+        for (let i = 0; i <= 2; i++) {
+          const upcomingIndex = pos.lowerIndex - i
+          if (upcomingIndex >= 0) {
+            displayTypes.set(upcomingIndex, 'upcoming')
+          }
+        }
+        // Mark 2 stations behind as passed (in backward direction)
+        for (let i = 0; i <= 1; i++) {
+          const passedIndex = pos.upperIndex + i
+          if (passedIndex < flatStations.length && displayTypes.get(passedIndex) !== 'upcoming') {
             displayTypes.set(passedIndex, 'passed')
           }
         }
@@ -688,7 +785,7 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
 
                 {/* Highlighted edge overlay segments (Busanjin-gu) */}
                 {(() => {
-                  const segments: JSX.Element[] = []
+                  const segments: React.ReactElement[] = []
                   const stationsInColumn = stationGrid.map(row => row[colIndex]).filter(s => s !== null)
 
                   // Horizontal edges between consecutive stations
@@ -858,24 +955,37 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
                     // Each slot center is at (slot + 0.5) / 10
                     const positionPercent = (busSlot + 0.5) / ROW_COUNT * 100
 
+                    // Bus image direction logic:
+                    // - Even rows: visual flow is left → right (progress increases rightward)
+                    // - Odd rows: visual flow is right → left (row-reverse, progress increases leftward)
+                    // Bus image default: facing LEFT
+                    // On even rows, bus faces RIGHT (flip)
+                    // On odd rows, bus faces LEFT (no flip)
+                    const shouldFlipBusImage = isEvenRow
+
                     return (
                       <div
                         key={`bus_h_${pos.vehicleNumber}`}
                         style={{
                           position: 'absolute',
-                          top: '-60px',
-                          left: `calc(30px + ${positionPercent}% - ${positionPercent * 0.6}px - 42px)`,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: '4px',
+                          top: '0px', // 버스 아이콘 하단이 노선 라인에 맞도록 조정
+                          left: `calc(30px + ${positionPercent}% - ${positionPercent * 0.6}px)`,
+                          transform: 'translateX(-50%)',
                           zIndex: 10,
                           pointerEvents: 'none'
                         }}
                       >
-                        {/* Sensor Data Display */}
+                        {/* Sensor Data Display - 버스 위에 absolute 배치 */}
                         {pos.sensorData && (
-                          <BusSensorDisplay sensorData={pos.sensorData} />
+                          <div style={{
+                            position: 'absolute',
+                            bottom: '100%',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            marginBottom: '4px'
+                          }}>
+                            <BusSensorDisplay sensorData={pos.sensorData} />
+                          </div>
                         )}
                         {/* Bus Icon */}
                         <img
@@ -884,7 +994,7 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
                           style={{
                             width: '84px',
                             height: 'auto',
-                            transform: isEvenRow ? 'scaleX(-1)' : 'none'
+                            transform: shouldFlipBusImage ? 'scaleX(-1)' : 'none'
                           }}
                         />
                       </div>

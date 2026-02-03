@@ -3,6 +3,8 @@
  * progress_percent (0-100)를 기반으로 노선 LineString 위의 정확한 위치를 계산
  */
 
+import type { RouteGeom } from '@/utils/api/types'
+
 export interface RoutePosition {
   longitude: number
   latitude: number
@@ -61,7 +63,7 @@ function calculateHeading(
 /**
  * 노선의 전체 길이를 계산 (meters)
  */
-function calculateTotalRouteLength(
+export function calculateTotalRouteLength(
   coordinates: [number, number, number][]
 ): number {
   let totalLength = 0
@@ -211,4 +213,28 @@ export function lerpProgress(
   if (newProgress < 0) newProgress += 1
 
   return newProgress
+}
+
+/**
+ * RouteGeom에서 상행/하행 분할점 계산
+ * entire route에서 inbound가 끝나고 outbound가 시작되는 지점의 percentage를 반환
+ * @param routeGeom - 노선 geometry (entire, inbound, outbound 좌표 포함)
+ * @returns 분할점 percentage (0-100), 기본값 50
+ */
+export function calculateDirectionSplitPoint(routeGeom: RouteGeom): number {
+  const entireCoords = routeGeom.entire?.coordinates
+  const inboundCoords = routeGeom.inbound?.coordinates
+
+  if (!entireCoords || !inboundCoords || entireCoords.length < 2 || inboundCoords.length < 2) {
+    return 50 // fallback
+  }
+
+  const entireLength = calculateTotalRouteLength(entireCoords)
+  const inboundLength = calculateTotalRouteLength(inboundCoords)
+
+  if (entireLength === 0) {
+    return 50 // fallback
+  }
+
+  return (inboundLength / entireLength) * 100
 }
