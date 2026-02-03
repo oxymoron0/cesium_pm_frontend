@@ -11,7 +11,6 @@ import {
   setSelectedCivilStationId
 } from "@/utils/cesium/SimulationCivilResultRenderer";
 import SimulationCivilProgressIndicator from "@/components/service/SimulationCivilProgressIndicator";
-import SimulationCivilStationHtmlRenderer from "@/components/service/SimulationCivilStationHtmlRenderer";
 import { administrativeStore } from "@/stores/AdministrativeStore";
 import { isGeometrySuccess } from "@/types/administrative";
 import { clearAdministrativeBoundary, renderAdministrativeBoundary } from "@/utils/cesium/administrativeRenderer";
@@ -323,9 +322,6 @@ const SimulationCivilResult = observer(function SimulationCivilResult() {
     <>
       {renderMainCivilContent()}
 
-      <SimulationCivilStationHtmlRenderer 
-        selectedEntityId={selectedStationId}
-      />
       {selectedCivilStationAnalysisId === null && <SimulationCivilProgressIndicator />}
     </>
   );
