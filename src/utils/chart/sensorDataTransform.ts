@@ -1,4 +1,5 @@
 import type { HourlyDataPoint, DailyDataPoint, StationSensorApiData } from '@/utils/api/types'
+import { normalizeToPercentage } from '@/utils/airQuality'
 
 /**
  * Chart Data Point
@@ -10,6 +11,9 @@ export interface ChartDataPoint {
   pm10: number | null   // PM10 value
   pm25: number | null   // PM25 value
   voc: number | null    // VOCs value
+  // 정규화된 값 (civil 모드에서 PM10+PM25 동시 표시용)
+  pm10Normalized?: number | null
+  pm25Normalized?: number | null
 }
 
 /**
@@ -230,4 +234,23 @@ export function getYAxisDomain(
     Math.max(0, Math.floor(min - padding)),
     Math.ceil(max + padding)
   ]
+}
+
+/**
+ * 차트 데이터에 정규화된 값 추가
+ * Civil 모드에서 PM10과 PM25를 동시에 표시할 때 사용
+ *
+ * @param data - 원본 차트 데이터 배열
+ * @returns 정규화된 값이 추가된 차트 데이터
+ */
+export function normalizeChartData(data: ChartDataPoint[]): ChartDataPoint[] {
+  return data.map(point => ({
+    ...point,
+    pm10Normalized: point.pm10 !== null
+      ? normalizeToPercentage('pm10', point.pm10)
+      : null,
+    pm25Normalized: point.pm25 !== null
+      ? normalizeToPercentage('pm25', point.pm25)
+      : null
+  }))
 }
