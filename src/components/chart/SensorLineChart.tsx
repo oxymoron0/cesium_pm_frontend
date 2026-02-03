@@ -12,9 +12,10 @@ import {
 } from 'recharts'
 import { sensorSelectionStore } from '@/stores/SensorSelectionStore'
 import SensorTooltip from './SensorTooltip'
-import { AIR_QUALITY_STANDARDS, AIR_QUALITY_COLORS } from '@/utils/airQuality'
+import { AIR_QUALITY_STANDARDS, AIR_QUALITY_COLORS, NORMALIZED_ZONES } from '@/utils/airQuality'
 import { isCivil } from '@/utils/env'
 import type { ChartDataPoint } from '@/utils/chart/sensorDataTransform'
+import { normalizeChartData } from '@/utils/chart/sensorDataTransform'
 
 interface SensorLineChartProps {
   data: ChartDataPoint[]
@@ -64,15 +65,41 @@ const SensorLineChart = observer(function SensorLineChart({
   // 일반 모드: PM10 또는 PM25가 명시적으로 선택된 경우에만
   const isColorMapOn = civilMode || sensorSelectionStore.selectedPMType !== null
 
+  // PM10과 PM25가 동시에 표시될 때만 정규화 적용 (Civil 모드)
+  const useNormalizedScale = civilMode && showPM10 && showPM25
+
+  // 정규화 모드에서는 데이터를 변환
+  const chartData = useMemo(() => {
+    if (!data || data.length === 0) return []
+    return useNormalizedScale ? normalizeChartData(data) : data
+  }, [data, useNormalizedScale])
+
   // Y축 최대값과 배경 영역을 공기질 기준에 맞춰 계산
   const { yAxisMax, zones, civilYAxisConfig } = useMemo(() => {
-    if (!data || data.length === 0) {
+    if (!chartData || chartData.length === 0) {
       return { yAxisMax: 100, zones: [], civilYAxisConfig: null }
     }
 
-    // 1. 데이터 최대값 계산
+    // 정규화 모드: 고정 0-100 스케일, 등급별 25% 영역
+    if (useNormalizedScale) {
+      const zoneList = [
+        { y1: NORMALIZED_ZONES.good.min, y2: NORMALIZED_ZONES.good.max, fill: AIR_QUALITY_COLORS.good },
+        { y1: NORMALIZED_ZONES.normal.min, y2: NORMALIZED_ZONES.normal.max, fill: AIR_QUALITY_COLORS.normal },
+        { y1: NORMALIZED_ZONES.bad.min, y2: NORMALIZED_ZONES.bad.max, fill: AIR_QUALITY_COLORS.bad },
+        { y1: NORMALIZED_ZONES.very_bad.min, y2: NORMALIZED_ZONES.very_bad.max, fill: AIR_QUALITY_COLORS.very_bad }
+      ]
+
+      const civilConfig = {
+        ticks: [12.5, 37.5, 62.5, 87.5], // 각 구간의 중앙값
+        tickLabels: ['좋음', '보통', '나쁨', '매우나쁨']
+      }
+
+      return { yAxisMax: 100, zones: zoneList, civilYAxisConfig: civilConfig }
+    }
+
+    // 기존 로직: 데이터 최대값 계산
     let maxValue = 0
-    data.forEach(point => {
+    chartData.forEach(point => {
       if (showPM10 && point.pm10 != null && point.pm10 > maxValue) maxValue = point.pm10
       if (showPM25 && point.pm25 != null && point.pm25 > maxValue) maxValue = point.pm25
       if (showVOCs && point.voc != null && point.voc > maxValue) maxValue = point.voc
@@ -83,11 +110,11 @@ const SensorLineChart = observer(function SensorLineChart({
       return { yAxisMax: Math.ceil(maxValue * 1.2) || 100, zones: [], civilYAxisConfig: null }
     }
 
-    // 2. 적용할 기준 선택 (PM10 우선)
+    // 적용할 기준 선택 (PM10 우선)
     const standards = showPM10 ? AIR_QUALITY_STANDARDS.pm10 : AIR_QUALITY_STANDARDS.pm25
     const thresholds = [standards.good.max, standards.normal.max, standards.bad.max]
 
-    // 3. Y축 최대값: 데이터가 포함되는 기준 임계값으로 설정
+    // Y축 최대값: 데이터가 포함되는 기준 임계값으로 설정
     let yMax: number
     if (maxValue <= thresholds[0]) {
       yMax = thresholds[0]
@@ -100,7 +127,7 @@ const SensorLineChart = observer(function SensorLineChart({
       yMax = Math.ceil(maxValue / 50) * 50
     }
 
-    // 4. 배경 영역 생성 (Y축 최대값까지만)
+    // 배경 영역 생성 (Y축 최대값까지만)
     const zoneList: { y1: number; y2: number; fill: string }[] = []
 
     // Good
@@ -137,7 +164,7 @@ const SensorLineChart = observer(function SensorLineChart({
       })
     }
 
-    // 5. Civil 모드용 Y축 설정 (등급 텍스트 표시)
+    // Civil 모드용 Y축 설정 (등급 텍스트 표시) - PM만 단독 선택된 경우
     const civilConfig = civilMode ? {
       ticks: zoneList.map(zone => (zone.y1 + zone.y2) / 2), // 각 존의 중앙값
       tickLabels: zoneList.map((_zone, index) => {
@@ -149,7 +176,7 @@ const SensorLineChart = observer(function SensorLineChart({
     } : null
 
     return { yAxisMax: yMax, zones: zoneList, civilYAxisConfig: civilConfig }
-  }, [data, showPM10, showPM25, showVOCs, isColorMapOn, civilMode])
+  }, [chartData, showPM10, showPM25, showVOCs, isColorMapOn, civilMode, useNormalizedScale])
 
   // Empty state
   if (!data || data.length === 0) {
@@ -173,7 +200,7 @@ const SensorLineChart = observer(function SensorLineChart({
   return (
     <ResponsiveContainer width="100%" height="100%" style={{ outline: 'none' }}>
       <LineChart
-        data={data}
+        data={chartData}
         margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
         style={{ outline: 'none' }}
       >
@@ -238,7 +265,7 @@ const SensorLineChart = observer(function SensorLineChart({
         {/* PM10 Line */}
         <Line
           type="monotone"
-          dataKey="pm10"
+          dataKey={useNormalizedScale ? "pm10Normalized" : "pm10"}
           stroke="#CFFF40"
           strokeWidth={2}
           dot={false}
@@ -253,7 +280,7 @@ const SensorLineChart = observer(function SensorLineChart({
         {/* PM25 Line */}
         <Line
           type="monotone"
-          dataKey="pm25"
+          dataKey={useNormalizedScale ? "pm25Normalized" : "pm25"}
           stroke="#FFD040"
           strokeWidth={2}
           dot={false}
