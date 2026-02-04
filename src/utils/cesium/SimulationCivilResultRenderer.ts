@@ -7,7 +7,13 @@ import {
   Color,
   Cartographic,
   sampleTerrainMostDetailed,
-  Viewer
+  Viewer,
+  ScreenSpaceEventHandler,
+  ScreenSpaceEventType,
+  Cartesian2,
+  defined,
+  HeadingPitchRange,
+  Math as CesiumMath
 } from 'cesium';
 import { createGeoJsonDataSource, findDataSource } from './datasources';
 import { getBasePath } from '@/utils/env';
@@ -19,6 +25,9 @@ const terrainHeightCache = new Map<string, number>();
 
 // 시민용 시뮬레이션 정류장 선택 상태 관리
 let currentSelectedStationId: number | null = null;
+
+// Cesium Entity 클릭 이벤트 핸들러
+let clickEventHandler: ScreenSpaceEventHandler | null = null;
 
 /**
  * 현재 선택된 시민용 정류장 ID 조회
@@ -150,8 +159,137 @@ export function clearCivilResultStations(): void {
 
     terrainHeightCache.clear();
     currentSelectedStationId = null;
-    
+
   } catch (error) {
     console.error('[CivilResultRenderer] Clear failed:', error);
   }
+}
+
+/**
+ * Cesium Entity 클릭 이벤트 핸들러 설정
+ * 정류장 아이콘 클릭 시 선택 상태 토글
+ */
+export function setupCivilStationClickHandler(): void {
+  try {
+    const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
+    if (!viewer) {
+      console.warn('[CivilResultRenderer] Cesium viewer not available');
+      return;
+    }
+
+    // 기존 핸들러가 있으면 제거
+    destroyCivilStationClickHandler();
+
+    // 새 핸들러 생성
+    clickEventHandler = new ScreenSpaceEventHandler(viewer.scene.canvas);
+
+    // LEFT_CLICK 이벤트 등록
+    clickEventHandler.setInputAction((movement: { position: Cartesian2 }) => {
+      const pickedObject = viewer.scene.pick(movement.position);
+
+      if (defined(pickedObject) && defined(pickedObject.id)) {
+        const entity = pickedObject.id as Entity;
+        const entityId = entity.id;
+
+        // station_ 접두사로 시작하는 Entity인지 확인
+        if (entityId?.startsWith('station_')) {
+          const stationId = Number(entityId.replace('station_', ''));
+
+          if (!isNaN(stationId)) {
+            // 토글 로직: 이미 선택된 경우 해제, 아니면 선택
+            if (currentSelectedStationId === stationId) {
+              console.log('[CivilResultRenderer] Deselecting station:', stationId);
+              setSelectedCivilStationId(null);
+            } else {
+              console.log('[CivilResultRenderer] Selecting station:', stationId);
+              setSelectedCivilStationId(stationId);
+              // 카메라 이동 추가
+              flyToCivilStation(entity);
+            }
+          }
+        }
+      }
+    }, ScreenSpaceEventType.LEFT_CLICK);
+
+    // MOUSE_MOVE 이벤트 등록 (커서 변경)
+    clickEventHandler.setInputAction((movement: { endPosition: Cartesian2 }) => {
+      const pickedObject = viewer.scene.pick(movement.endPosition);
+
+      if (defined(pickedObject) && defined(pickedObject.id)) {
+        const entity = pickedObject.id as Entity;
+        if (entity.id?.startsWith('station_')) {
+          viewer.scene.canvas.style.cursor = 'pointer';
+        } else {
+          viewer.scene.canvas.style.cursor = 'auto';
+        }
+      } else {
+        viewer.scene.canvas.style.cursor = 'auto';
+      }
+    }, ScreenSpaceEventType.MOUSE_MOVE);
+
+    console.log('[CivilResultRenderer] Click handler registered');
+  } catch (error) {
+    console.error('[CivilResultRenderer] Failed to setup click handler:', error);
+  }
+}
+
+/**
+ * Cesium Entity 클릭 이벤트 핸들러 해제
+ */
+export function destroyCivilStationClickHandler(): void {
+  if (clickEventHandler) {
+    if (!clickEventHandler.isDestroyed()) {
+      clickEventHandler.destroy();
+    }
+    clickEventHandler = null;
+
+    // 커서 복원
+    const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
+    if (viewer?.scene?.canvas) {
+      viewer.scene.canvas.style.cursor = 'auto';
+    }
+
+    console.log('[CivilResultRenderer] Click handler destroyed');
+  }
+}
+
+/**
+ * 정류장 Entity로 카메라 이동
+ */
+function flyToCivilStation(entity: Entity): void {
+  const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
+  if (!viewer) return;
+
+  viewer.flyTo(entity, {
+    duration: 1.5,
+    offset: new HeadingPitchRange(0, CesiumMath.toRadians(-45), 500)
+  });
+}
+
+/**
+ * 정류장으로 카메라 이동 (현재 높이 유지)
+ */
+export function flyToCivilStationPreserveHeight(stationId: number): void {
+  const viewer = (window as unknown as { cviewer: Viewer }).cviewer;
+  if (!viewer?.camera) return;
+
+  const dataSource = findDataSource(DATASOURCE_NAME);
+  const entity = dataSource?.entities.getById(`station_${stationId}`);
+  const position = entity?.position?.getValue(viewer.clock.currentTime);
+  if (!position) return;
+
+  // 현재 카메라 높이 유지
+  const currentHeight = viewer.camera.positionCartographic.height;
+  const stationCartographic = Cartographic.fromCartesian(position);
+
+  const destination = Cartesian3.fromDegrees(
+    CesiumMath.toDegrees(stationCartographic.longitude),
+    CesiumMath.toDegrees(stationCartographic.latitude),
+    currentHeight
+  );
+
+  viewer.camera.flyTo({
+    destination,
+    duration: 1.0
+  });
 }

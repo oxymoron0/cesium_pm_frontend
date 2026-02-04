@@ -180,18 +180,36 @@ const SimulationCivilStationHtmlRenderer = () => {
       tagEl = document.createElement('div');
       tagEl.style.position = 'absolute';
       tagEl.style.transform = 'translate(-50%)'; // 중앙 정렬
-      tagEl.style.zIndex = '101';
+      tagEl.style.zIndex = '1020';
       tagEl.style.pointerEvents = 'auto'; // 클릭 가능하게
       
       // 클릭 이벤트
       tagEl.onclick = () => {
-        if(simulationStore.selectedCivilStationAnalysisId !== null) return;
         const newId = isSelected ? null : entityId;
         setSelectedStationId(newId);
-        
+
         if (newId) {
           // 리스트와 동기화
-          setSelectedCivilStationId(stationData.index); 
+          setSelectedCivilStationId(stationData.index);
+
+          // 활동 가이드 모드에서 카메라 이동 및 분석 전환
+          if (simulationStore.selectedCivilStationAnalysisId !== null) {
+            const viewer = window.cviewer;
+            const dataSource = viewer?.dataSources.getByName(dataSourceName)[0];
+            const entity = dataSource?.entities.getById(newId);
+
+            if (viewer && entity) {
+              viewer.flyTo(entity, {
+                duration: 1.5,
+                offset: new HeadingPitchRange(
+                  0,
+                  Math.toRadians(-45),
+                  500
+                )
+              });
+            }
+            simulationStore.runCivilStationAnalysis(stationData.index);
+          }
         } else {
           setSelectedCivilStationId(null);
         }
@@ -209,8 +227,8 @@ const SimulationCivilStationHtmlRenderer = () => {
       tagEl.innerHTML = createStationTagHTML(labelText, isSelected);
       tagEl.dataset.selected = String(isSelected);
       
-      // Z-Index 조정: 기본(10) < 선택된 태그(20)
-      tagEl.style.zIndex = isSelected ? '20' : '10'; 
+      // Z-Index 조정: 기본(1020) < 선택된 태그(1030)
+      tagEl.style.zIndex = isSelected ? '1030' : '1020'; 
     }
 
     tagEl.style.left = `${x}px`;
@@ -225,7 +243,7 @@ const SimulationCivilStationHtmlRenderer = () => {
         popupEl = document.createElement('div');
         popupEl.style.position = 'absolute';
         popupEl.style.transform = 'translate(-50%, 40px)';
-        popupEl.style.zIndex = '30';
+        popupEl.style.zIndex = '1040';
         popupEl.style.pointerEvents = 'auto'; // 클릭 가능하게
         popupEl.innerHTML = createPopupHTML(stationData);
 
@@ -347,7 +365,7 @@ const SimulationCivilStationHtmlRenderer = () => {
   return (
     <div
       ref={containerRef}
-      className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-visible z-10"
+      className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-visible z-[1010]"
       style={{ overflow: 'visible' }}
     />
   );
