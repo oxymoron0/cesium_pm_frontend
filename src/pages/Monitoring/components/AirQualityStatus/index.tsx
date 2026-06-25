@@ -51,9 +51,10 @@ const AirQualityStatus = observer(function AirQualityStatus({ onClose, initialSt
   return (
     <Panel
       className="flex flex-col items-center gap-4"
-      position="center"
-      marginHorizontal={20}
-      marginVertical={32}
+      position="right"
+      offset={90}
+      width="calc(100vw - 110px)"
+      height="calc(100vh - 64px)"
       allowOverflow={true}
     >
       <Title onClose={onClose}>노선별 실시간 공기질 현황</Title>

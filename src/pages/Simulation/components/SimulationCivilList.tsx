@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite';
 import Spacer from '@/components/basic/Spacer';
 import Icon from '@/components/basic/Icon';
 import { simulationStore } from '@/stores/SimulationStore';
+import { getSensorInfo } from '@/utils/airQuality';
 import Button from '@/components/basic/Button';
 import SimulationCivilDetailRow from './SimulationCivilDetailRow';
 import type { SimulationCivilQuickData } from '@/types/simulation_request_types';
@@ -213,7 +214,7 @@ const SimulationCivilList = observer(function SimulationCivilList() {
 
               {/* 농도 */}
               <div style={{ flex: 1, textAlign: 'center', color: '#FFFFFF' }}>
-                {Math.round(sim.average_concentration)} µg/m³
+                {Math.round(sim.average_concentration)} {getSensorInfo(sim.pm_type as 'pm10' | 'pm25' | 'vocs').unit}
               </div>
 
               {/* 풍향 */}

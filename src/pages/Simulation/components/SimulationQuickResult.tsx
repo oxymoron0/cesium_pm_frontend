@@ -6,6 +6,7 @@ import Divider from "@/components/basic/Divider";
 import Spacer from "@/components/basic/Spacer";
 import Button from "@/components/basic/Button";
 import { simulationStore } from "@/stores/SimulationStore";
+import { getSensorInfo } from "@/utils/airQuality";
 import {
   renderSimulationResultStations,
   clearSimulationResultStations,
@@ -53,6 +54,7 @@ const formatDateTimeKOR = (iso: string) => {
 const formatPollutant = (pm: string | undefined) => {
   if (pm === "pm10") return "미세먼지 (PM-10)";
   if (pm === "pm25") return "초미세먼지 (PM-2.5)";
+  if (pm === "vocs") return "휘발성유기화합물(VOCs)";
   return "미세먼지";
 };
 
@@ -183,7 +185,7 @@ const SimulationQuickResult = observer(function SimulationQuickResult({
       id: s.index,
       name: s.station_name, // station_id가 있다면 뒤에 ()로 붙이고 싶으면 `${s.station_name}${s.station_id ? ` (${s.station_id})` : ""}`
       time: formatDateTime24(s.measured_at),
-      pm10: `${Math.floor(Number(s.concentration) || 0)} μg/m³`,
+      pm10: `${Math.floor(Number(s.concentration) || 0)} ${getSensorInfo((sim?.pm_type ?? 'pm10') as 'pm10' | 'pm25' | 'vocs').unit}`,
       point: [
         s.location?.coordinates?.[0] ?? 0,
         s.location?.coordinates?.[1] ?? 0,

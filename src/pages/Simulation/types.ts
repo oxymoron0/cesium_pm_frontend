@@ -108,4 +108,5 @@ export type SimulationConfirmType =   | "moveReset" //이동시 초기화 컨펌
   | "delSim" //시뮬레이션 삭제 컨펌
   | "runCustom" //상세 설정 시뮬레이션 시작 컨펌
   | "runDup" //상세 설정 시뮬레이션 중복 있을시에 나오는 컨펌
-  | "runList"; //실행 목록 시뮬레이션 컨펌
+  | "runList" //실행 목록 시뮬레이션 컨펌
+  | "retrySim"; //실패 시뮬레이션 재시도 컨펌

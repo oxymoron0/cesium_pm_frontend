@@ -7,6 +7,7 @@ import type {
   SimulationRequest,
 } from "@/types/simulation_request_types";
 import { simulationStore } from "@/stores/SimulationStore";
+import { getSensorInfo } from "@/utils/airQuality";
 
 type ConfirmForm = {
   open: boolean;
@@ -40,7 +41,8 @@ const SimulationConfirm = observer(function SimulationConfirm() {
   const needsData =
     simulationStore.isModalConfirmType === "runCustom" ||
     simulationStore.isModalConfirmType === "runDup" ||
-    simulationStore.isModalConfirmType === "runList";
+    simulationStore.isModalConfirmType === "runList" ||
+    simulationStore.isModalConfirmType === "retrySim";
 
   useEffect(() => {
     if (needsData && !dataForConfirm) {
@@ -57,6 +59,7 @@ const SimulationConfirm = observer(function SimulationConfirm() {
   const formatPollutant = (pm_type: PMType) => {
     if (pm_type === "pm10") return "미세먼지(PM-10)";
     if (pm_type === "pm25") return "초미세먼지(PM-2.5)";
+    if (pm_type === "vocs") return "휘발성유기화합물(VOCs)";
     return pm_type;
   };
 
@@ -134,7 +137,7 @@ const SimulationConfirm = observer(function SimulationConfirm() {
             {pmTypeToDisplay && concentrationToDisplay != null
               ? `${formatPollutant(
                   pmTypeToDisplay
-                )} / ${concentrationToDisplay}μg/m³`
+                )} / ${concentrationToDisplay}${getSensorInfo(pmTypeToDisplay).unit}`
               : "-"}
           </div>
         </div>
@@ -309,6 +312,23 @@ const SimulationConfirm = observer(function SimulationConfirm() {
             handleExecute();
             simulationStore.confirmModal()
           }
+        };
+
+      case "retrySim":
+        return {
+          open: true,
+          title: "실패한 시뮬레이션을 재시도하시겠습니까?",
+          description: (
+            <div className="text-[rgba(166,166,166,1)]">
+              재시도 시 대기열에 다시 등록되며,
+              <br />
+              완료까지 일정 시간이 소요될 수 있습니다.
+            </div>
+          ),
+          content: <SummaryCard />,
+          cancelText: "취소",
+          confirmText: "재시도",
+          onConfirm: () => simulationStore.confirmModal(),
         };
 
       default:

@@ -560,7 +560,7 @@ const SimulationDetailConfig = observer(function SimulationDetailConfig({ onBack
             color: '#A6A6A6'
           }}
         >
-          * 맞춤 실행 결과는 약 1~2시간 후 확인할 수 있습니다.
+          * 맞춤 실행 결과는 약 10분 후 확인할 수 있습니다.
         </div>
       </div>
 

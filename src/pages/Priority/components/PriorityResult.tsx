@@ -405,7 +405,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15초 타임아웃
 
-      const url = API_PATHS.SIMULATION_VULNERABLE_FACILITIES_BY_UUID_TO_CSV(priorityStore.simulationUuid);
+      const url = API_PATHS.SIMULATION_VULNERABLE_FACILITIES_BY_UUID_TO_EXCEL(priorityStore.simulationUuid);
       const response = await fetch(url, {
         signal: controller.signal
       });
@@ -422,10 +422,10 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
       const link = document.createElement('a');
       link.href = downloadUrl;
 
-      // 파일명: 우선순위_날짜_시간.csv
+      // 파일명: 우선순위_날짜_시간.xlsx
       const dateStr = config.date.replace(/\./g, '');
       const timeStr = config.time.split('시')[0].trim().padStart(2, '0');
-      link.download = `우선순위_${dateStr}_${timeStr}시.csv`;
+      link.download = `우선순위_${dateStr}_${timeStr}시.xlsx`;
 
       document.body.appendChild(link);
       link.click();
@@ -599,7 +599,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
           </div>
 
           <div className="flex items-start self-stretch gap-2">
-            <div className="flex-1 custom-scrollbar" style={{ maxHeight: '268px', overflowY: 'auto', overflowX: 'hidden' }}>
+            <div className="flex-1">
               {/* 테이블 헤더 */}
               <div className="flex h-[54px] items-center self-stretch border-b border-white">
                 <div className="flex items-center justify-center" style={{ width: '40px', height: '54px', flexShrink: 0 }}>
@@ -675,6 +675,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
               </div>
 
               {/* 테이블 데이터 */}
+              <div className="custom-scrollbar" style={{ maxHeight: '214px', overflowY: 'auto', overflowX: 'hidden' }}>
               {facilities.map((facility) => {
                 const levelStyle = getLevelStyle(facility.predictedLevel);
                 const facilityKey = `${facility.id}_${facility.type}`;
@@ -714,6 +715,7 @@ const PriorityResult = observer(function PriorityResult({ config, onBack, onClos
                   </div>
                 );
               })}
+              </div>
             </div>
           </div>
         </div>

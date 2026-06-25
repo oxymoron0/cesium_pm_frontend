@@ -39,8 +39,8 @@ const PriorityStatistics = observer(function PriorityStatistics({ onClose }: Pri
     <div
       className="fixed z-[1200] flex flex-col items-center overflow-hidden rounded-[10px] border-t-[1.25px] border-t-yellow-400 pb-6 px-5 pt-6 text-white text-sm"
       style={{
-        width: '1660px',
-        height: isStatisticsPopupMinimized ? 'auto' : '680px',
+        width: '1810px',
+        height: isStatisticsPopupMinimized ? 'auto' : '790px',
         bottom: '88px',
         right: '90px',
         backgroundColor: 'rgba(0, 0, 0, 0.85)',

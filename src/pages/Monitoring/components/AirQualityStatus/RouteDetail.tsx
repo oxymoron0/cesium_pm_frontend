@@ -9,6 +9,7 @@ import { getRouteStations } from '@/utils/api/routeApi'
 import { getAirQualityLevel, AIR_QUALITY_COLORS } from '@/utils/airQuality'
 import { isCivil, getBasePath } from '@/utils/env'
 import Title from '@/components/basic/Title'
+import SubTitle from '@/components/basic/SubTitle'
 import AirQualityDisplay from '@/components/service/sensor/AirQualityDisplay'
 import type { RouteStationsResponse, AirQualityLevel } from '@/utils/api/types'
 
@@ -682,17 +683,19 @@ const RouteDetail = observer(function RouteDetail({ selectedRoute, initialStatio
     >
       <Title dividerColor="bg-[#696A6A]">
         <div className="flex gap-3 items-end">
-          <span
-            style={{
-              color: '#FFF',
-              fontFamily: 'Pretendard',
-              fontSize: '24px',
-              fontWeight: '700',
-              lineHeight: 'normal'
-            }}
-          >
-            {selectedRouteInfo.route_name}번 노선도
-          </span>
+          <SubTitle info="노란색 표시 노선은 부산진구 구간을 나타냅니다.">
+            <span
+              style={{
+                color: '#FFF',
+                fontFamily: 'Pretendard',
+                fontSize: '24px',
+                fontWeight: '700',
+                lineHeight: 'normal'
+              }}
+            >
+              {selectedRouteInfo.route_name}번 노선도
+            </span>
+          </SubTitle>
           <span
             style={{
               color: '#A6A6A6',

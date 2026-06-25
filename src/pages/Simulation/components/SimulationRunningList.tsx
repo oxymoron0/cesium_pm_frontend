@@ -329,7 +329,7 @@ const SimulationRunningList = observer(function SimulationRunningList() {
                   </div>
                 )}
                 {sim.status === '완료' && (
-                  <Button iconName={'excute'} iconPos='right' 
+                  <Button iconName={'excute'} iconPos='right'
                     onClick={async () => {
                       simulationStore.setSelectedStartSimulation(sim)
                       const result = await simulationStore.openModal('runList');
@@ -340,6 +340,20 @@ const SimulationRunningList = observer(function SimulationRunningList() {
                   >
                     실행
                   </Button>
+                )}
+                {sim.status === '실패' && sim.user_id === userStore.currentUser && (
+                  <div
+                    className="flex items-center justify-center w-auto h-8 cursor-pointer py-1 px-3 rounded-[4px] text-[#FFD040] border border-[#FFD040] bg-black"
+                    onClick={async () => {
+                      simulationStore.setSelectedStartSimulation(sim);
+                      const result = await simulationStore.openModal('retrySim');
+                      if (result === 'confirm') {
+                        await simulationStore.retrySimulation(sim.uuid);
+                      }
+                    }}
+                  >
+                    재시도
+                  </div>
                 )}
               </div>
               <Icon 

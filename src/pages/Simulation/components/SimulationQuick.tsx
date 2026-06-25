@@ -5,11 +5,12 @@ import DatePicker from "@/components/basic/DatePicker";
 import Button from "@/components/basic/Button";
 import { simulationStore } from "@/stores/SimulationStore";
 import type { PMType, SimulationQuickData } from "@/types/simulation_request_types";
+import { getSensorInfo } from "@/utils/airQuality";
 // import { getSimulationQuickGlbDetail } from "@/utils/api/simulationApi";
 import { MOCK_GLB_DATA } from "@/utils/mockData/simulationQuickGlbDetail";
 
 const formatPollutant = (t: PMType) =>
-  t === "pm10" ? "미세먼지(PM-10)" : t === "pm25" ? "초미세먼지(PM-2.5)" : t;
+  t === "pm10" ? "미세먼지(PM-10)" : t === "pm25" ? "초미세먼지(PM-2.5)" : t === "vocs" ? "휘발성유기화합물(VOCs)" : t;
 
 const toLocalYMD = (iso: string) =>
   new Date(iso).toLocaleDateString(undefined, {
@@ -292,7 +293,7 @@ const SimulationQuick = observer(function SimulationQuick() {
                   </div>
                   <div className="w-[20%]">
                     {typeof st.concentration === "number"
-                      ? `${Math.floor(st.concentration)} μg/m³`
+                      ? `${Math.floor(st.concentration)} ${getSensorInfo(row.pm_type as PMType).unit}`
                       : st.concentration ?? "-"}
                   </div>
                 </div>

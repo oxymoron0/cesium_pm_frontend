@@ -1,6 +1,6 @@
 import { createGeoJsonDataSource, findDataSource, clearDataSource } from './datasources';
 import type { GeoJsonDataSource } from 'cesium';
-import { Color, ColorMaterialProperty, Entity, PolygonGraphics, PolygonHierarchy, Cartesian3 } from 'cesium';
+import { Color, Entity, PolygonGraphics, PolygonHierarchy, Cartesian3 } from 'cesium';
 
 /**
  * Administrative boundary rendering utility functions
@@ -89,12 +89,11 @@ function createPolygonEntity(coordinates: number[][][], entityId: string): Entit
     name: `Administrative Boundary ${entityId}`,
     polygon: new PolygonGraphics({
       hierarchy: new PolygonHierarchy(positions),
-      material: new ColorMaterialProperty(borderColor.withAlpha(0.2)),
       outline: true,
       outlineColor: borderColor,
       outlineWidth: 3,
       height: 0,
-      fill: true,
+      fill: false,
       heightReference: 1 // CLAMP_TO_GROUND
     })
   });

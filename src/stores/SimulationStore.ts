@@ -14,7 +14,7 @@ import type {
   SimulationCivilQuickData,
 } from '../types/simulation_request_types';
 import type { VulnerableFacilitiesResponse } from '@/utils/api/types';
-import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck, reverseGeocodeAPI, searchAddressAPI, getVulnerableFacilities, getSimulationCivilList, killSimulationAPI } from '@/utils/api';
+import { submitSimulation, getSimulationList, getSimulationDetail, getSimulationQuickList, deleteSimulationsAPI, updateSimulationPrivacyAPI, getCurrentWeatherAPI, runSimulationCheck, reverseGeocodeAPI, searchAddressAPI, getVulnerableFacilities, getSimulationCivilList, killSimulationAPI, retrySimulationAPI } from '@/utils/api';
 import { userStore } from './UserStore';
 import { administrativeStore } from './AdministrativeStore';
 import { abortJsonPreload } from '@/utils/cesium/jsonPreloader';
@@ -140,8 +140,8 @@ class SimulationStore {
     windSpeed: '',
     measuredAt: '' // 현재 시간 등 기준 시간
   };
-  civilSortKey: 'measured_at' | 'concentration' | 'wind_direction' | 'wind_speed' | null = null;
-  civilSortOrder: 'latest' | 'oldest' = 'latest';
+  civilSortKey: 'measured_at' | 'concentration' | 'wind_direction' | 'wind_speed' | null = 'concentration';
+  civilSortOrder: 'latest' | 'oldest' = 'oldest';
 
   constructor() {
     makeAutoObservable(this, {
@@ -1027,6 +1027,34 @@ class SimulationStore {
     } catch (error) {
       console.error('[SimulationStore] Failed to kill simulation:', error);
       return false;
+    }
+  }
+
+  /**
+   * 실패한 시뮬레이션 재시도
+   * POST /api/v1/simulation/{uuid}/retry
+   */
+  async retrySimulation(uuid: string): Promise<'completed' | 'queued' | null> {
+    try {
+      const response = await retrySimulationAPI(uuid);
+
+      if (response.data.status === '완료') {
+        // 복구 완료 - 결과 화면으로 이동
+        await this.selectSimulation(uuid);
+        if (!this.detailError && this.simulationDetail) {
+          this.setCurrentView('result');
+        }
+        return 'completed';
+      } else if (response.data.status === '대기') {
+        // 큐에 재등록 - 목록 갱신 (silent 모드로 깜빡임 방지)
+        await this.loadSimulationList(this.currentPage, 7, undefined, true);
+        return 'queued';
+      }
+
+      return null;
+    } catch (error) {
+      console.error(`[SimulationStore] Failed to retry simulation (${uuid}):`, error);
+      return null;
     }
   }
 

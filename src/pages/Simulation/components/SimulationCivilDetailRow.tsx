@@ -1,5 +1,6 @@
 import Spacer from '@/components/basic/Spacer';
 import { type SimulationCivilQuickData } from '@/types/simulation_request_types';
+import { getSensorInfo } from '@/utils/airQuality';
 
 interface SimulationCivilDetailRowProps {
   data: SimulationCivilQuickData;
@@ -53,7 +54,7 @@ const SimulationCivilDetailRow = ({ data }: SimulationCivilDetailRowProps) => {
     height: '40px'
   };
 
-  const pollutantLabel = pm_type === 'pm10' ? '미세먼지(PM-10)' : pm_type === 'pm25' ? '초미세먼지(PM-2.5)' : pm_type;
+  const pollutantLabel = pm_type === 'pm10' ? '미세먼지(PM-10)' : pm_type === 'pm25' ? '초미세먼지(PM-2.5)' : pm_type === 'vocs' ? '휘발성유기화합물(VOCs)' : pm_type;
 
   return (
     <div className="w-full bg-[#000000] p-4 border-t border-[#696A6A]">
@@ -118,7 +119,7 @@ const SimulationCivilDetailRow = ({ data }: SimulationCivilDetailRowProps) => {
                 <div className="flex-1 text-center text-white">{station.station_name}</div>
                 <div className="w-40 text-center">{formatTimeOnly(station.measured_at)}</div>
                 <div className="w-32 text-center text-white font-bold">
-                  {Math.floor(station.concentration)} µg/m³
+                  {Math.floor(station.concentration)} {getSensorInfo(pm_type as 'pm10' | 'pm25' | 'vocs').unit}
                 </div>
               </div>
             ))}

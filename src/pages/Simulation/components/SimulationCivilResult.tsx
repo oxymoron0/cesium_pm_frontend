@@ -47,6 +47,7 @@ const formatDateTimeKOR = (iso: string | number) => {
 const formatPollutant = (pm: string | undefined) => {
   if (pm === "pm10") return "미세먼지 (PM-10)";
   if (pm === "pm25") return "초미세먼지 (PM-2.5)";
+  if (pm === "vocs") return "휘발성유기화합물(VOCs)";
   return "미세먼지";
 };
 

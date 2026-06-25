@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite';
 import Icon from '@/components/basic/Icon';
 import Spacer from '@/components/basic/Spacer';
 import { simulationStore } from '@/stores/SimulationStore';
+import { getSensorInfo } from '@/utils/airQuality';
 import { getBusTrajectoryLatest } from '@/utils/api/busApi';
 
 interface SimulationCivilRealTimeWeatherProps {
@@ -79,7 +80,7 @@ const SimulationCivilRealTimeWeather = observer(function SimulationCivilRealTime
            <div className="flex items-center gap-4">
              <span className="text-white font-bold text-sm w-20">측정 물질</span>
              <div className="flex-1 h-8 px-3 flex items-center rounded border border-[#696A6A] bg-black text-[#FFFFFF] text-sm">
-               미세먼지(PM-10) &nbsp; <span className="text-white">{pm10Average !== null ? `${pm10Average}µg/m³` : '-'}</span>
+               미세먼지(PM-10) &nbsp; <span className="text-white">{pm10Average !== null ? `${pm10Average}${getSensorInfo('pm10').unit}` : '-'}</span>
              </div>
            </div>
 

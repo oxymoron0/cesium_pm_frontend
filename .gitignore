@@ -33,3 +33,6 @@ public/results
 
 # Local CLI Rulebook
 GEMINI.md
+
+# Built docker image exports (large artifacts)
+dist-images/

@@ -135,7 +135,7 @@ export default defineConfig(({ command, mode }) => {
             { from: /\/\w+Page\.html/, to: '/index.html' }
           ]
         },
-        allowedHosts: ['pm.astbusan.site']
+        allowedHosts: ['pm.astbusan.com']
       },
       css: {
         postcss: './postcss.config.js'

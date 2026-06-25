@@ -5,6 +5,7 @@ import Spacer from '@/components/basic/Spacer';
 import Divider from '@/components/basic/Divider';
 import { simulationStore } from '@/stores/SimulationStore';
 import type { PMType } from '@/types/simulation_request_types';
+import { getSensorInfo } from '@/utils/airQuality';
 
 interface SimulationConfigInfoProps {
   onClose?: () => void;
@@ -21,6 +22,7 @@ const SimulationConfigInfo = observer(function SimulationConfigInfo({ onClose }:
   const formatPollutant = (pmType?: PMType) => {
     if (pmType === 'pm10') return '미세먼지 (PM-10)';
     if (pmType === 'pm25') return '초미세먼지 (PM-2.5)';
+    if (pmType === 'vocs') return '휘발성유기화합물(VOCs)';
     return '-';
   };
 
@@ -58,7 +60,7 @@ const SimulationConfigInfo = observer(function SimulationConfigInfo({ onClose }:
           <ConfigRow label="오염물질" value={formatPollutant(simulationDetail.pmtype)} />
           <ConfigRow label="농도" value={
             simulationDetail.firstStationConcentration
-              ? `${simulationDetail.firstStationConcentration} μg/m³`
+              ? `${simulationDetail.firstStationConcentration} ${getSensorInfo(simulationDetail.pmtype as PMType).unit}`
               : '-'
           } />
           <ConfigRow label="발생 위치">

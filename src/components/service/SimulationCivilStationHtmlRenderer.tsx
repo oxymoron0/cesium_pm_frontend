@@ -180,7 +180,7 @@ const SimulationCivilStationHtmlRenderer = () => {
       tagEl = document.createElement('div');
       tagEl.style.position = 'absolute';
       tagEl.style.transform = 'translate(-50%)'; // 중앙 정렬
-      tagEl.style.zIndex = '1020';
+      tagEl.style.zIndex = '1120';
       tagEl.style.pointerEvents = 'auto'; // 클릭 가능하게
       
       // 클릭 이벤트
@@ -227,8 +227,8 @@ const SimulationCivilStationHtmlRenderer = () => {
       tagEl.innerHTML = createStationTagHTML(labelText, isSelected);
       tagEl.dataset.selected = String(isSelected);
       
-      // Z-Index 조정: 기본(1020) < 선택된 태그(1030)
-      tagEl.style.zIndex = isSelected ? '1030' : '1020'; 
+      // Z-Index 조정: 기본(1220) < 선택된 태그(1230)
+      tagEl.style.zIndex = isSelected ? '1130' : '1120'; 
     }
 
     tagEl.style.left = `${x}px`;
@@ -243,7 +243,7 @@ const SimulationCivilStationHtmlRenderer = () => {
         popupEl = document.createElement('div');
         popupEl.style.position = 'absolute';
         popupEl.style.transform = 'translate(-50%, 40px)';
-        popupEl.style.zIndex = '1040';
+        popupEl.style.zIndex = '1240';
         popupEl.style.pointerEvents = 'auto'; // 클릭 가능하게
         popupEl.innerHTML = createPopupHTML(stationData);
 
@@ -307,12 +307,12 @@ const SimulationCivilStationHtmlRenderer = () => {
         if (position) {
           // 3D 좌표 -> 2D 화면 좌표 변환
           const canvasPos = viewer.scene.cartesianToCanvasCoordinates(position);
-          
+
           // 화면 안에 있을 때만 렌더링
-          if (canvasPos && 
+          if (canvasPos &&
               canvasPos.x >= -50 && canvasPos.x <= viewer.canvas.width + 50 &&
               canvasPos.y >= -50 && canvasPos.y <= viewer.canvas.height + 50) {
-            
+
             createOrUpdateElements(entity.id, canvasPos.x, canvasPos.y);
             currentIds.add(entity.id);
           }
@@ -365,7 +365,7 @@ const SimulationCivilStationHtmlRenderer = () => {
   return (
     <div
       ref={containerRef}
-      className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-visible z-[1010]"
+      className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-visible z-[1199]"
       style={{ overflow: 'visible' }}
     />
   );

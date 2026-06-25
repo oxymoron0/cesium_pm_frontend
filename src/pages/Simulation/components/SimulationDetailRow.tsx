@@ -3,6 +3,7 @@ import type { SimulationListItem, PMType } from '@/types/simulation_request_type
 import Icon from '@/components/basic/Icon';
 import { simulationStore } from '@/stores/SimulationStore';
 import { userStore } from '@/stores/UserStore';
+import { getSensorInfo } from '@/utils/airQuality';
 
 /**
  * 상세 정보 항목 렌더링 컴포넌트
@@ -47,6 +48,7 @@ const SimulationDetailRow: React.FC<{ sim: SimulationListItem }> = ({ sim }) => 
   const formatPollutant = (pm_type: PMType) => {
     if (pm_type === 'pm10') return '미세먼지(PM-10)';
     if (pm_type === 'pm25') return '초미세먼지(PM-2.5)';
+    if (pm_type === 'vocs') return '휘발성유기화합물(VOCs)';
     return pm_type;
   };
 
@@ -84,7 +86,7 @@ const SimulationDetailRow: React.FC<{ sim: SimulationListItem }> = ({ sim }) => 
         </DetailItem>
         
         <DetailItem label="오염 물질/농도">
-          {formatPollutant(sim.pm_type)} / {sim.concentration ?? 'N/A'}µg/m³
+          {formatPollutant(sim.pm_type)} / {sim.concentration ?? 'N/A'}{getSensorInfo(sim.pm_type).unit}
         </DetailItem>
         
         <DetailItem label="발생 위치">

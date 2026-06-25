@@ -10,6 +10,7 @@ import SimulationQuickGuide from '@/pages/Simulation/components/SimulationQuickG
 import SimulationQuickResult from '@/pages/Simulation/components/SimulationQuickResult';
 import SimulationStationHtmlRenderer from '@/components/service/SimulationStationHtmlRenderer';
 import SimulationGlbHeatmapRender from '@/components/service/SimulationGlbHeatmapRender';
+import SimulationCivilStationHtmlRenderer from '@/components/service/SimulationCivilStationHtmlRenderer';
 import SimulationCivilMain from '@/pages/Simulation/components/SimulationCivilMain';
 import { simulationStore } from '@/stores/SimulationStore';
 import { flyToLocation } from '@/utils/cesiumControls';
@@ -166,6 +167,11 @@ const SimulationView = observer(function SimulationView({
         </>
       ) : (
         <>
+          {/* 대민 - HTML Overlay (Panel 외부) */}
+          {cesiumStatus === 'ready' && simulationStore.currentView === 'civilResult' && (
+            <SimulationCivilStationHtmlRenderer />
+          )}
+
           {/* 대민 */}
           <Panel
             position="left"

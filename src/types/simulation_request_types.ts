@@ -85,6 +85,24 @@ export interface SimulationResponseData {
 }
 
 /**
+ * Response data after simulation retry
+ * POST /api/v1/simulation/{uuid}/retry
+ */
+export interface SimulationRetryResponseData {
+  uuid: string;
+  status: string;                    // "완료" | "대기"
+  simulation_name: string;
+  recovered?: boolean;               // true if recovered from existing results
+  position_in_queue?: number;        // Queue position (only when status is "대기")
+}
+
+export interface SimulationRetryResponse {
+  success: boolean;
+  message: string;
+  data: SimulationRetryResponseData;
+}
+
+/**
  * Simulation list item from GET /api/v1/simulation/list
  */
 export interface SimulationListItem {
@@ -157,7 +175,7 @@ export interface SimulationQuickData {
   index: number;
   uuid: string;
   measured_at: string;
-  pm_type: "pm10" | "pm25";
+  pm_type: "pm10" | "pm25" | "vocs";
   weather: WeatherData;
   station_data: StationData[];
   json_count: number;                // Number of JSON result files
@@ -170,7 +188,7 @@ export interface SimulationQuickCivilData {
   index: number;
   uuid: string;
   measured_at: string;
-  pm_type: "pm10" | "pm25";
+  pm_type: "pm10" | "pm25" | "vocs";
   average_concentration: number;     // Civil-specific: average concentration
   weather: WeatherData;
   station_data: StationDataCivil[];

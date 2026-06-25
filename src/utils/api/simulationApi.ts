@@ -16,6 +16,7 @@ import type {
   Weather,
   SimulationInProgressResponse,
   SimulationCivilQuickDataResponse,
+  SimulationRetryResponse,
 } from '../../types/simulation_request_types';
 import type { AddressSearchResponse, ReverseGeocodeResponse } from '@/pages/Simulation/types';
 import type { VulnerableFacilitiesResponse } from './types';
@@ -580,3 +581,36 @@ export async function getSimulationCivilList(
   }
 }
 
+/**
+ * 실패한 시뮬레이션 재시도
+ * POST /api/v1/simulation/{uuid}/retry
+ *
+ * @param uuid - 재시도할 시뮬레이션 UUID
+ * @returns 재시도 결과 (복구 완료 또는 큐 재등록)
+ */
+export async function retrySimulationAPI(
+  uuid: string
+): Promise<SimulationRetryResponse> {
+  try {
+    const response = await post<SimulationRetryResponse>(
+      API_PATHS.SIMULATION_RETRY(uuid)
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Simulation retry API failed with status ${response.status}`
+      );
+    }
+
+    if (!response.data.success) {
+      throw new Error(
+        `Simulation retry failed: ${response.data.message}`
+      );
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error(`[retrySimulationAPI] API 호출 실패 (UUID: ${uuid}):`, error);
+    throw error;
+  }
+}

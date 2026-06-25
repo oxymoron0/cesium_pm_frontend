@@ -97,7 +97,7 @@ export async function renderAdministrativeBoundary(
         name: `${fullName} - Polygon ${index + 1}`,
         polygon: new PolygonGraphics({
           hierarchy: new PolygonHierarchy(positions),
-          material: Color.fromCssColorString('#0BE300').withAlpha(0.2),
+          material: Color.TRANSPARENT,
           heightReference: HeightReference.CLAMP_TO_GROUND,
         }),
         polyline: {
@@ -178,7 +178,7 @@ export async function renderMultipleAdministrativeBoundaries(
               const isSelected = administrativeStore.selectedNeighborhoodCode === neighborhoodCode;
               return isSelected
                 ? Color.fromCssColorString('#FFFFFF').withAlpha(0.8)
-                : Color.fromCssColorString('#0BE300').withAlpha(0.2);
+                : Color.TRANSPARENT;
             }, false)),
             heightReference: HeightReference.CLAMP_TO_GROUND,
           }),

@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite';
 import Divider from '@/components/basic/Divider';
 import Checkbox from './Checkbox';
 import { simulationStore } from '@/stores/SimulationStore';
+import { getSensorInfo } from '@/utils/airQuality';
 import { administrativeStore } from '@/stores/AdministrativeStore';
 import { renderAdministrativeBoundary, clearAdministrativeBoundary } from '@/utils/cesium/administrativeRenderer';
 import { isGeometrySuccess } from '@/types/administrative';
@@ -17,11 +18,11 @@ import SimulationCivilList from './SimulationCivilList';
 
 // const SimulationCivilConfig = observer(function SimulationCivilConfig({ onBack } : SimulationCivilConfigProps)  {
 const SimulationCivilConfig = observer(function SimulationCivilConfig()  {
-  // Form state
+  // Form state - 초기값을 store에서 가져와서 뒤로가기 시에도 유지
   const [pollutant, setPollutant] = useState('PM10');
-  const [concentration, setConcentration] = useState('');
-  const [windDirection, setWindDirection] = useState('');
-  const [windSpeed, setWindSpeed] = useState('');
+  const [concentration, setConcentration] = useState(simulationStore.civilConditions.concentration);
+  const [windDirection, setWindDirection] = useState(simulationStore.civilConditions.windDirection);
+  const [windSpeed, setWindSpeed] = useState(simulationStore.civilConditions.windSpeed);
   const [useCurrentWeather, setUseCurrentWeather] = useState(false);
 
   // 체크박스 체크 전 값 저장 (해제 시 복원용)
@@ -281,7 +282,7 @@ const SimulationCivilConfig = observer(function SimulationCivilConfig()  {
                     style={getInputStyle(isConcentrationInvalid)}
                   />
                   <span className="absolute right-3 top-2 -translate-y-1/2" 
-                    style={{fontFamily: 'Pretendard', lineHeight: 'normal', fontSize: '15px', fontWeight: '400', color: '#FFFFFF'}}>µg/m³</span>
+                    style={{fontFamily: 'Pretendard', lineHeight: 'normal', fontSize: '15px', fontWeight: '400', color: '#FFFFFF'}}>{getSensorInfo(pollutant.toLowerCase() as 'pm10' | 'pm25' | 'vocs').unit}</span>
                 </div>
               </div>
             </div>
