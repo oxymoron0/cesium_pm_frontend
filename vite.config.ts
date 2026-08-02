@@ -93,8 +93,8 @@ export default defineConfig(({ command, mode }) => {
   // 개발 환경: SPA 방식 (src/main.tsx 진입점)
   if (isDev) {
     const env = loadEnv(mode, process.cwd(), '')
-    const basePath = env.VITE_BASE_PATH || '/bump-svc3d-front-pm/'
-    const civilBasePath = env.VITE_CIVIL_BASE_PATH || '/bump-svc3d-front-pm-public/'
+    const basePath = env.VITE_BASE_PATH || '/bump-svc3d-front-uaqms/'
+    const civilBasePath = env.VITE_CIVIL_BASE_PATH || '/bump-svc3d-front-uaqms-public/'
     const simLocalPath = env.SIM_LOCAL_PATH || '/mnt/nfs'
     const simPath = env.VITE_SIM_PATH || 'sim'
 

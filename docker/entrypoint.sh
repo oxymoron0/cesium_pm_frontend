@@ -8,8 +8,8 @@ CONFIG_PATH="/usr/share/nginx/html/config.json"
 
 # Default values (used if environment variable is not set)
 IS_CIVIL="${IS_CIVIL:-false}"
-BASE_PATH="${BASE_PATH:-/bump-svc3d-front-pm/}"
-CIVIL_BASE_PATH="${CIVIL_BASE_PATH:-/bump-svc3d-front-pm-public/}"
+BASE_PATH="${BASE_PATH:-/bump-svc3d-front-uaqms/}"
+CIVIL_BASE_PATH="${CIVIL_BASE_PATH:-/bump-svc3d-front-uaqms-public/}"
 
 # Select base path based on IS_CIVIL
 if [ "$IS_CIVIL" = "true" ]; then

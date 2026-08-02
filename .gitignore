@@ -36,3 +36,4 @@ GEMINI.md
 
 # Built docker image exports (large artifacts)
 dist-images/
+docker-images/
