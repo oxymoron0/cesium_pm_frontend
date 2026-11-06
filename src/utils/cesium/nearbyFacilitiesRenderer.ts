@@ -338,7 +338,7 @@ function createPolygonHierarchies(
 
   if (!coords || coords.length === 0) return hierarchies;
 
-  let polygons: number[][][][] = [];
+  let polygons: number[][][][];
 
   // 타입 가드: 4중 배열인지 3중 배열인지 확인
   const firstElement = coords[0];

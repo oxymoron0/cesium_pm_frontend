@@ -85,7 +85,7 @@ const ensureVisible = (
 
   if (!overTop && !overBottom) return;
 
-  let delta = 0;
+  let delta: number;
 
   if (mode === "center") {
     const cMid = (cRect.top + cRect.bottom) / 2;

@@ -114,7 +114,7 @@ export default defineConfig(({ command, mode }) => {
       ],
       resolve: {
         alias: {
-          '@': path.resolve(__dirname, './src')
+          '@': path.resolve(import.meta.dirname, './src')
         }
       },
       define: {
@@ -156,7 +156,7 @@ export default defineConfig(({ command, mode }) => {
     plugins: [react(), cesium()],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, './src')
+        '@': path.resolve(import.meta.dirname, './src')
       }
     },
     define: {
@@ -174,7 +174,7 @@ export default defineConfig(({ command, mode }) => {
     },
     build: {
       lib: {
-        entry: path.resolve(__dirname, `./src/pages/${pageName}/index.tsx`),
+        entry: path.resolve(import.meta.dirname, `./src/pages/${pageName}/index.tsx`),
         formats: ['umd'],
         name: pageName,
         fileName: () => `${pageName}.umd.js`
@@ -189,12 +189,6 @@ export default defineConfig(({ command, mode }) => {
     css: {
       postcss: './postcss.config.js',
       devSourcemap: true
-    },
-    esbuild: {
-      // Disable color minification to preserve rgba(0,0,0,0) format
-      minifyIdentifiers: true,
-      minifySyntax: true,
-      minifyWhitespace: true
     },
     base: basePath
   }

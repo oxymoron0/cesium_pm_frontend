@@ -66,7 +66,7 @@ function createPolygonHierarchies(
 
   if (!coords || coords.length === 0) return hierarchies;
 
-  let polygons: number[][][][] = [];
+  let polygons: number[][][][];
 
   // 타입 가드: 4중 배열인지 3중 배열인지 확인 (coords[0][0]이 배열이면 4중)
   // Polygon: [Ring][Point][lat,lng] -> coords[0][0] is number

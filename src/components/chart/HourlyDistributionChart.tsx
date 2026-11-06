@@ -128,11 +128,11 @@ const HourlyDistributionChart = observer(function HourlyDistributionChart({
           }}
           labelStyle={{ color: '#FFF' }}
           itemStyle={{ color: '#FFD040' }}
-          formatter={(value: number) => [
-            `${value.toFixed(1)} ${isVOCsMode ? 'ppb' : 'μg/m³'}`,
+          formatter={(value) => [
+            `${Number(value).toFixed(1)} ${isVOCsMode ? 'ppb' : 'μg/m³'}`,
             '농도'
           ]}
-          labelFormatter={(hour: number) => `${hour}시`}
+          labelFormatter={(hour) => `${hour}시`}
         />
 
         {/* Area - Yellow fill */}

@@ -70,8 +70,8 @@ export function getAirQualityLevel(sensorType: SensorType, value: number): AirQu
   }
 
   const standards = AIR_QUALITY_STANDARDS[sensorType]
-  let level: AirQualityLevel = 'good'
-  let levelText = '좋음'
+  let level: AirQualityLevel
+  let levelText: string
 
   // 기준에 따라 등급 결정
   if (value <= standards.good.max) {
