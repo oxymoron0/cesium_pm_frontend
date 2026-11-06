@@ -80,7 +80,7 @@ Microfrontend UMD module for geospatial bus route visualization with Cesium 3D r
 
 **Technology Stack:**
 - React 19, TypeScript, Vite, MobX
-- Cesium 1.115 for 3D geospatial rendering
+- Cesium 1.147 for 3D geospatial rendering
 - Tailwind CSS with PostCSS prefixing
 - PNPM package management
 

@@ -22,7 +22,7 @@ interface BusAnimationState {
     to: BusPosition
     startTime: number
     duration: number
-    timer?: NodeJS.Timeout
+    timer?: ReturnType<typeof setTimeout>
   }
 }
 
@@ -41,7 +41,7 @@ class BusStore {
 
   // 실시간 폴링 상태
   isPolling = false
-  pollInterval?: NodeJS.Timeout
+  pollInterval?: ReturnType<typeof setInterval>
   pollIntervalSeconds = 10
   lastSuccessfulPoll: Date | null = null
   pollFailureCount = 0

@@ -701,7 +701,7 @@ interface BusAnimation {
   targetPosition: Cartesian3
   startTime: number
   duration: number
-  interval?: NodeJS.Timeout
+  interval?: ReturnType<typeof setInterval>
 }
 
 const busAnimations = new Map<string, BusAnimation>()

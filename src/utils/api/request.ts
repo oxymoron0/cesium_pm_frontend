@@ -73,7 +73,7 @@ export async function request<T = unknown>(
       throw error;
     }
 
-    throw new Error(`Unknown error occurred while requesting ${url}`);
+    throw new Error(`Unknown error occurred while requesting ${url}`, { cause: error });
   }
 }
 

@@ -1,4 +1,4 @@
-import { makeAutoObservable, action } from 'mobx';
+import { makeAutoObservable, action, runInAction } from 'mobx';
 import {
   getRouteBookmarks,
   createRouteBookmark,
@@ -82,9 +82,11 @@ class BookmarkStore {
       const response: RouteBookmarksResponse = await getRouteBookmarks(user);
 
       // Set 초기화 및 데이터 추가
-      this.routeBookmarks.clear();
-      response.bookmarks.forEach(bookmark => {
-        this.routeBookmarks.add(bookmark.route_name);
+      runInAction(() => {
+        this.routeBookmarks.clear();
+        response.bookmarks.forEach(bookmark => {
+          this.routeBookmarks.add(bookmark.route_name);
+        });
       });
 
       console.log(`[BookmarkStore] Route bookmarks loaded: ${this.routeBookmarks.size} routes`);
@@ -190,12 +192,13 @@ class BookmarkStore {
       const response: StationBookmarksResponse = await getStationBookmarks(user);
 
       // Set 초기화 및 데이터 추가
-      this.stationBookmarks.clear();
-      response.bookmarks.forEach(bookmark => {
-        this.stationBookmarks.add(bookmark.station_id);
+      runInAction(() => {
+        this.stationBookmarks.clear();
+        response.bookmarks.forEach(bookmark => {
+          this.stationBookmarks.add(bookmark.station_id);
+        });
+        this.loadingState.stationBookmarksLoaded = true;
       });
-
-      this.loadingState.stationBookmarksLoaded = true;
       console.log(`[BookmarkStore] Station bookmarks loaded: ${this.stationBookmarks.size} stations`);
     } catch (error) {
       console.error('[BookmarkStore] Failed to load station bookmarks:', error);

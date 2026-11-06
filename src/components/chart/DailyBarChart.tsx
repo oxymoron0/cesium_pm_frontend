@@ -173,11 +173,12 @@ const DailyBarChart = observer(function DailyBarChart({
           }}
           labelStyle={{ color: '#FFF' }}
           itemStyle={{ color: '#FFD040' }}
-          formatter={(value: number) => [
-            `${value.toFixed(1)} ${isVOCsMode ? 'ppb' : 'μg/m³'}`,
+          formatter={(value) => [
+            `${Number(value).toFixed(1)} ${isVOCsMode ? 'ppb' : 'μg/m³'}`,
             '농도'
           ]}
-          labelFormatter={(dateLabel: string) => {
+          labelFormatter={(label) => {
+            const dateLabel = String(label)
             const dataPoint = data.find(d => d.dateLabel === dateLabel)
             return dataPoint ? `${dateLabel} (${dataPoint.dayOfWeek})` : dateLabel
           }}

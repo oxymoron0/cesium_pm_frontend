@@ -47,7 +47,7 @@ const StatsContent = observer(function StatsContent({
         const date = new Date(point.hour)
         const hour = date.getHours()
 
-        let value = 0
+        let value: number
         if (isVOCsMode) {
           value = point.average_readings.voc
         } else if (pmType === 'PM10') {
@@ -97,7 +97,7 @@ const StatsContent = observer(function StatsContent({
       .map((point) => {
         const date = new Date(point.hour)
         const hour = date.getHours()
-        let value = 0
+        let value: number
 
         if (isVOCsMode) {
           value = point.average_readings.voc
@@ -147,7 +147,7 @@ const StatsContent = observer(function StatsContent({
       .map((point) => {
         const date = new Date(point.hour)
         const hour = date.getHours()
-        let value = 0
+        let value: number
 
         if (isVOCsMode) {
           value = point.average_readings.voc

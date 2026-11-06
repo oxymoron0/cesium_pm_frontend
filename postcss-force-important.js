@@ -23,6 +23,9 @@ export default function postcssForceImportant(opts = {}) {
       // Skip @font-face
       if (decl.parent?.type === 'atrule' && decl.parent?.name === 'font-face') return;
 
+      // Skip @property descriptors (syntax, inherits, initial-value) - !important makes the rule invalid
+      if (decl.parent?.type === 'atrule' && decl.parent?.name === 'property') return;
+
       // Add !important
       decl.important = true;
     }
