@@ -218,14 +218,14 @@ const SimulationCivilConfig = observer(function SimulationCivilConfig()  {
       
       {/* 3. 안내 문구 */}
       <div className="mt-3 mb-6 text-sm text-[#A6A6A6]" style={{fontFamily: 'Pretendard', lineHeight: 'normal'}}>
-        * 부산진구에서 발생한 오염물질의 확산을 시뮬레이션하고, 실행 목록을 확인할 수 있습니다.
+        * IoT 센서로 수집한 부산진구 정류장의 데이터를 활용하여, 10분 주기마다 실행된 미세먼지 확산 시뮬레이션 결과를 확인할 수 있습니다.
       </div>
 
       {/* 4. 상세 설정 섹션 */}
       <div className="flex flex-col w-full">
         {/* 헤더 */}
         <div className="w-full bg-[#464646] py-2 px-4 text-white font-bold text-sm">
-          상세 설정
+          검색
         </div>
         
         {/* 에러 메시지 표시 영역 */}
@@ -243,7 +243,7 @@ const SimulationCivilConfig = observer(function SimulationCivilConfig()  {
             <div className="w-24 flex items-center gap-1">
               <span style={{fontFamily: 'Pretendard', lineHeight: 'normal', fontSize: '15px', fontWeight: '700', color: '#FFFFFF'}}>오염물질</span>
               {simulationStore.currentView === 'civilConfig' && (
-                <Info infoTitle="오염물질">* 미세먼지(PM-10)의 시뮬레이션 예상 농도를 입력해주세요. 19개소 정류장의 평균값으로 입력됩니다.</Info>
+                <Info infoTitle="오염물질">* 미세먼지 시뮬레이션의 예상 농도를 입력해주세요.<br />※ 좋음(~30), 보통(31~80), 나쁨(81~150), 매우나쁨(151~)</Info>
               )}
             </div>
             

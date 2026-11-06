@@ -43,7 +43,7 @@ const SimulationCivilMain = observer(function App({onCloseMicroApp}: SimulationC
   return (
     <>
       <Title
-        info={currentView === 'civilConfig' ? "※ 부산진구에서 발생한 미세먼지(PM-10)의 확산을 시뮬레이션할 수 있습니다." : undefined}
+        info={undefined}
         infoTitle={(currentView === 'civilConfig' || currentView === 'civilList') ? "시뮬레이션"
           : currentView === 'civilResult' && !simulationStore.isStationAnalysisMode ? "시뮬레이션 설정 정보"
           : "상세 시뮬레이션 결과"}

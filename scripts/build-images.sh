@@ -2,8 +2,9 @@
 # 반출용 이미지 빌드 및 tar 생성
 #
 # 산출물: docker-images/<프로젝트명>.tar   (tar 파일명 = 프로젝트명)
-#   - bump-svc3d-front-uaqms.tar         행정, 이미지 태그 front:deploy
-#   - bump-svc3d-front-uaqms-public.tar  대민, 이미지 태그 front:civil (IS_CIVIL=true)
+#   이미지 태그는 <프로젝트명>:latest
+#   - bump-svc3d-front-uaqms.tar         행정  → bump-svc3d-front-uaqms:latest
+#   - bump-svc3d-front-uaqms-public.tar  대민  → bump-svc3d-front-uaqms-public:latest (IS_CIVIL=true)
 #
 # 기본값은 .env.production 을 따른다.
 # 사용법: scripts/build-images.sh [admin|civil]   (인자 없으면 둘 다)
@@ -39,14 +40,15 @@ fi
 
 mkdir -p "$OUT_DIR"
 
-# build_image <프로젝트명> <IS_CIVIL> <이미지태그>
+# build_image <프로젝트명> <IS_CIVIL>
+#   이미지 태그 = <프로젝트명>:latest, tar 파일명 = <프로젝트명>.tar
 build_image() {
     local name="$1"
     local is_civil="$2"
-    local tag="$3"
+    local tag="${name}:latest"
 
     echo "=============================================="
-    echo " Building: $tag  (project=$name, IS_CIVIL=$is_civil)"
+    echo " Building: $tag  (IS_CIVIL=$is_civil)"
     echo "=============================================="
 
     docker build \
@@ -55,7 +57,6 @@ build_image() {
         -t "$tag" \
         .
 
-    # tar 파일명 = 프로젝트명, tar 내부 이미지 태그 = $tag
     echo "Saving: $OUT_DIR/$name.tar  (image: $tag)"
     docker save "$tag" -o "$OUT_DIR/$name.tar"
     ls -lh "$OUT_DIR/$name.tar"
@@ -63,10 +64,10 @@ build_image() {
 
 TARGET="${1:-all}"
 case "$TARGET" in
-    admin)  build_image "$ADMIN_NAME" false front:deploy ;;
-    civil)  build_image "$CIVIL_NAME" true  front:civil ;;
-    all)    build_image "$ADMIN_NAME" false front:deploy
-            build_image "$CIVIL_NAME" true  front:civil ;;
+    admin)  build_image "$ADMIN_NAME" false ;;
+    civil)  build_image "$CIVIL_NAME" true ;;
+    all)    build_image "$ADMIN_NAME" false
+            build_image "$CIVIL_NAME" true ;;
     *)      echo "Usage: $0 [admin|civil|all]"; exit 1 ;;
 esac
 
