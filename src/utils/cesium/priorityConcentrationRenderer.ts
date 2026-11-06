@@ -301,7 +301,7 @@ const updateHeatmap = () => {
     // Convert world coordinates to screen coordinates
     currentConcentrationPoints.forEach(point => {
       const cartesian = Cartesian3.fromDegrees(point.longitude, point.latitude);
-      const screenPos = SceneTransforms.worldToWindowCoordinates(
+      const screenPos = SceneTransforms.wgs84ToWindowCoordinates(
         viewer.scene,
         cartesian,
         new Cartesian2()

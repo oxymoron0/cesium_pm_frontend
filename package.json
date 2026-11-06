@@ -13,7 +13,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "cesium": "1.147.0",
+    "cesium": "1.115.0",
     "mobx": "7.1.4",
     "mobx-react-lite": "5.1.2",
     "postcss-prefix-selector": "^2.2.1",

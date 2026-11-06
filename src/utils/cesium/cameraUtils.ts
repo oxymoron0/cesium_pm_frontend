@@ -163,7 +163,7 @@ export function flyToBoundingSphere(model: Model, duration: number, pitch: numbe
   // 타입 가드(Type Guard) 추가
   // 카메라의 frustum이 PerspectiveFrustum 타입인지 확인합니다.
   if (viewer.camera.frustum instanceof PerspectiveFrustum) {
-    fov = viewer.camera.frustum.fov ?? CesiumMath.toRadians(60.0);
+    fov = viewer.camera.frustum.fov;
   } else {
     // 만약 2D 뷰와 같이 다른 모드일 경우, 기본값(e.g., 60도)을 사용합니다.
     // 이는 런타임 에러를 방지하는 안전장치입니다.
